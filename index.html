@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContractsIntel — The Operating System for Government Contractors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0f;
+  --surface: #0d1018;
+  --surface2: #111520;
+  --border: #1e2535;
+  --border2: #2a3548;
+  --accent: #2563eb;
+  --accent-bright: #3b82f6;
+  --accent-glow: rgba(37,99,235,0.15);
+  --gold: #d4a843;
+  --gold-dim: rgba(212,168,67,0.12);
+  --text: #e8edf8;
+  --text2: #8b9ab5;
+  --text3: #4a5a75;
+  --green: #22c55e;
+  --red: #ef4444;
+  --purple: #a78bfa;
+  --white: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Geist', sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; }
+.container { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(37,99,235,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.025) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+
+/* NAV */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(8,10,15,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.nav-logo { display: flex; align-items: center; gap: 10px; }
+.nav-logo-mark { width: 32px; height: 32px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 500; color: white; }
+.nav-logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.02em; }
+.nav-logo-text span { color: var(--accent-bright); }
+.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+.nav-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.nav-links a:hover { color: var(--text); }
+.nav-cta { display: flex; align-items: center; gap: 12px; }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); padding: 8px 18px; font-size: 13px; font-family: 'Geist', sans-serif; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+.btn-primary { background: var(--accent); border: none; color: white; padding: 9px 20px; font-size: 13px; font-weight: 500; font-family: 'Geist', sans-serif; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: var(--accent-bright); transform: translateY(-1px); }
+.btn-primary.large { padding: 14px 28px; font-size: 15px; }
+.btn-primary.xl { padding: 16px 36px; font-size: 16px; font-weight: 600; }
+
+/* HERO */
+.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 120px 32px 80px; position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid rgba(212,168,67,0.25); color: var(--gold); padding: 6px 14px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 32px; width: fit-content; }
+.eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.hero h1 { font-family: 'Instrument Serif', serif; font-size: clamp(44px, 7vw, 84px); line-height: 1.0; letter-spacing: -0.02em; margin-bottom: 28px; max-width: 860px; }
+.hero h1 em { font-style: italic; color: var(--accent-bright); }
+.hero h1 .dim { color: var(--text3); }
+.hero-sub { font-size: 18px; color: var(--text2); max-width: 600px; line-height: 1.7; margin-bottom: 40px; }
+.hero-sub strong { color: var(--text); }
+.hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 48px; }
+.hero-proof { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text3); flex-wrap: wrap; }
+.hero-proof-item { display: flex; align-items: center; gap: 6px; }
+.proof-check { color: var(--green); font-size: 14px; }
+.proof-divider { width: 1px; height: 14px; background: var(--border2); }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 760px; margin-top: 56px; }
+.hero-stat { background: var(--surface); padding: 20px 24px; }
+.hs-val { font-family: 'Instrument Serif', serif; font-size: 32px; color: var(--white); margin-bottom: 4px; }
+.hs-val .accent { color: var(--accent-bright); }
+.hs-label { font-size: 11px; color: var(--text3); line-height: 1.4; }
+
+/* TICKER */
+.ticker-wrap { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; overflow: hidden; position: relative; z-index: 1; }
+.ticker { display: flex; animation: scroll 35s linear infinite; width: max-content; }
+@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 32px; font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text3); white-space: nowrap; border-right: 1px solid var(--border); }
+.ticker-item .ti-amount { color: var(--green); font-weight: 500; }
+
+section { position: relative; z-index: 1; }
+.section-label { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.section-label::before { content: '//'; color: var(--text3); }
+.section-headline { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
+.section-sub { font-size: 17px; color: var(--text2); max-width: 520px; line-height: 1.7; }
+
+/* PAIN */
+.pain-section { padding: 120px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
+.pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 48px; }
+.pain-card { background: var(--surface2); padding: 36px; position: relative; overflow: hidden; }
+.pain-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--red); opacity: 0.6; }
+.pain-number { font-family: 'Instrument Serif', serif; font-size: 64px; color: var(--border2); line-height: 1; margin-bottom: 16px; display: block; }
+.pain-headline { font-size: 20px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; }
+.pain-text { color: var(--text2); font-size: 15px; line-height: 1.7; }
+.pain-callout { margin-top: 48px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-left: 3px solid var(--red); padding: 24px 28px; }
+.pain-callout p { font-size: 17px; color: var(--text); line-height: 1.7; }
+.pain-callout strong { color: var(--red); }
+
+/* ROI */
+.roi-section { padding: 120px 32px; background: var(--bg); }
+.roi-calc { margin-top: 56px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border: 1px solid var(--border); background: var(--surface); }
+.roi-side { padding: 48px 40px; }
+.roi-side.left { border-right: 1px solid var(--border); }
+.roi-divider-col { padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 16px; background: var(--surface2); border-right: 1px solid var(--border); }
+.roi-label-sm { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+.roi-big { font-family: 'Instrument Serif', serif; font-size: 56px; line-height: 1; margin-bottom: 8px; }
+.roi-big.red { color: #f87171; }
+.roi-big.green { color: var(--green); }
+.roi-sub { color: var(--text2); font-size: 14px; line-height: 1.6; }
+.roi-table { margin-top: 32px; border: 1px solid var(--border); overflow: hidden; }
+.roi-table-row { display: grid; grid-template-columns: 1fr 160px 160px 160px; border-bottom: 1px solid var(--border); }
+.roi-table-row:last-child { border-bottom: none; }
+.roi-table-row.header { background: var(--surface2); }
+.rt-cell { padding: 16px 20px; font-size: 13px; }
+.rt-cell.header-cell { font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+.rt-cell.highlight { color: var(--green); font-weight: 600; }
+.rt-cell.dim { color: var(--text3); }
+.rt-cell.main { color: var(--text); font-weight: 500; }
+
+/* LIFECYCLE */
+.lifecycle-section { padding: 120px 32px; background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); }
+.lifecycle-track { margin-top: 56px; display: flex; flex-direction: column; gap: 2px; }
+.lifecycle-item { display: grid; grid-template-columns: 140px 1fr; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; transition: border-color 0.2s; }
+.lifecycle-item:hover { border-color: var(--border2); }
+.lc-time { padding: 24px 20px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; background: var(--surface); }
+.lc-time-val { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--accent-bright); }
+.lc-time-label { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.lc-content { padding: 24px 28px; }
+.lc-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.lc-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.lc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.lc-tag { font-size: 10px; padding: 3px 8px; border: 1px solid var(--border2); color: var(--text3); font-family: 'Geist Mono', monospace; }
+.lc-tag.on { border-color: rgba(34,197,94,0.3); color: var(--green); }
+
+/* SUITE */
+.suite-section { padding: 120px 32px; background: var(--bg); }
+.suite-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
+.suite-card { background: var(--surface2); padding: 28px 24px; position: relative; overflow: hidden; transition: background 0.2s; }
+.suite-card:hover { background: #131c26; }
+.suite-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--c, var(--accent)); }
+.suite-icon { font-size: 24px; margin-bottom: 14px; }
+.suite-phase { font-family: 'Geist Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.suite-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; line-height: 1.3; }
+.suite-text { font-size: 12px; color: var(--text2); line-height: 1.6; }
+.suite-when { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* HOW */
+.how-section { padding: 120px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
+.step-card { background: var(--surface2); padding: 40px 36px; position: relative; }
+.step-num { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-bright); letter-spacing: 0.1em; margin-bottom: 20px; }
+.step-icon { width: 48px; height: 48px; background: var(--accent-glow); border: 1px solid rgba(37,99,235,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
+.step-title { font-size: 20px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; }
+.step-text { color: var(--text2); font-size: 14px; line-height: 1.7; }
+.step-connector { position: absolute; right: -1px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; z-index: 2; }
+
+/* DIGEST MOCK */
+.digest-mock { background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
+.dm-header { background: var(--surface2); padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.dm-dot { width: 8px; height: 8px; border-radius: 50%; }
+.dm-title { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); margin-left: 8px; }
+.dm-body { padding: 20px; }
+.dm-date { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.1em; margin-bottom: 14px; display: flex; justify-content: space-between; }
+.dm-opp { border: 1px solid var(--border); margin-bottom: 10px; overflow: hidden; }
+.dm-opp-header { background: var(--surface2); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+.dm-opp-title { font-size: 12px; font-weight: 500; }
+.dm-opp-score { font-family: 'Geist Mono', monospace; font-size: 10px; padding: 2px 7px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
+.dm-opp-body { padding: 10px 14px; }
+.dm-opp-row { display: flex; gap: 14px; margin-bottom: 6px; font-size: 11px; color: var(--text2); flex-wrap: wrap; }
+.dm-tag { font-family: 'Geist Mono', monospace; font-size: 10px; padding: 2px 7px; border: 1px solid var(--border2); color: var(--text3); }
+.dm-rec { margin-top: 8px; padding: 7px 10px; background: rgba(37,99,235,0.08); border-left: 2px solid var(--accent); font-size: 11px; color: var(--text2); }
+.dm-rec strong { color: var(--accent-bright); }
+
+/* ROADMAP */
+.roadmap-section { padding: 120px 32px; background: var(--surface); border-top: 1px solid var(--border); }
+.roadmap-grid { display: flex; flex-direction: column; gap: 2px; margin-top: 48px; }
+.roadmap-item { display: grid; grid-template-columns: 180px 1fr 180px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; }
+.rm-phase { padding: 20px 24px; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; justify-content: center; }
+.rm-phase-label { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.rm-phase-val { font-family: 'Instrument Serif', serif; font-size: 20px; color: var(--text); }
+.rm-content { padding: 20px 28px; }
+.rm-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.rm-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.rm-products { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.rm-product { font-size: 10px; padding: 3px 8px; border: 1px solid rgba(37,99,235,0.25); color: var(--accent-bright); font-family: 'Geist Mono', monospace; }
+.rm-revenue { padding: 20px 24px; border-left: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; text-align: right; }
+.rm-rev-val { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--green); }
+.rm-rev-label { font-size: 11px; color: var(--text3); }
+
+/* PRICING */
+.pricing-section { padding: 120px 32px; background: var(--bg); }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
+.pricing-card { background: var(--surface2); padding: 40px 36px; position: relative; }
+.pricing-card.popular { background: #0a1628; border: 2px solid var(--accent); margin: -1px; z-index: 2; }
+.popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 16px; white-space: nowrap; }
+.plan-name { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.plan-price { font-family: 'Instrument Serif', serif; font-size: 52px; line-height: 1; margin-bottom: 4px; }
+.plan-price span { font-size: 20px; color: var(--text2); font-family: 'Geist', sans-serif; }
+.plan-period { font-size: 13px; color: var(--text3); margin-bottom: 6px; }
+.plan-value { font-size: 12px; color: var(--green); margin-bottom: 24px; font-family: 'Geist Mono', monospace; }
+.plan-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+.plan-features { list-style: none; margin-bottom: 32px; }
+.plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text2); padding: 7px 0; border-bottom: 1px solid var(--border); line-height: 1.4; }
+.plan-features li:last-child { border-bottom: none; }
+.plan-features li.has { color: var(--text); }
+.pf-check { color: var(--green); font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+.pf-x { color: var(--text3); font-size: 13px; margin-top: 1px; flex-shrink: 0; }
+.plan-fomo { font-size: 12px; color: var(--text3); margin-top: 12px; text-align: center; font-family: 'Geist Mono', monospace; }
+
+/* COMPARISON */
+.comparison-section { padding: 120px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
+.comp-table { margin-top: 56px; border: 1px solid var(--border); overflow: hidden; }
+.comp-row { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr); border-bottom: 1px solid var(--border); }
+.comp-row:last-child { border-bottom: none; }
+.comp-row.header { background: var(--surface2); }
+.comp-cell { padding: 16px 20px; font-size: 13px; border-right: 1px solid var(--border); }
+.comp-cell:last-child { border-right: none; }
+.comp-cell.header-cell { font-weight: 600; font-size: 13px; }
+.comp-cell.tw { background: rgba(37,99,235,0.04); }
+.comp-cell.tw.header-cell { color: var(--accent-bright); background: rgba(37,99,235,0.1); }
+.comp-check { color: var(--green); }
+.comp-x { color: var(--text3); }
+.comp-partial { color: var(--gold); }
+.comp-feature strong { color: var(--text); font-size: 14px; display: block; margin-bottom: 2px; }
+
+/* CTA */
+.cta-section { padding: 120px 32px; background: var(--surface); border-top: 1px solid var(--border); text-align: center; }
+.cta-eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 24px; }
+.cta-headline { font-family: 'Instrument Serif', serif; font-size: clamp(36px, 5vw, 64px); line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto; }
+.cta-headline em { font-style: italic; color: var(--accent-bright); }
+.cta-sub { font-size: 17px; color: var(--text2); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
+.cta-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+
+footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+.footer-logo { font-family: 'Instrument Serif', serif; font-size: 18px; }
+.footer-logo span { color: var(--accent-bright); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { color: var(--text3); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.footer-links a:hover { color: var(--text2); }
+.footer-copy { font-size: 12px; color: var(--text3); font-family: 'Geist Mono', monospace; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp 0.6s ease forwards; }
+.fade-up-2 { animation: fadeUp 0.6s 0.15s ease forwards; opacity: 0; }
+.fade-up-3 { animation: fadeUp 0.6s 0.3s ease forwards; opacity: 0; }
+.fade-up-4 { animation: fadeUp 0.6s 0.45s ease forwards; opacity: 0; }
+
+@media(max-width:768px){
+  .pain-grid,.steps-grid,.pricing-grid,.suite-grid{grid-template-columns:1fr}
+  .roi-calc{grid-template-columns:1fr}
+  .comp-row{grid-template-columns:1fr 1fr}
+  .comp-row .comp-cell:nth-child(3){display:none}
+  nav .nav-links{display:none}
+  .hero h1{font-size:40px}
+  .hero-stats{grid-template-columns:1fr 1fr}
+  .lifecycle-item{grid-template-columns:100px 1fr}
+  .roadmap-item{grid-template-columns:1fr}
+  .rm-revenue{border-left:none;border-top:1px solid var(--border);text-align:left}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-mark">CI</div>
+    <div class="nav-logo-text">Contracts<span>Intel</span></div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#lifecycle">Platform</a></li>
+    <li><a href="#suite">Full Suite</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#compare">Compare</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="#pricing" class="btn-ghost">See Plans</a>
+    <a href="#cta" class="btn-primary">Start Free Trial →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero container">
+  <div class="hero-eyebrow fade-up"><span class="eyebrow-dot"></span>$700B federal market · 35,000+ portals · SAM.gov verified · 8 integrated tools</div>
+  <h1 class="fade-up-2">The operating system<br><em>for government contractors.</em></h1>
+  <p class="hero-sub fade-up-3">ContractsIntel monitors every procurement portal daily. Scores every bid. Generates proposals. Tracks deliverables. Manages compliance. Protects your past performance. <strong>From first bid to 10th contract — fully automated.</strong></p>
+  <div class="hero-actions fade-up-4">
+    <a href="#cta" class="btn-primary xl">See What You're Missing This Week →</a>
+    <a href="#lifecycle" class="btn-ghost" style="padding:14px 24px;font-size:15px">See the Full Platform</a>
+  </div>
+  <div class="hero-proof fade-up-4">
+    <div class="hero-proof-item"><span class="proof-check">✓</span> No credit card required</div>
+    <div class="proof-divider"></div>
+    <div class="hero-proof-item"><span class="proof-check">✓</span> Live in 5 minutes</div>
+    <div class="proof-divider"></div>
+    <div class="hero-proof-item"><span class="proof-check">✓</span> SAM.gov verified</div>
+    <div class="proof-divider"></div>
+    <div class="hero-proof-item"><span class="proof-check">✓</span> 14-day free trial</div>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hs-val"><span class="accent">$700</span>B</div><div class="hs-label">Federal contracts awarded annually</div></div>
+    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val">35<span class="accent" style="font-size:20px">K+</span></div><div class="hs-label">Procurement portals monitored daily</div></div>
+    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">8</span></div><div class="hs-label">Integrated platform tools</div></div>
+    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">68</span>%</div><div class="hs-label">Eligible contracts missed without monitoring</div></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div class="ticker-item"><span class="ti-amount">$847,000</span><span>· DoD SDVOSB · IT Services · Closes in 8 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$2.1M</span><span>· GSA 8(a) · Facilities Management · Virginia</span></div>
+    <div class="ticker-item"><span class="ti-amount">$320,000</span><span>· HHS WOSB · Program Support · Closes in 4 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$1.4M</span><span>· DHS HUBZone · Cybersecurity · New Today</span></div>
+    <div class="ticker-item"><span class="ti-amount">$560,000</span><span>· Army 8(a) · Logistics Support · Closes in 12 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$3.2M</span><span>· VA SDVOSB · Healthcare IT · NAICS 541512</span></div>
+    <div class="ticker-item"><span class="ti-amount">$847,000</span><span>· DoD SDVOSB · IT Services · Closes in 8 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$2.1M</span><span>· GSA 8(a) · Facilities Management · Virginia</span></div>
+    <div class="ticker-item"><span class="ti-amount">$320,000</span><span>· HHS WOSB · Program Support · Closes in 4 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$1.4M</span><span>· DHS HUBZone · Cybersecurity · New Today</span></div>
+    <div class="ticker-item"><span class="ti-amount">$560,000</span><span>· Army 8(a) · Logistics Support · Closes in 12 days</span></div>
+    <div class="ticker-item"><span class="ti-amount">$3.2M</span><span>· VA SDVOSB · Healthcare IT · NAICS 541512</span></div>
+  </div>
+</div>
+
+<!-- PAIN -->
+<section class="pain-section" id="pain">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-headline">You're running a contracting business<br>on spreadsheets and gut feel.</h2>
+    <p class="section-sub">Large primes have teams for BD, compliance, past performance, and delivery management. You have yourself. ContractsIntel closes that gap — for less than the cost of one BD coordinator's salary.</p>
+    <div class="pain-grid">
+      <div class="pain-card"><span class="pain-number">01</span><div class="pain-headline">You checked SAM.gov 4 days ago.</div><p class="pain-text">A perfect SDVOSB set-aside in your NAICS codes posted Tuesday. It closes Friday. You found out Saturday. Not bad luck — a system problem. It happens every single week.</p></div>
+      <div class="pain-card"><span class="pain-number">02</span><div class="pain-headline">You bid blind without competitive intelligence.</div><p class="pain-text">Without knowing the incumbent, how many firms are bidding, or the agency's award patterns — you're writing proposals you can't win. 40 hours wasted on contracts that were never open.</p></div>
+      <div class="pain-card"><span class="pain-number">03</span><div class="pain-headline">After winning, you lose track of the contract.</div><p class="pain-text">Deliverable deadlines, reporting requirements, option period windows, CPARS ratings — managed in spreadsheets. One missed deadline can end a contract relationship permanently.</p></div>
+      <div class="pain-card"><span class="pain-number">04</span><div class="pain-headline">Your past performance is scattered and unrecorded.</div><p class="pain-text">Every proposal cycle you reconstruct what you did years ago from memory. Your competitors have organized performance libraries. You start from scratch every time.</p></div>
+    </div>
+    <div class="pain-callout"><p>Most small contractors operate with 1990s BD infrastructure competing against firms with enterprise-grade systems. <strong>ContractsIntel gives you that infrastructure for less than one BD coordinator's monthly salary — and it never sleeps.</strong></p></div>
+  </div>
+</section>
+
+<!-- LIFECYCLE -->
+<section class="lifecycle-section" id="lifecycle">
+  <div class="container">
+    <div class="section-label">The Platform</div>
+    <h2 class="section-headline">From first bid to 10th contract.<br>ContractsIntel runs every stage.</h2>
+    <p class="section-sub">Every stage of your contracting lifecycle — automated. Here's what a contractor's first year on ContractsIntel looks like.</p>
+    <div class="lifecycle-track">
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Day 1</div><div class="lc-time-label">Onboarding</div></div><div class="lc-content"><div class="lc-title">Enter your UEI — we do the rest</div><div class="lc-text">ContractsIntel pulls your certifications, NAICS codes, and registration status live from SAM.gov. Profile built automatically. First matched opportunities appear before you close the tab.</div><div class="lc-tags"><span class="lc-tag on">SAM.gov Verified</span><span class="lc-tag on">Auto-Profile</span><span class="lc-tag on">5 Minutes</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Day 2</div><div class="lc-time-label">First Digest</div></div><div class="lc-content"><div class="lc-title">Morning intelligence brief at 7am, every day</div><div class="lc-text">Top 10 matched opportunities ranked by fit score. Bid/no-bid recommendation with reasoning. Incumbent identified. Competition estimated. Deadline countdown. All automatically, every morning.</div><div class="lc-tags"><span class="lc-tag on">35,000+ Portals</span><span class="lc-tag on">Bid/No-Bid AI</span><span class="lc-tag on">Daily</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Week 2</div><div class="lc-time-label">First Bid</div></div><div class="lc-content"><div class="lc-title">Proposal first draft generated in minutes</div><div class="lc-text">Mark an opportunity as Bid. Technical approach, past performance narrative, and executive summary generated from the SOW automatically. 30-hour task becomes a 6-hour task.</div><div class="lc-tags"><span class="lc-tag on">BD Pro+</span><span class="lc-tag on">PPQ Format</span><span class="lc-tag on">SOW-Specific</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Week 8</div><div class="lc-time-label">Win</div></div><div class="lc-content"><div class="lc-title">Contract won — delivery dashboard activates automatically</div><div class="lc-text">USASpending confirms the award. ContractsIntel creates your delivery timeline, pulls contracting officer contact info, sets deliverable alerts, and starts your past performance record. All automatic.</div><div class="lc-tags"><span class="lc-tag on">Auto-Detected</span><span class="lc-tag on">Delivery Tracking</span><span class="lc-tag on">Past Performance</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Month 3</div><div class="lc-time-label">Performance</div></div><div class="lc-content"><div class="lc-title">CPARS monitored — responses generated automatically</div><div class="lc-text">Monthly performance log prompts build your record. CPARS ratings monitored in real time. If a rating drops below Satisfactory, an immediate alert fires with a formal response template ready to submit.</div><div class="lc-tags"><span class="lc-tag on">CPARS Monitor</span><span class="lc-tag on">Response Templates</span><span class="lc-tag on">Phase 3</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Month 6</div><div class="lc-time-label">Compliance</div></div><div class="lc-content"><div class="lc-title">SAM.gov expiry alert — 60 days before anyone else notices</div><div class="lc-text">ContractsIntel tracks every compliance obligation: SAM.gov renewals, 8(a) annual reviews, CMMC deadlines, FAR changes. Monthly compliance health score. Never miss a deadline that costs you a contract.</div><div class="lc-tags"><span class="lc-tag on">Compliance Monitor</span><span class="lc-tag on">FAR Changes</span><span class="lc-tag on">Phase 3</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Month 8</div><div class="lc-time-label">Network</div></div><div class="lc-content"><div class="lc-title">Inbound teaming lead from a prime contractor</div><div class="lc-text">A large prime posted a teaming need for a SDVOSB in your NAICS code. ContractsIntel matched and notified you automatically. One click to respond. Pure inbound — no cold calls, no LinkedIn.</div><div class="lc-tags"><span class="lc-tag on">Subcontracting Network</span><span class="lc-tag on">Inbound Leads</span><span class="lc-tag on">Phase 4</span></div></div></div>
+      <div class="lifecycle-item"><div class="lc-time"><div class="lc-time-val">Year 1</div><div class="lc-time-label">Full Platform</div></div><div class="lc-content"><div class="lc-title">Your complete competitive picture — built automatically</div><div class="lc-text">3 contracts won. Past performance library with 12 months of logged outcomes. Competitor profiles built from every loss. Agency heat map showing your highest win-probability targets. Invoice tracker with Prompt Payment Act enforcement. You never cancel a tool that knows this much about your business.</div><div class="lc-tags"><span class="lc-tag on">Competitor Intel</span><span class="lc-tag on">Invoice Tracker</span><span class="lc-tag on">Full Suite</span></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-headline">Connect once.<br>Runs forever.</h2>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-num">STEP 01</div><div class="step-icon">⚙️</div><div class="step-title">Connect your SAM.gov profile in 5 minutes</div><p class="step-text">Enter your UEI. ContractsIntel pulls your certifications, NAICS codes, and SAM.gov registration status automatically. Set geography, contract size range, and agency preferences. Done — the system takes over.</p><div class="step-connector">→</div></div>
+      <div class="step-card"><div class="step-num">STEP 02</div><div class="step-icon">🎯</div><div class="step-title">Intelligence delivered every morning at 7am</div><p class="step-text">Every night ContractsIntel scans 35,000+ portals, scores every new opportunity against your exact profile, identifies the incumbent, estimates competition level, and sends your ranked digest with bid recommendations written.</p><div class="step-connector">→</div></div>
+      <div class="step-card"><div class="step-num">STEP 03</div><div class="step-icon">📋</div><div class="step-title">Win. Then we track everything automatically.</div><p class="step-text">Mark a bid as won and ContractsIntel detects the award on USASpending. Delivery dashboard activates. Past performance tracking begins. Compliance items generate. The platform becomes your contract management system the moment you win.</p></div>
+    </div>
+
+    <div style="margin-top:48px">
+      <div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:16px">// Sample Morning Digest — 7:02am EST</div>
+      <div class="digest-mock">
+        <div class="dm-header"><div class="dm-dot" style="background:#ef4444"></div><div class="dm-dot" style="background:#f59e0b;margin-left:6px"></div><div class="dm-dot" style="background:#22c55e;margin-left:6px"></div><div class="dm-title">ContractsIntel Daily Intelligence · Acme Federal Services LLC</div></div>
+        <div class="dm-body">
+          <div class="dm-date"><span>MONDAY, MARCH 31, 2026 · 3 NEW MATCHES · 1 URGENT · 1 COMPLIANCE DUE</span><span style="color:var(--accent-bright)">SDVOSB · NAICS 541512, 541519</span></div>
+          <div class="dm-opp">
+            <div class="dm-opp-header"><div><div class="dm-opp-title">DoD IT Support Services — Fort Belvoir, VA</div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'Geist Mono',monospace">SOL-2026-0847 · DoD · $847,000 · SDVOSB Set-Aside</div></div><div class="dm-opp-score">FIT: 94/100</div></div>
+            <div class="dm-opp-body">
+              <div class="dm-opp-row"><span>📅 Closes: <strong style="color:var(--text)">April 4, 2026 (4 days)</strong></span><span>💰 Value: <strong style="color:var(--green)">$847,000</strong></span><span>🏢 Agency: <strong style="color:var(--text)">DoD</strong></span></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="dm-tag">SDVOSB</span><span class="dm-tag">NAICS 541512</span><span class="dm-tag">Virginia</span><span class="dm-tag">IT Services</span></div>
+              <div class="dm-rec"><strong>BID:</strong> Incumbent (Apex Systems) lost protest last cycle. 2–3 estimated competitors. NAICS 541512 past performance directly applicable. <strong style="color:var(--accent-bright)">Proposal draft ready → view in dashboard</strong></div>
+            </div>
+          </div>
+          <div class="dm-opp" style="opacity:0.6">
+            <div class="dm-opp-header"><div><div class="dm-opp-title">GSA Facilities Management — Multiple Locations</div><div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'Geist Mono',monospace">GSA-2026-2241 · GSA · $1.2M · 8(a)</div></div><div class="dm-opp-score" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);color:var(--gold)">FIT: 71/100</div></div>
+            <div class="dm-opp-body"><div class="dm-rec" style="border-left-color:var(--gold)"><strong style="color:var(--gold)">MONITOR:</strong> Geographic stretch — outside primary service area. 6+ competitors likely. Hold unless capacity available.</div></div>
+          </div>
+          <div style="font-family:'Geist Mono',monospace;font-size:10px;color:var(--text3);margin-top:10px;text-align:center;padding:10px;border:1px dashed var(--border)">+1 more match · 14 opportunities tracked · 2 deadlines in 7 days · SAM.gov renewal due in 28 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROI -->
+<section class="roi-section" id="roi">
+  <div class="container">
+    <div class="section-label">The Math</div>
+    <h2 class="section-headline">One contract pays for<br>years of ContractsIntel.</h2>
+    <p class="section-sub">This isn't a productivity tool. It's a revenue infrastructure decision.</p>
+    <div class="roi-calc">
+      <div class="roi-side left"><div class="roi-label-sm">Average contract you're missing</div><div class="roi-big green">$340K</div><div class="roi-sub">Typical SDVOSB or 8(a) set-aside award in core service categories. Your certifications give you exclusive access to this pool. Are you in every eligible competition?</div></div>
+      <div class="roi-divider-col"><div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--text3)">VS</div><div style="font-size:24px;color:var(--accent-bright)">→</div></div>
+      <div class="roi-side"><div class="roi-label-sm">ContractsIntel BD Pro annual cost</div><div class="roi-big red">$11,988</div><div class="roi-sub">One additional contract win per year returns 28x your investment. ContractsIntel customers identify 3–5 previously missed opportunities in their first 30 days.</div></div>
+    </div>
+    <div class="roi-table" style="margin-top:32px">
+      <div class="roi-table-row header"><div class="rt-cell header-cell">Scenario</div><div class="rt-cell header-cell">Contract Value</div><div class="rt-cell header-cell">Annual Cost</div><div class="rt-cell header-cell">ROI</div></div>
+      <div class="roi-table-row"><div class="rt-cell main">Win 1 small contract missed without CI</div><div class="rt-cell">$150,000</div><div class="rt-cell dim">$5,988 (Discovery)</div><div class="rt-cell highlight">25x return</div></div>
+      <div class="roi-table-row"><div class="rt-cell main">Win 1 mid-size set-aside</div><div class="rt-cell">$500,000</div><div class="rt-cell dim">$11,988 (BD Pro)</div><div class="rt-cell highlight">42x return</div></div>
+      <div class="roi-table-row"><div class="rt-cell main">Win 1 agency-level contract</div><div class="rt-cell">$2,000,000</div><div class="rt-cell dim">$30,000 (Team)</div><div class="rt-cell highlight">67x return</div></div>
+      <div class="roi-table-row" style="background:rgba(37,99,235,0.04)"><div class="rt-cell main" style="color:var(--accent-bright);font-weight:600">Break-even on Discovery tier</div><div class="rt-cell highlight">$49,900</div><div class="rt-cell dim">$5,988/year</div><div class="rt-cell" style="color:var(--text2);font-size:12px">1/3 of one average contract</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SUITE -->
+<section class="suite-section" id="suite">
+  <div class="container">
+    <div class="section-label">The Full Suite</div>
+    <h2 class="section-headline">Eight tools. One platform.<br>The entire contracting lifecycle.</h2>
+    <p class="section-sub">ContractsIntel ships in phases — core intelligence first, then the full lifecycle suite that keeps you on the platform whether you're pursuing contracts or delivering them.</p>
+    <div class="suite-grid">
+      <div class="suite-card" style="--c:#3b82f6"><div class="suite-icon">🎯</div><div class="suite-phase">Phase 1 — Live at Launch</div><div class="suite-title">Opportunity Intelligence</div><div class="suite-text">35,000+ portals. Daily digest. Bid/no-bid AI scoring. Incumbent ID. Competition estimates. Matched to your exact certs and NAICS codes.</div><div class="suite-when">Available day one</div></div>
+      <div class="suite-card" style="--c:#3b82f6"><div class="suite-icon">📄</div><div class="suite-phase">Phase 1 — Live at Launch</div><div class="suite-title">Proposal First Drafts</div><div class="suite-text">Technical approach, past performance narrative, and executive summary from the SOW. 30-hour task becomes 6 hours. BD Pro and Team.</div><div class="suite-when">Available day one</div></div>
+      <div class="suite-card" style="--c:#22c55e"><div class="suite-icon">📋</div><div class="suite-phase">Phase 2 — Month 4</div><div class="suite-title">Past Performance Builder</div><div class="suite-text">Auto-pulls award data. Monthly log prompts. CPARS monitoring. Generates PPQ-formatted narratives ready for any proposal. Gets richer every month.</div><div class="suite-when">Triggers at 50 customers</div></div>
+      <div class="suite-card" style="--c:#22c55e"><div class="suite-icon">📊</div><div class="suite-phase">Phase 2 — Month 4</div><div class="suite-title">Contract Delivery Dashboard</div><div class="suite-text">Deliverable tracking. Reporting deadline alerts. Invoice milestones. Modification alerts. Option period countdown with exercise probability scoring.</div><div class="suite-when">Triggers at 50 customers</div></div>
+      <div class="suite-card" style="--c:#d4a843"><div class="suite-icon">⚖️</div><div class="suite-phase">Phase 3 — Month 7</div><div class="suite-title">Compliance Monitor</div><div class="suite-text">SAM.gov renewals. 8(a) annual reviews. CMMC deadlines. FAR/DFAR changes. Monthly compliance health score. Never lose a contract to a missed deadline.</div><div class="suite-when">Triggers at 100 customers</div></div>
+      <div class="suite-card" style="--c:#d4a843"><div class="suite-icon">⭐</div><div class="suite-phase">Phase 3 — Month 7</div><div class="suite-title">CPARS Monitor</div><div class="suite-text">Detects new ratings on your CAGE code immediately. Below-Satisfactory triggers an instant formal response template. Rating trend vs competitors in your NAICS.</div><div class="suite-when">Triggers at 100 customers</div></div>
+      <div class="suite-card" style="--c:#a78bfa"><div class="suite-icon">🤝</div><div class="suite-phase">Phase 4 — Month 10</div><div class="suite-title">Subcontracting Network</div><div class="suite-text">Two-sided marketplace. Primes post teaming needs. You get matched and notified automatically. Inbound teaming leads as a subscription benefit. Primes pay for network access.</div><div class="suite-when">Triggers at 200 customers</div></div>
+      <div class="suite-card" style="--c:#a78bfa"><div class="suite-icon">🔍</div><div class="suite-phase">Phase 5 — Year 2</div><div class="suite-title">Intelligence Suite</div><div class="suite-text">Post-award loss analysis. Agency win probability heat maps. Contract vehicle on-ramp alerts. Invoice tracker with Prompt Payment Act enforcement. Full platform moat.</div><div class="suite-when">Year 2 rollout</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="roadmap-section" id="roadmap">
+  <div class="container">
+    <div class="section-label">Revenue Roadmap</div>
+    <h2 class="section-headline">A platform that grows with you.<br>Revenue that compounds.</h2>
+    <p class="section-sub">Each phase adds tools that make cancellation unthinkable. By year one, ContractsIntel knows more about your contracting business than anyone.</p>
+    <div class="roadmap-grid">
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Launch</div><div class="rm-phase-val">Day 1</div></div><div class="rm-content"><div class="rm-title">Core Intelligence Platform</div><div class="rm-text">Opportunity matching, daily digest, bid/no-bid scoring, proposal drafts. The product that gets contractors in the door.</div><div class="rm-products"><span class="rm-product">Opportunity Intel</span><span class="rm-product">Proposal Drafts</span><span class="rm-product">Pipeline Tracker</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$4,990</div><div class="rm-rev-label">MRR at 10 customers</div></div></div>
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Phase 2</div><div class="rm-phase-val">Month 4–6</div></div><div class="rm-content"><div class="rm-title">Lifecycle Tools Launch</div><div class="rm-text">Past performance builder and contract delivery dashboard activate. Platform becomes daily-use infrastructure — not just a BD season tool.</div><div class="rm-products"><span class="rm-product">Past Performance Builder</span><span class="rm-product">Delivery Dashboard</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$37,500</div><div class="rm-rev-label">MRR at 50 customers</div></div></div>
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Phase 3</div><div class="rm-phase-val">Month 7–9</div></div><div class="rm-content"><div class="rm-title">Compliance & Performance Protection</div><div class="rm-text">Compliance monitor and CPARS monitor launch. ContractsIntel becomes existentially important — protecting certifications, ratings, and revenue.</div><div class="rm-products"><span class="rm-product">Compliance Monitor</span><span class="rm-product">CPARS Monitor</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$95,000</div><div class="rm-rev-label">MRR at 100 customers</div></div></div>
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Phase 4</div><div class="rm-phase-val">Month 10–12</div></div><div class="rm-content"><div class="rm-title">Subcontracting Network Opens</div><div class="rm-text">Two-sided marketplace. Small contractors get inbound teaming leads. Prime contractors pay $2K–$10K/mo for network access. New enterprise revenue stream entirely.</div><div class="rm-products"><span class="rm-product">Subcontracting Network</span><span class="rm-product">Prime Portal</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$220,000</div><div class="rm-rev-label">MRR at 200 customers</div></div></div>
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Year 2</div><div class="rm-phase-val">Full Suite</div></div><div class="rm-content"><div class="rm-title">Complete Intelligence Suite</div><div class="rm-text">Competitor intelligence, contract vehicle monitor, invoice tracker. Platform moat complete. Switching cost near-impossible after 2 years of accumulated data and performance history.</div><div class="rm-products"><span class="rm-product">Competitor Intel</span><span class="rm-product">Vehicle Monitor</span><span class="rm-product">Invoice Tracker</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$600,000</div><div class="rm-rev-label">MRR at 500 customers</div></div></div>
+      <div class="roadmap-item"><div class="rm-phase"><div class="rm-phase-label">Year 3</div><div class="rm-phase-val">Scale</div></div><div class="rm-content"><div class="rm-title">Market Leadership</div><div class="rm-text">1,000+ contractor subscribers. 50–100 prime enterprise accounts at $5K–$10K/mo. Strategic acquisition interest from Deltek, Bloomberg Government, or private equity in the $75M–$150M range.</div><div class="rm-products"><span class="rm-product">1,000+ Subscribers</span><span class="rm-product">Prime Enterprise</span><span class="rm-product">Exit Ready</span></div></div><div class="rm-revenue"><div class="rm-rev-val">$1.4M+</div><div class="rm-rev-label">MRR at full scale</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-headline">Pay for the tool.<br>Win with the contracts.</h2>
+    <p class="section-sub">Every tier pays for itself with a fraction of one contract win. No annual commitment required. Cancel anytime — though after 90 days, you won't want to.</p>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="plan-name">Discovery</div>
+        <div class="plan-price"><span>$</span>499</div>
+        <div class="plan-period">per month · no commitment</div>
+        <div class="plan-value">Break-even: 1/300th of one average contract</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li class="has"><span class="pf-check">✓</span> Daily opportunity digest (top 10 matched)</li>
+          <li class="has"><span class="pf-check">✓</span> Bid/no-bid AI scoring with reasoning</li>
+          <li class="has"><span class="pf-check">✓</span> Federal portal monitoring (SAM.gov + beta)</li>
+          <li class="has"><span class="pf-check">✓</span> Certification-matched filtering (live from SAM.gov)</li>
+          <li class="has"><span class="pf-check">✓</span> Incumbent identification (via USASpending)</li>
+          <li class="has"><span class="pf-check">✓</span> Deadline calendar sync (Google Calendar)</li>
+          <li class="has"><span class="pf-check">✓</span> Pipeline tracker dashboard</li>
+          <li><span class="pf-x">–</span> Proposal first drafts</li>
+          <li><span class="pf-x">–</span> State + local portal monitoring</li>
+          <li><span class="pf-x">–</span> Past performance builder</li>
+          <li><span class="pf-x">–</span> Contract delivery dashboard</li>
+        </ul>
+        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <div class="plan-fomo">14-day free trial · no card required</div>
+      </div>
+      <div class="pricing-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="plan-name" style="color:var(--accent-bright)">BD Pro</div>
+        <div class="plan-price"><span>$</span>999</div>
+        <div class="plan-period">per month · no commitment</div>
+        <div class="plan-value" style="color:var(--accent-bright)">One contract win = 12 years of this subscription</div>
+        <div class="plan-divider" style="border-color:rgba(37,99,235,0.2)"></div>
+        <ul class="plan-features">
+          <li class="has"><span class="pf-check">✓</span> Everything in Discovery</li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Proposal first drafts on every bid</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>All 50 state + local portal monitoring</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Past performance builder (Phase 2)</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Contract delivery dashboard (Phase 2)</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Compliance monitor (Phase 3)</strong></li>
+          <li class="has"><span class="pf-check">✓</span> Agency relationship mapping</li>
+          <li class="has"><span class="pf-check">✓</span> Weekly pipeline performance report</li>
+          <li class="has"><span class="pf-check">✓</span> Priority email support</li>
+          <li><span class="pf-x">–</span> Multi-user team access</li>
+          <li><span class="pf-x">–</span> API access + CPARS monitor</li>
+        </ul>
+        <a href="#cta" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
+        <div class="plan-fomo" style="color:var(--accent-bright);opacity:0.7">New features ship to BD Pro first</div>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Team</div>
+        <div class="plan-price"><span>$</span>2,500</div>
+        <div class="plan-period">per month · no commitment</div>
+        <div class="plan-value">For contractors doing $3M–$10M/yr in revenue</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li class="has"><span class="pf-check">✓</span> Everything in BD Pro</li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Unlimited team users</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>API access for CRM integration</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>CPARS monitor + response generator</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Subcontracting network access (Phase 4)</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Contract vehicle on-ramp monitoring</strong></li>
+          <li class="has"><span class="pf-check">✓</span> <strong>Invoice + Prompt Payment Act tracker</strong></li>
+          <li class="has"><span class="pf-check">✓</span> Custom agency focus lists</li>
+          <li class="has"><span class="pf-check">✓</span> Priority real-time alerts</li>
+          <li class="has"><span class="pf-check">✓</span> Dedicated account manager</li>
+          <li class="has"><span class="pf-check">✓</span> Quarterly pipeline strategy review</li>
+        </ul>
+        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Talk to Sales →</a>
+        <div class="plan-fomo">White-glove onboarding included</div>
+      </div>
+    </div>
+    <div style="margin-top:32px;display:flex;gap:32px;justify-content:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> No setup fees</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> Cancel anytime</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> 14-day free trial all plans</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> SAM.gov verified data</div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="comparison-section" id="compare">
+  <div class="container">
+    <div class="section-label">Comparison</div>
+    <h2 class="section-headline">Built for contractors<br>who actually compete.</h2>
+    <p class="section-sub">GovWin and Bloomberg were built for the procurement teams at Lockheed and Booz Allen. ContractsIntel was built for you.</p>
+    <div class="comp-table">
+      <div class="comp-row header"><div class="comp-cell header-cell" style="color:var(--text2)">Feature</div><div class="comp-cell header-cell tw">ContractsIntel</div><div class="comp-cell header-cell">GovWin IQ</div><div class="comp-cell header-cell">Bloomberg Gov</div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Monthly cost</strong>Starting price</div><div class="comp-cell tw" style="color:var(--green);font-weight:600">$499/mo</div><div class="comp-cell" style="color:var(--text2)">$833/mo (annual only)</div><div class="comp-cell" style="color:var(--text2)">$417/mo (annual only)</div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Built for small businesses</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Purpose-built</span></div><div class="comp-cell"><span class="comp-x">✗ Enterprise focus</span></div><div class="comp-cell"><span class="comp-x">✗ Enterprise focus</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Certification-matched filtering</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Auto from SAM.gov</span></div><div class="comp-cell"><span class="comp-partial">⚡ Manual setup</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Bid/no-bid AI recommendation</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Every opportunity</span></div><div class="comp-cell"><span class="comp-x">✗ Data only</span></div><div class="comp-cell"><span class="comp-x">✗ Data only</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Proposal first drafts</strong></div><div class="comp-cell tw"><span class="comp-check">✓ BD Pro + Team</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Contract delivery tracking</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Phase 2</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">CPARS monitoring + response</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Phase 3</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Subcontracting network</strong></div><div class="comp-cell tw"><span class="comp-check">✓ Phase 4</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div><div class="comp-cell"><span class="comp-x">✗ Not available</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Annual commitment required</strong></div><div class="comp-cell tw"><span class="comp-check">✓ None — cancel anytime</span></div><div class="comp-cell"><span class="comp-x">✗ Annual only</span></div><div class="comp-cell"><span class="comp-x">✗ Annual only</span></div></div>
+      <div class="comp-row"><div class="comp-cell" style="color:var(--text2)"><strong style="color:var(--text);display:block;margin-bottom:2px">Setup time</strong></div><div class="comp-cell tw" style="color:var(--green)">5 minutes</div><div class="comp-cell" style="color:var(--text2)">2–4 weeks</div><div class="comp-cell" style="color:var(--text2)">1–2 weeks</div></div>
+    </div>
+    <div style="margin-top:32px;background:var(--surface);border:1px solid var(--border);padding:28px 32px;display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:17px;font-weight:600;margin-bottom:6px">GovWin IQ costs $10,000–$40,000/year. It was built for Lockheed Martin's procurement team.</div>
+        <div style="font-size:14px;color:var(--text2)">ContractsIntel costs $5,988–$30,000/year. Purpose-built for contractors who write their own proposals and can't afford to miss a single eligible opportunity.</div>
+      </div>
+      <a href="#cta" class="btn-primary large" style="white-space:nowrap;flex-shrink:0">Try Free for 14 Days →</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <div class="container">
+    <div class="cta-eyebrow">// Start today</div>
+    <h2 class="cta-headline">See what you're missing<br><em>this week.</em></h2>
+    <p class="cta-sub">Right now there are contracts in your NAICS codes, set aside for your certifications, closing in the next 10 days — that you don't know exist. ContractsIntel shows you in 5 minutes.</p>
+    <div class="cta-actions">
+      <a href="#pricing" class="btn-primary xl">Start Free 14-Day Trial →</a>
+      <a href="#lifecycle" class="btn-ghost" style="padding:16px 28px;font-size:15px">See the Full Platform</a>
+    </div>
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text3);margin-bottom:64px">No credit card · No commitment · SAM.gov verified · Live in 5 minutes</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);max-width:800px;margin:0 auto">
+      <div style="background:var(--surface2);padding:24px;text-align:center"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--accent-bright)">$700B</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Annual federal market</div></div>
+      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--green)">68%</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Contracts missed without monitoring</div></div>
+      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--gold)">8</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Integrated platform tools</div></div>
+      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--purple)">5 min</div><div style="font-size:11px;color:var(--text3);margin-top:4px">To your first matched opportunity</div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="container">
+  <div class="footer-logo">Contracts<span>Intel</span></div>
+  <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Contact</a><a href="#">API Docs</a></div>
+  <div class="footer-copy">© 2026 ContractsIntel · SAM.gov verified data · contractsintel.com</div>
+</footer>
+
+</body>
+</html>
