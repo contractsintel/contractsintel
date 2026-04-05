@@ -1274,7 +1274,61 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     }
   }
 
-  /* ====== Intersection Observer ====== */
+  /* ====== Reset Functions ====== */
+  function resetMockup1(frame) {
+    var bidBtn = frame.querySelector('.mock-btn.primary');
+    if (bidBtn) { bidBtn.style.background = ''; bidBtn.style.borderColor = ''; bidBtn.textContent = 'Mark as Bidding'; }
+    frame.querySelectorAll('.fake-cursor, .mock-toast').forEach(function(el) { el.remove(); });
+  }
+
+  function resetMockup2(frame) {
+    var prose = frame.querySelector('.mock-prose');
+    var copyBtn = frame.querySelector('.mock-btn.primary');
+    if (prose) { for (var i = 0; i < prose.children.length; i++) { prose.children[i].classList.remove('anim-hidden','anim-visible'); prose.children[i].style.opacity = ''; prose.children[i].style.transform = ''; } }
+    if (copyBtn) { copyBtn.textContent = 'Copy to Clipboard'; copyBtn.style.background = ''; }
+    frame.querySelectorAll('.typing-indicator, .fake-cursor').forEach(function(el) { el.remove(); });
+  }
+
+  function resetMockup3(frame) {
+    var scoreEl = frame.querySelector('.mock-health-score');
+    var fillEl = frame.querySelector('.mock-health-fill');
+    var rows = frame.querySelectorAll('.mock-compliance-row');
+    var alertBox = frame.querySelector('.mockup-body > div:last-child');
+    if (scoreEl) scoreEl.textContent = '0';
+    if (fillEl) { fillEl.style.transition = 'none'; fillEl.style.width = '0%'; }
+    rows.forEach(function(r) { r.classList.remove('anim-hidden','anim-visible','anim-pulse-red'); r.style.opacity = ''; r.style.transform = ''; });
+    if (alertBox && !alertBox.classList.contains('mock-compliance-row')) { alertBox.style.opacity = ''; alertBox.style.transform = ''; }
+  }
+
+  function resetMockup4(frame) {
+    var cols = frame.querySelectorAll('.mock-col');
+    if (cols.length >= 4) {
+      var card = cols[2].querySelector('.mock-mini-card');
+      var wonHead = cols[3].querySelector('.mock-col-head');
+      if (card) { card.style.transition = 'none'; card.style.transform = ''; card.classList.remove('anim-highlight'); }
+      if (wonHead) wonHead.classList.remove('anim-glow-green');
+    }
+    frame.querySelectorAll('.fake-cursor, .mock-toast').forEach(function(el) { el.remove(); });
+  }
+
+  function resetMockup5(frame) {
+    var progressBar = frame.querySelector('.mock-card div[style*="width:66%"], .mock-card div[style*="width: 66%"], .mock-card div[style*="width:0%"], .mock-card div[style*="width: 0%"]');
+    var ppqBtn = frame.querySelector('.mock-btn.primary');
+    if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '66%'; }
+    if (ppqBtn) { ppqBtn.textContent = 'Generate PPQ Narrative'; ppqBtn.style.opacity = ''; ppqBtn.style.background = ''; }
+    frame.querySelectorAll('.fake-cursor').forEach(function(el) { el.remove(); });
+    frame.querySelectorAll('.mock-card > div[style*="margin-top:12px"]').forEach(function(el) { el.remove(); });
+  }
+
+  function resetMockup6(frame) {
+    var tlItems = frame.querySelectorAll('.mock-tl-item');
+    var alertBox = frame.querySelector('div[style*="border-left:2px solid var(--red)"]');
+    tlItems.forEach(function(item) { item.classList.remove('anim-hidden','anim-visible','anim-pulse-red'); item.style.opacity = ''; item.style.transform = ''; });
+    if (alertBox) { alertBox.style.opacity = ''; alertBox.style.transform = ''; }
+    frame.querySelectorAll('.fake-cursor').forEach(function(el) { el.remove(); });
+  }
+
+  /* ====== Intersection Observer (repeatable) ====== */
   var animMap = {
     '1': animateMockup1,
     '2': animateMockup2,
@@ -1284,14 +1338,33 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     '6': animateMockup6
   };
 
+  var resetMap = {
+    '1': resetMockup1,
+    '2': resetMockup2,
+    '3': resetMockup3,
+    '4': resetMockup4,
+    '5': resetMockup5,
+    '6': resetMockup6
+  };
+
+  var animTimers = {};
+
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
+      var mockupId = entry.target.getAttribute('data-mockup');
+      if (!mockupId) return;
+
       if (entry.isIntersecting) {
-        var mockupId = entry.target.getAttribute('data-mockup');
-        observer.unobserve(entry.target);
-        setTimeout(function() {
-          if (animMap[mockupId]) animMap[mockupId](entry.target);
+        // Reset first, then animate after delay
+        if (resetMap[mockupId]) resetMap[mockupId](entry.target);
+        var target = entry.target;
+        animTimers[mockupId] = setTimeout(function() {
+          if (animMap[mockupId]) animMap[mockupId](target);
         }, 1000);
+      } else {
+        // Scrolled out — cancel pending animation and reset
+        if (animTimers[mockupId]) { clearTimeout(animTimers[mockupId]); delete animTimers[mockupId]; }
+        if (resetMap[mockupId]) resetMap[mockupId](entry.target);
       }
     });
   }, { threshold: 0.5 });
