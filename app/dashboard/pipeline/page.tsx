@@ -86,14 +86,106 @@ export default function PipelinePage() {
 
   const submitWon = async () => {
     if (!wonModal) return;
+    const match = matches.find((m: any) => m.id === wonModal);
+    const opp = match?.opportunities;
+    const amount = wonData.award_amount ? Number(wonData.award_amount) : null;
+    const contractNum = wonData.contract_number || null;
+
+    // 1. Update opportunity match status
     await supabase
       .from("opportunity_matches")
       .update({
         pipeline_stage: "won",
-        award_amount: wonData.award_amount ? Number(wonData.award_amount) : null,
-        contract_number: wonData.contract_number || null,
+        award_amount: amount,
+        contract_number: contractNum,
       })
       .eq("id", wonModal);
+
+    // 2. Auto-create past_performance record
+    const { data: ppRecord } = await supabase
+      .from("past_performance")
+      .insert({
+        organization_id: organization.id,
+        match_id: wonModal,
+        contract_name: opp?.title || "Untitled Contract",
+        contract_number: contractNum,
+        solicitation_number: opp?.solicitation_number || null,
+        agency: opp?.agency || null,
+        award_amount: amount,
+        naics_code: opp?.naics_code || null,
+        description: opp?.description || null,
+        period_start: new Date().toISOString().split("T")[0],
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    // 3. Auto-create contract record with milestones
+    const { data: contractRecord } = await supabase
+      .from("contracts")
+      .insert({
+        organization_id: organization.id,
+        past_performance_id: ppRecord?.id || null,
+        contract_number: contractNum,
+        title: opp?.title || "Untitled Contract",
+        agency: opp?.agency || null,
+        value: amount,
+        start_date: new Date().toISOString().split("T")[0],
+        status: "active",
+      })
+      .select("id")
+      .single();
+
+    // 4. Auto-create default milestones (monthly reports for 12 months)
+    if (contractRecord?.id) {
+      const milestones = [];
+      const now = new Date();
+      for (let i = 1; i <= 12; i++) {
+        const due = new Date(now.getFullYear(), now.getMonth() + i, 10);
+        milestones.push({
+          contract_id: contractRecord.id,
+          title: `Monthly Report — ${due.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
+          due_date: due.toISOString().split("T")[0],
+          type: "report",
+          status: "upcoming",
+        });
+      }
+      await supabase.from("contract_milestones").insert(milestones);
+    }
+
+    // 5. Update agency analytics
+    if (opp?.agency) {
+      const { data: existing } = await supabase
+        .from("agency_analytics")
+        .select("*")
+        .eq("organization_id", organization.id)
+        .eq("agency", opp.agency)
+        .single();
+
+      if (existing) {
+        const wins = (existing.total_wins || 0) + 1;
+        const bids = existing.total_bids_submitted || 1;
+        await supabase
+          .from("agency_analytics")
+          .update({
+            total_wins: wins,
+            total_value_won: (existing.total_value_won || 0) + (amount || 0),
+            win_rate: Math.round((wins / bids) * 100),
+            last_updated: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("agency_analytics").insert({
+          organization_id: organization.id,
+          agency: opp.agency,
+          total_wins: 1,
+          total_bids_submitted: 1,
+          total_value_won: amount || 0,
+          win_rate: 100,
+        });
+      }
+    }
+
     setWonModal(null);
     setWonData({ award_amount: "", contract_number: "" });
     loadData();

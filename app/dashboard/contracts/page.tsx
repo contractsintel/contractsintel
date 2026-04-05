@@ -20,6 +20,7 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true);
   const [showMilestoneModal, setShowMilestoneModal] = useState<string | null>(null);
   const [milestoneData, setMilestoneData] = useState({ title: "", due_date: "" });
+  const [demandLetter, setDemandLetter] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (locked) { setLoading(false); return; }
@@ -55,16 +56,44 @@ export default function ContractsPage() {
     loadData();
   };
 
-  const flagLatePayment = async (contractId: string, invoiceId: string) => {
-    const contract = contracts.find((c) => c.id === contractId);
-    if (!contract) return;
-    const invoices = (contract.invoices ?? []).map((inv: any) =>
-      inv.id === invoiceId ? { ...inv, flagged_late: true } : inv
-    );
+  const flagLatePayment = async (contractId: string, inv: any, contractTitle: string) => {
+    const submittedDate = inv.submitted_date || inv.date || "unknown";
+    const dueDate = inv.due_date || "unknown";
+    const amount = inv.amount ? `$${Number(inv.amount).toLocaleString()}` : "$0";
+    const invoiceNum = inv.invoice_number || inv.number || "N/A";
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysOverdue = Math.max(0, Math.floor((today.getTime() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24)));
+
+    const letter = `PROMPT PAYMENT ACT — DEMAND FOR PAYMENT
+
+Contract: ${contractTitle}
+Invoice #: ${invoiceNum}
+Invoice Amount: ${amount}
+Date Submitted: ${submittedDate}
+Payment Due Date: ${dueDate}
+Days Overdue: ${daysOverdue}
+
+Dear Contracting Officer,
+
+Under the Prompt Payment Act (31 USC §3901–3907) and FAR 52.232-25, the federal government is required to pay proper invoices within 30 calendar days of receipt. Invoice #${invoiceNum} for ${amount} was submitted on ${submittedDate} and payment is now ${daysOverdue} days overdue.
+
+Interest penalties accrue automatically under the Act at the rate established by the Secretary of the Treasury. As of this notice, the accrued interest penalty is calculated from the payment due date of ${dueDate}.
+
+We respectfully request immediate processing and payment of this invoice, along with any applicable interest penalties as required by law.
+
+Please contact us if there are any questions regarding this invoice or if additional documentation is needed to process payment.
+
+Respectfully,
+${organization.name || "[Your Company Name]"}`;
+
+    setDemandLetter(letter);
+
+    // Mark invoice as flagged in DB
     await supabase
-      .from("contracts")
-      .update({ invoices })
-      .eq("id", contractId);
+      .from("invoices")
+      .update({ demand_letter_sent: true, demand_letter_date: today.toISOString().split("T")[0] })
+      .eq("id", inv.id);
     loadData();
   };
 
@@ -227,12 +256,12 @@ export default function ContractsPage() {
                             </span>
                           </td>
                           <td className="py-2 text-right">
-                            {inv.status !== "paid" && !inv.flagged_late && (
+                            {inv.status !== "paid" && (
                               <button
-                                onClick={() => flagLatePayment(contract.id, inv.id)}
+                                onClick={() => flagLatePayment(contract.id, inv, contract.title)}
                                 className="text-[10px] text-[#ef4444] hover:text-[#f87171] transition-colors"
                               >
-                                Flag Late
+                                {inv.demand_letter_sent ? "View Letter" : "Flag Late →"}
                               </button>
                             )}
                           </td>
@@ -288,6 +317,35 @@ export default function ContractsPage() {
                 className="flex-1 border border-[#1e2535] text-[#8b9ab5] py-2 text-sm hover:border-[#2a3548] transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Demand Letter Modal */}
+      {demandLetter && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="w-full max-w-2xl border border-[#1e2535] bg-[#0d1018] p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-serif text-[#e8edf8]">Prompt Payment Act — Demand Letter</h2>
+              <button onClick={() => setDemandLetter(null)} className="text-[#4a5a75] hover:text-[#e8edf8] text-xl">&times;</button>
+            </div>
+            <div className="bg-[#111520] border border-[#1e2535] p-6 mb-4">
+              <pre className="text-xs text-[#e8edf8] font-mono whitespace-pre-wrap leading-relaxed">{demandLetter}</pre>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { navigator.clipboard.writeText(demandLetter); }}
+                className="flex-1 bg-[#2563eb] text-white py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors"
+              >
+                Copy to Clipboard
+              </button>
+              <button
+                onClick={() => setDemandLetter(null)}
+                className="flex-1 border border-[#1e2535] text-[#8b9ab5] py-2 text-sm hover:border-[#2a3548] transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
