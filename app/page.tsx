@@ -1,6 +1,9 @@
 import fs from "fs";
 import path from "path";
 
+// Force dynamic rendering so the landing page is always fresh
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   const raw = fs.readFileSync(path.join(process.cwd(), "public", "landing.html"), "utf-8");
 
