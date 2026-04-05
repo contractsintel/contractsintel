@@ -1,0 +1,105 @@
+import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Derive organization from authenticated user
+    const { data: userRecord } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!userRecord?.organization_id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const orgId = userRecord.organization_id;
+    const { rating_id } = await request.json();
+
+    // Fetch rating scoped to org
+    const { data: rating } = await supabase
+      .from("cpars_ratings")
+      .select("*, contracts(title, contract_number, agency, value)")
+      .eq("id", rating_id)
+      .eq("organization_id", orgId)
+      .single();
+
+    if (!rating) {
+      return NextResponse.json({ error: "Rating not found" }, { status: 404 });
+    }
+
+    // Fetch organization details
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", orgId)
+      .single();
+
+    // Fetch performance logs for this contract
+    const { data: perfLogs } = await supabase
+      .from("past_performance")
+      .select("*")
+      .eq("organization_id", orgId)
+      .limit(5);
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+    const systemPrompt = `You are a government contracting expert specializing in CPARS (Contractor Performance Assessment Reporting System) responses.
+Write a formal, professional contractor response to a CPARS evaluation. The response should:
+- Be respectful but firm in addressing inaccuracies
+- Provide specific evidence and context
+- Reference concrete deliverables and milestones
+- Follow FAR 42.15 guidelines
+- Be suitable for inclusion in the official CPARS record
+
+Company: ${org?.name ?? "Unknown"}`;
+
+    const userPrompt = `Generate a formal CPARS contractor response for the following evaluation:
+
+Contract: ${rating.contracts?.title ?? "Unknown"} (${rating.contracts?.contract_number ?? "N/A"})
+Agency: ${rating.contracts?.agency ?? "Unknown"}
+Category: ${rating.category}
+Rating Received: ${rating.rating}
+Evaluator Narrative: ${rating.narrative}
+
+Past Performance Context: ${JSON.stringify(perfLogs ?? [])}
+
+Write a professional response that addresses the evaluation, provides context, and respectfully presents the contractor's perspective. The response should be 3-5 paragraphs.`;
+
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2048,
+      messages: [{ role: "user", content: userPrompt }],
+      system: systemPrompt,
+    });
+
+    const content = message.content[0];
+    if (content.type !== "text") {
+      return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
+    }
+
+    const responseText = content.text;
+
+    // Save to cpars_ratings
+    await supabase
+      .from("cpars_ratings")
+      .update({ response_draft: responseText })
+      .eq("id", rating_id)
+      .eq("organization_id", orgId);
+
+    return NextResponse.json({ response: responseText });
+  } catch (error) {
+    console.error("CPARS response generation error:", error);
+    return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
+  }
+}
