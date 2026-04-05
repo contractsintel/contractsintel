@@ -125,7 +125,7 @@ section { position: relative; z-index: 1; }
 .product-bullets li span { color: var(--green); flex-shrink: 0; margin-top: 2px; }
 
 /* MOCKUP FRAME */
-.mockup-frame { background: var(--surface); border: 1px solid var(--border); overflow: hidden; position: relative; }
+.mockup-frame { background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
 .mockup-bar { background: var(--surface2); padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
 .mockup-dot { width: 8px; height: 8px; border-radius: 50%; }
 .mockup-title { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); margin-left: 8px; }
@@ -196,6 +196,24 @@ section { position: relative; z-index: 1; }
 
 /* HOW IT WORKS */
 .how-section { padding: 120px 32px; background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); }
+
+/* FULL PLATFORM GRID */
+.fullplatform-section { padding: 100px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
+.fp-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 48px; }
+.fp-card { background: var(--surface2); padding: 24px 20px; position: relative; overflow: hidden; transition: background 0.2s; }
+.fp-card:hover { background: #131c26; }
+.fp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--c, var(--accent)); }
+.fp-icon { font-size: 22px; margin-bottom: 10px; }
+.fp-tier { font-family: 'Geist Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border: 1px solid; display: inline-block; margin-bottom: 8px; }
+.fp-tier.all { color: var(--green); border-color: rgba(34,197,94,0.3); }
+.fp-tier.pro { color: var(--accent-bright); border-color: rgba(59,130,246,0.3); }
+.fp-tier.team { color: var(--purple); border-color: rgba(167,139,250,0.3); }
+.fp-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+.fp-text { font-size: 11px; color: var(--text2); line-height: 1.5; }
+
+@media(max-width:768px){
+  .fp-grid { grid-template-columns: 1fr 1fr; }
+}
 .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
 .step-card { background: var(--surface2); padding: 40px 36px; position: relative; }
 .step-num { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-bright); letter-spacing: 0.1em; margin-bottom: 20px; }
@@ -296,57 +314,6 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   .audit-inner{grid-template-columns:1fr}
   footer{flex-direction:column;text-align:center}
 }
-
-/* Fake cursor */
-.fake-cursor {
-  position: absolute;
-  width: 16px;
-  height: 20px;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.1s ease;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-}
-.fake-cursor.visible { opacity: 1; }
-.fake-cursor.clicking { transform: scale(0.85); }
-
-/* Toast notifications */
-.mock-toast {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(34,197,94,0.15);
-  border: 1px solid rgba(34,197,94,0.3);
-  color: var(--green);
-  font-family: 'Geist Mono', monospace;
-  font-size: 10px;
-  padding: 6px 10px;
-  z-index: 11;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.mock-toast.visible { opacity: 1; transform: translateY(0); }
-
-/* Animation helpers */
-.anim-hidden { opacity: 0; transform: translateY(8px); transition: opacity 0.4s ease, transform 0.4s ease; }
-.anim-visible { opacity: 1; transform: translateY(0); }
-.anim-highlight { box-shadow: 0 0 0 2px var(--accent) !important; }
-.anim-glow-green { box-shadow: 0 0 12px rgba(34,197,94,0.3) !important; }
-.anim-pulse-red { animation: pulse-red 0.4s ease 2; }
-@keyframes pulse-red { 0%,100%{background:transparent} 50%{background:rgba(239,68,68,0.1)} }
-
-/* Typing indicator */
-.typing-indicator { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text3); text-align: center; padding: 20px; }
-.typing-indicator .dot { display: inline-block; animation: dot-pulse 1.4s ease infinite; }
-.typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dot-pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
-
-@media(max-width:768px) {
-  .fake-cursor { display: none !important; }
-}
 </style>
 </head>
 <body>
@@ -358,22 +325,23 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </a>
   <ul class="nav-links">
     <li><a href="#products">Products</a></li>
+    <li><a href="#fullplatform">Full Platform</a></li>
     <li><a href="#how">How It Works</a></li>
     <li><a href="#pricing">Pricing</a></li>
   </ul>
   <div class="nav-cta">
     <a href="#pricing" class="btn-ghost">See Plans</a>
-    <a href="/signup" class="btn-primary">Start Free Trial →</a>
+    <a href="#cta" class="btn-primary">Start Free Trial →</a>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero container">
-  <div class="hero-eyebrow fade-up"><span class="eyebrow-dot"></span>Live — Monitoring 35,000+ procurement portals daily</div>
+  <div class="hero-eyebrow fade-up"><span class="eyebrow-dot"></span>Live — Monitoring 35,000+ procurement portals daily · 16 integrated products</div>
   <h1 class="fade-up-2">Your certification<br>opened the door.<br><em>This is how you<br>walk through it.</em></h1>
   <p class="hero-sub fade-up-3">ContractsIntel monitors every procurement portal, scores every opportunity against your exact certifications and NAICS codes, and generates proposal first drafts — <strong>automatically, every morning at 7am.</strong></p>
   <div class="hero-actions fade-up-4">
-    <a href="/signup" class="btn-primary xl">See What You're Missing This Week →</a>
+    <a href="#cta" class="btn-primary xl">See What You're Missing This Week →</a>
     <a href="#products" class="btn-ghost" style="padding:14px 24px;font-size:15px">See What's Included</a>
   </div>
   <div class="hero-proof fade-up-4">
@@ -388,7 +356,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   <div class="hero-stats">
     <div class="hero-stat"><div class="hs-val"><span class="accent">$700</span>B</div><div class="hs-label">Federal contracts awarded annually</div></div>
     <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val">35<span class="accent" style="font-size:20px">K+</span></div><div class="hs-label">Procurement portals monitored daily</div></div>
-    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">8</span></div><div class="hs-label">Integrated platform tools</div></div>
+    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">16</span></div><div class="hs-label">Integrated platform products</div></div>
     <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">68</span>%</div><div class="hs-label">Eligible contracts missed without monitoring</div></div>
   </div>
 </section>
@@ -455,7 +423,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="1">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">ContractsIntel Dashboard · Daily Intelligence</div></div>
           <div class="mockup-body">
             <div class="mock-stat-row">
@@ -504,7 +472,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="2">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Proposal Draft · DoD IT Support · SOL-2026-0847</div></div>
           <div class="mockup-body">
             <div class="mock-proposal">
@@ -547,7 +515,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="3">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Compliance Dashboard · Acme Federal Services</div></div>
           <div class="mockup-body">
             <div class="mock-health">
@@ -589,7 +557,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="4">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Pipeline · $12.4M total value · 40% win rate</div></div>
           <div class="mockup-body">
             <div class="mock-pipeline">
@@ -646,7 +614,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="5">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Past Performance Library · 3 contracts · 18 months logged</div></div>
           <div class="mockup-body">
             <div class="mock-card">
@@ -690,7 +658,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame" data-mockup="6">
+        <div class="mockup-frame">
           <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Contracts · 2 active · 4 deadlines this month</div></div>
           <div class="mockup-body">
             <div style="font-size:12px;font-weight:500;margin-bottom:8px">VA Healthcare IT Support · VA-2025-1847</div>
@@ -706,6 +674,88 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- FULL PLATFORM — REMAINING PRODUCTS -->
+<section class="fullplatform-section" id="fullplatform">
+  <div class="container">
+    <div class="section-label">The Full Platform</div>
+    <h2 class="section-headline">And that's just the beginning.</h2>
+    <p class="section-sub" style="max-width:600px">Beyond the six core products above, ContractsIntel includes ten additional tools that cover every corner of your contracting operation — from CPARS ratings to subcontracting leads to knowing exactly why you lost a bid.</p>
+    <div class="fp-grid">
+
+      <div class="fp-card" style="--c:#3b82f6">
+        <div class="fp-icon">📡</div>
+        <div class="fp-tier pro">BD Pro</div>
+        <div class="fp-title">State & Local Monitoring</div>
+        <div class="fp-text">Expand beyond federal — monitor all 50 state procurement portals plus local government opportunities matched to your NAICS codes.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#3b82f6">
+        <div class="fp-icon">🗺️</div>
+        <div class="fp-tier pro">BD Pro</div>
+        <div class="fp-title">Agency Relationship Mapping</div>
+        <div class="fp-text">Track every agency you've interacted with — contracting officers, program managers, and decision-makers. Know who to call before the RFP drops.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#3b82f6">
+        <div class="fp-icon">📈</div>
+        <div class="fp-tier pro">BD Pro</div>
+        <div class="fp-title">Weekly Pipeline Report</div>
+        <div class="fp-text">Every Monday: pipeline value by stage, bid deadlines this week, win rate trends, and recommended actions. Delivered to your inbox automatically.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#22c55e">
+        <div class="fp-icon">📅</div>
+        <div class="fp-tier all">All Plans</div>
+        <div class="fp-title">Google Calendar Sync</div>
+        <div class="fp-text">Every deadline you track — bid responses, contract milestones, compliance dates — pushed to your Google Calendar with reminders at 14, 7, 3, and 1 day out.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">⭐</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">CPARS Monitor</div>
+        <div class="fp-text">Track contractor performance ratings. If a score drops below Satisfactory, an instant alert fires with a formal response template generated by AI — ready to submit.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">🤝</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">Subcontracting Network</div>
+        <div class="fp-text">Two-sided marketplace. Primes post teaming needs, you get matched automatically. Inbound subcontracting leads delivered to your dashboard — no cold calls, no LinkedIn.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">🔍</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">Competitor Intelligence</div>
+        <div class="fp-text">Auto-built profiles from every bid you win or lose. See who you're competing against, their win patterns, and AI-generated strategies to beat them next time.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">📉</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">Loss Analysis & Debriefs</div>
+        <div class="fp-text">When you lose a bid, AI generates a debrief: why you likely lost, what the winner did differently, and specific changes for your next proposal. Patterns tracked over time.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">🎯</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">Agency Win Probability</div>
+        <div class="fp-text">Heat map of every agency you've bid on. Color-coded by win rate. See where you're strong, where you're wasting effort, and where to focus your BD resources.</div>
+      </div>
+
+      <div class="fp-card" style="--c:#a78bfa">
+        <div class="fp-icon">🚀</div>
+        <div class="fp-tier team">Team</div>
+        <div class="fp-title">Contract Vehicle Alerts</div>
+        <div class="fp-text">Monitors GSA MAS, OASIS+, CIO-SP4, Alliant 3, VETS 2, and more. Alerts you the moment an on-ramp opens for vehicles matching your NAICS and certifications.</div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -752,23 +802,27 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="plan-value">Break-even: 1/300th of one average contract</div>
         <div class="plan-divider"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">Products included:</div>
+          <div class="plan-includes-label">5 products included:</div>
           <div class="plan-product"><span class="pp-icon">🎯</span> Opportunity Intelligence + Daily Digest</div>
-          <div class="plan-product"><span class="pp-icon">🛡️</span> Compliance Monitor (basic alerts)</div>
+          <div class="plan-product"><span class="pp-icon">🛡️</span> Compliance Alerts (SAM + cert renewals)</div>
           <div class="plan-product"><span class="pp-icon">📊</span> Pipeline Tracker</div>
+          <div class="plan-product"><span class="pp-icon">📅</span> Google Calendar Sync</div>
+          <div class="plan-product"><span class="pp-icon">🔎</span> SAM.gov Profile Audit</div>
         </div>
         <ul class="plan-features" style="margin-top:16px">
           <li class="has"><span class="pf-check">✓</span> Daily opportunity digest (top 10 matched)</li>
           <li class="has"><span class="pf-check">✓</span> Bid/no-bid AI scoring with reasoning</li>
           <li class="has"><span class="pf-check">✓</span> Incumbent identification via USASpending</li>
-          <li class="has"><span class="pf-check">✓</span> SAM.gov registration + cert expiration alerts</li>
-          <li class="has"><span class="pf-check">✓</span> Pipeline tracker dashboard</li>
+          <li class="has"><span class="pf-check">✓</span> SAM.gov + cert expiration alerts</li>
+          <li class="has"><span class="pf-check">✓</span> Pipeline tracker with win/loss tracking</li>
+          <li class="has"><span class="pf-check">✓</span> Google Calendar deadline sync</li>
           <li><span class="pf-x">–</span> Proposal first drafts</li>
           <li><span class="pf-x">–</span> Past performance builder</li>
           <li><span class="pf-x">–</span> Contract delivery dashboard</li>
           <li><span class="pf-x">–</span> Full CMMC + FAR monitoring</li>
+          <li><span class="pf-x">–</span> CPARS, Network, Competitors</li>
         </ul>
-        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
         <div class="plan-fomo">14-day free trial · no card required</div>
       </div>
       <div class="pricing-card popular">
@@ -780,13 +834,18 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="plan-value" style="color:var(--accent-bright)">One contract win = 12 years of this subscription</div>
         <div class="plan-divider" style="border-color:rgba(37,99,235,0.2)"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">All 6 products included:</div>
+          <div class="plan-includes-label">12 products included:</div>
           <div class="plan-product"><span class="pp-icon">🎯</span> Opportunity Intelligence + Daily Digest</div>
           <div class="plan-product"><span class="pp-icon">📄</span> <strong>AI Proposal First Drafts</strong></div>
           <div class="plan-product"><span class="pp-icon">🛡️</span> <strong>Full Compliance Monitor (CMMC + FAR)</strong></div>
           <div class="plan-product"><span class="pp-icon">📊</span> Pipeline Tracker</div>
           <div class="plan-product"><span class="pp-icon">⭐</span> <strong>Past Performance Builder</strong></div>
           <div class="plan-product"><span class="pp-icon">📋</span> <strong>Contract Delivery Dashboard</strong></div>
+          <div class="plan-product"><span class="pp-icon">📡</span> <strong>State + Local Monitoring</strong></div>
+          <div class="plan-product"><span class="pp-icon">🗺️</span> <strong>Agency Relationship Mapping</strong></div>
+          <div class="plan-product"><span class="pp-icon">📈</span> <strong>Weekly Pipeline Report</strong></div>
+          <div class="plan-product"><span class="pp-icon">📅</span> Google Calendar Sync</div>
+          <div class="plan-product"><span class="pp-icon">🔎</span> SAM.gov Profile Audit</div>
         </div>
         <ul class="plan-features" style="margin-top:16px">
           <li class="has"><span class="pf-check">✓</span> Everything in Discovery</li>
@@ -798,7 +857,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           <li class="has"><span class="pf-check">✓</span> Weekly pipeline report</li>
           <li class="has"><span class="pf-check">✓</span> Priority email support</li>
         </ul>
-        <a href="/signup" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
+        <a href="#cta" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
         <div class="plan-fomo" style="color:var(--accent-bright);opacity:0.7">New features ship to BD Pro first</div>
       </div>
       <div class="pricing-card">
@@ -809,11 +868,15 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="plan-value">Full platform + dedicated support</div>
         <div class="plan-divider"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">All 6 products + enterprise features:</div>
+          <div class="plan-includes-label">All 16 products — the complete platform:</div>
+          <div class="plan-product"><span class="pp-icon">📄</span> Everything in BD Pro (12 products)</div>
           <div class="plan-product"><span class="pp-icon">👥</span> <strong>Unlimited team users</strong></div>
           <div class="plan-product"><span class="pp-icon">🔗</span> <strong>API access for CRM integration</strong></div>
           <div class="plan-product"><span class="pp-icon">⭐</span> <strong>CPARS monitor + response generator</strong></div>
-          <div class="plan-product"><span class="pp-icon">🤝</span> <strong>Subcontracting network access</strong></div>
+          <div class="plan-product"><span class="pp-icon">🤝</span> <strong>Subcontracting network</strong></div>
+          <div class="plan-product"><span class="pp-icon">🔍</span> <strong>Competitor intelligence + loss analysis</strong></div>
+          <div class="plan-product"><span class="pp-icon">🎯</span> <strong>Agency win probability heat maps</strong></div>
+          <div class="plan-product"><span class="pp-icon">🚀</span> <strong>Contract vehicle on-ramp alerts</strong></div>
           <div class="plan-product"><span class="pp-icon">💰</span> <strong>Prompt Payment Act enforcement</strong></div>
         </div>
         <ul class="plan-features" style="margin-top:16px">
@@ -825,7 +888,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           <li class="has"><span class="pf-check">✓</span> Dedicated account manager</li>
           <li class="has"><span class="pf-check">✓</span> Quarterly pipeline strategy review</li>
         </ul>
-        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
         <div class="plan-fomo">White-glove onboarding included</div>
       </div>
     </div>
@@ -858,7 +921,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="audit-form-label">Enter your Unique Entity Identifier (UEI)</div>
         <div class="audit-input-row">
           <input type="text" class="audit-input" placeholder="e.g. ZQGGHJH74DW7" maxlength="12">
-          <a href="/audit" class="btn-primary" style="white-space:nowrap;padding:14px 24px">Run Free Audit →</a>
+          <a href="#cta" class="btn-primary" style="white-space:nowrap;padding:14px 24px">Run Free Audit →</a>
         </div>
         <div class="audit-features" style="margin-top:12px">
           <div class="audit-feature"><span class="af-check">✓</span> No account needed</div>
@@ -884,7 +947,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);max-width:800px;margin:0 auto">
       <div style="background:var(--surface2);padding:24px;text-align:center"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--accent-bright)">$700B</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Annual federal market</div></div>
       <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--green)">68%</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Contracts missed without monitoring</div></div>
-      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--gold)">6</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Integrated products</div></div>
+      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--gold)">16</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Integrated products</div></div>
       <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--purple)">5 min</div><div style="font-size:11px;color:var(--text3);margin-top:4px">To your first matched opportunity</div></div>
     </div>
   </div>
@@ -892,525 +955,6 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 
 <footer class="container">
   <div class="footer-logo">Contracts<span>Intel</span></div>
-  <div style="font-size:13px"><a href="mailto:support@contractsintel.com" style="color:var(--text3);text-decoration:none">support@contractsintel.com</a></div>
+  <div style="font-size:13px"><a href="/cdn-cgi/l/email-protection#384b4d4848574a4c785b57564c4a595b4c4b51564c5d54165b5755" style="color:var(--text3);text-decoration:none"><span class="__cf_email__" data-cfemail="c4b7b1b4b4abb6b084a7abaab0b6a5a7b0b7adaab0a1a8eaa7aba9">[email&#160;protected]</span></a></div>
   <div class="footer-copy">© 2026 ContractsIntel · SAM.gov verified data · contractsintel.com</div>
-  <div class="footer-disclaimer">ContractsIntel is not affiliated with, endorsed by, or connected to the U.S. government, SBA, SAM.gov, or any federal agency.</div>
-</footer>
-
-<script>
-(function() {
-  const CURSOR_SVG = '<svg viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L1 15L5 11L9 19L12 17.5L8 10L14 10L1 1Z" fill="white" stroke="#333" stroke-width="1"/></svg>';
-
-  function createCursor(frame) {
-    var el = document.createElement('div');
-    el.className = 'fake-cursor';
-    el.innerHTML = CURSOR_SVG;
-    el.style.left = '20px';
-    el.style.top = '20px';
-    frame.appendChild(el);
-    return el;
-  }
-
-  function moveCursor(cursor, x, y, duration) {
-    cursor.style.transition = 'opacity 0.3s ease, transform 0.1s ease, left ' + duration + 'ms ease, top ' + duration + 'ms ease';
-    cursor.style.left = x + 'px';
-    cursor.style.top = y + 'px';
-  }
-
-  function clickCursor(cursor, cb) {
-    cursor.classList.add('clicking');
-    setTimeout(function() {
-      cursor.classList.remove('clicking');
-      if (cb) cb();
-    }, 100);
-  }
-
-  function createToast(frame, text) {
-    var t = document.createElement('div');
-    t.className = 'mock-toast';
-    t.textContent = text;
-    frame.appendChild(t);
-    return t;
-  }
-
-  function getElCenter(el, frame) {
-    var er = el.getBoundingClientRect();
-    var fr = frame.getBoundingClientRect();
-    return { x: er.left - fr.left + er.width / 2, y: er.top - fr.top + er.height / 2 };
-  }
-
-  /* ====== MOCKUP 1: Opportunity Intelligence ====== */
-  function animateMockup1(frame) {
-    var bidBtn = frame.querySelector('.mock-btn.primary');
-    if (!bidBtn) return;
-    var cursor = createCursor(frame);
-    var toast = createToast(frame, 'Added to Pipeline \u2014 Proposal draft available');
-
-    setTimeout(function() {
-      cursor.classList.add('visible');
-      var pos = getElCenter(bidBtn, frame);
-      moveCursor(cursor, pos.x - 8, pos.y - 10, 1000);
-    }, 200);
-
-    setTimeout(function() {
-      clickCursor(cursor, function() {
-        bidBtn.style.background = 'var(--green)';
-        bidBtn.style.borderColor = 'var(--green)';
-        bidBtn.textContent = '\u2713 Added to Pipeline';
-      });
-    }, 1400);
-
-    setTimeout(function() {
-      toast.classList.add('visible');
-    }, 1600);
-
-    setTimeout(function() {
-      cursor.classList.remove('visible');
-      toast.classList.remove('visible');
-    }, 3100);
-  }
-
-  /* ====== MOCKUP 2: Proposal Drafts ====== */
-  function animateMockup2(frame) {
-    var prose = frame.querySelector('.mock-prose');
-    var copyBtn = frame.querySelector('.mock-btn.primary');
-    if (!prose || !copyBtn) return;
-
-    var proseChildren = prose.children;
-    for (var i = 0; i < proseChildren.length; i++) {
-      proseChildren[i].classList.add('anim-hidden');
-    }
-
-    var typingEl = document.createElement('div');
-    typingEl.className = 'typing-indicator';
-    typingEl.innerHTML = 'Generating proposal<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
-    prose.parentNode.insertBefore(typingEl, prose);
-
-    setTimeout(function() {
-      typingEl.style.transition = 'opacity 0.3s ease';
-      typingEl.style.opacity = '0';
-    }, 1500);
-
-    setTimeout(function() {
-      typingEl.remove();
-      for (var i = 0; i < proseChildren.length; i++) {
-        (function(idx) {
-          setTimeout(function() {
-            proseChildren[idx].classList.add('anim-visible');
-          }, idx * 200);
-        })(i);
-      }
-    }, 1800);
-
-    var totalReveal = 1800 + proseChildren.length * 200 + 300;
-
-    setTimeout(function() {
-      var cursor = createCursor(frame);
-      cursor.classList.add('visible');
-      var pos = getElCenter(copyBtn, frame);
-      moveCursor(cursor, pos.x - 8, pos.y - 10, 800);
-
-      setTimeout(function() {
-        clickCursor(cursor, function() {
-          var orig = copyBtn.textContent;
-          copyBtn.textContent = '\u2713 Copied';
-          copyBtn.style.background = 'var(--green)';
-          setTimeout(function() {
-            copyBtn.textContent = orig;
-            copyBtn.style.background = '';
-          }, 1200);
-        });
-      }, 1000);
-
-      setTimeout(function() {
-        cursor.classList.remove('visible');
-      }, 2500);
-    }, totalReveal);
-  }
-
-  /* ====== MOCKUP 3: Compliance Monitor ====== */
-  function animateMockup3(frame) {
-    var scoreEl = frame.querySelector('.mock-health-score');
-    var fillEl = frame.querySelector('.mock-health-fill');
-    var rows = frame.querySelectorAll('.mock-compliance-row');
-    var alertBox = frame.querySelector('.mockup-body > div:last-child');
-
-    if (!scoreEl || !fillEl) return;
-
-    var targetScore = 78;
-    scoreEl.textContent = '0';
-    fillEl.style.width = '0%';
-    fillEl.style.transition = 'width 1.5s ease';
-
-    for (var i = 0; i < rows.length; i++) {
-      rows[i].classList.add('anim-hidden');
-    }
-    if (alertBox && !alertBox.classList.contains('mock-compliance-row')) {
-      alertBox.style.opacity = '0';
-      alertBox.style.transform = 'translateX(-20px)';
-      alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-    }
-
-    // Count up score
-    var start = performance.now();
-    function countUp(now) {
-      var elapsed = now - start;
-      var progress = Math.min(elapsed / 1500, 1);
-      scoreEl.textContent = Math.round(progress * targetScore);
-      if (progress < 1) requestAnimationFrame(countUp);
-    }
-    requestAnimationFrame(countUp);
-
-    // Animate fill
-    setTimeout(function() { fillEl.style.width = '78%'; }, 50);
-
-    // Fade in rows with stagger
-    setTimeout(function() {
-      for (var i = 0; i < rows.length; i++) {
-        (function(idx) {
-          setTimeout(function() {
-            rows[idx].classList.add('anim-visible');
-            // CMMC row flash red
-            if (rows[idx].querySelector('.mock-status-bad')) {
-              setTimeout(function() {
-                rows[idx].classList.add('anim-pulse-red');
-              }, 100);
-            }
-          }, idx * 200);
-        })(i);
-      }
-    }, 1200);
-
-    // Slide in alert
-    var alertDelay = 1200 + rows.length * 200 + 400;
-    setTimeout(function() {
-      if (alertBox && !alertBox.classList.contains('mock-compliance-row')) {
-        alertBox.style.opacity = '1';
-        alertBox.style.transform = 'translateX(0)';
-      }
-    }, alertDelay);
-  }
-
-  /* ====== MOCKUP 4: Pipeline Tracker ====== */
-  function animateMockup4(frame) {
-    var cols = frame.querySelectorAll('.mock-col');
-    if (cols.length < 4) return;
-
-    var submittedCol = cols[2]; // Submitted
-    var wonCol = cols[3]; // Won
-    var card = submittedCol.querySelector('.mock-mini-card');
-    var wonHead = wonCol.querySelector('.mock-col-head');
-    if (!card) return;
-
-    var cursor = createCursor(frame);
-    var toast = createToast(frame, 'Contract created \u2014 Delivery dashboard activated');
-
-    setTimeout(function() {
-      cursor.classList.add('visible');
-      var pos = getElCenter(card, frame);
-      moveCursor(cursor, pos.x - 8, pos.y - 10, 800);
-    }, 200);
-
-    setTimeout(function() {
-      card.classList.add('anim-highlight');
-    }, 1100);
-
-    // Drag to Won column
-    setTimeout(function() {
-      var wonPos = getElCenter(wonHead, frame);
-      moveCursor(cursor, wonPos.x - 8, wonPos.y + 30, 1000);
-      card.style.transition = 'transform 1s ease, box-shadow 0.3s ease';
-      var cardRect = card.getBoundingClientRect();
-      var wonRect = wonCol.getBoundingClientRect();
-      var dx = wonRect.left - cardRect.left + 5;
-      card.style.transform = 'translateX(' + dx + 'px)';
-    }, 1500);
-
-    // Drop with bounce
-    setTimeout(function() {
-      card.classList.remove('anim-highlight');
-      card.style.transition = 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-      card.style.transform = 'translateX(' + card.style.transform.match(/[-\d.]+/)[0] + 'px) translateY(2px)';
-      setTimeout(function() {
-        card.style.transform = card.style.transform.replace(/translateY\([^)]+\)/, 'translateY(0)');
-      }, 150);
-    }, 2600);
-
-    // Flash green on Won header
-    setTimeout(function() {
-      if (wonHead) {
-        wonHead.classList.add('anim-glow-green');
-        setTimeout(function() { wonHead.classList.remove('anim-glow-green'); }, 800);
-      }
-    }, 2800);
-
-    // Toast
-    setTimeout(function() {
-      toast.classList.add('visible');
-    }, 2900);
-
-    // Fade out
-    setTimeout(function() {
-      cursor.classList.remove('visible');
-      toast.classList.remove('visible');
-    }, 4400);
-  }
-
-  /* ====== MOCKUP 5: Past Performance ====== */
-  function animateMockup5(frame) {
-    var progressBar = frame.querySelector('.mock-card div[style*="width:66%"]');
-    var ppqBtn = frame.querySelector('.mock-btn.primary');
-    if (!ppqBtn) return;
-
-    // Animate progress bar
-    if (progressBar) {
-      progressBar.style.width = '0%';
-      progressBar.style.transition = 'width 1.2s ease';
-      setTimeout(function() { progressBar.style.width = '66%'; }, 100);
-    }
-
-    var cursor = createCursor(frame);
-
-    setTimeout(function() {
-      cursor.classList.add('visible');
-      var pos = getElCenter(ppqBtn, frame);
-      moveCursor(cursor, pos.x - 8, pos.y - 10, 800);
-    }, 800);
-
-    setTimeout(function() {
-      clickCursor(cursor, function() {
-        ppqBtn.textContent = 'Generating...';
-        ppqBtn.style.opacity = '0.7';
-      });
-    }, 1800);
-
-    // After 1s, show PPQ sections
-    setTimeout(function() {
-      var ppqContainer = document.createElement('div');
-      ppqContainer.style.marginTop = '12px';
-      var sections = ['Relevance: Highly relevant \u2014 4 comparable DoD IT contracts', 'Quality: Exceptional \u2014 zero deficiency reports across 8 months', 'Schedule: On-time \u2014 100% deliverable compliance'];
-      sections.forEach(function(text, i) {
-        var div = document.createElement('div');
-        div.className = 'anim-hidden';
-        div.style.cssText = 'font-size:10px;color:var(--text2);padding:6px 8px;background:rgba(37,99,235,0.06);border-left:2px solid var(--accent);margin-bottom:4px;font-family:"Geist Mono",monospace';
-        div.textContent = text;
-        ppqContainer.appendChild(div);
-        setTimeout(function() { div.classList.add('anim-visible'); }, i * 200);
-      });
-
-      var firstCard = frame.querySelector('.mock-card');
-      if (firstCard) firstCard.appendChild(ppqContainer);
-
-      ppqBtn.textContent = '\u2713 Generated';
-      ppqBtn.style.opacity = '1';
-      ppqBtn.style.background = 'var(--green)';
-    }, 2800);
-
-    setTimeout(function() {
-      cursor.classList.remove('visible');
-    }, 3800);
-  }
-
-  /* ====== MOCKUP 6: Contract Delivery ====== */
-  function animateMockup6(frame) {
-    var tlItems = frame.querySelectorAll('.mock-tl-item');
-    var alertBox = frame.querySelector('div[style*="border-left:2px solid var(--red)"]');
-    var demandLink = alertBox ? alertBox.querySelector('strong[style*="accent-bright"]') : null;
-
-    // Hide items initially
-    for (var i = 0; i < tlItems.length; i++) {
-      tlItems[i].classList.add('anim-hidden');
-    }
-    if (alertBox) {
-      alertBox.style.opacity = '0';
-      alertBox.style.transform = 'translateY(10px)';
-      alertBox.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-    }
-
-    // Fade in timeline items
-    for (var i = 0; i < tlItems.length; i++) {
-      (function(idx) {
-        setTimeout(function() {
-          tlItems[idx].classList.add('anim-visible');
-          // Pulse red on overdue invoice item
-          if (tlItems[idx].querySelector('.mock-tl-date') &&
-              tlItems[idx].querySelector('.mock-tl-date').textContent.indexOf('overdue') !== -1) {
-            setTimeout(function() {
-              tlItems[idx].classList.add('anim-pulse-red');
-            }, 100);
-          }
-        }, idx * 300);
-      })(i);
-    }
-
-    // Slide in alert
-    var alertDelay = tlItems.length * 300 + 400;
-    setTimeout(function() {
-      if (alertBox) {
-        alertBox.style.opacity = '1';
-        alertBox.style.transform = 'translateY(0)';
-      }
-    }, alertDelay);
-
-    // Cursor to demand letter link
-    if (demandLink) {
-      setTimeout(function() {
-        var cursor = createCursor(frame);
-        cursor.classList.add('visible');
-        var pos = getElCenter(demandLink, frame);
-        moveCursor(cursor, pos.x - 8, pos.y - 10, 800);
-
-        setTimeout(function() {
-          clickCursor(cursor, function() {
-            demandLink.classList.add('anim-highlight');
-            setTimeout(function() { demandLink.classList.remove('anim-highlight'); }, 600);
-          });
-        }, 1000);
-
-        setTimeout(function() {
-          cursor.classList.remove('visible');
-        }, 2200);
-      }, alertDelay + 500);
-    }
-  }
-
-  /* ====== Reset Functions ====== */
-  function resetMockup1(frame) {
-    var bidBtn = frame.querySelector('.mock-btn.primary');
-    if (bidBtn) { bidBtn.style.background = ''; bidBtn.style.borderColor = ''; bidBtn.textContent = 'Mark as Bidding'; }
-    frame.querySelectorAll('.fake-cursor, .mock-toast').forEach(function(el) { el.remove(); });
-  }
-
-  function resetMockup2(frame) {
-    var prose = frame.querySelector('.mock-prose');
-    var copyBtn = frame.querySelector('.mock-btn.primary');
-    if (prose) { for (var i = 0; i < prose.children.length; i++) { prose.children[i].classList.remove('anim-hidden','anim-visible'); prose.children[i].style.opacity = ''; prose.children[i].style.transform = ''; } }
-    if (copyBtn) { copyBtn.textContent = 'Copy to Clipboard'; copyBtn.style.background = ''; }
-    frame.querySelectorAll('.typing-indicator, .fake-cursor').forEach(function(el) { el.remove(); });
-  }
-
-  function resetMockup3(frame) {
-    var scoreEl = frame.querySelector('.mock-health-score');
-    var fillEl = frame.querySelector('.mock-health-fill');
-    var rows = frame.querySelectorAll('.mock-compliance-row');
-    var alertBox = frame.querySelector('.mockup-body > div:last-child');
-    if (scoreEl) scoreEl.textContent = '0';
-    if (fillEl) { fillEl.style.transition = 'none'; fillEl.style.width = '0%'; }
-    rows.forEach(function(r) { r.classList.remove('anim-hidden','anim-visible','anim-pulse-red'); r.style.opacity = ''; r.style.transform = ''; });
-    if (alertBox && !alertBox.classList.contains('mock-compliance-row')) { alertBox.style.opacity = ''; alertBox.style.transform = ''; }
-  }
-
-  function resetMockup4(frame) {
-    var cols = frame.querySelectorAll('.mock-col');
-    if (cols.length >= 4) {
-      var card = cols[2].querySelector('.mock-mini-card');
-      var wonHead = cols[3].querySelector('.mock-col-head');
-      if (card) { card.style.transition = 'none'; card.style.transform = ''; card.classList.remove('anim-highlight'); }
-      if (wonHead) wonHead.classList.remove('anim-glow-green');
-    }
-    frame.querySelectorAll('.fake-cursor, .mock-toast').forEach(function(el) { el.remove(); });
-  }
-
-  function resetMockup5(frame) {
-    var progressBar = frame.querySelector('.mock-card div[style*="width:66%"], .mock-card div[style*="width: 66%"], .mock-card div[style*="width:0%"], .mock-card div[style*="width: 0%"]');
-    var ppqBtn = frame.querySelector('.mock-btn.primary');
-    if (progressBar) { progressBar.style.transition = 'none'; progressBar.style.width = '66%'; }
-    if (ppqBtn) { ppqBtn.textContent = 'Generate PPQ Narrative'; ppqBtn.style.opacity = ''; ppqBtn.style.background = ''; }
-    frame.querySelectorAll('.fake-cursor').forEach(function(el) { el.remove(); });
-    frame.querySelectorAll('.mock-card > div[style*="margin-top:12px"]').forEach(function(el) { el.remove(); });
-  }
-
-  function resetMockup6(frame) {
-    var tlItems = frame.querySelectorAll('.mock-tl-item');
-    var alertBox = frame.querySelector('div[style*="border-left:2px solid var(--red)"]');
-    tlItems.forEach(function(item) { item.classList.remove('anim-hidden','anim-visible','anim-pulse-red'); item.style.opacity = ''; item.style.transform = ''; });
-    if (alertBox) { alertBox.style.opacity = ''; alertBox.style.transform = ''; }
-    frame.querySelectorAll('.fake-cursor').forEach(function(el) { el.remove(); });
-  }
-
-  /* ====== Looping Animation System ====== */
-  var animMap = {
-    '1': animateMockup1,
-    '2': animateMockup2,
-    '3': animateMockup3,
-    '4': animateMockup4,
-    '5': animateMockup5,
-    '6': animateMockup6
-  };
-
-  var resetMap = {
-    '1': resetMockup1,
-    '2': resetMockup2,
-    '3': resetMockup3,
-    '4': resetMockup4,
-    '5': resetMockup5,
-    '6': resetMockup6
-  };
-
-  // Duration of each animation (ms) — how long the sequence takes before holding
-  var animDuration = {
-    '1': 3100,
-    '2': 4500,
-    '3': 3500,
-    '4': 4400,
-    '5': 3800,
-    '6': 4500
-  };
-
-  var HOLD_TIME = 2000;  // Hold final state for 2s
-  var PAUSE_TIME = 1000; // Pause before replaying
-
-  var loopTimers = {}; // Stores the timeout ID for each mockup's loop
-
-  function startLoop(mockupId, frame) {
-    if (loopTimers[mockupId]) return;
-    console.log('[CI] Starting loop for mockup ' + mockupId);
-
-    function cycle() {
-      console.log('[CI] Cycle start: mockup ' + mockupId);
-      if (resetMap[mockupId]) resetMap[mockupId](frame);
-
-      loopTimers[mockupId] = setTimeout(function() {
-        console.log('[CI] Animating mockup ' + mockupId);
-        if (animMap[mockupId]) animMap[mockupId](frame);
-
-        loopTimers[mockupId] = setTimeout(function() {
-          cycle();
-        }, animDuration[mockupId] + HOLD_TIME);
-      }, PAUSE_TIME);
-    }
-
-    cycle();
-  }
-
-  function stopLoop(mockupId, frame) {
-    if (loopTimers[mockupId]) {
-      clearTimeout(loopTimers[mockupId]);
-      delete loopTimers[mockupId];
-      console.log('[CI] Stopped loop for mockup ' + mockupId);
-    }
-    if (resetMap[mockupId]) resetMap[mockupId](frame);
-  }
-
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      var mockupId = entry.target.getAttribute('data-mockup');
-      if (!mockupId) return;
-
-      if (entry.isIntersecting) {
-        console.log('[CI] Mockup ' + mockupId + ' IN VIEW');
-        startLoop(mockupId, entry.target);
-      } else {
-        console.log('[CI] Mockup ' + mockupId + ' OUT OF VIEW');
-        stopLoop(mockupId, entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
-
-  document.querySelectorAll('.mockup-frame[data-mockup]').forEach(function(frame) {
-    observer.observe(frame);
-  });
-})();
-</script>
-</body>
-</html>
+  <div class="footer-disclaimer">ContractsI
