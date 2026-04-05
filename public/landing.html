@@ -4,314 +4,352 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ContractsIntel — Find, Win, and Manage Government Contracts</title>
-<meta name="description" content="ContractsIntel monitors every procurement portal, scores every opportunity against your certifications, and generates proposal first drafts — automatically, every morning at 7am. Built for 8(a), SDVOSB, WOSB, and HUBZone certified contractors.">
+<meta name="description" content="ContractsIntel monitors every procurement portal, scores every opportunity against your certifications, and generates proposal first drafts — automatically, every morning at 7am.">
 <meta property="og:title" content="ContractsIntel — Find, Win, and Manage Government Contracts">
-<meta property="og:description" content="Find contracts. Write proposals. Track deliverables. Protect your certifications. One platform, fully automated.">
+<meta property="og:description" content="The operating system for certified government contractors. 16 integrated products. One subscription.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://contractsintel.com">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://contractsintel.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #080a0f;
-  --surface: #0d1018;
-  --surface2: #111520;
-  --border: #1e2535;
-  --border2: #2a3548;
+  --bg: #ffffff;
+  --bg-alt: #f8f9fb;
+  --bg-subtle: #f1f3f7;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --border: #e5e7eb;
+  --border-light: #f0f1f3;
   --accent: #2563eb;
-  --accent-bright: #3b82f6;
-  --accent-glow: rgba(37,99,235,0.15);
-  --gold: #d4a843;
-  --gold-dim: rgba(212,168,67,0.12);
-  --text: #e8edf8;
-  --text2: #8b9ab5;
-  --text3: #4a5a75;
-  --green: #22c55e;
-  --red: #ef4444;
-  --purple: #a78bfa;
-  --white: #ffffff;
-  --orange: #f59e0b;
+  --accent-hover: #1d4ed8;
+  --accent-light: #eff4ff;
+  --accent-subtle: rgba(37,99,235,0.08);
+  --green: #059669;
+  --green-light: #ecfdf5;
+  --green-text: #047857;
+  --red: #dc2626;
+  --red-light: #fef2f2;
+  --orange: #d97706;
+  --orange-light: #fffbeb;
+  --purple: #7c3aed;
+  --purple-light: #f5f3ff;
+  --text: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-on-accent: #ffffff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { background: var(--bg); color: var(--text); font-family: 'Geist', sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; }
-.container { max-width: 1080px; margin: 0 auto; padding: 0 32px; }
-body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(37,99,235,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.025) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+.container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+.gradient-text { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(8,10,15,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 0 32px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+/* NAV */
+nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-light); padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.nav-logo-mark { width: 32px; height: 32px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 500; color: white; }
-.nav-logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.02em; color: var(--text); }
-.nav-logo-text span { color: var(--accent-bright); }
-.nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
-.nav-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.nav-logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; color: white; }
+.nav-logo-text { font-weight: 700; font-size: 16px; letter-spacing: -0.03em; color: var(--text); }
+.nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+.nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.15s; }
 .nav-links a:hover { color: var(--text); }
 .nav-cta { display: flex; align-items: center; gap: 12px; }
-.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--text2); padding: 8px 18px; font-size: 13px; font-family: 'Geist', sans-serif; cursor: pointer; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
-.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
-.btn-primary { background: var(--accent); border: none; color: white; padding: 9px 20px; font-size: 13px; font-weight: 500; font-family: 'Geist', sans-serif; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-.btn-primary:hover { background: var(--accent-bright); transform: translateY(-1px); }
-.btn-primary.large { padding: 14px 28px; font-size: 15px; }
-.btn-primary.xl { padding: 16px 36px; font-size: 16px; font-weight: 600; }
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 8px 18px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; border-radius: 8px; transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; }
+.btn-secondary:hover { border-color: var(--text-muted); color: var(--text); background: var(--bg-alt); }
+.btn-primary { background: var(--accent); border: none; color: var(--text-on-accent); padding: 10px 22px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border-radius: 8px; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+.btn-primary.large { padding: 14px 28px; font-size: 16px; }
+.btn-primary.xl { padding: 16px 36px; font-size: 16px; border-radius: 10px; }
 
 /* HERO */
-.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 120px 32px 80px; position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; }
-.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid rgba(212,168,67,0.25); color: var(--gold); padding: 6px 14px; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 32px; width: fit-content; }
-.eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s infinite; }
+.hero { padding: 140px 24px 80px; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 600px; background: linear-gradient(180deg, var(--accent-light) 0%, var(--bg) 100%); z-index: 0; }
+.hero > * { position: relative; z-index: 1; }
+.hero-badge { font-family: 'JetBrains Mono', monospace; display: inline-flex; align-items: center; gap: 8px; background: var(--accent-subtle); border: 1px solid rgba(37,99,235,0.15); color: var(--accent); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; margin-bottom: 28px; }
+.hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-.hero h1 { font-family: 'Instrument Serif', serif; font-size: clamp(44px, 7vw, 84px); line-height: 1.0; letter-spacing: -0.02em; margin-bottom: 28px; max-width: 860px; }
-.hero h1 em { font-style: italic; color: var(--accent-bright); }
-.hero-sub { font-size: 18px; color: var(--text2); max-width: 600px; line-height: 1.7; margin-bottom: 40px; }
-.hero-sub strong { color: var(--text); }
-.hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 48px; }
-.hero-proof { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text3); flex-wrap: wrap; }
-.hero-proof-item { display: flex; align-items: center; gap: 6px; }
-.proof-check { color: var(--green); font-size: 14px; }
-.proof-divider { width: 1px; height: 14px; background: var(--border2); }
-.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); max-width: 760px; margin-top: 56px; }
-.hero-stat { background: var(--surface); padding: 20px 24px; }
-.hs-val { font-family: 'Instrument Serif', serif; font-size: 32px; color: var(--white); margin-bottom: 4px; }
-.hs-val .accent { color: var(--accent-bright); }
-.hs-label { font-size: 11px; color: var(--text3); line-height: 1.4; }
+.hero h1 { font-family: 'DM Serif Display', serif; font-size: clamp(42px, 6vw, 76px); line-height: 1.05; letter-spacing: -0.035em; margin-bottom: 24px; max-width: 780px; margin-left: auto; margin-right: auto; color: #0f172a; font-weight: 700; }
+.hero h1 em { font-style: italic; color: var(--accent); font-weight: 600; }
+.hero-sub { font-size: 18px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 36px; line-height: 1.7; }
+.hero-sub strong { color: var(--text); font-weight: 600; }
+.hero-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+.hero-proof { display: flex; justify-content: center; gap: 20px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
+.hero-proof-item { display: flex; align-items: center; gap: 5px; }
+.hero-proof-item svg { width: 14px; height: 14px; color: var(--green); }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 720px; margin: 56px auto 0; }
+.hero-stat { background: var(--surface); padding: 24px; text-align: center; }
+.hs-val { font-family: 'DM Serif Display', serif; font-size: 36px; font-weight: 800; color: #0f172a; margin-bottom: 4px; letter-spacing: -0.03em; }
+.hs-val .accent { color: var(--accent); }
+.hs-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); line-height: 1.4; font-weight: 500; letter-spacing: 0.01em; }
 
 /* TICKER */
-.ticker-wrap { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; overflow: hidden; position: relative; z-index: 1; }
-.ticker { display: flex; animation: scroll 35s linear infinite; width: max-content; }
+.ticker-wrap { background: var(--bg-alt); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 14px 0; overflow: hidden; }
+.ticker { display: flex; animation: scroll 40s linear infinite; width: max-content; }
 @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-.ticker-item { display: flex; align-items: center; gap: 10px; padding: 0 32px; font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text3); white-space: nowrap; border-right: 1px solid var(--border); }
-.ticker-item .ti-amount { color: var(--green); font-weight: 500; }
+.ticker-item { display: flex; align-items: center; gap: 8px; padding: 0 28px; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.ticker-item .ti-amount { color: var(--green-text); font-weight: 600; }
+.ticker-sep { width: 4px; height: 4px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
 
-section { position: relative; z-index: 1; }
-.section-label { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-.section-label::before { content: '//'; color: var(--text3); }
-.section-headline { font-family: 'Instrument Serif', serif; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px; }
-.section-sub { font-size: 17px; color: var(--text2); max-width: 560px; line-height: 1.7; }
+/* SECTION STYLES */
+.section-label { font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+.section-headline { font-family: 'DM Serif Display', serif; font-size: clamp(34px, 4.5vw, 52px); line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 16px; color: #0f172a; font-weight: 700; }
+.section-sub { font-size: 18px; color: #475569; max-width: 540px; line-height: 1.75; font-weight: 450; }
 
 /* PAIN */
-.pain-section { padding: 120px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
-.pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 48px; }
-.pain-card { background: var(--surface2); padding: 36px; position: relative; overflow: hidden; }
-.pain-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--red); opacity: 0.6; }
-.pain-number { font-family: 'Instrument Serif', serif; font-size: 64px; color: var(--border2); line-height: 1; margin-bottom: 16px; display: block; }
-.pain-headline { font-size: 20px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; }
-.pain-text { color: var(--text2); font-size: 15px; line-height: 1.7; }
-.pain-callout { margin-top: 48px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-left: 3px solid var(--red); padding: 24px 28px; }
-.pain-callout p { font-size: 17px; color: var(--text); line-height: 1.7; }
+.pain-section { padding: 100px 24px; background: var(--bg); }
+.pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 48px; }
+.pain-card { background: var(--bg-alt); border: 1px solid var(--border-light); border-radius: 12px; padding: 32px; position: relative; transition: all 0.2s; }
+.pain-card:hover { border-color: var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+.pain-number { font-family: 'DM Serif Display', serif; font-size: 48px; line-height: 1; margin-bottom: 12px; font-weight: 600; }
+.pain-card:nth-child(1) .pain-number { color: #2563eb; }
+.pain-card:nth-child(2) .pain-number { color: #7c3aed; }
+.pain-card:nth-child(3) .pain-number { color: #dc2626; }
+.pain-card:nth-child(4) .pain-number { color: #d97706; }
+.pain-headline { font-size: 19px; font-weight: 700; margin-bottom: 10px; line-height: 1.35; color: var(--text); }
+.pain-text { color: #4b5563; font-size: 15px; line-height: 1.75; }
+.pain-callout { margin-top: 32px; background: var(--red-light); border: 1px solid rgba(220,38,38,0.15); border-radius: 12px; padding: 24px 28px; border-left: 4px solid var(--red); }
+.pain-callout p { font-size: 16px; color: var(--text); line-height: 1.7; }
 .pain-callout strong { color: var(--red); }
 
 /* PRODUCT SHOWCASE */
-.product-section { padding: 100px 32px; }
-.product-section:nth-child(even) { background: var(--surface); }
+.product-section { padding: 80px 24px; }
 .product-section:nth-child(odd) { background: var(--bg); }
+.product-section:nth-child(even) { background: var(--bg-alt); }
 .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
 .product-layout.reverse { direction: rtl; }
 .product-layout.reverse > * { direction: ltr; }
-.product-info { }
-.product-tier { display: inline-flex; align-items: center; gap: 6px; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; margin-bottom: 16px; border: 1px solid; }
-.tier-all { color: var(--green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.06); }
-.tier-pro { color: var(--accent-bright); border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
-.tier-team { color: var(--purple); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.06); }
-.tier-free { color: var(--gold); border-color: rgba(212,168,67,0.3); background: rgba(212,168,67,0.06); }
-.product-title { font-family: 'Instrument Serif', serif; font-size: clamp(28px, 3.5vw, 40px); line-height: 1.1; margin-bottom: 16px; }
-.product-title em { font-style: italic; color: var(--accent-bright); }
-.product-desc { color: var(--text2); font-size: 15px; line-height: 1.7; margin-bottom: 24px; }
-.product-usecase { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 16px 20px; margin-bottom: 24px; }
-.product-usecase-label { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
-.product-usecase p { font-size: 14px; color: var(--text); line-height: 1.6; }
-.product-bullets { list-style: none; margin-bottom: 24px; }
-.product-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text2); padding: 6px 0; }
-.product-bullets li span { color: var(--green); flex-shrink: 0; margin-top: 2px; }
+.product-tier { font-family: 'JetBrains Mono', monospace; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 12px; border-radius: 6px; margin-bottom: 16px; }
+.tier-all { color: var(--green-text); background: var(--green-light); }
+.tier-pro { color: #1e40af; background: #dbeafe; }
+.tier-team { color: #6d28d9; background: #ede9fe; }
+.product-title { font-family: 'DM Serif Display', serif; font-size: clamp(30px, 3.5vw, 42px); line-height: 1.08; margin-bottom: 16px; letter-spacing: -0.03em; color: #0f172a; font-weight: 700; }
+.product-title em { font-style: italic; font-weight: 600; }
+/* Each product section gets a unique accent for its italic text */
+.product-section:nth-of-type(1) .product-title em { color: #2563eb; }
+.product-section:nth-of-type(2) .product-title em { color: #7c3aed; }
+.product-section:nth-of-type(3) .product-title em { color: #059669; }
+.product-section:nth-of-type(4) .product-title em { color: #d97706; }
+.product-section:nth-of-type(5) .product-title em { color: #dc2626; }
+.product-section:nth-of-type(6) .product-title em { color: #0891b2; }
+.product-desc { color: #374151; font-size: 16px; line-height: 1.75; margin-bottom: 24px; }
+.product-usecase { border-radius: 10px; padding: 18px 22px; margin-bottom: 24px; border-left: 4px solid; }
+.product-section:nth-of-type(1) .product-usecase { background: #eff6ff; border-left-color: #2563eb; }
+.product-section:nth-of-type(2) .product-usecase { background: #f5f3ff; border-left-color: #7c3aed; }
+.product-section:nth-of-type(3) .product-usecase { background: #ecfdf5; border-left-color: #059669; }
+.product-section:nth-of-type(4) .product-usecase { background: #fffbeb; border-left-color: #d97706; }
+.product-section:nth-of-type(5) .product-usecase { background: #fef2f2; border-left-color: #dc2626; }
+.product-section:nth-of-type(6) .product-usecase { background: #ecfeff; border-left-color: #0891b2; }
+.product-usecase-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+.product-section:nth-of-type(1) .product-usecase-label { color: #2563eb; }
+.product-section:nth-of-type(2) .product-usecase-label { color: #7c3aed; }
+.product-section:nth-of-type(3) .product-usecase-label { color: #059669; }
+.product-section:nth-of-type(4) .product-usecase-label { color: #d97706; }
+.product-section:nth-of-type(5) .product-usecase-label { color: #dc2626; }
+.product-section:nth-of-type(6) .product-usecase-label { color: #0891b2; }
+.product-usecase p { font-size: 14px; color: #1f2937; line-height: 1.7; font-weight: 450; }
+.product-bullets { list-style: none; }
+.product-bullets li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: #374151; padding: 6px 0; font-weight: 450; }
+.product-bullets li span { flex-shrink: 0; margin-top: 4px; font-size: 14px; font-weight: 700; }
+.product-section:nth-of-type(1) .product-bullets li span { color: #2563eb; }
+.product-section:nth-of-type(2) .product-bullets li span { color: #7c3aed; }
+.product-section:nth-of-type(3) .product-bullets li span { color: #059669; }
+.product-section:nth-of-type(4) .product-bullets li span { color: #d97706; }
+.product-section:nth-of-type(5) .product-bullets li span { color: #dc2626; }
+.product-section:nth-of-type(6) .product-bullets li span { color: #0891b2; }
 
-/* MOCKUP FRAME */
-.mockup-frame { background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
-.mockup-bar { background: var(--surface2); padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+/* MOCKUP */
+.mockup-frame { position: relative; background: #f9fafb; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04); }
+.mockup-bar { background: #1e293b; padding: 10px 16px; border-bottom: none; display: flex; align-items: center; gap: 6px; }
 .mockup-dot { width: 8px; height: 8px; border-radius: 50%; }
-.mockup-title { font-family: 'Geist Mono', monospace; font-size: 10px; color: var(--text3); margin-left: 8px; }
-.mockup-body { padding: 16px; }
+.mockup-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; margin-left: 8px; font-weight: 500; }
+.mockup-body { padding: 16px; background: #f1f5f9; }
 
-/* Mockup-specific elements */
+/* Mock elements */
 .mock-stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
-.mock-stat { background: var(--surface2); border: 1px solid var(--border); padding: 10px 12px; text-align: center; }
-.mock-stat-val { font-family: 'Instrument Serif', serif; font-size: 20px; color: var(--white); }
-.mock-stat-label { font-size: 9px; color: var(--text3); font-family: 'Geist Mono', monospace; }
-.mock-card { background: var(--surface2); border: 1px solid var(--border); padding: 12px 14px; margin-bottom: 8px; }
+.mock-stat { background: var(--surface); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px; text-align: center; }
+.mock-stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+.mock-stat-val.green { color: var(--green); }
+.mock-stat-val.red { color: var(--red); }
+.mock-stat-val.blue { color: var(--accent); }
+.mock-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.mock-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
 .mock-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.mock-card-title { font-size: 12px; font-weight: 500; }
-.mock-score { font-family: 'Geist Mono', monospace; font-size: 10px; padding: 2px 7px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
-.mock-card-meta { font-size: 10px; color: var(--text3); font-family: 'Geist Mono', monospace; margin-bottom: 6px; }
-.mock-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
-.mock-tag { font-size: 9px; padding: 2px 6px; border: 1px solid var(--border2); color: var(--text3); font-family: 'Geist Mono', monospace; }
-.mock-rec { padding: 6px 8px; background: rgba(37,99,235,0.08); border-left: 2px solid var(--accent); font-size: 10px; color: var(--text2); }
-.mock-rec strong { color: var(--accent-bright); }
-.mock-actions { display: flex; gap: 6px; margin-top: 8px; }
-.mock-btn { font-size: 9px; padding: 4px 10px; font-family: 'Geist Mono', monospace; cursor: default; }
+.mock-card-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.mock-score { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--green-light); color: var(--green-text); }
+.mock-score.gold { background: var(--orange-light); color: var(--orange); }
+.mock-card-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.mock-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+.mock-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--bg-alt); border: 1px solid var(--border-light); color: var(--text-muted); font-weight: 500; }
+.mock-rec { padding: 8px 10px; background: var(--accent-light); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+.mock-rec strong { color: var(--accent); font-weight: 600; }
+.mock-rec.gold { background: var(--orange-light); border-left-color: var(--orange); }
+.mock-rec.gold strong { color: var(--orange); }
+.mock-actions { display: flex; gap: 6px; margin-top: 10px; }
+.mock-btn { font-size: 11px; padding: 5px 12px; border-radius: 6px; font-weight: 500; cursor: default; }
 .mock-btn.primary { background: var(--accent); color: white; border: none; }
-.mock-btn.ghost { background: transparent; border: 1px solid var(--border2); color: var(--text3); }
+.mock-btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
 
 /* Proposal mockup */
-.mock-proposal { background: var(--surface2); border: 1px solid var(--border); padding: 16px; }
-.mock-tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-.mock-tab { padding: 8px 14px; font-size: 11px; color: var(--text3); border-bottom: 2px solid transparent; font-family: 'Geist Mono', monospace; }
-.mock-tab.active { color: var(--accent-bright); border-bottom-color: var(--accent); }
-.mock-prose { font-size: 11px; color: var(--text2); line-height: 1.7; }
-.mock-prose h4 { font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 4px; margin-top: 10px; }
+.mock-tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border-light); }
+.mock-tab { padding: 8px 14px; font-size: 12px; color: var(--text-muted); border-bottom: 2px solid transparent; font-weight: 500; }
+.mock-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.mock-prose { font-size: 12px; color: var(--text-secondary); line-height: 1.7; }
+.mock-prose h4 { font-size: 13px; color: var(--text); font-weight: 600; margin: 12px 0 4px; }
 .mock-prose p { margin-bottom: 8px; }
 
 /* Compliance mockup */
-.mock-health { text-align: center; margin-bottom: 16px; }
-.mock-health-score { font-family: 'Instrument Serif', serif; font-size: 48px; color: var(--white); }
-.mock-health-label { font-size: 10px; color: var(--text3); font-family: 'Geist Mono', monospace; }
-.mock-health-bar { height: 6px; background: var(--border); margin-top: 8px; position: relative; }
-.mock-health-fill { height: 100%; background: var(--green); }
-.mock-compliance-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
-.mock-compliance-row:last-child { border-bottom: none; }
-.mock-status-ok { color: var(--green); }
-.mock-status-warn { color: var(--orange); }
-.mock-status-bad { color: var(--red); }
+.mock-health { text-align: center; margin-bottom: 16px; padding: 16px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border-light); }
+.mock-health-score { font-family: 'DM Serif Display', serif; font-size: 48px; font-weight: 600; color: var(--text); }
+.mock-health-label { font-size: 11px; color: var(--text-muted); }
+.mock-health-bar { height: 6px; background: var(--bg-subtle); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.mock-health-fill { height: 100%; background: var(--green); border-radius: 3px; }
+.mock-compliance-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 12px; background: var(--surface); border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 4px; }
+.mock-status-ok { color: var(--green-text); font-weight: 500; }
+.mock-status-warn { color: var(--orange); font-weight: 500; }
+.mock-status-bad { color: var(--red); font-weight: 500; }
 
 /* Pipeline mockup */
 .mock-pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.mock-col { }
-.mock-col-head { font-family: 'Geist Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 8px; background: var(--surface2); border: 1px solid var(--border); margin-bottom: 6px; text-align: center; }
-.mock-col-head.green { color: var(--green); }
-.mock-col-head.red { color: var(--red); }
-.mock-col-head.blue { color: var(--accent-bright); }
-.mock-col-head.gold { color: var(--gold); }
-.mock-mini-card { background: var(--surface2); border: 1px solid var(--border); padding: 8px; margin-bottom: 4px; }
-.mock-mini-title { font-size: 9px; font-weight: 500; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mock-mini-val { font-size: 9px; color: var(--green); font-family: 'Geist Mono', monospace; }
+.mock-col-head { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; padding: 6px 8px; background: var(--surface); border: 1px solid var(--border-light); border-radius: 6px; margin-bottom: 4px; text-align: center; }
+.mock-col-head.green { color: var(--green-text); background: var(--green-light); }
+.mock-col-head.red { color: var(--red); background: var(--red-light); }
+.mock-col-head.blue { color: var(--accent); background: var(--accent-light); }
+.mock-col-head.gold { color: var(--orange); background: var(--orange-light); }
+.mock-mini-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 6px; padding: 8px; margin-bottom: 4px; }
+.mock-mini-title { font-size: 10px; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mock-mini-val { font-size: 10px; color: var(--green-text); font-weight: 500; }
 
-/* Contract mockup */
-.mock-timeline { position: relative; padding-left: 20px; }
-.mock-timeline::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: var(--border2); }
-.mock-tl-item { position: relative; padding: 8px 0 8px 16px; font-size: 11px; }
-.mock-tl-item::before { content: ''; position: absolute; left: -20px; top: 12px; width: 9px; height: 9px; border: 2px solid var(--border2); background: var(--surface); }
+/* Timeline mockup */
+.mock-timeline { position: relative; padding-left: 24px; }
+.mock-timeline::before { content: ''; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 1px; background: var(--border); }
+.mock-tl-item { position: relative; padding: 8px 0 8px 16px; font-size: 12px; }
+.mock-tl-item::before { content: ''; position: absolute; left: -21px; top: 13px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); }
 .mock-tl-item.done::before { border-color: var(--green); background: var(--green); }
 .mock-tl-item.urgent::before { border-color: var(--red); background: var(--red); }
-.mock-tl-item.upcoming::before { border-color: var(--gold); }
+.mock-tl-item.upcoming::before { border-color: var(--orange); background: var(--orange-light); }
 .mock-tl-title { color: var(--text); font-weight: 500; }
-.mock-tl-date { color: var(--text3); font-family: 'Geist Mono', monospace; font-size: 10px; }
+.mock-tl-date { color: var(--text-muted); font-size: 11px; }
 
 /* HOW IT WORKS */
-.how-section { padding: 120px 32px; background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%); }
-
-/* FULL PLATFORM GRID */
-.fullplatform-section { padding: 100px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
-.fp-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 48px; }
-.fp-card { background: var(--surface2); padding: 24px 20px; position: relative; overflow: hidden; transition: background 0.2s; }
-.fp-card:hover { background: #131c26; }
-.fp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--c, var(--accent)); }
-.fp-icon { font-size: 22px; margin-bottom: 10px; }
-.fp-tier { font-family: 'Geist Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border: 1px solid; display: inline-block; margin-bottom: 8px; }
-.fp-tier.all { color: var(--green); border-color: rgba(34,197,94,0.3); }
-.fp-tier.pro { color: var(--accent-bright); border-color: rgba(59,130,246,0.3); }
-.fp-tier.team { color: var(--purple); border-color: rgba(167,139,250,0.3); }
-.fp-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
-.fp-text { font-size: 11px; color: var(--text2); line-height: 1.5; }
-
-@media(max-width:768px){
-  .fp-grid { grid-template-columns: 1fr 1fr; }
-}
-.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
-.step-card { background: var(--surface2); padding: 40px 36px; position: relative; }
-.step-num { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-bright); letter-spacing: 0.1em; margin-bottom: 20px; }
-.step-icon { width: 48px; height: 48px; background: var(--accent-glow); border: 1px solid rgba(37,99,235,0.3); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
-.step-title { font-size: 20px; font-weight: 600; margin-bottom: 12px; line-height: 1.3; }
-.step-text { color: var(--text2); font-size: 14px; line-height: 1.7; }
-.step-connector { position: absolute; right: -1px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; z-index: 2; }
+.how-section { padding: 100px 24px; background: var(--bg); }
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+.step-card { background: var(--bg-alt); border: 1px solid var(--border-light); border-radius: 12px; padding: 32px; position: relative; }
+.step-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 16px; }
+.step-icon { width: 48px; height: 48px; background: var(--accent-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px; }
+.step-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; line-height: 1.35; color: var(--text); }
+.step-text { color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+.step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; z-index: 2; }
 
 /* ROI */
-.roi-section { padding: 120px 32px; background: var(--bg); }
-.roi-calc { margin-top: 56px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border: 1px solid var(--border); background: var(--surface); }
-.roi-side { padding: 48px 40px; }
-.roi-side.left { border-right: 1px solid var(--border); }
-.roi-divider-col { padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 16px; background: var(--surface2); border-right: 1px solid var(--border); }
-.roi-label-sm { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
-.roi-big { font-family: 'Instrument Serif', serif; font-size: 56px; line-height: 1; margin-bottom: 8px; }
-.roi-big.red { color: #f87171; }
+.roi-section { padding: 100px 24px; background: var(--bg-alt); }
+.roi-calc { margin-top: 48px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.roi-side { padding: 40px 36px; }
+.roi-side.left { border-right: 1px solid var(--border-light); }
+.roi-divider-col { padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--bg-alt); }
+.roi-label-sm { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+.roi-big { font-family: 'DM Serif Display', serif; font-size: 56px; font-weight: 800; line-height: 1; margin-bottom: 8px; letter-spacing: -0.03em; }
 .roi-big.green { color: var(--green); }
-.roi-sub { color: var(--text2); font-size: 14px; line-height: 1.6; }
+.roi-big.red { color: var(--red); }
+.roi-sub { color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+
+/* FULL PLATFORM GRID */
+.fullplatform-section { padding: 100px 24px; background: var(--bg); }
+.fp-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 48px; }
+.fp-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: 12px; padding: 24px 20px; transition: all 0.2s; position: relative; overflow: hidden; }
+.fp-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 12px 12px 0 0; }
+.fp-card:nth-child(1)::before,.fp-card:nth-child(2)::before,.fp-card:nth-child(3)::before { background: var(--accent); }
+.fp-card:nth-child(4)::before { background: var(--green); }
+.fp-card:nth-child(5)::before,.fp-card:nth-child(6)::before,.fp-card:nth-child(7)::before,.fp-card:nth-child(8)::before,.fp-card:nth-child(9)::before,.fp-card:nth-child(10)::before { background: var(--purple); }
+.fp-card:hover { border-color: var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-3px); }
+.fp-icon { font-size: 24px; margin-bottom: 10px; }
+.fp-tier { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+.fp-tier.all { color: var(--green-text); background: var(--green-light); }
+.fp-tier.pro { color: var(--accent); background: var(--accent-light); }
+.fp-tier.team { color: var(--purple); background: var(--purple-light); }
+.fp-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; color: var(--text); }
+.fp-text { font-size: 12px; color: var(--text-secondary); line-height: 1.55; }
 
 /* PRICING */
-.pricing-section { padding: 120px 32px; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%); }
-.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-top: 56px; }
-.pricing-card { background: var(--surface2); padding: 40px 36px; position: relative; }
-.pricing-card.popular { background: #0a1628; border: 2px solid var(--accent); margin: -1px; z-index: 2; }
-.popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 16px; white-space: nowrap; }
-.plan-name { font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
-.plan-price { font-family: 'Instrument Serif', serif; font-size: 52px; line-height: 1; margin-bottom: 4px; }
-.plan-price span { font-size: 20px; color: var(--text2); font-family: 'Geist', sans-serif; }
-.plan-period { font-size: 13px; color: var(--text3); margin-bottom: 6px; }
-.plan-who { font-size: 13px; color: var(--accent-bright); margin-bottom: 6px; font-weight: 500; }
-.plan-value { font-size: 12px; color: var(--green); margin-bottom: 24px; font-family: 'Geist Mono', monospace; }
-.plan-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
-.plan-features { list-style: none; margin-bottom: 32px; }
-.plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text2); padding: 7px 0; border-bottom: 1px solid var(--border); line-height: 1.4; }
-.plan-features li:last-child { border-bottom: none; }
-.plan-features li.has { color: var(--text); }
-.pf-check { color: var(--green); font-size: 13px; margin-top: 1px; flex-shrink: 0; }
-.pf-x { color: var(--text3); font-size: 13px; margin-top: 1px; flex-shrink: 0; }
-.plan-fomo { font-size: 12px; color: var(--text3); margin-top: 12px; text-align: center; font-family: 'Geist Mono', monospace; }
-
-/* INCLUDED IN PLAN */
-.plan-includes { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-.plan-includes-label { font-family: 'Geist Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-.plan-product { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); padding: 4px 0; }
+.pricing-section { padding: 100px 24px; background: var(--bg-alt); }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+.pricing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 36px 32px; position: relative; }
+.pricing-card.popular { border: 2px solid var(--accent); box-shadow: 0 8px 32px rgba(37,99,235,0.12); }
+.popular-badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 16px; border-radius: 100px; white-space: nowrap; }
+.plan-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.plan-price { font-family: 'DM Serif Display', serif; font-size: 52px; font-weight: 800; line-height: 1; margin-bottom: 4px; color: #0f172a; letter-spacing: -0.03em; }
+.plan-price span { font-size: 20px; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-weight: 500; }
+.plan-period { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; }
+.plan-who { font-size: 14px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+.plan-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--green-text); margin-bottom: 20px; font-weight: 500; }
+.plan-divider { height: 1px; background: var(--border-light); margin-bottom: 20px; }
+.plan-includes { margin-bottom: 16px; }
+.plan-includes-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px; }
+.plan-product { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); padding: 3px 0; }
 .plan-product .pp-icon { font-size: 14px; }
+.plan-product strong { color: var(--text); font-weight: 600; }
+.plan-features { list-style: none; margin-bottom: 24px; }
+.plan-features li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-secondary); padding: 5px 0; line-height: 1.4; }
+.plan-features li.has { color: var(--text); }
+.pf-check { color: var(--green); font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.pf-x { color: var(--text-muted); font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.plan-fomo { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 12px; text-align: center; }
 
 /* AUDIT */
-.audit-section { padding: 80px 32px; background: var(--bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.audit-section { padding: 80px 24px; background: var(--bg); border-top: 1px solid var(--border-light); }
 .audit-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
-.audit-content h3 { font-family: 'Instrument Serif', serif; font-size: 36px; line-height: 1.1; margin-bottom: 16px; }
-.audit-content h3 em { font-style: italic; color: var(--accent-bright); }
-.audit-content p { color: var(--text2); font-size: 15px; line-height: 1.7; margin-bottom: 24px; }
-.audit-form { background: var(--surface2); border: 1px solid var(--border); padding: 32px; }
-.audit-form-label { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+.audit-content h3 { font-family: 'DM Serif Display', serif; font-size: 32px; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.02em; }
+.audit-content h3 em { font-style: italic; color: var(--accent); }
+.audit-content p { color: var(--text-secondary); font-size: 15px; line-height: 1.7; margin-bottom: 20px; }
+.audit-form { background: var(--bg-alt); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+.audit-form-label { font-size: 13px; color: var(--text); font-weight: 600; margin-bottom: 12px; }
 .audit-input-row { display: flex; gap: 8px; }
-.audit-input { flex: 1; background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 14px 16px; font-size: 14px; font-family: 'Geist', sans-serif; outline: none; }
-.audit-input:focus { border-color: var(--accent); }
-.audit-input::placeholder { color: var(--text3); }
-.audit-features { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-.audit-feature { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); }
+.audit-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px 16px; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+.audit-input::placeholder { color: var(--text-muted); }
+.audit-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.audit-features { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.audit-feature { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
 .audit-feature .af-check { color: var(--green); }
 
 /* CTA */
-.cta-section { padding: 120px 32px; background: var(--surface); border-top: 1px solid var(--border); text-align: center; }
-.cta-eyebrow { font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 24px; }
-.cta-headline { font-family: 'Instrument Serif', serif; font-size: clamp(36px, 5vw, 64px); line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 20px; max-width: 700px; margin-left: auto; margin-right: auto; }
-.cta-headline em { font-style: italic; color: var(--accent-bright); }
-.cta-sub { font-size: 17px; color: var(--text2); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
-.cta-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+.cta-section { padding: 100px 24px; background: var(--accent-light); text-align: center; }
+.cta-headline { font-family: 'DM Serif Display', serif; font-size: clamp(34px, 5vw, 58px); line-height: 1.08; letter-spacing: -0.03em; margin-bottom: 16px; max-width: 600px; margin-left: auto; margin-right: auto; color: #0f172a; font-weight: 700; }
+.cta-headline em { font-style: italic; color: var(--accent); font-weight: 600; }
+.cta-sub { font-size: 17px; color: var(--text-secondary); max-width: 480px; margin: 0 auto 32px; line-height: 1.7; }
+.cta-actions { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.cta-proof { font-size: 13px; color: var(--text-muted); }
+.cta-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 680px; margin: 48px auto 0; }
+.cta-stat { background: var(--surface); padding: 24px; text-align: center; }
+.cta-stat-val { font-family: 'DM Serif Display', serif; font-size: 28px; font-weight: 600; color: var(--accent); }
+.cta-stat-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; flex-wrap: wrap; gap: 16px; }
-.footer-logo { font-family: 'Instrument Serif', serif; font-size: 18px; }
-.footer-logo span { color: var(--accent-bright); }
-.footer-copy { font-size: 12px; color: var(--text3); font-family: 'Geist Mono', monospace; }
-.footer-disclaimer { width: 100%; font-size: 11px; color: var(--text3); margin-top: 8px; text-align: center; }
+/* FOOTER */
+footer { border-top: 1px solid var(--border-light); padding: 40px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; max-width: 1140px; margin: 0 auto; }
+.footer-logo { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 600; color: var(--text); }
+.footer-copy { font-size: 12px; color: var(--text-muted); }
+.footer-disclaimer { width: 100%; font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; }
 
-@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-.fade-up { animation: fadeUp 0.6s ease forwards; }
-.fade-up-2 { animation: fadeUp 0.6s 0.15s ease forwards; opacity: 0; }
-.fade-up-3 { animation: fadeUp 0.6s 0.3s ease forwards; opacity: 0; }
-.fade-up-4 { animation: fadeUp 0.6s 0.45s ease forwards; opacity: 0; }
-
-/* NAV ANCHOR OFFSET */
-.product-section[id] { scroll-margin-top: 80px; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+.fade-up-2 { animation: fadeUp 0.5s 0.1s ease forwards; opacity: 0; }
+.fade-up-3 { animation: fadeUp 0.5s 0.2s ease forwards; opacity: 0; }
+.fade-up-4 { animation: fadeUp 0.5s 0.3s ease forwards; opacity: 0; }
 
 @media(max-width:768px){
   .pain-grid,.steps-grid,.pricing-grid{grid-template-columns:1fr}
   .product-layout,.product-layout.reverse{grid-template-columns:1fr;direction:ltr}
   .roi-calc{grid-template-columns:1fr}
-  .roi-divider-col{border-right:none;border-bottom:1px solid var(--border)}
+  .roi-divider-col{border-right:none}
   nav .nav-links{display:none}
-  .hero h1{font-size:40px}
+  .hero h1{font-size:36px}
   .hero-stats{grid-template-columns:1fr 1fr}
+  .hero-proof{flex-direction:column;align-items:center;gap:8px}
   .mock-stat-row{grid-template-columns:1fr 1fr}
   .mock-pipeline{grid-template-columns:repeat(3,1fr)}
   .mock-pipeline .mock-col:nth-child(4),.mock-pipeline .mock-col:nth-child(5){display:none}
+  .fp-grid{grid-template-columns:1fr 1fr}
   .audit-inner{grid-template-columns:1fr}
+  .cta-stats{grid-template-columns:1fr 1fr}
   footer{flex-direction:column;text-align:center}
 }
 </style>
@@ -321,7 +359,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 <nav>
   <a href="#" class="nav-logo">
     <div class="nav-logo-mark">CI</div>
-    <div class="nav-logo-text">Contracts<span>Intel</span></div>
+    <div class="nav-logo-text">ContractsIntel</div>
   </a>
   <ul class="nav-links">
     <li><a href="#products">Products</a></li>
@@ -330,119 +368,115 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     <li><a href="#pricing">Pricing</a></li>
   </ul>
   <div class="nav-cta">
-    <a href="#pricing" class="btn-ghost">See Plans</a>
+    <a href="#pricing" class="btn-secondary">See Plans</a>
     <a href="/signup" class="btn-primary">Start Free Trial →</a>
   </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero container">
-  <div class="hero-eyebrow fade-up"><span class="eyebrow-dot"></span>Live — Monitoring 35,000+ procurement portals daily · 16 integrated products</div>
-  <h1 class="fade-up-2">Your certification<br>opened the door.<br><em>This is how you<br>walk through it.</em></h1>
-  <p class="hero-sub fade-up-3">ContractsIntel monitors every procurement portal, scores every opportunity against your exact certifications and NAICS codes, and generates proposal first drafts — <strong>automatically, every morning at 7am.</strong></p>
-  <div class="hero-actions fade-up-4">
-    <a href="#cta" class="btn-primary xl">See What You're Missing This Week →</a>
-    <a href="#products" class="btn-ghost" style="padding:14px 24px;font-size:15px">See What's Included</a>
-  </div>
-  <div class="hero-proof fade-up-4">
-    <div class="hero-proof-item"><span class="proof-check">✓</span> No credit card required</div>
-    <div class="proof-divider"></div>
-    <div class="hero-proof-item"><span class="proof-check">✓</span> Live in 5 minutes</div>
-    <div class="proof-divider"></div>
-    <div class="hero-proof-item"><span class="proof-check">✓</span> SAM.gov verified</div>
-    <div class="proof-divider"></div>
-    <div class="hero-proof-item"><span class="proof-check">✓</span> 14-day free trial</div>
-  </div>
-  <div class="hero-stats">
-    <div class="hero-stat"><div class="hs-val"><span class="accent">$700</span>B</div><div class="hs-label">Federal contracts awarded annually</div></div>
-    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val">35<span class="accent" style="font-size:20px">K+</span></div><div class="hs-label">Procurement portals monitored daily</div></div>
-    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">16</span></div><div class="hs-label">Integrated platform products</div></div>
-    <div class="hero-stat" style="border-left:1px solid var(--border)"><div class="hs-val"><span class="accent">68</span>%</div><div class="hs-label">Eligible contracts missed without monitoring</div></div>
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge fade-up"><span class="hero-badge-dot"></span> Monitoring 35,000+ procurement portals daily</div>
+    <h1 class="fade-up-2">Your certification opened the door.<br><em>This is how you walk through it.</em></h1>
+    <p class="hero-sub fade-up-3">ContractsIntel monitors every procurement portal, scores every opportunity against your exact certifications and NAICS codes, and generates proposal first drafts — <strong>automatically, every morning at 7am.</strong></p>
+    <div class="hero-actions fade-up-4">
+      <a href="/signup" class="btn-primary xl">See What You're Missing This Week →</a>
+      <a href="#products" class="btn-secondary" style="padding:14px 24px;font-size:15px">See What's Included</a>
+    </div>
+    <div class="hero-proof fade-up-4">
+      <div class="hero-proof-item"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> No credit card required</div>
+      <div class="hero-proof-item"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> Live in 5 minutes</div>
+      <div class="hero-proof-item"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> SAM.gov verified</div>
+      <div class="hero-proof-item"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> 14-day free trial</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hs-val"><span class="accent">$700</span>B</div><div class="hs-label">Federal contracts awarded annually</div></div>
+      <div class="hero-stat"><div class="hs-val">35<span class="accent">K+</span></div><div class="hs-label">Portals monitored daily</div></div>
+      <div class="hero-stat"><div class="hs-val"><span class="accent">16</span></div><div class="hs-label">Integrated products</div></div>
+      <div class="hero-stat"><div class="hs-val"><span class="accent">68</span>%</div><div class="hs-label">Contracts missed without monitoring</div></div>
+    </div>
   </div>
 </section>
 
 <!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker">
-    <div class="ticker-item"><span class="ti-amount">$847,000</span><span>· DoD SDVOSB · IT Services · Closes in 8 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$2.1M</span><span>· GSA 8(a) · Facilities Management · Virginia</span></div>
-    <div class="ticker-item"><span class="ti-amount">$320,000</span><span>· HHS WOSB · Program Support · Closes in 4 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$1.4M</span><span>· DHS HUBZone · Cybersecurity · New Today</span></div>
-    <div class="ticker-item"><span class="ti-amount">$560,000</span><span>· Army 8(a) · Logistics Support · Closes in 12 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$3.2M</span><span>· VA SDVOSB · Healthcare IT · NAICS 541512</span></div>
-    <div class="ticker-item"><span class="ti-amount">$847,000</span><span>· DoD SDVOSB · IT Services · Closes in 8 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$2.1M</span><span>· GSA 8(a) · Facilities Management · Virginia</span></div>
-    <div class="ticker-item"><span class="ti-amount">$320,000</span><span>· HHS WOSB · Program Support · Closes in 4 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$1.4M</span><span>· DHS HUBZone · Cybersecurity · New Today</span></div>
-    <div class="ticker-item"><span class="ti-amount">$560,000</span><span>· Army 8(a) · Logistics Support · Closes in 12 days</span></div>
-    <div class="ticker-item"><span class="ti-amount">$3.2M</span><span>· VA SDVOSB · Healthcare IT · NAICS 541512</span></div>
+    <div class="ticker-item"><span class="ti-amount">$847,000</span> DoD SDVOSB · IT Services · 8 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$2.1M</span> GSA 8(a) · Facilities · Virginia<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$320,000</span> HHS WOSB · Program Support · 4 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$1.4M</span> DHS HUBZone · Cybersecurity · New<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$560,000</span> Army 8(a) · Logistics · 12 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$3.2M</span> VA SDVOSB · Healthcare IT<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$847,000</span> DoD SDVOSB · IT Services · 8 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$2.1M</span> GSA 8(a) · Facilities · Virginia<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$320,000</span> HHS WOSB · Program Support · 4 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$1.4M</span> DHS HUBZone · Cybersecurity · New<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$560,000</span> Army 8(a) · Logistics · 12 days<span class="ticker-sep"></span></div>
+    <div class="ticker-item"><span class="ti-amount">$3.2M</span> VA SDVOSB · Healthcare IT<span class="ticker-sep"></span></div>
   </div>
 </div>
 
 <!-- PAIN -->
-<section class="pain-section" id="pain">
+<section class="pain-section">
   <div class="container">
     <div class="section-label">The Problem</div>
     <h2 class="section-headline">You got certified.<br>Then nothing happened.</h2>
     <p class="section-sub">Certification gives you access to set-asides and sole-source awards. But access without intelligence is just hope.</p>
     <div class="pain-grid">
-      <div class="pain-card"><span class="pain-number">01</span><div class="pain-headline">You checked SAM.gov 4 days ago.</div><p class="pain-text">A perfect SDVOSB set-aside in your NAICS codes posted Tuesday. It closes Friday. You found out Saturday. Not bad luck — a system problem. It happens every single week.</p></div>
-      <div class="pain-card"><span class="pain-number">02</span><div class="pain-headline">You bid blind without competitive intelligence.</div><p class="pain-text">Without knowing the incumbent, how many firms are bidding, or the agency's award patterns — you're writing proposals you can't win. 40 hours wasted on contracts that were never open.</p></div>
-      <div class="pain-card"><span class="pain-number">03</span><div class="pain-headline">The FAR was rewritten. Your proposals weren't.</div><p class="pain-text">The most significant rewrite of federal buying rules in decades took effect February 2026. Your reps and certs, proposal clauses, and submission language may already be non-compliant.</p></div>
-      <div class="pain-card"><span class="pain-number">04</span><div class="pain-headline">Your past performance is scattered and unrecorded.</div><p class="pain-text">Every proposal cycle you reconstruct what you did years ago from memory. Your competitors have organized performance libraries. You start from scratch every time.</p></div>
+      <div class="pain-card"><div class="pain-number">01</div><div class="pain-headline">You checked SAM.gov 4 days ago.</div><p class="pain-text">A perfect SDVOSB set-aside in your NAICS codes posted Tuesday. It closes Friday. You found out Saturday. Not bad luck — a system problem.</p></div>
+      <div class="pain-card"><div class="pain-number">02</div><div class="pain-headline">You bid blind without competitive intelligence.</div><p class="pain-text">Without knowing the incumbent, how many firms are bidding, or the agency's award patterns — you're writing proposals you can't win.</p></div>
+      <div class="pain-card"><div class="pain-number">03</div><div class="pain-headline">The FAR was rewritten. Your proposals weren't.</div><p class="pain-text">The most significant rewrite of federal buying rules in decades took effect February 2026. Your reps, certs, and proposal clauses may already be non-compliant.</p></div>
+      <div class="pain-card"><div class="pain-number">04</div><div class="pain-headline">Your past performance is scattered.</div><p class="pain-text">Every proposal cycle you reconstruct what you did years ago from memory. Your competitors have organized performance libraries. You start from scratch.</p></div>
     </div>
-    <div class="pain-callout"><p>Most small contractors are running a 2026 business on 1990s BD infrastructure — spreadsheets, manual SAM.gov searches, and gut feel — competing against firms with enterprise-grade systems. <strong>ContractsIntel closes that gap for less than the cost of one BD coordinator's monthly salary.</strong></p></div>
+    <div class="pain-callout"><p>Most small contractors are running a 2026 business on 1990s BD infrastructure. <strong>ContractsIntel closes that gap for less than one BD coordinator's monthly salary.</strong></p></div>
   </div>
 </section>
 
-<!-- ========== PRODUCT SHOWCASE ========== -->
-
 <!-- PRODUCT 1: OPPORTUNITY INTELLIGENCE -->
-<section class="product-section" id="products" style="padding-top:120px;background:var(--bg)">
+<section class="product-section" id="products" style="padding-top:100px">
   <div class="container">
-    <div class="section-label">The Platform — What You Get</div>
-    <h2 class="section-headline">Six products. One subscription.<br>Every stage of the contracting lifecycle.</h2>
-    <p class="section-sub" style="margin-bottom:80px">Each product solves a specific problem that costs contractors real contracts and real revenue. Here's exactly what you get — and what it looks like inside the platform.</p>
+    <div class="section-label">What You Get</div>
+    <h2 class="section-headline" style="margin-bottom:8px">16 products. One subscription.</h2>
+    <p class="section-sub" style="margin-bottom:64px">Here's exactly what each product does — and what it looks like inside the platform.</p>
 
     <div class="product-layout">
       <div class="product-info">
         <div class="product-tier tier-all">✓ All Plans</div>
         <div class="product-title">Opportunity Intelligence<br><em>& Daily Digest</em></div>
-        <div class="product-desc">Every night, ContractsIntel scans 35,000+ procurement portals, scores every new contract opportunity against your exact certifications and NAICS codes, identifies the incumbent, estimates competition level, and delivers a ranked digest to your inbox at 7am with bid/no-bid recommendations already written.</div>
+        <div class="product-desc">Every night, ContractsIntel scans 35,000+ procurement portals, scores every opportunity against your certifications and NAICS codes, identifies the incumbent, and delivers a ranked digest to your inbox at 7am.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>You're manually checking SAM.gov every few days, missing 68% of eligible contracts. A BD coordinator doing this work costs $60,000–$80,000/year. ContractsIntel does it better for $499/month — and never misses a day.</p>
+          <p>You're manually checking SAM.gov every few days, missing 68% of eligible contracts. A BD coordinator costs $60K–$80K/year. ContractsIntel does it better for $499/month.</p>
         </div>
         <ul class="product-bullets">
           <li><span>✓</span> 35,000+ portals scanned nightly</li>
           <li><span>✓</span> Match scoring (0-100) based on certs, NAICS, geography</li>
           <li><span>✓</span> Bid/no-bid AI recommendation with reasoning</li>
           <li><span>✓</span> Incumbent identification via USASpending</li>
-          <li><span>✓</span> Competition level estimates</li>
-          <li><span>✓</span> Delivered to your inbox every morning at 7am</li>
+          <li><span>✓</span> Delivered every morning at 7am</li>
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">ContractsIntel Dashboard · Daily Intelligence</div></div>
+        <div class="mockup-frame" data-mockup="1">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Dashboard · Daily Intelligence</div></div>
           <div class="mockup-body">
             <div class="mock-stat-row">
               <div class="mock-stat"><div class="mock-stat-val">7</div><div class="mock-stat-label">New Matches</div></div>
-              <div class="mock-stat"><div class="mock-stat-val" style="color:var(--green)">$4.2M</div><div class="mock-stat-label">Total Value</div></div>
-              <div class="mock-stat"><div class="mock-stat-val" style="color:var(--red)">3</div><div class="mock-stat-label">Urgent (&lt;7d)</div></div>
-              <div class="mock-stat"><div class="mock-stat-val" style="color:var(--accent-bright)">92</div><div class="mock-stat-label">Top Score</div></div>
+              <div class="mock-stat"><div class="mock-stat-val green">$4.2M</div><div class="mock-stat-label">Total Value</div></div>
+              <div class="mock-stat"><div class="mock-stat-val red">3</div><div class="mock-stat-label">Urgent</div></div>
+              <div class="mock-stat"><div class="mock-stat-val blue">92</div><div class="mock-stat-label">Top Score</div></div>
             </div>
             <div class="mock-card">
-              <div class="mock-card-head"><div class="mock-card-title">DoD IT Support Services — Fort Belvoir, VA</div><div class="mock-score">FIT: 94</div></div>
-              <div class="mock-card-meta">SOL-2026-0847 · DoD · $847,000 · SDVOSB Set-Aside</div>
-              <div class="mock-tags"><span class="mock-tag">SDVOSB</span><span class="mock-tag">NAICS 541512</span><span class="mock-tag">Virginia</span><span class="mock-tag">4 days left</span></div>
-              <div class="mock-rec"><strong>BID:</strong> Incumbent (Apex Systems) lost protest. 2–3 competitors. Your past performance directly applicable.</div>
+              <div class="mock-card-head"><div class="mock-card-title">DoD IT Support — Fort Belvoir, VA</div><div class="mock-score">FIT: 94</div></div>
+              <div class="mock-card-meta">SOL-2026-0847 · $847,000 · SDVOSB Set-Aside</div>
+              <div class="mock-tags"><span class="mock-tag">SDVOSB</span><span class="mock-tag">541512</span><span class="mock-tag">Virginia</span><span class="mock-tag">4 days</span></div>
+              <div class="mock-rec"><strong>BID:</strong> Incumbent lost protest. 2–3 competitors. Your past performance directly applicable.</div>
               <div class="mock-actions"><span class="mock-btn primary">Mark as Bidding</span><span class="mock-btn ghost">Track</span><span class="mock-btn ghost">Skip</span></div>
             </div>
             <div class="mock-card" style="opacity:0.6">
-              <div class="mock-card-head"><div class="mock-card-title">GSA Facilities Management — Multiple Locations</div><div class="mock-score" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);color:var(--gold)">FIT: 71</div></div>
-              <div class="mock-card-meta">GSA-2026-2241 · GSA · $1.2M · 8(a)</div>
-              <div class="mock-rec" style="border-left-color:var(--gold)"><strong style="color:var(--gold)">MONITOR:</strong> Geographic stretch. 6+ competitors likely. Hold unless capacity available.</div>
+              <div class="mock-card-head"><div class="mock-card-title">GSA Facilities — Multiple Locations</div><div class="mock-score gold">FIT: 71</div></div>
+              <div class="mock-card-meta">GSA-2026-2241 · $1.2M · 8(a)</div>
+              <div class="mock-rec gold"><strong>MONITOR:</strong> Geographic stretch. 6+ competitors. Hold unless capacity available.</div>
             </div>
           </div>
         </div>
@@ -451,20 +485,20 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- PRODUCT 2: PROPOSAL DRAFTS -->
-<section class="product-section" style="background:var(--surface)">
+<!-- PRODUCT 2: PROPOSALS -->
+<section class="product-section">
   <div class="container">
     <div class="product-layout reverse">
       <div class="product-info">
         <div class="product-tier tier-pro">BD Pro + Team</div>
         <div class="product-title">AI Proposal<br><em>First Drafts</em></div>
-        <div class="product-desc">Mark an opportunity as "Bid" and ContractsIntel reads the SOW, analyzes the requirements, and generates a complete first draft — technical approach, past performance narrative, and executive summary. A 30-hour proposal writing task becomes a 6-hour review and polish.</div>
+        <div class="product-desc">Mark an opportunity as "Bid" and ContractsIntel reads the SOW, analyzes the requirements, and generates a complete first draft — technical approach, past performance, and executive summary. 30 hours becomes 6.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>You're the owner, the BD person, AND the proposal writer. You don't have 30–40 hours to write a proposal every time you want to bid. So you either skip good opportunities or submit rushed, weak proposals. ContractsIntel gives you an 80% complete draft that you refine — not start from scratch.</p>
+          <p>You're the owner, the BD person, AND the proposal writer. You don't have 30 hours per bid. ContractsIntel gives you an 80% complete draft you refine — not start from scratch.</p>
         </div>
         <ul class="product-bullets">
-          <li><span>✓</span> Technical approach generated from the SOW</li>
+          <li><span>✓</span> Technical approach from the SOW</li>
           <li><span>✓</span> Past performance narrative mapped to requirements</li>
           <li><span>✓</span> Executive summary positioning your strengths</li>
           <li><span>✓</span> Copy to clipboard or download as .docx</li>
@@ -472,21 +506,19 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Proposal Draft · DoD IT Support · SOL-2026-0847</div></div>
-          <div class="mockup-body">
-            <div class="mock-proposal">
-              <div class="mock-tabs"><div class="mock-tab active">Technical Approach</div><div class="mock-tab">Past Performance</div><div class="mock-tab">Executive Summary</div></div>
-              <div class="mock-prose">
-                <h4>1. UNDERSTANDING OF REQUIREMENTS</h4>
-                <p>Acme Federal Services LLC understands that the Department of Defense requires comprehensive IT support services at Fort Belvoir, Virginia, encompassing network administration, helpdesk operations, and cybersecurity monitoring for approximately 2,400 end users across 12 facilities...</p>
-                <h4>2. TECHNICAL METHODOLOGY</h4>
-                <p>Our approach leverages a three-tier service delivery model that has been proven across four comparable DoD engagements. Tier 1 provides 24/7 helpdesk coverage with a target resolution rate of 85% at first contact. Tier 2 escalation handles network infrastructure, Active Directory management, and...</p>
-                <h4>3. STAFFING APPROACH</h4>
-                <p>We will deploy a team of 8 full-time personnel, including a Program Manager (PMP-certified, 12 years DoD IT experience), two Senior Network Engineers...</p>
-              </div>
-              <div class="mock-actions" style="margin-top:12px"><span class="mock-btn primary">Copy to Clipboard</span><span class="mock-btn ghost">Download .docx</span><span class="mock-btn ghost">Regenerate</span></div>
+        <div class="mockup-frame" data-mockup="2">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Proposal Draft · DoD IT Support</div></div>
+          <div class="mockup-body" style="background:var(--surface)">
+            <div class="mock-tabs"><div class="mock-tab active">Technical Approach</div><div class="mock-tab">Past Performance</div><div class="mock-tab">Executive Summary</div></div>
+            <div class="mock-prose">
+              <h4>1. Understanding of Requirements</h4>
+              <p>Acme Federal Services LLC understands that the Department of Defense requires comprehensive IT support services at Fort Belvoir, Virginia, encompassing network administration, helpdesk operations, and cybersecurity monitoring for approximately 2,400 end users...</p>
+              <h4>2. Technical Methodology</h4>
+              <p>Our approach leverages a three-tier service delivery model proven across four comparable DoD engagements. Tier 1 provides 24/7 helpdesk coverage with a target resolution rate of 85% at first contact...</p>
+              <h4>3. Staffing Approach</h4>
+              <p>We will deploy a team of 8 full-time personnel, including a Program Manager (PMP-certified, 12 years DoD IT experience)...</p>
             </div>
+            <div class="mock-actions" style="margin-top:12px"><span class="mock-btn primary">Copy to Clipboard</span><span class="mock-btn ghost">Download .docx</span><span class="mock-btn ghost">Regenerate</span></div>
           </div>
         </div>
       </div>
@@ -494,29 +526,29 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- PRODUCT 3: COMPLIANCE MONITOR -->
-<section class="product-section" style="background:var(--bg)">
+<!-- PRODUCT 3: COMPLIANCE -->
+<section class="product-section">
   <div class="container">
     <div class="product-layout">
       <div class="product-info">
         <div class="product-tier tier-all">✓ All Plans</div>
         <div class="product-title">Compliance<br><em>Monitor</em></div>
-        <div class="product-desc">ContractsIntel tracks every compliance obligation that could cost you a contract — SAM.gov registration renewals, 8(a) annual reviews, CMMC deadlines, and FAR/DFARS changes. You get a monthly compliance health score and alerts before deadlines, not after you've missed them.</div>
+        <div class="product-desc">Tracks SAM.gov registration, certification renewals, CMMC deadlines, and FAR changes. Monthly health score. Alerts before deadlines — not after you've missed them.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>The FAR is being rewritten right now. CMMC Phase 2 hits November 2026. Only 1% of contractors are audit-ready. A lapsed SAM.gov registration means you can't get paid on an active contract. One missed deadline can end a contract relationship permanently. ContractsIntel watches all of this so you don't have to.</p>
+          <p>The FAR is being rewritten. CMMC Phase 2 hits November 2026. A lapsed SAM registration means you can't get paid. One missed deadline can end a contract. ContractsIntel watches it all.</p>
         </div>
         <ul class="product-bullets">
-          <li><span>✓</span> SAM.gov registration expiration alerts (90/60/30/14/7 days out)</li>
-          <li><span>✓</span> Certification renewal tracking (8(a), SDVOSB, WOSB, HUBZone)</li>
-          <li><span>✓</span> CMMC status tracking + Phase 2 deadline monitoring</li>
-          <li><span>✓</span> FAR/DFARS change alerts affecting your certifications</li>
-          <li><span>✓</span> Monthly compliance health score (0–100)</li>
+          <li><span>✓</span> SAM.gov expiration alerts (90/60/30/14/7 days)</li>
+          <li><span>✓</span> Certification renewal tracking</li>
+          <li><span>✓</span> CMMC status + Phase 2 deadline</li>
+          <li><span>✓</span> FAR/DFARS change alerts</li>
+          <li><span>✓</span> Monthly compliance health score (0-100)</li>
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Compliance Dashboard · Acme Federal Services</div></div>
+        <div class="mockup-frame" data-mockup="3">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Compliance Dashboard</div></div>
           <div class="mockup-body">
             <div class="mock-health">
               <div class="mock-health-score">78</div>
@@ -524,11 +556,10 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
               <div class="mock-health-bar"><div class="mock-health-fill" style="width:78%"></div></div>
             </div>
             <div class="mock-compliance-row"><span>SAM.gov Registration</span><span class="mock-status-warn">⚠ Expires in 34 days</span></div>
-            <div class="mock-compliance-row"><span>8(a) Certification</span><span class="mock-status-ok">✓ Current — review due Jul 15</span></div>
+            <div class="mock-compliance-row"><span>8(a) Certification</span><span class="mock-status-ok">✓ Current</span></div>
             <div class="mock-compliance-row"><span>SDVOSB Certification</span><span class="mock-status-ok">✓ Current</span></div>
-            <div class="mock-compliance-row"><span>CMMC Level 2</span><span class="mock-status-bad">✗ Not assessed — required by Nov</span></div>
-            <div class="mock-compliance-row"><span>FAR Part 19 Update</span><span class="mock-status-warn">⚠ Action needed — update proposals</span></div>
-            <div style="margin-top:12px;padding:8px 10px;background:rgba(245,158,11,0.08);border-left:2px solid var(--orange);font-size:10px;color:var(--text2)"><strong style="color:var(--orange)">ALERT:</strong> FAR Part 19 overhaul affects your 8(a) and SDVOSB set-aside eligibility language. Update your proposal templates.</div>
+            <div class="mock-compliance-row"><span>CMMC Level 2</span><span class="mock-status-bad">✗ Not assessed</span></div>
+            <div class="mock-compliance-row"><span>FAR Part 19</span><span class="mock-status-warn">⚠ Update proposals</span></div>
           </div>
         </div>
       </div>
@@ -536,54 +567,50 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- PRODUCT 4: PIPELINE TRACKER -->
-<section class="product-section" style="background:var(--surface)">
+<!-- PRODUCT 4: PIPELINE -->
+<section class="product-section">
   <div class="container">
     <div class="product-layout reverse">
       <div class="product-info">
         <div class="product-tier tier-all">✓ All Plans</div>
         <div class="product-title">Pipeline<br><em>Tracker</em></div>
-        <div class="product-desc">A visual pipeline that tracks every opportunity from discovery to award. Drag opportunities between stages — Monitoring, Preparing Bid, Submitted, Won, Lost — and see your total pipeline value, win rate, and upcoming deadlines at a glance.</div>
+        <div class="product-desc">Kanban board tracking every opportunity from discovery to award. See your pipeline value, win rate, and deadlines at a glance. When you win — delivery records and past performance are created automatically.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>You're tracking opportunities in a spreadsheet, losing track of deadlines, and have no idea what your actual win rate is. Without pipeline data, you can't make smart bid/no-bid decisions or forecast revenue. ContractsIntel gives you the pipeline visibility that large primes take for granted.</p>
+          <p>You're tracking opportunities in a spreadsheet with no idea what your win rate is or what your pipeline is worth. ContractsIntel gives you the visibility large primes take for granted.</p>
         </div>
         <ul class="product-bullets">
-          <li><span>✓</span> Kanban board with drag-and-drop</li>
-          <li><span>✓</span> Total pipeline value by stage</li>
-          <li><span>✓</span> Win rate tracking with loss reason analysis</li>
+          <li><span>✓</span> Drag-and-drop kanban board</li>
+          <li><span>✓</span> Win rate + loss reason tracking</li>
+          <li><span>✓</span> Auto-creates records on win</li>
           <li><span>✓</span> Deadline alerts for active bids</li>
-          <li><span>✓</span> Automatic past performance record creation on wins</li>
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Pipeline · $12.4M total value · 40% win rate</div></div>
+        <div class="mockup-frame" data-mockup="4">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Pipeline · $12.4M total · 40% win rate</div></div>
           <div class="mockup-body">
             <div class="mock-pipeline">
               <div class="mock-col">
                 <div class="mock-col-head">Monitoring (8)</div>
                 <div class="mock-mini-card"><div class="mock-mini-title">DoD IT Support</div><div class="mock-mini-val">$847K</div></div>
-                <div class="mock-mini-card"><div class="mock-mini-title">HHS Program Mgmt</div><div class="mock-mini-val">$320K</div></div>
-                <div class="mock-mini-card"><div class="mock-mini-title">DHS Cyber</div><div class="mock-mini-val">$1.4M</div></div>
+                <div class="mock-mini-card"><div class="mock-mini-title">HHS Program</div><div class="mock-mini-val">$320K</div></div>
               </div>
               <div class="mock-col">
                 <div class="mock-col-head blue">Preparing (3)</div>
                 <div class="mock-mini-card"><div class="mock-mini-title">GSA Facilities</div><div class="mock-mini-val">$1.2M</div></div>
-                <div class="mock-mini-card"><div class="mock-mini-title">Army Logistics</div><div class="mock-mini-val">$560K</div></div>
               </div>
               <div class="mock-col">
                 <div class="mock-col-head gold">Submitted (2)</div>
-                <div class="mock-mini-card"><div class="mock-mini-title">VA Healthcare IT</div><div class="mock-mini-val">$2.1M</div></div>
+                <div class="mock-mini-card"><div class="mock-mini-title">VA Healthcare</div><div class="mock-mini-val">$2.1M</div></div>
               </div>
               <div class="mock-col">
                 <div class="mock-col-head green">Won (2)</div>
-                <div class="mock-mini-card"><div class="mock-mini-title">VA Support Svc</div><div class="mock-mini-val">$320K</div></div>
-                <div class="mock-mini-card"><div class="mock-mini-title">DoD Help Desk</div><div class="mock-mini-val">$480K</div></div>
+                <div class="mock-mini-card"><div class="mock-mini-title">VA Support</div><div class="mock-mini-val">$320K</div></div>
               </div>
               <div class="mock-col">
                 <div class="mock-col-head red">Lost (1)</div>
-                <div class="mock-mini-card"><div class="mock-mini-title">HHS Data Mgmt</div><div class="mock-mini-val">$200K</div></div>
+                <div class="mock-mini-card"><div class="mock-mini-title">HHS Data</div><div class="mock-mini-val">$200K</div></div>
               </div>
             </div>
           </div>
@@ -593,42 +620,39 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- PRODUCT 5: PAST PERFORMANCE BUILDER -->
-<section class="product-section" style="background:var(--bg)">
+<!-- PRODUCT 5: PAST PERFORMANCE -->
+<section class="product-section">
   <div class="container">
     <div class="product-layout">
       <div class="product-info">
         <div class="product-tier tier-pro">BD Pro + Team</div>
         <div class="product-title">Past Performance<br><em>Builder</em></div>
-        <div class="product-desc">When you win a contract, ContractsIntel automatically creates a past performance record, pulls award data from USASpending, and prompts you to log performance monthly. When it's time to write a proposal, the system generates PPQ-formatted narratives from your accumulated data — ready to paste directly into your submission.</div>
+        <div class="product-desc">Auto-creates records when you win. Prompts monthly logging. Generates PPQ-formatted narratives from your data — ready to paste into proposals. Your library gets stronger every month.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>Past performance is one of the highest-weighted evaluation factors in federal proposals — but most small contractors reconstruct it from memory every bid cycle. After 12 months on ContractsIntel, you'll have a complete performance library that gets richer every month and makes every proposal stronger.</p>
+          <p>Past performance is the highest-weighted evaluation factor, but you reconstruct it from memory every bid cycle. After 12 months on ContractsIntel, you have a complete library.</p>
         </div>
         <ul class="product-bullets">
-          <li><span>✓</span> Auto-created record when you win a contract</li>
-          <li><span>✓</span> Monthly performance log prompts via email</li>
-          <li><span>✓</span> PPQ narrative generation (relevance, quality, schedule, cost, relations)</li>
-          <li><span>✓</span> Searchable library by NAICS, agency, contract type</li>
-          <li><span>✓</span> Copy-paste ready for any proposal format</li>
+          <li><span>✓</span> Auto-created on contract wins</li>
+          <li><span>✓</span> Monthly performance log prompts</li>
+          <li><span>✓</span> PPQ narrative generation</li>
+          <li><span>✓</span> Searchable library by NAICS/agency</li>
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Past Performance Library · 3 contracts · 18 months logged</div></div>
+        <div class="mockup-frame" data-mockup="5">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Past Performance · 3 contracts</div></div>
           <div class="mockup-body">
             <div class="mock-card">
-              <div class="mock-card-head"><div class="mock-card-title">VA Healthcare IT Support</div><span style="font-size:10px;color:var(--green);font-family:'Geist Mono',monospace">● Active</span></div>
-              <div class="mock-card-meta">VA-2025-1847 · $320,000 · NAICS 541512 · Jan 2025–Jan 2026</div>
-              <div style="margin:8px 0;font-size:11px;color:var(--text2)">Performance logs: 8 of 12 months logged</div>
-              <div style="height:4px;background:var(--border);margin-bottom:8px"><div style="height:100%;width:66%;background:var(--green)"></div></div>
-              <div class="mock-actions"><span class="mock-btn primary">Generate PPQ Narrative</span><span class="mock-btn ghost">Log This Month</span><span class="mock-btn ghost">View Logs</span></div>
+              <div class="mock-card-head"><div class="mock-card-title">VA Healthcare IT Support</div><span style="font-size:11px;color:var(--green-text);font-weight:600">● Active</span></div>
+              <div class="mock-card-meta">VA-2025-1847 · $320,000 · NAICS 541512</div>
+              <div style="margin:8px 0;font-size:12px;color:var(--text-secondary)">Performance logs: 8 of 12 months</div>
+              <div style="height:4px;background:var(--bg-subtle);border-radius:2px"><div style="height:100%;width:66%;background:var(--green);border-radius:2px"></div></div>
+              <div class="mock-actions" style="margin-top:10px"><span class="mock-btn primary">Generate PPQ</span><span class="mock-btn ghost">Log Month</span></div>
             </div>
-            <div class="mock-card" style="opacity:0.7">
-              <div class="mock-card-head"><div class="mock-card-title">DoD Help Desk Operations</div><span style="font-size:10px;color:var(--green);font-family:'Geist Mono',monospace">● Active</span></div>
-              <div class="mock-card-meta">DOD-2025-0392 · $480,000 · NAICS 541519 · Mar 2025–Mar 2026</div>
-              <div style="margin:8px 0;font-size:11px;color:var(--text2)">Performance logs: 6 of 12 months logged</div>
-              <div style="height:4px;background:var(--border)"><div style="height:100%;width:50%;background:var(--accent-bright)"></div></div>
+            <div class="mock-card" style="opacity:0.6">
+              <div class="mock-card-head"><div class="mock-card-title">DoD Help Desk Operations</div><span style="font-size:11px;color:var(--green-text);font-weight:600">● Active</span></div>
+              <div class="mock-card-meta">DOD-2025-0392 · $480,000 · NAICS 541519</div>
             </div>
           </div>
         </div>
@@ -637,40 +661,38 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- PRODUCT 6: CONTRACT DELIVERY DASHBOARD -->
-<section class="product-section" style="background:var(--surface)">
+<!-- PRODUCT 6: CONTRACT DELIVERY -->
+<section class="product-section">
   <div class="container">
     <div class="product-layout reverse">
       <div class="product-info">
         <div class="product-tier tier-pro">BD Pro + Team</div>
         <div class="product-title">Contract Delivery<br><em>Dashboard</em></div>
-        <div class="product-desc">After you win, ContractsIntel becomes your delivery management system. Track deliverable deadlines, reporting requirements, invoice milestones, and option period countdowns. Get alerts 14, 7, 3, and 1 day before every deadline — and flag late government payments under the Prompt Payment Act.</div>
+        <div class="product-desc">Track deliverables, reports, invoices, and option periods. Alerts at 14/7/3/1 days. Flag late government payments under the Prompt Payment Act and generate demand letters.</div>
         <div class="product-usecase">
           <div class="product-usecase-label">The problem this solves</div>
-          <p>One missed deliverable deadline can end a contract relationship permanently. One missed option period means lost revenue. One late invoice you didn't follow up on is money the government legally owes you. Most contractors manage all of this in spreadsheets — until something slips. ContractsIntel makes sure nothing slips.</p>
+          <p>One missed deliverable can end a contract. One late invoice you didn't follow up on is money the government legally owes you. ContractsIntel makes sure nothing slips.</p>
         </div>
         <ul class="product-bullets">
-          <li><span>✓</span> Deliverable and reporting deadline tracking</li>
-          <li><span>✓</span> Invoice submission and payment tracking</li>
-          <li><span>✓</span> Option period countdown with exercise alerts</li>
-          <li><span>✓</span> Prompt Payment Act enforcement (30-day flag)</li>
-          <li><span>✓</span> Email alerts at 14, 7, 3, and 1 day before deadlines</li>
+          <li><span>✓</span> Milestone + deadline tracking</li>
+          <li><span>✓</span> Invoice + payment tracking</li>
+          <li><span>✓</span> Option period countdowns</li>
+          <li><span>✓</span> Prompt Payment Act enforcement</li>
         </ul>
       </div>
       <div>
-        <div class="mockup-frame">
-          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Contracts · 2 active · 4 deadlines this month</div></div>
+        <div class="mockup-frame" data-mockup="6">
+          <div class="mockup-bar"><div class="mockup-dot" style="background:#ef4444"></div><div class="mockup-dot" style="background:#f59e0b"></div><div class="mockup-dot" style="background:#22c55e"></div><div class="mockup-title">Contracts · 2 active · 4 deadlines</div></div>
           <div class="mockup-body">
-            <div style="font-size:12px;font-weight:500;margin-bottom:8px">VA Healthcare IT Support · VA-2025-1847</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text)">VA Healthcare IT · VA-2025-1847</div>
             <div class="mock-timeline">
               <div class="mock-tl-item done"><div class="mock-tl-title">Monthly Report — March</div><div class="mock-tl-date">Completed Mar 9</div></div>
-              <div class="mock-tl-item done"><div class="mock-tl-title">Invoice #7 — $26,667</div><div class="mock-tl-date">Submitted Mar 1 · ⚠ Payment overdue (12 days)</div></div>
+              <div class="mock-tl-item done"><div class="mock-tl-title">Invoice #7 — $26,667</div><div class="mock-tl-date">Submitted Mar 1 · <span style="color:var(--red)">⚠ Overdue 12 days</span></div></div>
               <div class="mock-tl-item urgent"><div class="mock-tl-title">Monthly Report — April</div><div class="mock-tl-date">Due Apr 10 (6 days)</div></div>
               <div class="mock-tl-item upcoming"><div class="mock-tl-title">Invoice #8 — $26,667</div><div class="mock-tl-date">Due Apr 15 (11 days)</div></div>
-              <div class="mock-tl-item upcoming"><div class="mock-tl-title">Quarterly Review</div><div class="mock-tl-date">Due May 1 (27 days)</div></div>
-              <div class="mock-tl-item"><div class="mock-tl-title">Option Year 1 Exercise</div><div class="mock-tl-date">Jan 15, 2026 (285 days)</div></div>
+              <div class="mock-tl-item"><div class="mock-tl-title">Option Year 1</div><div class="mock-tl-date">Jan 15, 2026</div></div>
             </div>
-            <div style="margin-top:12px;padding:8px 10px;background:rgba(239,68,68,0.08);border-left:2px solid var(--red);font-size:10px;color:var(--text2)"><strong style="color:var(--red)">LATE PAYMENT:</strong> Invoice #7 is 12 days overdue. Under the Prompt Payment Act, the government owes interest. <strong style="color:var(--accent-bright)">Generate demand letter →</strong></div>
+            <div style="margin-top:12px;padding:10px;background:var(--red-light);border-radius:8px;border-left:3px solid var(--red);font-size:11px;color:var(--text-secondary)"><strong style="color:var(--red)">LATE PAYMENT:</strong> Invoice #7 overdue 12 days. <strong style="color:var(--accent)">Generate demand letter →</strong></div>
           </div>
         </div>
       </div>
@@ -678,84 +700,23 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </div>
 </section>
 
-<!-- FULL PLATFORM — REMAINING PRODUCTS -->
+<!-- FULL PLATFORM GRID -->
 <section class="fullplatform-section" id="fullplatform">
   <div class="container">
     <div class="section-label">The Full Platform</div>
     <h2 class="section-headline">And that's just the beginning.</h2>
-    <p class="section-sub" style="max-width:600px">Beyond the six core products above, ContractsIntel includes ten additional tools that cover every corner of your contracting operation — from CPARS ratings to subcontracting leads to knowing exactly why you lost a bid.</p>
+    <p class="section-sub" style="max-width:600px">Beyond the six core products above, ContractsIntel includes ten additional tools covering every corner of your contracting operation.</p>
     <div class="fp-grid">
-
-      <div class="fp-card" style="--c:#3b82f6">
-        <div class="fp-icon">📡</div>
-        <div class="fp-tier pro">BD Pro</div>
-        <div class="fp-title">State & Local Monitoring</div>
-        <div class="fp-text">Expand beyond federal — monitor all 50 state procurement portals plus local government opportunities matched to your NAICS codes.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#3b82f6">
-        <div class="fp-icon">🗺️</div>
-        <div class="fp-tier pro">BD Pro</div>
-        <div class="fp-title">Agency Relationship Mapping</div>
-        <div class="fp-text">Track every agency you've interacted with — contracting officers, program managers, and decision-makers. Know who to call before the RFP drops.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#3b82f6">
-        <div class="fp-icon">📈</div>
-        <div class="fp-tier pro">BD Pro</div>
-        <div class="fp-title">Weekly Pipeline Report</div>
-        <div class="fp-text">Every Monday: pipeline value by stage, bid deadlines this week, win rate trends, and recommended actions. Delivered to your inbox automatically.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#22c55e">
-        <div class="fp-icon">📅</div>
-        <div class="fp-tier all">All Plans</div>
-        <div class="fp-title">Google Calendar Sync</div>
-        <div class="fp-text">Every deadline you track — bid responses, contract milestones, compliance dates — pushed to your Google Calendar with reminders at 14, 7, 3, and 1 day out.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">⭐</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">CPARS Monitor</div>
-        <div class="fp-text">Track contractor performance ratings. If a score drops below Satisfactory, an instant alert fires with a formal response template generated by AI — ready to submit.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">🤝</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">Subcontracting Network</div>
-        <div class="fp-text">Two-sided marketplace. Primes post teaming needs, you get matched automatically. Inbound subcontracting leads delivered to your dashboard — no cold calls, no LinkedIn.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">🔍</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">Competitor Intelligence</div>
-        <div class="fp-text">Auto-built profiles from every bid you win or lose. See who you're competing against, their win patterns, and AI-generated strategies to beat them next time.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">📉</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">Loss Analysis & Debriefs</div>
-        <div class="fp-text">When you lose a bid, AI generates a debrief: why you likely lost, what the winner did differently, and specific changes for your next proposal. Patterns tracked over time.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">🎯</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">Agency Win Probability</div>
-        <div class="fp-text">Heat map of every agency you've bid on. Color-coded by win rate. See where you're strong, where you're wasting effort, and where to focus your BD resources.</div>
-      </div>
-
-      <div class="fp-card" style="--c:#a78bfa">
-        <div class="fp-icon">🚀</div>
-        <div class="fp-tier team">Team</div>
-        <div class="fp-title">Contract Vehicle Alerts</div>
-        <div class="fp-text">Monitors GSA MAS, OASIS+, CIO-SP4, Alliant 3, VETS 2, and more. Alerts you the moment an on-ramp opens for vehicles matching your NAICS and certifications.</div>
-      </div>
-
+      <div class="fp-card"><div class="fp-icon">📡</div><div class="fp-tier pro">BD Pro</div><div class="fp-title">State & Local Monitoring</div><div class="fp-text">All 50 state procurement portals plus local government opportunities matched to your NAICS codes.</div></div>
+      <div class="fp-card"><div class="fp-icon">🗺️</div><div class="fp-tier pro">BD Pro</div><div class="fp-title">Agency Mapping</div><div class="fp-text">Track contracting officers, program managers, and decision-makers at every agency you work with.</div></div>
+      <div class="fp-card"><div class="fp-icon">📈</div><div class="fp-tier pro">BD Pro</div><div class="fp-title">Weekly Pipeline Report</div><div class="fp-text">Pipeline value, bid deadlines, win rate trends, and recommended actions delivered every Monday.</div></div>
+      <div class="fp-card"><div class="fp-icon">📅</div><div class="fp-tier all">All Plans</div><div class="fp-title">Google Calendar Sync</div><div class="fp-text">Every deadline pushed to your calendar with reminders at 14, 7, 3, and 1 day out.</div></div>
+      <div class="fp-card"><div class="fp-icon">⭐</div><div class="fp-tier team">Team</div><div class="fp-title">CPARS Monitor</div><div class="fp-text">Track ratings. AI-generated response drafts when scores drop below Satisfactory.</div></div>
+      <div class="fp-card"><div class="fp-icon">🤝</div><div class="fp-tier team">Team</div><div class="fp-title">Subcontracting Network</div><div class="fp-text">Primes post teaming needs. You get matched automatically. Inbound leads, no cold calls.</div></div>
+      <div class="fp-card"><div class="fp-icon">🔍</div><div class="fp-tier team">Team</div><div class="fp-title">Competitor Intelligence</div><div class="fp-text">Auto-built profiles from wins and losses. AI strategies for competing against each rival.</div></div>
+      <div class="fp-card"><div class="fp-icon">📉</div><div class="fp-tier team">Team</div><div class="fp-title">Loss Analysis</div><div class="fp-text">AI debrief on every lost bid. Why you lost, what the winner did, what to change next time.</div></div>
+      <div class="fp-card"><div class="fp-icon">🎯</div><div class="fp-tier team">Team</div><div class="fp-title">Agency Heat Maps</div><div class="fp-text">Win rate by agency. See where you're strong and where you're wasting BD resources.</div></div>
+      <div class="fp-card"><div class="fp-icon">🚀</div><div class="fp-tier team">Team</div><div class="fp-title">Vehicle Alerts</div><div class="fp-text">GSA MAS, OASIS+, CIO-SP4 and more. Alerts when on-ramps open for your NAICS.</div></div>
     </div>
   </div>
 </section>
@@ -764,11 +725,11 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 <section class="how-section" id="how">
   <div class="container">
     <div class="section-label">How It Works</div>
-    <h2 class="section-headline">Connect once.<br>Runs forever.</h2>
+    <h2 class="section-headline">Connect once. Runs forever.</h2>
     <div class="steps-grid">
-      <div class="step-card"><div class="step-num">STEP 01</div><div class="step-icon">⚙️</div><div class="step-title">Connect your SAM.gov profile in 5 minutes</div><p class="step-text">Enter your UEI. ContractsIntel pulls your certifications, NAICS codes, and SAM.gov registration status automatically. Set geography, contract size range, and agency preferences. Done — the system takes over.</p><div class="step-connector">→</div></div>
-      <div class="step-card"><div class="step-num">STEP 02</div><div class="step-icon">🎯</div><div class="step-title">Intelligence delivered every morning at 7am</div><p class="step-text">Every night ContractsIntel scans 35,000+ portals, scores every new opportunity against your exact profile, identifies the incumbent, and sends your ranked digest with bid recommendations already written.</p><div class="step-connector">→</div></div>
-      <div class="step-card"><div class="step-num">STEP 03</div><div class="step-icon">📋</div><div class="step-title">Win. Then we track everything automatically.</div><p class="step-text">Mark a bid as won and ContractsIntel detects the award on USASpending. Delivery dashboard activates. Past performance tracking begins. Compliance items generate. The platform grows with you.</p></div>
+      <div class="step-card"><div class="step-num">STEP 01</div><div class="step-icon">⚙️</div><div class="step-title">Connect your SAM.gov profile in 5 minutes</div><p class="step-text">Enter your UEI. We pull your certifications, NAICS codes, and registration status automatically. Set preferences. Done — the system takes over.</p><div class="step-connector">→</div></div>
+      <div class="step-card"><div class="step-num">STEP 02</div><div class="step-icon">🎯</div><div class="step-title">Intelligence delivered at 7am</div><p class="step-text">Every night we scan 35,000+ portals, score opportunities against your profile, identify incumbents, and send your ranked digest with recommendations.</p><div class="step-connector">→</div></div>
+      <div class="step-card"><div class="step-num">STEP 03</div><div class="step-icon">📋</div><div class="step-title">Win. We track everything.</div><p class="step-text">Mark a bid as won and delivery dashboard activates. Past performance begins. Compliance items generate. The platform grows with you.</p></div>
     </div>
   </div>
 </section>
@@ -777,12 +738,11 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 <section class="roi-section">
   <div class="container">
     <div class="section-label">The Math</div>
-    <h2 class="section-headline">One contract pays for<br>years of ContractsIntel.</h2>
-    <p class="section-sub">This isn't a productivity tool. It's a revenue infrastructure decision.</p>
+    <h2 class="section-headline">One contract pays for years of ContractsIntel.</h2>
     <div class="roi-calc">
-      <div class="roi-side left"><div class="roi-label-sm">Average contract you're missing</div><div class="roi-big green">$340K</div><div class="roi-sub">Typical SDVOSB or 8(a) set-aside award in core service categories. Your certifications give you exclusive access to this pool.</div></div>
-      <div class="roi-divider-col"><div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--text3)">VS</div><div style="font-size:24px;color:var(--accent-bright)">→</div></div>
-      <div class="roi-side"><div class="roi-label-sm">ContractsIntel BD Pro annual cost</div><div class="roi-big red">$11,988</div><div class="roi-sub">One additional contract win per year returns 28x your investment.</div></div>
+      <div class="roi-side left"><div class="roi-label-sm">Contract you're missing</div><div class="roi-big green">$340K</div><div class="roi-sub">Typical set-aside award. Your certifications give you exclusive access.</div></div>
+      <div class="roi-divider-col"><div style="font-size:12px;color:var(--text-muted);font-weight:600">VS</div><div style="font-size:20px;color:var(--accent)">→</div></div>
+      <div class="roi-side"><div class="roi-label-sm">BD Pro annual cost</div><div class="roi-big red">$11,988</div><div class="roi-sub">One win per year = 28x return on your investment.</div></div>
     </div>
   </div>
 </section>
@@ -790,130 +750,97 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 <!-- PRICING -->
 <section class="pricing-section" id="pricing">
   <div class="container">
-    <div class="section-label">Pricing</div>
-    <h2 class="section-headline">Pay for the tool.<br>Win with the contracts.</h2>
-    <p class="section-sub">Every tier pays for itself with a fraction of one contract win. No annual commitment. Cancel anytime.</p>
+    <div class="section-label" style="text-align:center">Pricing</div>
+    <h2 class="section-headline" style="text-align:center">Pay for the tool. Win with the contracts.</h2>
+    <p class="section-sub" style="text-align:center;margin:0 auto 0">Every tier pays for itself with a fraction of one contract win.</p>
     <div class="pricing-grid">
       <div class="pricing-card">
         <div class="plan-name">Discovery</div>
         <div class="plan-price"><span>$</span>499</div>
-        <div class="plan-period">per month · no commitment</div>
+        <div class="plan-period">per month · cancel anytime</div>
         <div class="plan-who">Best for: Just got certified</div>
-        <div class="plan-value">Break-even: 1/300th of one average contract</div>
+        <div class="plan-value">5 products included</div>
         <div class="plan-divider"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">5 products included:</div>
+          <div class="plan-includes-label">What you get:</div>
           <div class="plan-product"><span class="pp-icon">🎯</span> Opportunity Intelligence + Daily Digest</div>
-          <div class="plan-product"><span class="pp-icon">🛡️</span> Compliance Alerts (SAM + cert renewals)</div>
+          <div class="plan-product"><span class="pp-icon">🛡️</span> Compliance Alerts</div>
           <div class="plan-product"><span class="pp-icon">📊</span> Pipeline Tracker</div>
           <div class="plan-product"><span class="pp-icon">📅</span> Google Calendar Sync</div>
           <div class="plan-product"><span class="pp-icon">🔎</span> SAM.gov Profile Audit</div>
         </div>
         <ul class="plan-features" style="margin-top:16px">
-          <li class="has"><span class="pf-check">✓</span> Daily opportunity digest (top 10 matched)</li>
-          <li class="has"><span class="pf-check">✓</span> Bid/no-bid AI scoring with reasoning</li>
-          <li class="has"><span class="pf-check">✓</span> Incumbent identification via USASpending</li>
-          <li class="has"><span class="pf-check">✓</span> SAM.gov + cert expiration alerts</li>
-          <li class="has"><span class="pf-check">✓</span> Pipeline tracker with win/loss tracking</li>
-          <li class="has"><span class="pf-check">✓</span> Google Calendar deadline sync</li>
           <li><span class="pf-x">–</span> Proposal first drafts</li>
           <li><span class="pf-x">–</span> Past performance builder</li>
           <li><span class="pf-x">–</span> Contract delivery dashboard</li>
-          <li><span class="pf-x">–</span> Full CMMC + FAR monitoring</li>
           <li><span class="pf-x">–</span> CPARS, Network, Competitors</li>
         </ul>
-        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="/signup" class="btn-secondary" style="display:block;text-align:center;padding:14px;font-size:14px;width:100%">Start Free Trial →</a>
         <div class="plan-fomo">14-day free trial · no card required</div>
       </div>
       <div class="pricing-card popular">
         <div class="popular-badge">Most Popular</div>
-        <div class="plan-name" style="color:var(--accent-bright)">BD Pro</div>
+        <div class="plan-name" style="color:var(--accent)">BD Pro</div>
         <div class="plan-price"><span>$</span>999</div>
-        <div class="plan-period">per month · no commitment</div>
-        <div class="plan-who">Best for: Actively bidding on contracts</div>
-        <div class="plan-value" style="color:var(--accent-bright)">One contract win = 12 years of this subscription</div>
-        <div class="plan-divider" style="border-color:rgba(37,99,235,0.2)"></div>
+        <div class="plan-period">per month · cancel anytime</div>
+        <div class="plan-who">Best for: Actively bidding</div>
+        <div class="plan-value" style="color:var(--accent)">12 products included</div>
+        <div class="plan-divider"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">12 products included:</div>
-          <div class="plan-product"><span class="pp-icon">🎯</span> Opportunity Intelligence + Daily Digest</div>
+          <div class="plan-includes-label">Everything in Discovery, plus:</div>
           <div class="plan-product"><span class="pp-icon">📄</span> <strong>AI Proposal First Drafts</strong></div>
-          <div class="plan-product"><span class="pp-icon">🛡️</span> <strong>Full Compliance Monitor (CMMC + FAR)</strong></div>
-          <div class="plan-product"><span class="pp-icon">📊</span> Pipeline Tracker</div>
+          <div class="plan-product"><span class="pp-icon">🛡️</span> <strong>Full Compliance (CMMC + FAR)</strong></div>
           <div class="plan-product"><span class="pp-icon">⭐</span> <strong>Past Performance Builder</strong></div>
           <div class="plan-product"><span class="pp-icon">📋</span> <strong>Contract Delivery Dashboard</strong></div>
           <div class="plan-product"><span class="pp-icon">📡</span> <strong>State + Local Monitoring</strong></div>
-          <div class="plan-product"><span class="pp-icon">🗺️</span> <strong>Agency Relationship Mapping</strong></div>
           <div class="plan-product"><span class="pp-icon">📈</span> <strong>Weekly Pipeline Report</strong></div>
-          <div class="plan-product"><span class="pp-icon">📅</span> Google Calendar Sync</div>
-          <div class="plan-product"><span class="pp-icon">🔎</span> SAM.gov Profile Audit</div>
         </div>
-        <ul class="plan-features" style="margin-top:16px">
-          <li class="has"><span class="pf-check">✓</span> Everything in Discovery</li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Proposal first drafts on every bid</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Full CMMC + FAR change monitoring</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Past performance logging + PPQ generation</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Contract delivery + invoice tracking</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>State + local portal monitoring</strong></li>
-          <li class="has"><span class="pf-check">✓</span> Weekly pipeline report</li>
-          <li class="has"><span class="pf-check">✓</span> Priority email support</li>
-        </ul>
-        <a href="/signup" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
-        <div class="plan-fomo" style="color:var(--accent-bright);opacity:0.7">New features ship to BD Pro first</div>
+        <a href="/signup" class="btn-primary large" style="display:block;text-align:center;width:100%">Start Free Trial →</a>
+        <div class="plan-fomo" style="color:var(--accent)">One contract win = 12 years of this plan</div>
       </div>
       <div class="pricing-card">
         <div class="plan-name">Team</div>
         <div class="plan-price"><span>$</span>2,499</div>
-        <div class="plan-period">per month · no commitment</div>
+        <div class="plan-period">per month · cancel anytime</div>
         <div class="plan-who">Best for: Scaling to $3M–$10M/yr</div>
-        <div class="plan-value">Full platform + dedicated support</div>
+        <div class="plan-value">All 16 products</div>
         <div class="plan-divider"></div>
         <div class="plan-includes">
-          <div class="plan-includes-label">All 16 products — the complete platform:</div>
-          <div class="plan-product"><span class="pp-icon">📄</span> Everything in BD Pro (12 products)</div>
+          <div class="plan-includes-label">Everything in BD Pro, plus:</div>
           <div class="plan-product"><span class="pp-icon">👥</span> <strong>Unlimited team users</strong></div>
-          <div class="plan-product"><span class="pp-icon">🔗</span> <strong>API access for CRM integration</strong></div>
-          <div class="plan-product"><span class="pp-icon">⭐</span> <strong>CPARS monitor + response generator</strong></div>
+          <div class="plan-product"><span class="pp-icon">⭐</span> <strong>CPARS monitor</strong></div>
           <div class="plan-product"><span class="pp-icon">🤝</span> <strong>Subcontracting network</strong></div>
-          <div class="plan-product"><span class="pp-icon">🔍</span> <strong>Competitor intelligence + loss analysis</strong></div>
-          <div class="plan-product"><span class="pp-icon">🎯</span> <strong>Agency win probability heat maps</strong></div>
-          <div class="plan-product"><span class="pp-icon">🚀</span> <strong>Contract vehicle on-ramp alerts</strong></div>
-          <div class="plan-product"><span class="pp-icon">💰</span> <strong>Prompt Payment Act enforcement</strong></div>
+          <div class="plan-product"><span class="pp-icon">🔍</span> <strong>Competitor intelligence</strong></div>
+          <div class="plan-product"><span class="pp-icon">🎯</span> <strong>Agency heat maps</strong></div>
+          <div class="plan-product"><span class="pp-icon">🚀</span> <strong>Contract vehicle alerts</strong></div>
+          <div class="plan-product"><span class="pp-icon">💰</span> <strong>Prompt Payment enforcement</strong></div>
         </div>
-        <ul class="plan-features" style="margin-top:16px">
-          <li class="has"><span class="pf-check">✓</span> Everything in BD Pro</li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Unlimited team users</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>API access for CRM integration</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>CPARS monitor + response generator</strong></li>
-          <li class="has"><span class="pf-check">✓</span> <strong>Subcontracting network access</strong></li>
-          <li class="has"><span class="pf-check">✓</span> Dedicated account manager</li>
-          <li class="has"><span class="pf-check">✓</span> Quarterly pipeline strategy review</li>
-        </ul>
-        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="/signup" class="btn-secondary" style="display:block;text-align:center;padding:14px;font-size:14px;width:100%">Start Free Trial →</a>
         <div class="plan-fomo">White-glove onboarding included</div>
       </div>
     </div>
-    <div style="margin-top:32px;display:flex;gap:32px;justify-content:center;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> No setup fees</div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> Cancel anytime</div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> 14-day free trial all plans</div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3)"><span style="color:var(--green)">✓</span> SAM.gov verified data</div>
+    <div style="margin-top:24px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 16 16" fill="var(--green)"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> No setup fees</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 16 16" fill="var(--green)"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> Cancel anytime</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 16 16" fill="var(--green)"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> 14-day free trial</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)"><svg width="14" height="14" viewBox="0 0 16 16" fill="var(--green)"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg> SAM.gov verified</div>
     </div>
   </div>
 </section>
 
-<!-- SAM AUDIT -->
+<!-- AUDIT -->
 <section class="audit-section" id="audit">
   <div class="container">
     <div class="audit-inner">
       <div class="audit-content">
         <div class="section-label">Free Tool</div>
         <h3>Is your SAM.gov profile <em>costing you contracts?</em></h3>
-        <p>Incomplete profiles, missing NAICS codes, and outdated contact info make you invisible to contracting officers. Enter your UEI and we'll audit your profile in 60 seconds — free, no account required.</p>
+        <p>Incomplete profiles make you invisible to contracting officers. Enter your UEI and we'll audit your profile in 60 seconds — free, no account required.</p>
         <div class="audit-features">
-          <div class="audit-feature"><span class="af-check">✓</span> Registration status check</div>
-          <div class="audit-feature"><span class="af-check">✓</span> NAICS code completeness</div>
+          <div class="audit-feature"><span class="af-check">✓</span> Registration status</div>
+          <div class="audit-feature"><span class="af-check">✓</span> NAICS completeness</div>
           <div class="audit-feature"><span class="af-check">✓</span> Certification verification</div>
-          <div class="audit-feature"><span class="af-check">✓</span> Expiration date alerts</div>
+          <div class="audit-feature"><span class="af-check">✓</span> Expiration alerts</div>
           <div class="audit-feature"><span class="af-check">✓</span> Actionable recommendations</div>
         </div>
       </div>
@@ -921,12 +848,12 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="audit-form-label">Enter your Unique Entity Identifier (UEI)</div>
         <div class="audit-input-row">
           <input type="text" class="audit-input" placeholder="e.g. ZQGGHJH74DW7" maxlength="12">
-          <a href="/audit" class="btn-primary" style="white-space:nowrap;padding:14px 24px">Run Free Audit →</a>
+          <a href="/audit" class="btn-primary" style="white-space:nowrap">Run Free Audit →</a>
         </div>
         <div class="audit-features" style="margin-top:12px">
           <div class="audit-feature"><span class="af-check">✓</span> No account needed</div>
           <div class="audit-feature"><span class="af-check">✓</span> Results in 60 seconds</div>
-          <div class="audit-feature"><span class="af-check">✓</span> Uses official SAM.gov data</div>
+          <div class="audit-feature"><span class="af-check">✓</span> Official SAM.gov data</div>
         </div>
       </div>
     </div>
@@ -936,41 +863,305 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
 <!-- CTA -->
 <section class="cta-section" id="cta">
   <div class="container">
-    <div class="cta-eyebrow">// Start today</div>
     <h2 class="cta-headline">See what you're missing<br><em>this week.</em></h2>
-    <p class="cta-sub">Right now there are contracts in your NAICS codes, set aside for your certifications, closing in the next 10 days — that you don't know exist. ContractsIntel shows you in 5 minutes.</p>
+    <p class="cta-sub">Contracts in your NAICS codes, set aside for your certifications, closing in the next 10 days — that you don't know exist.</p>
     <div class="cta-actions">
-      <a href="#pricing" class="btn-primary xl">Start Free 14-Day Trial →</a>
-      <a href="#audit" class="btn-ghost" style="padding:16px 28px;font-size:15px">Run a Free SAM.gov Audit →</a>
+      <a href="/signup" class="btn-primary xl">Start Free 14-Day Trial →</a>
+      <a href="/audit" class="btn-secondary" style="padding:16px 28px;font-size:15px">Run a Free SAM.gov Audit →</a>
     </div>
-    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text3);margin-bottom:64px">No credit card · No commitment · SAM.gov verified · Live in 5 minutes</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);max-width:800px;margin:0 auto">
-      <div style="background:var(--surface2);padding:24px;text-align:center"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--accent-bright)">$700B</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Annual federal market</div></div>
-      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--green)">68%</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Contracts missed without monitoring</div></div>
-      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--gold)">16</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Integrated products</div></div>
-      <div style="background:var(--surface2);padding:24px;text-align:center;border-left:1px solid var(--border)"><div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--purple)">5 min</div><div style="font-size:11px;color:var(--text3);margin-top:4px">To your first matched opportunity</div></div>
+    <div class="cta-proof">No credit card · No commitment · SAM.gov verified · Live in 5 minutes</div>
+    <div class="cta-stats">
+      <div class="cta-stat"><div class="cta-stat-val">$700B</div><div class="cta-stat-label">Annual federal market</div></div>
+      <div class="cta-stat"><div class="cta-stat-val">68%</div><div class="cta-stat-label">Contracts missed</div></div>
+      <div class="cta-stat"><div class="cta-stat-val">16</div><div class="cta-stat-label">Products</div></div>
+      <div class="cta-stat"><div class="cta-stat-val">5 min</div><div class="cta-stat-label">To first match</div></div>
     </div>
   </div>
 </section>
 
-<footer class="container">
-  <div class="footer-logo">Contracts<span>Intel</span></div>
-  <div style="font-size:13px"><a href="/cdn-cgi/l/email-protection#384b4d4848574a4c785b57564c4a595b4c4b51564c5d54165b5755" style="color:var(--text3);text-decoration:none"><span class="__cf_email__" data-cfemail="c4b7b1b4b4abb6b084a7abaab0b6a5a7b0b7adaab0a1a8eaa7aba9">[email&#160;protected]</span></a></div>
-  <div class="footer-copy">© 2026 ContractsIntel · SAM.gov verified data · contractsintel.com</div>
+<footer>
+  <div class="footer-logo">ContractsIntel</div>
+  <div style="font-size:13px"><a href="/cdn-cgi/l/email-protection#cab9bfbabaa5b8be8aa9a5a4beb8aba9beb9a3a4beafa6e4a9a5a7" style="color:var(--text-muted);text-decoration:none"><span class="__cf_email__" data-cfemail="cdbeb8bdbda2bfb98daea2a3b9bfacaeb9bea4a3b9a8a1e3aea2a0">[email&#160;protected]</span></a></div>
+  <div class="footer-copy">© 2026 ContractsIntel · SAM.gov verified data</div>
   <div class="footer-disclaimer">ContractsIntel is not affiliated with, endorsed by, or connected to the U.S. government, SBA, SAM.gov, or any federal agency.</div>
 </footer>
+
+<style>
+.fake-cursor {
+  position: absolute;
+  width: 18px;
+  height: 22px;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+.fake-cursor.visible { opacity: 1; }
+.fake-cursor.clicking { transform: scale(0.85); }
+.mock-toast {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #059669;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.3s ease;
+  z-index: 15;
+  font-family: 'DM Sans', sans-serif;
+}
+.mock-toast.visible { opacity: 1; transform: translateY(0); }
+.anim-hidden { opacity: 0; transform: translateY(8px); transition: opacity 0.4s ease, transform 0.4s ease; }
+.anim-visible { opacity: 1 !important; transform: translateY(0) !important; }
+.typing-dots { font-family: 'DM Mono', monospace; font-size: 12px; color: #9ca3af; text-align: center; padding: 20px; }
+.typing-dots .dot { display: inline-block; animation: dotpulse 1.4s ease infinite; }
+.typing-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotpulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+@keyframes pulse-red { 0%,100%{background:transparent} 50%{background:rgba(239,68,68,0.1)} }
+@media(max-width:768px) { .fake-cursor { display: none !important; } }
+</style>
 
 <script>
 document.addEventListener('click', function(e) {
   var link = e.target.closest('a[href^="#"]');
-  if (!link) return;
-  var id = link.getAttribute('href').substring(1);
+  if (!link) return;  var id = link.getAttribute('href').substring(1);
   var target = document.getElementById(id);
   if (target) {
     e.preventDefault();
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
+</script>
+
+<script>
+(function() {
+  var CURSOR = '<svg viewBox="0 0 24 24" fill="white" stroke="#333" stroke-width="1" xmlns="http://www.w3.org/2000/svg"><path d="M5 3l14 8-6 2-4 6-4-16z"/></svg>';
+
+  function mkCursor(f) {
+    var c = document.createElement('div'); c.className = 'fake-cursor'; c.innerHTML = CURSOR;
+    c.style.left = '50%'; c.style.top = '50%'; f.appendChild(c); return c;
+  }
+  function mvCursor(c, x, y, ms) {
+    c.style.transition = 'left '+ms+'ms ease, top '+ms+'ms ease, opacity 0.3s ease, transform 0.1s ease';
+    c.style.left = x+'px'; c.style.top = y+'px';
+  }
+  function clickC(c, cb) { c.classList.add('clicking'); setTimeout(function(){ c.classList.remove('clicking'); if(cb)cb(); }, 100); }
+  function mkToast(f, txt) {
+    var t = document.createElement('div'); t.className = 'mock-toast'; t.textContent = txt; f.appendChild(t); return t;
+  }
+  function elPos(el, f) {
+    var er = el.getBoundingClientRect(), fr = f.getBoundingClientRect();
+    return { x: er.left - fr.left + er.width/2, y: er.top - fr.top + er.height/2 };
+  }
+
+  // ===== MOCKUP 1: Opportunity Intelligence =====
+  function anim1(f) {
+    var btn = f.querySelector('.mock-btn.primary'); if(!btn) return;
+    var origText = 'Mark as Bidding', origBg = btn.style.background || '';
+    var cursor = mkCursor(f), toast = mkToast(f, 'Added to Pipeline');
+    setTimeout(function(){ cursor.classList.add('visible'); var p=elPos(btn,f); mvCursor(cursor,p.x-9,p.y-11,800); },200);
+    setTimeout(function(){ clickC(cursor, function(){ btn.style.background='#059669'; btn.textContent='\u2713 Pipeline'; }); },1200);
+    setTimeout(function(){ toast.classList.add('visible'); },1400);
+    setTimeout(function(){ cursor.classList.remove('visible'); },2000);
+  }
+  function reset1(f) {
+    var btn = f.querySelector('.mock-btn.primary');
+    if(btn){ btn.style.background=''; btn.textContent='Mark as Bidding'; }
+    f.querySelectorAll('.fake-cursor,.mock-toast').forEach(function(e){e.remove();});
+  }
+
+  // ===== MOCKUP 2: Proposal Drafts =====
+  function anim2(f) {
+    var prose = f.querySelector('.mock-prose'), btn = f.querySelector('.mock-btn.primary');
+    if(!prose||!btn) return;
+    var kids = prose.children;
+    for(var i=0;i<kids.length;i++) kids[i].classList.add('anim-hidden');
+    var typing = document.createElement('div'); typing.className='typing-dots';
+    typing.innerHTML='Generating proposal<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>';
+    prose.parentNode.insertBefore(typing, prose);
+    setTimeout(function(){ typing.style.transition='opacity 0.3s'; typing.style.opacity='0'; },1500);
+    setTimeout(function(){ typing.remove();
+      for(var i=0;i<kids.length;i++)(function(j){ setTimeout(function(){ kids[j].classList.add('anim-visible'); },j*300); })(i);
+    },1800);
+    var reveal = 1800 + kids.length*300 + 200;
+    setTimeout(function(){
+      var cursor=mkCursor(f); cursor.classList.add('visible');
+      var p=elPos(btn,f); mvCursor(cursor,p.x-9,p.y-11,600);
+      setTimeout(function(){ clickC(cursor, function(){ btn.textContent='\u2713 Copied'; btn.style.background='#059669'; }); },800);
+      setTimeout(function(){ cursor.classList.remove('visible'); },1800);
+    }, reveal);
+  }
+  function reset2(f) {
+    var prose = f.querySelector('.mock-prose'), btn = f.querySelector('.mock-btn.primary');
+    if(prose) for(var i=0;i<prose.children.length;i++){ prose.children[i].classList.remove('anim-hidden','anim-visible'); prose.children[i].style.opacity=''; prose.children[i].style.transform=''; }
+    if(btn){ btn.textContent='Copy to Clipboard'; btn.style.background=''; }
+    f.querySelectorAll('.typing-dots,.fake-cursor').forEach(function(e){e.remove();});
+  }
+
+  // ===== MOCKUP 3: Compliance Monitor =====
+  function anim3(f) {
+    var scoreEl=f.querySelector('.mock-health-score'), fillEl=f.querySelector('.mock-health-fill');
+    var rows=f.querySelectorAll('.mock-compliance-row');
+    if(!scoreEl||!fillEl) return;
+    scoreEl.textContent='0'; fillEl.style.transition='none'; fillEl.style.width='0%';
+    for(var i=0;i<rows.length;i++){ rows[i].classList.add('anim-hidden'); }
+    var alertBox=f.querySelector('div[style*="border-left:3px"]')||f.querySelector('div[style*="border-left: 3px"]');
+    if(alertBox){ alertBox.style.opacity='0'; alertBox.style.transform='translateY(10px)'; alertBox.style.transition='opacity 0.4s ease, transform 0.4s ease'; }
+    setTimeout(function(){ fillEl.style.transition='width 1.5s ease'; fillEl.style.width='78%'; },50);
+    var start=performance.now();
+    function count(now){ var p=Math.min((now-start)/1500,1); scoreEl.textContent=Math.round(p*78); if(p<1) requestAnimationFrame(count); }
+    requestAnimationFrame(count);
+    setTimeout(function(){
+      for(var i=0;i<rows.length;i++)(function(j){ setTimeout(function(){
+        rows[j].classList.add('anim-visible');
+        if(rows[j].querySelector('.mock-status-bad')){ setTimeout(function(){ rows[j].style.animation='pulse-red 0.4s ease 2'; },100); }
+      },j*200); })(i);
+    },1200);
+    var alertDelay=1200+rows.length*200+400;
+    setTimeout(function(){ if(alertBox){ alertBox.style.opacity='1'; alertBox.style.transform='translateY(0)'; } }, alertDelay);
+  }
+  function reset3(f) {
+    var scoreEl=f.querySelector('.mock-health-score'), fillEl=f.querySelector('.mock-health-fill');
+    var rows=f.querySelectorAll('.mock-compliance-row');
+    if(scoreEl) scoreEl.textContent='78';
+    if(fillEl){ fillEl.style.transition='none'; fillEl.style.width='78%'; }
+    rows.forEach(function(r){ r.classList.remove('anim-hidden','anim-visible'); r.style.opacity=''; r.style.transform=''; r.style.animation=''; });
+    var alertBox=f.querySelector('div[style*="border-left:3px"]')||f.querySelector('div[style*="border-left: 3px"]');
+    if(alertBox){ alertBox.style.opacity=''; alertBox.style.transform=''; }
+  }
+
+  // ===== MOCKUP 4: Pipeline Tracker =====
+  function anim4(f) {
+    var cols=f.querySelectorAll('.mock-col'); if(cols.length<4) return;
+    var prepCol=cols[1], wonCol=cols[3];
+    var card=prepCol.querySelector('.mock-mini-card');
+    var wonHead=wonCol.querySelector('.mock-col-head');
+    if(!card) return;
+    var cursor=mkCursor(f), toast=mkToast(f,'Contract created');
+    setTimeout(function(){ cursor.classList.add('visible'); var p=elPos(card,f); mvCursor(cursor,p.x-9,p.y-11,800); },200);
+    setTimeout(function(){ card.style.boxShadow='0 0 0 2px #2563eb'; card.style.transform='translateY(-4px)'; card.style.transition='transform 0.3s ease, box-shadow 0.3s ease'; },1100);
+    setTimeout(function(){
+      var cr=card.getBoundingClientRect(), wr=wonCol.getBoundingClientRect();
+      var dx=wr.left-cr.left+5;
+      card.style.transition='transform 1s ease'; card.style.transform='translateX('+dx+'px) translateY(-4px)';
+      var wp=elPos(wonHead,f); mvCursor(cursor,wp.x-9,wp.y+20,1000);
+    },1500);
+    setTimeout(function(){ card.style.transition='transform 0.3s cubic-bezier(0.34,1.56,0.64,1)'; card.style.transform=card.style.transform.replace('translateY(-4px)','translateY(0)'); card.style.boxShadow=''; },2600);
+    setTimeout(function(){ if(wonHead){ wonHead.style.boxShadow='0 0 12px rgba(34,197,94,0.3)'; setTimeout(function(){ wonHead.style.boxShadow=''; },800); } },2700);
+    setTimeout(function(){ toast.classList.add('visible'); },2800);
+    setTimeout(function(){ cursor.classList.remove('visible'); },3200);
+  }
+  function reset4(f) {
+    var cols=f.querySelectorAll('.mock-col'); if(cols.length<4) return;
+    var card=cols[1].querySelector('.mock-mini-card');
+    if(card){ card.style.transition='none'; card.style.transform=''; card.style.boxShadow=''; }
+    f.querySelectorAll('.fake-cursor,.mock-toast').forEach(function(e){e.remove();});
+  }
+
+  // ===== MOCKUP 5: Past Performance =====
+  function anim5(f) {
+    var bar=f.querySelector('div[style*="width:66%"]')||f.querySelector('div[style*="width: 66%"]');
+    var btn=f.querySelector('.mock-btn.primary'); if(!btn) return;
+    if(bar){ bar.style.transition='none'; bar.style.width='0%'; setTimeout(function(){ bar.style.transition='width 1s ease'; bar.style.width='66%'; },50); }
+    var cursor=mkCursor(f);
+    setTimeout(function(){ cursor.classList.add('visible'); var p=elPos(btn,f); mvCursor(cursor,p.x-9,p.y-11,800); },800);
+    setTimeout(function(){ clickC(cursor, function(){ btn.textContent='Generating...'; btn.style.opacity='0.7'; }); },1800);
+    setTimeout(function(){
+      var container=document.createElement('div'); container.className='ppq-generated'; container.style.marginTop='8px';
+      ['Relevance: Directly relevant — 4 comparable contracts','Quality: All deliverables met standards','Schedule: 100% on-time delivery'].forEach(function(t,i){
+        var d=document.createElement('div'); d.className='anim-hidden';
+        d.style.cssText='font-size:10px;color:#6b7280;padding:5px 8px;background:#f0fdf4;border-left:2px solid #059669;margin-bottom:3px;border-radius:4px;font-family:"DM Mono",monospace';
+        d.textContent=t; container.appendChild(d);
+        setTimeout(function(){ d.classList.add('anim-visible'); },i*200);
+      });
+      var card=f.querySelector('.mock-card'); if(card) card.appendChild(container);
+      btn.textContent='\u2713 Generated'; btn.style.opacity='1'; btn.style.background='#059669';
+    },2800);
+    setTimeout(function(){ cursor.classList.remove('visible'); },3500);
+  }
+  function reset5(f) {
+    var bar=f.querySelector('div[style*="width:66%"]')||f.querySelector('div[style*="width: 66%"]')||f.querySelector('div[style*="width:0%"]')||f.querySelector('div[style*="width: 0%"]');
+    var btn=f.querySelector('.mock-btn.primary');
+    if(bar){ bar.style.transition='none'; bar.style.width='66%'; }
+    if(btn){ btn.textContent='Generate PPQ'; btn.style.opacity=''; btn.style.background=''; }
+    f.querySelectorAll('.ppq-generated,.fake-cursor').forEach(function(e){e.remove();});
+  }
+
+  // ===== MOCKUP 6: Contract Delivery =====
+  function anim6(f) {
+    var items=f.querySelectorAll('.mock-tl-item');
+    var alertBox=f.querySelector('div[style*="border-left:3px solid var(--red)"]')||f.querySelector('div[style*="border-left: 3px"]');
+    var demandLink=alertBox?alertBox.querySelector('strong[style*="accent"]'):null;
+    for(var i=0;i<items.length;i++) items[i].classList.add('anim-hidden');
+    if(alertBox){ alertBox.style.opacity='0'; alertBox.style.transform='translateY(10px)'; alertBox.style.transition='opacity 0.4s ease, transform 0.4s ease'; }
+    for(var i=0;i<items.length;i++)(function(j){
+      setTimeout(function(){
+        items[j].classList.add('anim-visible');
+        var dateEl=items[j].querySelector('.mock-tl-date');
+        if(dateEl&&dateEl.textContent.indexOf('Overdue')!==-1){
+          setTimeout(function(){ items[j].style.animation='pulse-red 0.4s ease 2'; },100);
+        }
+      },j*300);
+    })(i);
+    var alertDelay=items.length*300+400;
+    setTimeout(function(){ if(alertBox){ alertBox.style.opacity='1'; alertBox.style.transform='translateY(0)'; } },alertDelay);
+    if(demandLink){
+      setTimeout(function(){
+        var cursor=mkCursor(f); cursor.classList.add('visible');
+        var p=elPos(demandLink,f); mvCursor(cursor,p.x-9,p.y-11,800);
+        setTimeout(function(){ clickC(cursor, function(){ demandLink.style.background='rgba(37,99,235,0.1)'; demandLink.style.borderRadius='4px'; setTimeout(function(){ demandLink.style.background=''; },600); }); },1000);
+        setTimeout(function(){ cursor.classList.remove('visible'); },2200);
+      },alertDelay+300);
+    }
+  }
+  function reset6(f) {
+    var items=f.querySelectorAll('.mock-tl-item');
+    items.forEach(function(it){ it.classList.remove('anim-hidden','anim-visible'); it.style.opacity=''; it.style.transform=''; it.style.animation=''; });
+    var alertBox=f.querySelector('div[style*="border-left:3px solid var(--red)"]')||f.querySelector('div[style*="border-left: 3px"]');
+    if(alertBox){ alertBox.style.opacity=''; alertBox.style.transform=''; }
+    f.querySelectorAll('.fake-cursor').forEach(function(e){e.remove();});
+  }
+
+  // ===== LOOP SYSTEM =====
+  var animFn={1:anim1,2:anim2,3:anim3,4:anim4,5:anim5,6:anim6};
+  var resetFn={1:reset1,2:reset2,3:reset3,4:reset4,5:reset5,6:reset6};
+  var dur={1:2500,2:4000,3:3500,4:3800,5:4000,6:4200};
+  var HOLD=2000, PAUSE=1000;
+  var timers={};
+
+  function startLoop(id,frame){
+    if(timers[id]) return;
+    function cycle(){
+      resetFn[id](frame);
+      timers[id]=setTimeout(function(){
+        animFn[id](frame);
+        timers[id]=setTimeout(cycle, dur[id]+HOLD);
+      }, PAUSE);
+    }
+    cycle();
+  }
+  function stopLoop(id,frame){
+    if(timers[id]){ clearTimeout(timers[id]); delete timers[id]; }
+    resetFn[id](frame);
+  }
+
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var id=e.target.getAttribute('data-mockup');
+      if(!id) return;
+      if(e.isIntersecting) startLoop(Number(id),e.target);
+      else stopLoop(Number(id),e.target);
+    });
+  },{threshold:0.2});
+
+  document.querySelectorAll('.mockup-frame[data-mockup]').forEach(function(f){ obs.observe(f); });
+})();
 </script>
 </body>
 </html>
