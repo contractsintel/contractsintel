@@ -5,6 +5,7 @@ import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "../help-panel";
 
 const RATING_CATEGORIES = ["Quality", "Schedule", "Cost Control", "Management", "Small Business"];
 const RATING_VALUES = ["Exceptional", "Very Good", "Satisfactory", "Marginal", "Unsatisfactory"];
@@ -138,7 +139,10 @@ export default function CparsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-serif text-[#e8edf8] mb-6">CPARS Monitor</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">CPARS Monitor</h1>
+        <HelpButton page="cpars" />
+      </div>
 
       {/* Add Rating Form */}
       <div className="border border-[#1e2535] bg-[#0d1018] p-5 mb-6">

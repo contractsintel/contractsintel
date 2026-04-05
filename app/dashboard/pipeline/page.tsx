@@ -3,6 +3,7 @@
 import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { HelpButton } from "../help-panel";
 
 const STAGES = [
   { key: "monitoring", label: "Monitoring", color: "#8b9ab5" },
@@ -216,7 +217,10 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-serif text-[#e8edf8] mb-6">Pipeline</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">Pipeline</h1>
+        <HelpButton page="pipeline" />
+      </div>
 
       {/* Summary Bar */}
       <div className="grid grid-cols-5 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">

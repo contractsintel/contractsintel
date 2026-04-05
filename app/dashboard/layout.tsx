@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardProvider } from "./context";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
+import { TourWrapper } from "./tour-wrapper";
 
 export default async function DashboardLayout({
   children,
@@ -55,6 +56,7 @@ export default async function DashboardLayout({
           <main className="flex-1 ml-[220px] p-8">
             <div className="max-w-dashboard mx-auto">{children}</div>
           </main>
+          <TourWrapper />
         </div>
       </div>
     </DashboardProvider>

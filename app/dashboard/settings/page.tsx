@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { tierLabel } from "@/lib/feature-gate";
+import { HelpButton } from "../help-panel";
 
 const CERTIFICATIONS = ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business", "Service-Disabled Veteran"];
 const GEO_OPTIONS = ["Nationwide", "DC Metro", "Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific"];
@@ -97,7 +98,10 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-serif text-[#e8edf8] mb-8">Settings</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">Settings</h1>
+        <HelpButton page="settings" />
+      </div>
 
       {/* Company Profile */}
       <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
@@ -306,6 +310,28 @@ export default function SettingsPage() {
             Connect Google Calendar
           </button>
         )}
+      </section>
+
+      {/* Onboarding */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Onboarding</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              localStorage.removeItem("ci_tour_completed");
+              window.location.href = "/dashboard";
+            }}
+            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+          >
+            Restart Product Tour
+          </button>
+          <a
+            href="/dashboard/get-started"
+            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+          >
+            View Get Started Guide
+          </a>
+        </div>
       </section>
 
       {/* Sign Out */}

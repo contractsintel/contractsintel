@@ -5,6 +5,7 @@ import { isDiscovery } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "../help-panel";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -126,7 +127,10 @@ ${organization.name || "[Your Company Name]"}`;
 
   return (
     <div>
-      <h1 className="text-2xl font-serif text-[#e8edf8] mb-6">Contract Delivery</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">Contract Delivery</h1>
+        <HelpButton page="contracts" />
+      </div>
 
       {loading ? (
         <div className="text-center text-[#4a5a75] py-12">Loading contracts...</div>

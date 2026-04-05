@@ -4,6 +4,8 @@ import { useDashboard } from "./context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "./help-panel";
+import { DemoBanner } from "./demo-banner";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -157,15 +159,21 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-serif text-[#e8edf8]">
-          {greeting()}, {organization.name}
-        </h1>
-        <p className="text-sm text-[#4a5a75] mt-1 font-mono">{today}</p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-serif text-[#e8edf8]">
+            {greeting()}, {organization.name}
+          </h1>
+          <p className="text-sm text-[#4a5a75] mt-1 font-mono">{today}</p>
+        </div>
+        <HelpButton page="dashboard" />
       </div>
 
+      {/* Demo Banner */}
+      {matches.some((m: any) => m.is_demo) && <DemoBanner />}
+
       {/* Stats Bar */}
-      <div className="grid grid-cols-4 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
+      <div data-tour="stats-bar" className="grid grid-cols-4 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
         <div className="bg-[#0d1018] p-5">
           <div className="text-2xl font-bold text-[#e8edf8] font-mono">{matches.length}</div>
           <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">New Matches</div>
@@ -282,6 +290,7 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={match.id}
+                    data-tour={match === filtered[0] ? "opportunity-card" : undefined}
                     className="border border-[#1e2535] bg-[#0d1018] hover:border-[#2a3548] transition-colors"
                   >
                     <div className="p-5">
@@ -337,7 +346,7 @@ export default function DashboardPage() {
 
                           {/* AI Reasoning */}
                           {match.reasoning && (
-                            <p className="text-xs text-[#4a5a75] mb-3 line-clamp-2">{match.reasoning}</p>
+                            <p data-tour={match === filtered[0] ? "ai-recommendation" : undefined} className="text-xs text-[#4a5a75] mb-3 line-clamp-2">{match.reasoning}</p>
                           )}
 
                           {/* Bottom row: value, deadline, actions */}
@@ -352,7 +361,7 @@ export default function DashboardPage() {
                                 {deadlineLabel(opp.response_deadline)}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-2">
                               <button
                                 onClick={() => updateStatus(match.id, "tracking")}
                                 className="px-3 py-1 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"

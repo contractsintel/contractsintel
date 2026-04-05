@@ -5,6 +5,7 @@ import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "../help-panel";
 
 export default function CompetitorsPage() {
   const { organization } = useDashboard();
@@ -98,12 +99,15 @@ export default function CompetitorsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-serif text-[#e8edf8]">Competitor Intelligence</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 text-sm bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
-        >
-          {showForm ? "Cancel" : "Add Competitor"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 text-sm bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
+          >
+            {showForm ? "Cancel" : "Add Competitor"}
+          </button>
+          <HelpButton page="competitors" />
+        </div>
       </div>
 
       {/* Add Form */}

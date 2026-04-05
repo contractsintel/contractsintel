@@ -5,6 +5,7 @@ import { isDiscovery } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "../help-panel";
 
 export default function PastPerformancePage() {
   const { organization } = useDashboard();
@@ -113,6 +114,7 @@ export default function PastPerformancePage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-serif text-[#e8edf8]">Past Performance</h1>
+        <HelpButton page="past-performance" />
       </div>
 
       {loading ? (

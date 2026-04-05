@@ -5,17 +5,18 @@ import { usePathname } from "next/navigation";
 import { isDiscovery, isTeam, tierLabel } from "@/lib/feature-gate";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "home", locked: false, teamOnly: false },
-  { href: "/dashboard/pipeline", label: "Pipeline", icon: "kanban", locked: false, teamOnly: false },
-  { href: "/dashboard/proposals", label: "Proposals", icon: "document", locked: true, teamOnly: false },
-  { href: "/dashboard/compliance", label: "Compliance", icon: "shield", locked: false, teamOnly: false },
-  { href: "/dashboard/past-performance", label: "Past Performance", icon: "star", locked: true, teamOnly: false },
-  { href: "/dashboard/contracts", label: "Contracts", icon: "briefcase", locked: true, teamOnly: false },
-  { href: "/dashboard/cpars", label: "CPARS", icon: "cpars_star", locked: false, teamOnly: true },
-  { href: "/dashboard/network", label: "Network", icon: "handshake", locked: false, teamOnly: true },
-  { href: "/dashboard/competitors", label: "Competitors", icon: "search", locked: false, teamOnly: true },
-  { href: "/dashboard/analytics", label: "Analytics", icon: "chart", locked: false, teamOnly: true },
-  { href: "/dashboard/settings", label: "Settings", icon: "gear", locked: false, teamOnly: false },
+  { href: "/dashboard", label: "Dashboard", icon: "home", locked: false, teamOnly: false, tourId: "" },
+  { href: "/dashboard/get-started", label: "Get Started", icon: "rocket", locked: false, teamOnly: false, tourId: "" },
+  { href: "/dashboard/pipeline", label: "Pipeline", icon: "kanban", locked: false, teamOnly: false, tourId: "sidebar-pipeline" },
+  { href: "/dashboard/proposals", label: "Proposals", icon: "document", locked: true, teamOnly: false, tourId: "sidebar-proposals" },
+  { href: "/dashboard/compliance", label: "Compliance", icon: "shield", locked: false, teamOnly: false, tourId: "sidebar-compliance" },
+  { href: "/dashboard/past-performance", label: "Past Performance", icon: "star", locked: true, teamOnly: false, tourId: "sidebar-past-performance" },
+  { href: "/dashboard/contracts", label: "Contracts", icon: "briefcase", locked: true, teamOnly: false, tourId: "sidebar-contracts" },
+  { href: "/dashboard/cpars", label: "CPARS", icon: "cpars_star", locked: false, teamOnly: true, tourId: "" },
+  { href: "/dashboard/network", label: "Network", icon: "handshake", locked: false, teamOnly: true, tourId: "" },
+  { href: "/dashboard/competitors", label: "Competitors", icon: "search", locked: false, teamOnly: true, tourId: "" },
+  { href: "/dashboard/analytics", label: "Analytics", icon: "chart", locked: false, teamOnly: true, tourId: "" },
+  { href: "/dashboard/settings", label: "Settings", icon: "gear", locked: false, teamOnly: false, tourId: "sidebar-settings" },
 ];
 
 const ICONS: Record<string, JSX.Element> = {
@@ -75,6 +76,11 @@ const ICONS: Record<string, JSX.Element> = {
       <path strokeLinecap="square" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
+  rocket: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="square" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.841m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-6.233 0c-1.031 1.031-1.032 2.741 0 3.772l.003.003a4.493 4.493 0 003.772 0c1.031-1.031 2.741-1.032 3.772 0" />
+    </svg>
+  ),
 };
 
 export function Sidebar({ plan }: { plan: string }) {
@@ -96,6 +102,7 @@ export function Sidebar({ plan }: { plan: string }) {
             <Link
               key={item.href}
               href={isLocked ? "#" : item.href}
+              data-tour={item.tourId || undefined}
               className={`group relative flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
                 isActive
                   ? "text-[#e8edf8] border-l-2 border-[#2563eb] bg-[#2563eb]/5"

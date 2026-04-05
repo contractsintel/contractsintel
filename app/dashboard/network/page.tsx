@@ -5,6 +5,7 @@ import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { HelpButton } from "../help-panel";
 
 type Tab = "opportunities" | "posted";
 
@@ -137,7 +138,10 @@ export default function NetworkPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-serif text-[#e8edf8] mb-6">Subcontracting Network</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">Subcontracting Network</h1>
+        <HelpButton page="network" />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-[#1e2535] mb-6">
