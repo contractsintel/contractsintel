@@ -1328,7 +1328,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     frame.querySelectorAll('.fake-cursor').forEach(function(el) { el.remove(); });
   }
 
-  /* ====== Intersection Observer (repeatable) ====== */
+  /* ====== Looping Animation System ====== */
   var animMap = {
     '1': animateMockup1,
     '2': animateMockup2,
@@ -1347,27 +1347,64 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     '6': resetMockup6
   };
 
-  var animTimers = {};
+  // Duration of each animation (ms) — how long the sequence takes before holding
+  var animDuration = {
+    '1': 3100,
+    '2': 4500,
+    '3': 3500,
+    '4': 4400,
+    '5': 3800,
+    '6': 4500
+  };
 
+  var HOLD_TIME = 2000;  // Hold final state for 2s
+  var PAUSE_TIME = 1000; // Pause before replaying
+
+  var loopTimers = {}; // Stores the timeout ID for each mockup's loop
+
+  function startLoop(mockupId, frame) {
+    // Don't start if already running
+    if (loopTimers[mockupId]) return;
+
+    function cycle() {
+      // Reset to initial state instantly
+      if (resetMap[mockupId]) resetMap[mockupId](frame);
+
+      // Pause 1s, then play animation
+      loopTimers[mockupId] = setTimeout(function() {
+        if (animMap[mockupId]) animMap[mockupId](frame);
+
+        // After animation completes + hold time, start next cycle
+        loopTimers[mockupId] = setTimeout(function() {
+          cycle();
+        }, animDuration[mockupId] + HOLD_TIME);
+      }, PAUSE_TIME);
+    }
+
+    cycle();
+  }
+
+  function stopLoop(mockupId, frame) {
+    if (loopTimers[mockupId]) {
+      clearTimeout(loopTimers[mockupId]);
+      delete loopTimers[mockupId];
+    }
+    if (resetMap[mockupId]) resetMap[mockupId](frame);
+  }
+
+  /* ====== Intersection Observer (controls loop start/stop) ====== */
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       var mockupId = entry.target.getAttribute('data-mockup');
       if (!mockupId) return;
 
       if (entry.isIntersecting) {
-        // Reset first, then animate after delay
-        if (resetMap[mockupId]) resetMap[mockupId](entry.target);
-        var target = entry.target;
-        animTimers[mockupId] = setTimeout(function() {
-          if (animMap[mockupId]) animMap[mockupId](target);
-        }, 1000);
+        startLoop(mockupId, entry.target);
       } else {
-        // Scrolled out — cancel pending animation and reset
-        if (animTimers[mockupId]) { clearTimeout(animTimers[mockupId]); delete animTimers[mockupId]; }
-        if (resetMap[mockupId]) resetMap[mockupId](entry.target);
+        stopLoop(mockupId, entry.target);
       }
     });
-  }, { threshold: 0.5 });
+  }, { threshold: 0.3 });
 
   document.querySelectorAll('.mockup-frame[data-mockup]').forEach(function(frame) {
     observer.observe(frame);
