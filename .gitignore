@@ -4,3 +4,4 @@ node_modules/
 .env.local
 workers/node_modules/
 *.tsbuildinfo
+gmail_token.json
