@@ -12,32 +12,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { match_id, organization_id } = await request.json();
+    // Derive organization from authenticated user — never trust client input
+    const { data: userRecord } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
 
-    // Fetch the match with opportunity
+    if (!userRecord?.organization_id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const orgId = userRecord.organization_id;
+    const { match_id } = await request.json();
+
+    // Fetch the match — scoped to user's org
     const { data: match } = await supabase
       .from("opportunity_matches")
       .select("*, opportunities(*)")
       .eq("id", match_id)
-      .eq("organization_id", organization_id)
+      .eq("organization_id", orgId)
       .single();
 
     if (!match) {
       return NextResponse.json({ error: "Match not found" }, { status: 404 });
     }
 
-    // Fetch organization details
+    // Fetch organization details — scoped to user's org
     const { data: org } = await supabase
       .from("organizations")
       .select("*")
-      .eq("id", organization_id)
+      .eq("id", orgId)
       .single();
 
-    // Fetch past performance for context
+    // Fetch past performance — scoped to user's org
     const { data: pastPerf } = await supabase
       .from("past_performance")
       .select("*")
-      .eq("organization_id", organization_id)
+      .eq("organization_id", orgId)
       .limit(5);
 
     const opp = match.opportunities;
@@ -55,9 +67,9 @@ Title: ${opp?.title}
 Agency: ${opp?.agency}
 Solicitation: ${opp?.solicitation_number ?? "N/A"}
 Description: ${opp?.description ?? "No description available"}
-Set-Aside: ${opp?.set_aside ?? "None"}
+Set-Aside: ${opp?.set_aside_type ?? "None"}
 NAICS: ${opp?.naics_code ?? "N/A"}
-Estimated Value: ${opp?.estimated_value ? `$${opp.estimated_value.toLocaleString()}` : "N/A"}
+Estimated Value: ${opp?.value_estimate ? `$${opp.value_estimate.toLocaleString()}` : "N/A"}
 
 Generate three sections in this exact JSON format:
 {
@@ -80,7 +92,6 @@ Each section should be 3-5 paragraphs, professional, and specifically tailored t
       return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
     }
 
-    // Parse JSON from response
     const jsonMatch = content.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: "Failed to parse proposal" }, { status: 500 });

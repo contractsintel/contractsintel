@@ -8,19 +8,30 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Get user's organization to enforce data isolation
+  const { data: userRecord } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("auth_id", user.id)
+    .single();
+
+  if (!userRecord?.organization_id) redirect("/login");
+
+  // Only fetch contracts belonging to the user's organization
   const { data: contract } = await supabase
     .from("contracts")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", userRecord.organization_id)
     .single();
 
   if (!contract) redirect("/dashboard");
 
   const { data: match } = await supabase
-    .from("user_matches")
+    .from("opportunity_matches")
     .select("*")
-    .eq("user_id", user.id)
-    .eq("contract_id", id)
+    .eq("organization_id", userRecord.organization_id)
+    .eq("id", id)
     .single();
 
   const raw = contract.raw_json || {};
