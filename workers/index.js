@@ -47,9 +47,25 @@ cron.schedule('*/10 * * * *', async () => {
   }
 });
 
+// SAM.gov API monitor — every hour until it's back online
+cron.schedule('0 * * * *', async () => {
+  console.log(`[${new Date().toISOString()}] Running: sam-monitor`);
+  try {
+    const result = await require('./jobs/sam-monitor').run();
+    if (result.online) {
+      console.log(`[${new Date().toISOString()}] SAM.gov is BACK! Triggering immediate fetch...`);
+      await require('./jobs/fetch-contracts').run();
+      await require('./jobs/match-contracts').run();
+    }
+  } catch (err) {
+    console.error(`[${new Date().toISOString()}] Failed: sam-monitor`, err.message);
+  }
+});
+
 console.log('Cron jobs scheduled:');
 console.log('  - fetch-contracts:    2:00 AM ET daily');
 console.log('  - match-contracts:    3:00 AM ET daily');
 console.log('  - send-digests:       7:00 AM ET Mon-Fri');
 console.log('  - support-responder:  every 10 minutes');
+console.log('  - sam-monitor:        every hour (until API returns)');
 console.log('Workers ready.');
