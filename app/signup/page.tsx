@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { seedDemoData } from "@/lib/demo-data";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -38,7 +39,27 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      // Org record is auto-created by trigger, but update if needed
+      // Org record is auto-created by trigger — wait briefly then seed demo data
+      // The trigger creates the org, so we need to find it
+      await new Promise((r) => setTimeout(r, 1500)); // Wait for trigger
+      const { data: userRec } = await supabase
+        .from("users")
+        .select("organization_id")
+        .eq("auth_id", data.user.id)
+        .single();
+
+      if (userRec?.organization_id) {
+        // Update org name if provided
+        if (companyName) {
+          await supabase
+            .from("organizations")
+            .update({ name: companyName, uei: uei || null })
+            .eq("id", userRec.organization_id);
+        }
+        // Seed demo data so dashboard isn't empty
+        await seedDemoData(supabase, userRec.organization_id);
+      }
+
       router.push("/dashboard");
     }
   };

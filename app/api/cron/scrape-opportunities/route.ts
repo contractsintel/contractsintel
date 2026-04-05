@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdmin } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { cleanupDemoData } from "@/lib/demo-cleanup";
 
 const SAM_ENDPOINTS = [
   "https://api.sam.gov/opportunities/v2/search",
@@ -118,6 +120,25 @@ export async function GET(request: NextRequest) {
       );
 
       if (!error) upserted++;
+    }
+
+    // Clean up demo data for all orgs that now have real matches
+    if (upserted > 0) {
+      const adminClient = createAdmin(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: orgsWithDemo } = await adminClient
+        .from("opportunity_matches")
+        .select("organization_id")
+        .eq("is_demo", true);
+
+      if (orgsWithDemo?.length) {
+        const orgIds = Array.from(new Set(orgsWithDemo.map((r: any) => r.organization_id)));
+        for (const orgId of orgIds) {
+          await cleanupDemoData(adminClient, orgId as string);
+        }
+      }
     }
 
     return NextResponse.json({
