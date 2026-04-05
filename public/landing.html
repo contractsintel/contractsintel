@@ -331,7 +331,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   </ul>
   <div class="nav-cta">
     <a href="#pricing" class="btn-ghost">See Plans</a>
-    <a href="#cta" class="btn-primary">Start Free Trial →</a>
+    <a href="/signup" class="btn-primary">Start Free Trial →</a>
   </div>
 </nav>
 
@@ -822,7 +822,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           <li><span class="pf-x">–</span> Full CMMC + FAR monitoring</li>
           <li><span class="pf-x">–</span> CPARS, Network, Competitors</li>
         </ul>
-        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
         <div class="plan-fomo">14-day free trial · no card required</div>
       </div>
       <div class="pricing-card popular">
@@ -857,7 +857,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           <li class="has"><span class="pf-check">✓</span> Weekly pipeline report</li>
           <li class="has"><span class="pf-check">✓</span> Priority email support</li>
         </ul>
-        <a href="#cta" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
+        <a href="/signup" class="btn-primary large" style="display:block;text-align:center">Start Free Trial →</a>
         <div class="plan-fomo" style="color:var(--accent-bright);opacity:0.7">New features ship to BD Pro first</div>
       </div>
       <div class="pricing-card">
@@ -888,7 +888,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
           <li class="has"><span class="pf-check">✓</span> Dedicated account manager</li>
           <li class="has"><span class="pf-check">✓</span> Quarterly pipeline strategy review</li>
         </ul>
-        <a href="#cta" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
+        <a href="/signup" class="btn-ghost" style="display:block;text-align:center;padding:14px;font-size:14px">Start Free Trial →</a>
         <div class="plan-fomo">White-glove onboarding included</div>
       </div>
     </div>
@@ -921,7 +921,7 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
         <div class="audit-form-label">Enter your Unique Entity Identifier (UEI)</div>
         <div class="audit-input-row">
           <input type="text" class="audit-input" placeholder="e.g. ZQGGHJH74DW7" maxlength="12">
-          <a href="#cta" class="btn-primary" style="white-space:nowrap;padding:14px 24px">Run Free Audit →</a>
+          <a href="/audit" class="btn-primary" style="white-space:nowrap;padding:14px 24px">Run Free Audit →</a>
         </div>
         <div class="audit-features" style="margin-top:12px">
           <div class="audit-feature"><span class="af-check">✓</span> No account needed</div>
@@ -957,4 +957,20 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   <div class="footer-logo">Contracts<span>Intel</span></div>
   <div style="font-size:13px"><a href="/cdn-cgi/l/email-protection#384b4d4848574a4c785b57564c4a595b4c4b51564c5d54165b5755" style="color:var(--text3);text-decoration:none"><span class="__cf_email__" data-cfemail="c4b7b1b4b4abb6b084a7abaab0b6a5a7b0b7adaab0a1a8eaa7aba9">[email&#160;protected]</span></a></div>
   <div class="footer-copy">© 2026 ContractsIntel · SAM.gov verified data · contractsintel.com</div>
-  <div class="footer-disclaimer">ContractsI
+  <div class="footer-disclaimer">ContractsIntel is not affiliated with, endorsed by, or connected to the U.S. government, SBA, SAM.gov, or any federal agency.</div>
+</footer>
+
+<script>
+document.addEventListener('click', function(e) {
+  var link = e.target.closest('a[href^="#"]');
+  if (!link) return;
+  var id = link.getAttribute('href').substring(1);
+  var target = document.getElementById(id);
+  if (target) {
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+});
+</script>
+</body>
+</html>
