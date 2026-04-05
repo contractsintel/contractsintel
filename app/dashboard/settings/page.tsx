@@ -1,129 +1,318 @@
 "use client";
 
+import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { tierLabel } from "@/lib/feature-gate";
 
-const CERTIFICATIONS = ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business"];
+const CERTIFICATIONS = ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business", "Service-Disabled Veteran"];
+const GEO_OPTIONS = ["Nationwide", "DC Metro", "Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific"];
+const SIZE_OPTIONS = ["Micro (<$150K)", "Small ($150K-$750K)", "Medium ($750K-$5M)", "Large ($5M+)"];
 
 export default function SettingsPage() {
+  const { organization } = useDashboard();
   const supabase = createClient();
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
-  const [fullName, setFullName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [certs, setCerts] = useState<string[]>([]);
-  const [naicsCodes, setNaicsCodes] = useState("");
+
+  // Company Profile
+  const [companyName, setCompanyName] = useState(organization.name ?? "");
+  const [uei, setUei] = useState(organization.uei ?? "");
+  const [cageCode, setCageCode] = useState(organization.cage_code ?? "");
+  const [certs, setCerts] = useState<string[]>(organization.certifications ?? []);
+  const [naicsCodes, setNaicsCodes] = useState((organization.naics_codes ?? []).join(", "));
+  const [address, setAddress] = useState(organization.address ?? "");
+
+  // Preferences
+  const [geography, setGeography] = useState<string[]>([]);
+  const [contractSize, setContractSize] = useState<string[]>([]);
+  const [agencies, setAgencies] = useState("");
+  const [minScore, setMinScore] = useState(50);
+
+  // Notifications
+  const [digestEnabled, setDigestEnabled] = useState(true);
+  const [complianceAlerts, setComplianceAlerts] = useState(true);
+  const [deadlineReminders, setDeadlineReminders] = useState(true);
+  const [weeklyReport, setWeeklyReport] = useState(true);
+
+  // CMMC
+  const [cmmcLevel, setCmmcLevel] = useState("1");
+
+  // Calendar
+  const [calendarConnected, setCalendarConnected] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [refreshingSam, setRefreshingSam] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (data) {
-        setProfile(data);
-        setFullName(data.full_name || "");
-        setCompanyName(data.company_name || "");
-        setCerts(data.certifications || []);
-        setNaicsCodes((data.naics_codes || []).join(", "));
-      }
-    })();
-  }, []);
+  const toggleCert = (c: string) =>
+    setCerts((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+  const toggleGeo = (g: string) =>
+    setGeography((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
+  const toggleSize = (s: string) =>
+    setContractSize((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
 
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    await supabase.from("profiles").update({
-      full_name: fullName,
-      company_name: companyName,
-      certifications: certs,
-      naics_codes: naicsCodes.split(",").map((s) => s.trim()).filter(Boolean),
-    }).eq("id", user.id);
-
+    await supabase
+      .from("organizations")
+      .update({
+        name: companyName,
+        uei,
+        cage_code: cageCode,
+        certifications: certs,
+        naics_codes: naicsCodes
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        address,
+      })
+      .eq("id", organization.id);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
+  const refreshFromSam = async () => {
+    if (!uei) return;
+    setRefreshingSam(true);
+    try {
+      const res = await fetch(`/api/audit?uei=${uei}`);
+      const data = await res.json();
+      if (data.entity) {
+        setCompanyName(data.entity.legalBusinessName ?? companyName);
+        setCageCode(data.entity.cageCode ?? cageCode);
+        setAddress(data.entity.physicalAddress ?? address);
+      }
+    } catch {
+      // handle error
+    }
+    setRefreshingSam(false);
   };
 
-  const toggleCert = (c: string) => setCerts((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
-
-  if (!profile) return <div className="min-h-screen bg-[#080a0f] flex items-center justify-center text-[#8b9ab5]">Loading...</div>;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
-    <div className="min-h-screen bg-[#080a0f]">
-      <nav className="border-b border-[#1e2535] bg-[#080a0f]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
-        </Link>
-        <Link href="/dashboard" className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">← Back to Dashboard</Link>
-      </nav>
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-serif text-[#e8edf8] mb-8">Settings</h1>
 
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <h1 className="text-2xl font-semibold text-[#e8edf8] mb-8">Settings</h1>
-
-        <div className="border border-[#1e2535] bg-[#0d1018] p-6 space-y-5 mb-6">
-          <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider">Profile</h2>
+      {/* Company Profile */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Company Profile</h2>
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5">Full Name</label>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
-          </div>
-          <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5">Company Name</label>
+            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Company Name</label>
             <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
               className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">UEI</label>
+              <input type="text" value={uei} onChange={(e) => setUei(e.target.value)}
+                placeholder="e.g. J7M9HPTGJ1S8"
+                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">CAGE Code</label>
+              <input type="text" value={cageCode} onChange={(e) => setCageCode(e.target.value)}
+                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+            </div>
+          </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-2">Certifications</label>
+            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Certifications</label>
             <div className="flex flex-wrap gap-2">
               {CERTIFICATIONS.map((c) => (
                 <button key={c} type="button" onClick={() => toggleCert(c)}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${certs.includes(c) ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]" : "border-[#1e2535] text-[#8b9ab5]"}`}>
+                  className={`px-3 py-1.5 text-xs border transition-colors ${certs.includes(c)
+                    ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
+                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
                   {c}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5">NAICS Codes (comma-separated)</label>
+            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">NAICS Codes (comma-separated)</label>
             <input type="text" value={naicsCodes} onChange={(e) => setNaicsCodes(e.target.value)}
               placeholder="541511, 541512, 541330"
               className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
+          <div>
+            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Address</label>
+            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
+              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleSave} disabled={saving}
+              className="bg-[#2563eb] text-white px-6 py-3 text-sm font-medium hover:bg-[#3b82f6] transition-colors disabled:opacity-50">
+              {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
+            </button>
+            <button onClick={refreshFromSam} disabled={refreshingSam || !uei}
+              className="border border-[#1e2535] text-[#8b9ab5] px-6 py-3 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors disabled:opacity-30">
+              {refreshingSam ? "Refreshing..." : "Refresh from SAM.gov"}
+            </button>
+          </div>
+        </div>
+      </section>
 
-          <button onClick={handleSave} disabled={saving}
-            className="bg-[#2563eb] text-white px-6 py-3 text-sm font-medium hover:bg-[#3b82f6] transition-colors disabled:opacity-50">
-            {saving ? "Saving..." : saved ? "Saved ✓" : "Save Changes"}
+      {/* Opportunity Preferences */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Opportunity Preferences</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Geography</label>
+            <div className="flex flex-wrap gap-2">
+              {GEO_OPTIONS.map((g) => (
+                <button key={g} type="button" onClick={() => toggleGeo(g)}
+                  className={`px-3 py-1.5 text-xs border transition-colors ${geography.includes(g)
+                    ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
+                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Contract Size</label>
+            <div className="flex flex-wrap gap-2">
+              {SIZE_OPTIONS.map((s) => (
+                <button key={s} type="button" onClick={() => toggleSize(s)}
+                  className={`px-3 py-1.5 text-xs border transition-colors ${contractSize.includes(s)
+                    ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
+                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Preferred Agencies (comma-separated)</label>
+            <input type="text" value={agencies} onChange={(e) => setAgencies(e.target.value)}
+              placeholder="DoD, VA, GSA, DHS..."
+              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+          </div>
+          <div>
+            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">
+              Minimum Match Score: {minScore}
+            </label>
+            <input type="range" min={0} max={100} step={5} value={minScore}
+              onChange={(e) => setMinScore(Number(e.target.value))}
+              className="w-full accent-[#2563eb]" />
+          </div>
+        </div>
+      </section>
+
+      {/* Subscription */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Subscription</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-[#e8edf8]">
+              Current plan: <span className="text-[#3b82f6] font-medium">{tierLabel(organization.plan)}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {organization.stripe_customer_id && (
+              <a href="/api/stripe/portal" className="px-4 py-2 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] transition-colors">
+                Manage Billing
+              </a>
+            )}
+            {organization.plan !== "team" && (
+              <a href="https://buy.stripe.com/6oUdR95EN3467WHaGS5wI03" target="_blank" rel="noopener noreferrer"
+                className="px-4 py-2 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors">
+                Upgrade to BD Pro
+              </a>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Notifications */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Notifications</h2>
+        <div className="space-y-3">
+          {[
+            { label: "Daily Digest", desc: "Morning email with new matches", value: digestEnabled, set: setDigestEnabled },
+            { label: "Compliance Alerts", desc: "Urgent compliance deadline warnings", value: complianceAlerts, set: setComplianceAlerts },
+            { label: "Deadline Reminders", desc: "Bid deadline reminders (3d, 1d, same day)", value: deadlineReminders, set: setDeadlineReminders },
+            { label: "Weekly Report", desc: "Pipeline summary and win/loss metrics", value: weeklyReport, set: setWeeklyReport },
+          ].map((n) => (
+            <label key={n.label} className="flex items-center justify-between cursor-pointer">
+              <div>
+                <span className="text-sm text-[#e8edf8]">{n.label}</span>
+                <p className="text-xs text-[#4a5a75]">{n.desc}</p>
+              </div>
+              <button
+                onClick={() => n.set(!n.value)}
+                className={`w-10 h-5 flex items-center transition-colors ${n.value ? "bg-[#2563eb]" : "bg-[#1e2535]"}`}
+              >
+                <div className={`w-4 h-4 bg-white transition-transform ${n.value ? "translate-x-5" : "translate-x-0.5"}`} />
+              </button>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {/* CMMC Status */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">CMMC Status</h2>
+        <div>
+          <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Target Level</label>
+          <select value={cmmcLevel} onChange={(e) => setCmmcLevel(e.target.value)}
+            className="bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
+            <option value="1">Level 1 — Basic Cyber Hygiene</option>
+            <option value="2">Level 2 — Advanced Cyber Hygiene</option>
+            <option value="3">Level 3 — Expert</option>
+          </select>
+        </div>
+      </section>
+
+      {/* Google Calendar */}
+      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Google Calendar</h2>
+        {calendarConnected ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#22c55e]" />
+              <span className="text-sm text-[#e8edf8]">Connected</span>
+            </div>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-[#8b9ab5]">Sync bid deadlines</span>
+              <div className="w-10 h-5 bg-[#2563eb] flex items-center">
+                <div className="w-4 h-4 bg-white translate-x-5" />
+              </div>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-[#8b9ab5]">Sync compliance deadlines</span>
+              <div className="w-10 h-5 bg-[#2563eb] flex items-center">
+                <div className="w-4 h-4 bg-white translate-x-5" />
+              </div>
+            </label>
+            <button
+              onClick={() => setCalendarConnected(false)}
+              className="text-xs text-[#ef4444] hover:text-[#f87171] transition-colors"
+            >
+              Disconnect Calendar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setCalendarConnected(true)}
+            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+          >
+            Connect Google Calendar
           </button>
-        </div>
+        )}
+      </section>
 
-        <div className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-          <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-3">Subscription</h2>
-          <p className="text-sm text-[#e8edf8] mb-1">Current plan: <span className="text-[#3b82f6] font-medium capitalize">{profile.plan}</span></p>
-          {profile.plan === "trial" && (
-            <a href="https://buy.stripe.com/6oUdR95EN3467WHaGS5wI03" target="_blank"
-              className="inline-block mt-3 bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6]">
-              Upgrade to BD Pro
-            </a>
-          )}
-        </div>
-
-        <button onClick={handleSignOut}
-          className="text-sm text-[#ef4444] hover:text-[#f87171] transition-colors">
-          Sign Out
-        </button>
-      </main>
+      {/* Sign Out */}
+      <button onClick={handleSignOut}
+        className="text-sm text-[#ef4444] hover:text-[#f87171] transition-colors">
+        Sign Out
+      </button>
     </div>
   );
 }

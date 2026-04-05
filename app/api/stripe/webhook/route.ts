@@ -3,15 +3,19 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getStripe() {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!);
+}
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const planMap: Record<string, string> = {
   "499": "discovery",
-  "999": "bdpro",
+  "999": "bd_pro",
   "2499": "team",
 };
 
@@ -21,6 +25,8 @@ function getPlanFromAmount(amount: number): string {
 }
 
 export async function POST(request: Request) {
+  const stripe = getStripe();
+  const supabase = getSupabaseAdmin();
   const body = await request.text();
   const headersList = await headers();
   const sig = headersList.get("stripe-signature")!;
@@ -35,31 +41,24 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const email = session.customer_email || session.customer_details?.email;
       const customerId = session.customer as string;
 
-      if (email) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", email)
-          .single();
-
-        if (profile) {
-          // Get subscription to determine plan
-          let plan = "discovery";
-          if (session.subscription) {
-            const sub = await stripe.subscriptions.retrieve(session.subscription as string);
-            const amount = sub.items.data[0]?.price?.unit_amount || 0;
-            plan = getPlanFromAmount(amount);
-          }
-
-          await supabase
-            .from("profiles")
-            .update({ plan, stripe_customer_id: customerId })
-            .eq("id", profile.id);
-        }
+      let tier = "discovery";
+      if (session.subscription) {
+        const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+        const amount = sub.items.data[0]?.price?.unit_amount || 0;
+        tier = getPlanFromAmount(amount);
       }
+
+      await supabase
+        .from("organizations")
+        .update({
+          subscription_tier: tier,
+          subscription_status: "active",
+          stripe_subscription_id: session.subscription as string,
+          card_added: true,
+        })
+        .eq("stripe_customer_id", customerId);
       break;
     }
 
@@ -67,11 +66,13 @@ export async function POST(request: Request) {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = sub.customer as string;
       const amount = sub.items.data[0]?.price?.unit_amount || 0;
-      const plan = sub.status === "active" ? getPlanFromAmount(amount) : "cancelled";
 
       await supabase
-        .from("profiles")
-        .update({ plan })
+        .from("organizations")
+        .update({
+          subscription_tier: sub.status === "active" ? getPlanFromAmount(amount) : "discovery",
+          subscription_status: sub.status === "active" ? "active" : sub.status === "trialing" ? "trialing" : "cancelled",
+        })
         .eq("stripe_customer_id", customerId);
       break;
     }
@@ -81,8 +82,8 @@ export async function POST(request: Request) {
       const customerId = sub.customer as string;
 
       await supabase
-        .from("profiles")
-        .update({ plan: "cancelled" })
+        .from("organizations")
+        .update({ subscription_status: "cancelled", subscription_tier: "discovery" })
         .eq("stripe_customer_id", customerId);
       break;
     }
@@ -92,8 +93,8 @@ export async function POST(request: Request) {
       const customerId = invoice.customer as string;
 
       await supabase
-        .from("profiles")
-        .update({ plan: "past_due" })
+        .from("organizations")
+        .update({ subscription_status: "past_due" })
         .eq("stripe_customer_id", customerId);
       break;
     }
@@ -105,8 +106,11 @@ export async function POST(request: Request) {
       const amount = lineItem?.price?.unit_amount || 0;
 
       await supabase
-        .from("profiles")
-        .update({ plan: getPlanFromAmount(amount) })
+        .from("organizations")
+        .update({
+          subscription_tier: getPlanFromAmount(amount),
+          subscription_status: "active",
+        })
         .eq("stripe_customer_id", customerId);
       break;
     }

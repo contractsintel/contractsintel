@@ -1,131 +1,481 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useDashboard } from "./context";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+function formatCurrency(n: number | null): string {
+  if (!n) return "$0";
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+function daysUntil(date: string | null): number | null {
+  if (!date) return null;
+  const diff = new Date(date).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
 
-  const { data: matches } = await supabase
-    .from("user_matches")
-    .select(`
-      id, match_score, bid_recommendation, reasoning, created_at,
-      contracts:contract_id (id, title, agency, response_deadline, raw_json, notice_id)
-    `)
-    .eq("user_id", user.id)
-    .order("match_score", { ascending: false })
-    .limit(20);
+function deadlineLabel(date: string | null): string {
+  const d = daysUntil(date);
+  if (d === null) return "TBD";
+  if (d < 0) return "Expired";
+  if (d === 0) return "Today";
+  if (d === 1) return "Tomorrow";
+  return `${d}d left`;
+}
 
-  const { count: totalMatches } = await supabase
-    .from("user_matches")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+function scoreColor(score: number): string {
+  if (score >= 80) return "text-[#22c55e]";
+  if (score >= 60) return "text-[#3b82f6]";
+  if (score >= 40) return "text-[#f59e0b]";
+  return "text-[#4a5a75]";
+}
 
-  const avgScore = matches?.length
-    ? Math.round(matches.reduce((sum, m) => sum + (m.match_score || 0), 0) / matches.length)
-    : 0;
+function recBadge(rec: string) {
+  const map: Record<string, string> = {
+    bid: "bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20",
+    review: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20",
+    skip: "bg-[#4a5a75]/10 text-[#4a5a75] border-[#4a5a75]/20",
+  };
+  return map[rec] ?? map.skip;
+}
 
-  const upcoming = matches?.filter((m: any) => {
-    const d = m.contracts?.response_deadline;
-    return d && new Date(d) > new Date();
-  }).length || 0;
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+type SortOption = "score" | "deadline" | "value";
+type FilterState = {
+  setAside: string;
+  agency: string;
+  minScore: number;
+  sort: SortOption;
+};
+
+export default function DashboardPage() {
+  const { organization } = useDashboard();
+  const supabase = createClient();
+  const [matches, setMatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<FilterState>({
+    setAside: "",
+    agency: "",
+    minScore: 0,
+    sort: "score",
+  });
+  const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("opportunity_matches")
+      .select("*, opportunities(*)")
+      .eq("organization_id", organization.id)
+      .order("match_score", { ascending: false })
+      .limit(50);
+    setMatches(data ?? []);
+
+    const { data: compliance } = await supabase
+      .from("compliance_items")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .lte("due_date", new Date(Date.now() + 7 * 86400000).toISOString())
+      .eq("status", "pending")
+      .limit(5);
+    setComplianceAlerts(compliance ?? []);
+
+    setLoading(false);
+  }, [organization.id, supabase]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const updateStatus = async (matchId: string, status: string) => {
+    await supabase
+      .from("opportunity_matches")
+      .update({ user_status: status, pipeline_stage: status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null })
+      .eq("id", matchId);
+    loadData();
+  };
+
+  // Filter and sort
+  const filtered = matches
+    .filter((m) => {
+      const opp = m.opportunities;
+      if (!opp) return false;
+      if (filters.setAside && opp.set_aside !== filters.setAside) return false;
+      if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
+      if (m.match_score < filters.minScore) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
+      if (filters.sort === "value") return (b.opportunities?.estimated_value ?? 0) - (a.opportunities?.estimated_value ?? 0);
+      if (filters.sort === "deadline") {
+        const da = daysUntil(a.opportunities?.response_deadline) ?? 999;
+        const db = daysUntil(b.opportunities?.response_deadline) ?? 999;
+        return da - db;
+      }
+      return 0;
+    });
+
+  // Stats
+  const totalValue = matches.reduce((s, m) => s + (m.opportunities?.estimated_value ?? 0), 0);
+  const urgentCount = matches.filter((m) => {
+    const d = daysUntil(m.opportunities?.response_deadline);
+    return d !== null && d >= 0 && d <= 7;
+  }).length;
+  const topScore = matches.length ? Math.max(...matches.map((m) => m.match_score ?? 0)) : 0;
+
+  // Pipeline summary
+  const pipelineCounts = matches.reduce(
+    (acc, m) => {
+      const stage = m.pipeline_stage ?? "new";
+      acc[stage] = (acc[stage] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // Unique filters
+  const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside).filter(Boolean)));
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <div className="min-h-screen bg-[#080a0f]">
-      <nav className="border-b border-[#1e2535] bg-[#080a0f]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/settings" className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">Settings</Link>
-          <form action="/auth/signout" method="post">
-            <button className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">Sign Out</button>
-          </form>
-        </div>
-      </nav>
+    <div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-serif text-[#e8edf8]">
+          {greeting()}, {organization.name}
+        </h1>
+        <p className="text-sm text-[#4a5a75] mt-1 font-mono">{today}</p>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-[#e8edf8]">
-            Welcome{profile?.company_name ? `, ${profile.company_name}` : ""}
-          </h1>
-          <p className="text-[#8b9ab5] text-sm mt-1">
-            {profile?.plan === "trial" ? "Free trial — " : ""}Your personalized contract intelligence feed
+      {/* Stats Bar */}
+      <div className="grid grid-cols-4 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
+        <div className="bg-[#0d1018] p-5">
+          <div className="text-2xl font-bold text-[#e8edf8] font-mono">{matches.length}</div>
+          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">New Matches</div>
+        </div>
+        <div className="bg-[#0d1018] p-5">
+          <div className="text-2xl font-bold text-[#3b82f6] font-mono">{formatCurrency(totalValue)}</div>
+          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Total Value</div>
+        </div>
+        <div className="bg-[#0d1018] p-5">
+          <div className="text-2xl font-bold text-[#f59e0b] font-mono">{urgentCount}</div>
+          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Urgent (&lt;7d)</div>
+        </div>
+        <div className="bg-[#0d1018] p-5">
+          <div className="text-2xl font-bold text-[#22c55e] font-mono">{topScore}</div>
+          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Top Score</div>
+        </div>
+      </div>
+
+      {/* Compliance Alert */}
+      {complianceAlerts.length > 0 && (
+        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-[#0d1018] p-4 mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-sm font-medium text-[#f59e0b]">
+              {complianceAlerts.length} compliance item{complianceAlerts.length > 1 ? "s" : ""} due within 7 days
+            </span>
+          </div>
+          <p className="text-xs text-[#8b9ab5]">
+            {complianceAlerts.map((a) => a.title).join(", ")}
           </p>
         </div>
+      )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-px bg-[#1e2535] border border-[#1e2535] mb-8">
-          <div className="bg-[#0d1018] p-6">
-            <div className="text-3xl font-bold text-[#e8edf8]">{totalMatches || 0}</div>
-            <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Matched Contracts</div>
+      <div className="flex gap-6">
+        {/* Main Column */}
+        <div className="flex-1 min-w-0">
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <select
+              value={filters.setAside}
+              onChange={(e) => setFilters((f) => ({ ...f, setAside: e.target.value }))}
+              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+            >
+              <option value="">All Set-Asides</option>
+              {setAsides.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Filter agency..."
+              value={filters.agency}
+              onChange={(e) => setFilters((f) => ({ ...f, agency: e.target.value }))}
+              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 w-40 focus:outline-none focus:border-[#2563eb]"
+            />
+            <select
+              value={filters.minScore}
+              onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
+              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+            >
+              <option value={0}>Min Score: Any</option>
+              <option value={50}>50+</option>
+              <option value={70}>70+</option>
+              <option value={85}>85+</option>
+            </select>
+            <select
+              value={filters.sort}
+              onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
+              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+            >
+              <option value="score">Sort: Score</option>
+              <option value="deadline">Sort: Deadline</option>
+              <option value="value">Sort: Value</option>
+            </select>
           </div>
-          <div className="bg-[#0d1018] p-6">
-            <div className="text-3xl font-bold text-[#3b82f6]">{avgScore}</div>
-            <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Avg Match Score</div>
-          </div>
-          <div className="bg-[#0d1018] p-6">
-            <div className="text-3xl font-bold text-[#22c55e]">{upcoming}</div>
-            <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Open Deadlines</div>
-          </div>
-        </div>
 
-        {/* Contract Feed */}
-        <div className="space-y-px">
-          {matches && matches.length > 0 ? (
-            matches.map((match: any) => {
-              const c = match.contracts;
-              if (!c) return null;
-              const deadline = c.response_deadline
-                ? new Date(c.response_deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                : "TBD";
-              const scoreColor = match.match_score >= 70 ? "text-[#22c55e]" : match.match_score >= 40 ? "text-[#eab308]" : "text-[#6b7280]";
-              const recColor = match.bid_recommendation === "bid" ? "bg-[#22c55e]" : match.bid_recommendation === "review" ? "bg-[#eab308]" : "bg-[#6b7280]";
+          {/* Opportunity Cards */}
+          {loading ? (
+            <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center text-[#4a5a75]">
+              Loading matches...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center">
+              <div className="text-[#4a5a75] text-lg mb-2">No matches found</div>
+              <p className="text-[#8b9ab5] text-sm">
+                Try adjusting your filters or{" "}
+                <Link href="/dashboard/settings" className="text-[#3b82f6]">
+                  update your profile
+                </Link>{" "}
+                for better matches.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map((match) => {
+                const opp = match.opportunities;
+                if (!opp) return null;
+                const days = daysUntil(opp.response_deadline);
+                const deadlineColor =
+                  days !== null && days <= 3
+                    ? "text-[#ef4444]"
+                    : days !== null && days <= 7
+                    ? "text-[#f59e0b]"
+                    : "text-[#8b9ab5]";
 
-              return (
-                <Link key={match.id} href={`/dashboard/contracts/${c.id}`}
-                  className="block border border-[#1e2535] bg-[#0d1018] hover:border-[#2a3548] transition-colors">
-                  <div className="flex items-center p-5 gap-6">
-                    <div className={`text-3xl font-bold ${scoreColor} w-16 text-center shrink-0`}>
-                      {match.match_score}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-[#e8edf8] font-medium text-sm truncate">{c.title}</h3>
-                        <span className={`${recColor} text-white text-[10px] font-mono uppercase px-2 py-0.5 shrink-0`}>
-                          {match.bid_recommendation}
-                        </span>
+                return (
+                  <div
+                    key={match.id}
+                    className="border border-[#1e2535] bg-[#0d1018] hover:border-[#2a3548] transition-colors"
+                  >
+                    <div className="p-5">
+                      <div className="flex items-start gap-4">
+                        {/* Score */}
+                        <div className={`text-3xl font-bold font-mono ${scoreColor(match.match_score)} w-14 text-center shrink-0`}>
+                          {match.match_score}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-[#e8edf8] font-medium text-sm truncate">
+                              {opp.title}
+                            </h3>
+                            <span
+                              className={`px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 ${recBadge(
+                                match.bid_recommendation
+                              )}`}
+                            >
+                              {match.bid_recommendation}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-[#8b9ab5] mb-2">
+                            <span>{opp.agency}</span>
+                            {opp.solicitation_number && (
+                              <>
+                                <span className="text-[#1e2535]">|</span>
+                                <span className="font-mono">{opp.solicitation_number}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Tags */}
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {opp.set_aside && (
+                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5]">
+                                {opp.set_aside}
+                              </span>
+                            )}
+                            {opp.naics_code && (
+                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5] font-mono">
+                                NAICS {opp.naics_code}
+                              </span>
+                            )}
+                            {opp.place_of_performance && (
+                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5]">
+                                {opp.place_of_performance}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* AI Reasoning */}
+                          {match.reasoning && (
+                            <p className="text-xs text-[#4a5a75] mb-3 line-clamp-2">{match.reasoning}</p>
+                          )}
+
+                          {/* Bottom row: value, deadline, actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              {opp.estimated_value && (
+                                <span className="text-sm font-mono text-[#e8edf8]">
+                                  {formatCurrency(opp.estimated_value)}
+                                </span>
+                              )}
+                              <span className={`text-xs font-mono ${deadlineColor}`}>
+                                {deadlineLabel(opp.response_deadline)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateStatus(match.id, "tracking")}
+                                className="px-3 py-1 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+                              >
+                                Track
+                              </button>
+                              <button
+                                onClick={() => updateStatus(match.id, "bidding")}
+                                className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
+                              >
+                                Bid
+                              </button>
+                              <button
+                                onClick={() => updateStatus(match.id, "skipped")}
+                                className="px-3 py-1 text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors"
+                              >
+                                Skip
+                              </button>
+                              {opp.sam_url && (
+                                <a
+                                  href={opp.sam_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                                >
+                                  SAM.gov
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-[#8b9ab5] truncate">{c.agency}</div>
-                      <div className="text-xs text-[#4a5a75] mt-1">{match.reasoning}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider">Deadline</div>
-                      <div className="text-sm text-[#8b9ab5]">{deadline}</div>
                     </div>
                   </div>
-                </Link>
-              );
-            })
-          ) : (
-            <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center">
-              <div className="text-[#4a5a75] text-lg mb-2">No matches yet</div>
-              <p className="text-[#8b9ab5] text-sm">
-                We&apos;re analyzing contracts against your profile. Check back soon or{" "}
-                <Link href="/dashboard/settings" className="text-[#3b82f6]">update your NAICS codes</Link> for better matches.
-              </p>
+                );
+              })}
             </div>
           )}
         </div>
-      </main>
+
+        {/* Right Sidebar */}
+        <div className="w-[300px] shrink-0 hidden lg:block space-y-4">
+          {/* Pipeline Summary */}
+          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+              Pipeline Summary
+            </h3>
+            {[
+              { label: "Monitoring", key: "monitoring" },
+              { label: "Preparing Bid", key: "preparing_bid" },
+              { label: "Submitted", key: "submitted" },
+              { label: "Won", key: "won" },
+              { label: "Lost", key: "lost" },
+            ].map((s) => (
+              <div key={s.key} className="flex items-center justify-between py-1.5">
+                <span className="text-xs text-[#8b9ab5]">{s.label}</span>
+                <span className="text-xs font-mono text-[#e8edf8]">{pipelineCounts[s.key] ?? 0}</span>
+              </div>
+            ))}
+            <Link
+              href="/dashboard/pipeline"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+            >
+              View Pipeline →
+            </Link>
+          </div>
+
+          {/* Compliance Score */}
+          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+              Compliance Health
+            </h3>
+            <div className="text-3xl font-bold font-mono text-[#22c55e] mb-2">--</div>
+            <div className="w-full h-1.5 bg-[#111520]">
+              <div className="h-full bg-[#22c55e] w-0" />
+            </div>
+            <Link
+              href="/dashboard/compliance"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+            >
+              View Compliance →
+            </Link>
+          </div>
+
+          {/* Upcoming Deadlines */}
+          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+              Upcoming Deadlines
+            </h3>
+            {matches
+              .filter((m) => {
+                const d = daysUntil(m.opportunities?.response_deadline);
+                return d !== null && d >= 0 && d <= 14;
+              })
+              .sort(
+                (a, b) =>
+                  (daysUntil(a.opportunities?.response_deadline) ?? 999) -
+                  (daysUntil(b.opportunities?.response_deadline) ?? 999)
+              )
+              .slice(0, 5)
+              .map((m) => {
+                const d = daysUntil(m.opportunities?.response_deadline);
+                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#8b9ab5]";
+                return (
+                  <div key={m.id} className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-[#8b9ab5] truncate mr-2">
+                      {m.opportunities?.title}
+                    </span>
+                    <span className={`text-xs font-mono shrink-0 ${color}`}>
+                      {deadlineLabel(m.opportunities?.response_deadline)}
+                    </span>
+                  </div>
+                );
+              })}
+            {matches.filter((m) => {
+              const d = daysUntil(m.opportunities?.response_deadline);
+              return d !== null && d >= 0 && d <= 14;
+            }).length === 0 && (
+              <p className="text-xs text-[#4a5a75]">No upcoming deadlines</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

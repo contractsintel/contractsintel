@@ -1,0 +1,9 @@
+{
+  "crons": [
+    { "path": "/api/cron/scrape-opportunities", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/send-digests", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/compliance-alerts", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/performance-prompts", "schedule": "0 14 1 * *" },
+    { "path": "/api/cron/owner-report", "schedule": "0 13 * * 1" }
+  ]
+}
