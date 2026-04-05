@@ -29,13 +29,45 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith("/dashboard")
-  ) {
+  const pathname = request.nextUrl.pathname;
+
+  // Not logged in — redirect to login
+  if (!user && pathname.startsWith("/dashboard")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  // Logged in + on dashboard (but not expired page) — check subscription
+  if (user && pathname.startsWith("/dashboard") && !pathname.startsWith("/expired")) {
+    const { data: userRec } = await supabase
+      .from("users")
+      .select("organization_id, organizations(subscription_status, trial_ends_at)")
+      .eq("auth_id", user.id)
+      .single();
+
+    const org = (userRec as any)?.organizations;
+
+    if (org) {
+      const status = org.subscription_status;
+
+      // Trial expired
+      if (status === "trialing" && org.trial_ends_at) {
+        const trialEnd = new Date(org.trial_ends_at);
+        if (trialEnd < new Date()) {
+          const url = request.nextUrl.clone();
+          url.pathname = "/expired";
+          return NextResponse.redirect(url);
+        }
+      }
+
+      // Cancelled — block immediately
+      if (status === "cancelled") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/expired";
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return supabaseResponse;
