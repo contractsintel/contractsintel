@@ -1363,18 +1363,17 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
   var loopTimers = {}; // Stores the timeout ID for each mockup's loop
 
   function startLoop(mockupId, frame) {
-    // Don't start if already running
     if (loopTimers[mockupId]) return;
+    console.log('[CI] Starting loop for mockup ' + mockupId);
 
     function cycle() {
-      // Reset to initial state instantly
+      console.log('[CI] Cycle start: mockup ' + mockupId);
       if (resetMap[mockupId]) resetMap[mockupId](frame);
 
-      // Pause 1s, then play animation
       loopTimers[mockupId] = setTimeout(function() {
+        console.log('[CI] Animating mockup ' + mockupId);
         if (animMap[mockupId]) animMap[mockupId](frame);
 
-        // After animation completes + hold time, start next cycle
         loopTimers[mockupId] = setTimeout(function() {
           cycle();
         }, animDuration[mockupId] + HOLD_TIME);
@@ -1388,23 +1387,25 @@ footer { border-top: 1px solid var(--border); padding: 40px 32px; display: flex;
     if (loopTimers[mockupId]) {
       clearTimeout(loopTimers[mockupId]);
       delete loopTimers[mockupId];
+      console.log('[CI] Stopped loop for mockup ' + mockupId);
     }
     if (resetMap[mockupId]) resetMap[mockupId](frame);
   }
 
-  /* ====== Intersection Observer (controls loop start/stop) ====== */
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       var mockupId = entry.target.getAttribute('data-mockup');
       if (!mockupId) return;
 
       if (entry.isIntersecting) {
+        console.log('[CI] Mockup ' + mockupId + ' IN VIEW');
         startLoop(mockupId, entry.target);
       } else {
+        console.log('[CI] Mockup ' + mockupId + ' OUT OF VIEW');
         stopLoop(mockupId, entry.target);
       }
     });
-  }, { threshold: 0.3 });
+  }, { threshold: 0.15 });
 
   document.querySelectorAll('.mockup-frame[data-mockup]').forEach(function(frame) {
     observer.observe(frame);
