@@ -1,0 +1,19 @@
+{
+  "name": "contractsintel-workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "fetch-contracts": "node jobs/fetch-contracts.js",
+    "send-digests": "node jobs/send-digests.js",
+    "support-responder": "node jobs/support-responder.js",
+    "match-contracts": "node jobs/match-contracts.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-cron": "^3.0.3",
+    "resend": "^3.0.0",
+    "googleapis": "^131.0.0",
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}

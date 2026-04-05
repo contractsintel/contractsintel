@@ -1,0 +1,6 @@
+node_modules/
+.next/
+.env
+.env.local
+workers/node_modules/
+*.tsbuildinfo
