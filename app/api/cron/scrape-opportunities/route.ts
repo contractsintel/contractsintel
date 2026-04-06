@@ -32,9 +32,9 @@ interface SamOpportunity {
 async function fetchFromSam(endpoint: string, apiKey: string): Promise<SamOpportunity[]> {
   const params = new URLSearchParams({
     api_key: apiKey,
-    postedFrom: getDateDaysAgo(1),
+    postedFrom: getDateDaysAgo(7),
     postedTo: getToday(),
-    limit: "100",
+    limit: "1000",
     offset: "0",
   });
 
