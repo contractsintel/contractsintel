@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy: "openDate|desc", rows: 100, offset: 0 }),
+      body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy: "openDate|desc", rows: 100, offset: 900 }),
       signal: AbortSignal.timeout(45000),
     });
     if (!res.ok) return NextResponse.json({ error: `Grants.gov ${res.status}` }, { status: 502 });
@@ -42,6 +42,6 @@ export async function GET(request: NextRequest) {
       }, { onConflict: "notice_id" });
       if (!error) saved++;
     }
-    return NextResponse.json({ success: true, page: 1, offset: 0, fetched: opps.length, saved, total: data.hitCount ?? 0 });
+    return NextResponse.json({ success: true, page: 10, offset: 900, fetched: opps.length, saved, total: data.hitCount ?? 0 });
   } catch (err) { return NextResponse.json({ error: String(err) }, { status: 500 }); }
 }
