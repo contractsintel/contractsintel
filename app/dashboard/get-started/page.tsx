@@ -828,63 +828,74 @@ export default function GetStartedPage() {
         <HelpButton page="dashboard" />
       </div>
 
-      {/* Progress Checklist */}
-      <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af]">
-            Your setup progress: {completedCount} of {totalItems} complete
-          </h2>
-        </div>
-        <div className="w-full h-2 bg-[#f8f9fb] mb-6">
-          <div
-            className="h-full bg-[#2563eb] transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
+      {/* Progress Ring + Step Cards */}
+      <div className="mb-6">
+        {/* Circular progress ring */}
+        <div className="flex flex-col items-center mb-6">
+          <svg width={64} height={64} className="-rotate-90">
+            <circle
+              cx={32}
+              cy={32}
+              r={28}
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth={4}
+            />
+            <circle
+              cx={32}
+              cy={32}
+              r={28}
+              fill="none"
+              stroke="#059669"
+              strokeWidth={4}
+              strokeDasharray={2 * Math.PI * 28}
+              strokeDashoffset={2 * Math.PI * 28 * (1 - progressPct / 100)}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="text-lg font-semibold text-[#111827] -mt-10 mb-6">{progressPct}%</span>
+          <span className="text-sm text-[#4b5563]">{completedCount} of {totalItems} complete</span>
         </div>
 
-        <div className="space-y-4">
-          {items.map((item) => (
-            <div key={item.key} className="flex items-start gap-3">
-              <div
-                className={`w-5 h-5 border flex items-center justify-center shrink-0 mt-0.5 ${
-                  item.done
-                    ? "border-[#22c55e] bg-[#22c55e]/10"
-                    : "border-[#e5e7eb]"
-                }`}
-              >
-                {item.done && (
-                  <svg
-                    className="w-3 h-3 text-[#22c55e]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                  >
-                    <path
-                      strokeLinecap="square"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
+        {/* Step cards */}
+        <div className="space-y-2">
+          {items.map((item, idx) => (
+            <div
+              key={item.key}
+              className={`border rounded-lg flex items-center gap-4 px-5 py-4 ${
+                item.done
+                  ? "border-l-[3px] border-l-[#059669] border-[#e5e7eb] bg-[#f0fdf4]"
+                  : "border-[#e5e7eb] bg-white"
+              }`}
+            >
+              {/* Number */}
+              <span className="text-2xl font-serif text-[#2563eb] shrink-0 w-8 text-center">
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+
+              {/* Title + description */}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[15px] text-[#111827]">{item.label}</p>
+                <p className="text-sm text-[#4b5563] mt-0.5">{item.detail}</p>
               </div>
-              <div>
-                <p
-                  className={`text-sm ${
-                    item.done ? "text-[#111827]" : "text-[#4b5563]"
-                  }`}
+
+              {/* Status / action */}
+              {item.done ? (
+                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded bg-[#059669] text-white">
+                  Done &#10003;
+                </span>
+              ) : item.link ? (
+                <Link
+                  href={item.link}
+                  className="shrink-0 px-3 py-1 text-xs font-medium rounded bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
                 >
-                  {item.label}
-                </p>
-                <p className="text-xs text-[#9ca3af] mt-0.5">{item.detail}</p>
-                {item.link && (
-                  <Link
-                    href={item.link}
-                    className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors mt-1 inline-block"
-                  >
-                    {item.linkLabel} &rarr;
-                  </Link>
-                )}
-              </div>
+                  Go &rarr;
+                </Link>
+              ) : (
+                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded border border-[#e5e7eb] text-[#9ca3af]">
+                  Pending
+                </span>
+              )}
             </div>
           ))}
         </div>

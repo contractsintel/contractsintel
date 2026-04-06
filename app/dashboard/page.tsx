@@ -7,6 +7,7 @@ import Link from "next/link";
 import { HelpButton } from "./help-panel";
 import { DemoBanner } from "./demo-banner";
 import { InlineGuide } from "./inline-guide";
+import { seedDemoData } from "@/lib/demo-data";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -46,13 +47,6 @@ function recBadge(rec: string) {
   return map[rec] ?? map.skip;
 }
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 type SortOption = "score" | "deadline" | "value";
 type FilterState = {
   setAside: string;
@@ -73,6 +67,7 @@ export default function DashboardPage() {
     sort: "score",
   });
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
+  const [seedingDemo, setSeedingDemo] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,6 +101,16 @@ export default function DashboardPage() {
       .update({ user_status: status, pipeline_stage: status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null })
       .eq("id", matchId);
     loadData();
+  };
+
+  const handleSeedDemo = async () => {
+    setSeedingDemo(true);
+    try {
+      await seedDemoData(supabase, organization.id);
+      await loadData();
+    } finally {
+      setSeedingDemo(false);
+    }
   };
 
   // Filter and sort
@@ -150,6 +155,10 @@ export default function DashboardPage() {
   // Unique filters
   const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside).filter(Boolean)));
 
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -157,15 +166,24 @@ export default function DashboardPage() {
     day: "numeric",
   });
 
+  const displayName = organization.name || "there";
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-serif text-[#111827]">
-            {greeting()}, {organization.name}
+            {greeting}, {displayName}
           </h1>
           <p className="text-sm text-[#9ca3af] mt-1 font-mono">{today}</p>
+          {!loading && (
+            <p className="text-sm text-[#4b5563] mt-1">
+              {matches.length > 0
+                ? `You have ${matches.length} new match${matches.length === 1 ? "" : "es"} today`
+                : "Your first digest arrives tomorrow at 7am"}
+            </p>
+          )}
         </div>
         <HelpButton page="dashboard" />
       </div>
@@ -266,15 +284,105 @@ export default function DashboardPage() {
               Loading matches...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="border border-[#e5e7eb] bg-white p-12 text-center">
-              <div className="text-[#9ca3af] text-lg mb-2">No matches found</div>
-              <p className="text-[#4b5563] text-sm">
-                Try adjusting your filters or{" "}
-                <Link href="/dashboard/settings" className="text-[#3b82f6]">
-                  update your profile
-                </Link>{" "}
-                for better matches.
-              </p>
+            /* ── Empty state welcome card ─────────────────────────────── */
+            <div className="border border-[#e5e7eb] bg-white rounded-xl p-8">
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-semibold text-[#111827] mb-2">
+                  Your first digest arrives tomorrow at 7am
+                </h2>
+                <p className="text-sm text-[#4b5563] max-w-lg mx-auto">
+                  Every night we scan 35,000+ portals and match opportunities to your certifications. Your first ranked digest will be here by morning.
+                </p>
+              </div>
+
+              {/* Sample opportunity mockup */}
+              <div className="border border-[#e5e7eb] bg-[#f8f9fb] rounded-lg p-5 max-w-xl mx-auto mb-8">
+                <div className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-wider mb-3">
+                  Sample opportunity preview
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="text-3xl font-bold font-mono text-[#22c55e] w-14 text-center shrink-0">
+                    94
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-[#111827]">
+                        DoD IT Support Services — Fort Belvoir, VA
+                      </span>
+                      <span className="px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20">
+                        bid
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-[#4b5563]">
+                      <span>$847,000</span>
+                      <span className="text-[#e5e7eb]">|</span>
+                      <span>8 days</span>
+                      <span className="text-[#e5e7eb]">|</span>
+                      <span>SDVOSB Set-Aside</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* "While you wait" action cards */}
+              <div className="mb-2">
+                <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-4 text-center">
+                  While you wait
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Card 1: Complete profile */}
+                  <Link
+                    href="/dashboard/settings"
+                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-[#111827]">Complete your profile</span>
+                    </div>
+                    <p className="text-xs text-[#4b5563]">
+                      Add your UEI, certifications, and NAICS codes
+                    </p>
+                  </Link>
+
+                  {/* Card 2: Connect Calendar */}
+                  <Link
+                    href="/dashboard/settings"
+                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-[#111827]">Connect Google Calendar</span>
+                    </div>
+                    <p className="text-xs text-[#4b5563]">
+                      Get deadline reminders on your phone
+                    </p>
+                  </Link>
+
+                  {/* Card 3: Explore with sample data */}
+                  <button
+                    onClick={handleSeedDemo}
+                    disabled={seedingDemo}
+                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group text-left disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-[#111827]">
+                        {seedingDemo ? "Loading..." : "Explore with sample data"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#4b5563]">
+                      See how the dashboard looks with real data
+                    </p>
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
