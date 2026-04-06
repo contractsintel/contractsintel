@@ -56,6 +56,26 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [refreshingSam, setRefreshingSam] = useState(false);
 
+  // Scraper run data
+  const [scraperRuns, setScraperRuns] = useState<any[]>([]);
+  const [expandedSource, setExpandedSource] = useState<string | null>(null);
+
+  // Load scraper run data
+  useState(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("scraper_runs")
+          .select("*")
+          .order("completed_at", { ascending: false })
+          .limit(50);
+        setScraperRuns(data ?? []);
+      } catch {
+        // scraper_runs table may not exist yet
+      }
+    })();
+  });
+
   const toggleCert = (c: string) =>
     setCerts((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   const toggleGeo = (g: string) =>
@@ -327,6 +347,53 @@ export default function SettingsPage() {
             Connect Google Calendar
           </button>
         )}
+      </section>
+
+      {/* Data Sources */}
+      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#f59e0b] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Data Sources</h2>
+        {(() => {
+          const lastRun = scraperRuns.length > 0 ? new Date(scraperRuns[0].completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "Not yet run";
+          const sourceGroups = [
+            { label: "Federal Sources (25+)", key: "federal", sources: ["sam_gov", "usaspending", "grants_gov"], color: "#2563eb" },
+            { label: "State Sources (55)", key: "state", sources: ["state_local"], color: "#059669" },
+            { label: "Military Sources (14)", key: "military", sources: ["military_defense"], color: "#475569" },
+            { label: "SBIR/STTR Sources (7)", key: "sbir", sources: ["sbir_sttr"], color: "#7c3aed" },
+            { label: "Forecasts & Intel (5)", key: "forecasts", sources: ["forecasts"], color: "#d97706" },
+            { label: "Subcontracting (2)", key: "subcontracting", sources: ["subcontracting"], color: "#0d9488" },
+          ];
+          return (
+            <div className="space-y-3">
+              <p className="text-xs text-[#9ca3af]">Last updated: {lastRun}</p>
+              {sourceGroups.map((group) => {
+                const runs = scraperRuns.filter((r) => group.sources.includes(r.source));
+                const latestRun = runs[0];
+                const status = latestRun ? (latestRun.status === "success" ? "Active" : latestRun.status === "stub" ? "Pending Setup" : "Error") : "Not yet run";
+                const statusColor = latestRun?.status === "success" ? "#22c55e" : latestRun?.status === "stub" ? "#9ca3af" : latestRun ? "#ef4444" : "#9ca3af";
+                const oppCount = runs.reduce((s: number, r: any) => s + (r.opportunities_found || 0), 0);
+                return (
+                  <button
+                    key={group.key}
+                    onClick={() => setExpandedSource(expandedSource === group.key ? null : group.key)}
+                    className="w-full flex items-center justify-between py-2 px-3 border border-[#f0f1f3] hover:border-[#e2e8f0] transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
+                      <span className="text-sm text-[#111827]">{group.label}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+                        <span className="text-xs text-[#4b5563]">{status}</span>
+                      </div>
+                      <span className="text-xs font-mono text-[#9ca3af]">{oppCount} opportunities</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
       </section>
 
       {/* Onboarding */}

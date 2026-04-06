@@ -358,9 +358,9 @@ const ALL_GUIDES: GuideSection[] = [
     title: "Daily Digest & Opportunity Matching",
     maxGuideIndex: 5,
     whatItDoes:
-      "Every night, ContractsIntel scans government procurement websites for new contract opportunities. It checks each one against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes. By 7am, a ranked list of your best matches lands in your email inbox with scores and recommendations.",
+      "Every night, ContractsIntel scans 100+ government procurement sources — including federal agencies, all 50 state procurement portals, military commands, SBIR programs from 7 agencies, and subcontracting databases. It checks each opportunity against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes. By 7am, a ranked list of your best matches lands in your email inbox with scores and recommendations. Each opportunity shows a colored source badge so you can see where it came from — federal, state, military, SBIR, or recompete.",
     whyItMatters:
-      "Most small contractors check SAM.gov manually every few days. Studies show this means you miss 68% of eligible opportunities. A single missed contract could be worth $150,000 to $2,000,000. This product makes sure you never miss one again.",
+      "Most small contractors only check SAM.gov manually every few days, missing state contracts, military RFQs, SBIR grants, and recompete opportunities from expiring contracts. A single missed contract could be worth $150,000 to $2,000,000. ContractsIntel monitors 100+ sources so you never miss an eligible opportunity at any level of government.",
     howToUseIt: [
       "Check your email every morning -- your digest arrives at 7am with your top 10 matches.",
       "Review the match scores -- higher means a better fit for your business.",

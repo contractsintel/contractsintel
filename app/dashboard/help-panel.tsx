@@ -21,7 +21,7 @@ const HELP_CONTENT: Record<string, HelpContent> = {
       "View your compliance status",
     ],
     howItWorks:
-      "Every night at 2am, ContractsIntel scans over 35,000 government procurement websites. It compares each new opportunity against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone), your NAICS codes, your location, and your preferred contract size. By 7am, your best matches are scored and ranked here. The AI also identifies who currently holds the contract (the incumbent) and estimates how many other companies will bid.",
+      "Every night, ContractsIntel scans 100+ government procurement sources — including SAM.gov, all 50 state procurement portals, military commands like DLA and Navy NECO, SBIR programs from 7 agencies, and subcontracting databases. Each new opportunity is scored against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone), your NAICS codes, your location, and your preferred contract size. By 7am, your best matches are scored and ranked here with colored source badges showing where each opportunity came from.",
     tips: [
       "Focus on opportunities scoring 80 or higher — these are your strongest matches.",
       "Check the 'Urgent' count daily — these are closing within 7 days.",

@@ -48,12 +48,44 @@ function recBadge(rec: string) {
 }
 
 type SortOption = "score" | "deadline" | "value";
+type SourceFilter = "" | "federal" | "state" | "military" | "sbir" | "grants" | "subcontracting" | "recompetes";
 type FilterState = {
   setAside: string;
   agency: string;
   minScore: number;
   sort: SortOption;
+  source: SourceFilter;
 };
+
+function getSourceCategory(source: string | null | undefined, bidRec?: string): string {
+  if (bidRec === "recompete_alert") return "recompetes";
+  if (!source) return "federal";
+  if (source.startsWith("state_")) return "state";
+  if (["dla_dibbs", "army_asfi", "army_acc", "navy_neco", "air_force", "marines", "disa", "darpa", "dha", "mda", "space_force", "usace", "socom", "dcsa", "military_defense"].includes(source)) return "military";
+  if (source.startsWith("sbir_") || source === "sbir_sttr") return "sbir";
+  if (source === "grants_gov") return "grants";
+  if (["sba_subnet", "gsa_subcontracting", "subcontracting"].includes(source)) return "subcontracting";
+  return "federal";
+}
+
+function sourceBadge(source: string | null | undefined, bidRec?: string) {
+  const cat = getSourceCategory(source, bidRec);
+  const badges: Record<string, { bg: string; text: string; label: string }> = {
+    federal: { bg: "bg-[#eff4ff]", text: "text-[#2563eb]", label: "Federal" },
+    state: { bg: "bg-[#ecfdf5]", text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "") : "State" },
+    military: { bg: "bg-[#f1f5f9]", text: "text-[#475569]", label: "Military" },
+    sbir: { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", label: "SBIR" },
+    grants: { bg: "bg-[#fffbeb]", text: "text-[#d97706]", label: "Grant" },
+    subcontracting: { bg: "bg-[#f0fdfa]", text: "text-[#0d9488]", label: "SubK" },
+    recompetes: { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", label: "Recompete" },
+  };
+  const b = badges[cat] ?? badges.federal;
+  return (
+    <span className={`inline-block px-2 py-0.5 text-[10px] font-mono uppercase rounded-full ${b.bg} ${b.text}`}>
+      {b.label}
+    </span>
+  );
+}
 
 export default function DashboardPage() {
   const { organization, user } = useDashboard();
@@ -65,6 +97,7 @@ export default function DashboardPage() {
     agency: "",
     minScore: 0,
     sort: "score",
+    source: "",
   });
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
   const [seedingDemo, setSeedingDemo] = useState(false);
@@ -157,6 +190,10 @@ export default function DashboardPage() {
       if (filters.setAside && opp.set_aside !== filters.setAside) return false;
       if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
       if (m.match_score < filters.minScore) return false;
+      if (filters.source) {
+        const cat = getSourceCategory(opp.source, m.bid_recommendation);
+        if (cat !== filters.source) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -183,6 +220,16 @@ export default function DashboardPage() {
     (acc, m) => {
       const stage = m.pipeline_stage ?? "new";
       acc[stage] = (acc[stage] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // Source breakdown counts
+  const sourceCounts = matches.reduce(
+    (acc, m) => {
+      const cat = getSourceCategory(m.opportunities?.source, m.bid_recommendation);
+      acc[cat] = (acc[cat] ?? 0) + 1;
       return acc;
     },
     {} as Record<string, number>
@@ -256,6 +303,20 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Source Breakdown */}
+      {!loading && matches.length > 0 && (
+        <div className="mb-4 px-1">
+          <div className="flex items-center gap-3 font-['JetBrains_Mono'] text-[11px] text-[#94a3b8]">
+            {sourceCounts.federal ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#2563eb]" />{sourceCounts.federal} federal</span> : null}
+            {sourceCounts.state ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#059669]" />{sourceCounts.state} state</span> : null}
+            {sourceCounts.military ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#475569]" />{sourceCounts.military} military</span> : null}
+            {sourceCounts.sbir ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />{sourceCounts.sbir} SBIR</span> : null}
+            {sourceCounts.grants ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#d97706]" />{sourceCounts.grants} grants</span> : null}
+            {sourceCounts.recompetes ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#dc2626]" />{sourceCounts.recompetes} recompetes</span> : null}
+          </div>
+        </div>
+      )}
+
       {/* Compliance Alert */}
       {complianceAlerts.length > 0 && (
         <div className="border border-[#f0f1f3] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -282,6 +343,20 @@ export default function DashboardPage() {
         <div className="flex-1 min-w-0">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
+            <select
+              value={filters.source}
+              onChange={(e) => setFilters((f) => ({ ...f, source: e.target.value as SourceFilter }))}
+              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
+            >
+              <option value="">All Sources</option>
+              <option value="federal">Federal</option>
+              <option value="state">State & Local</option>
+              <option value="military">Military</option>
+              <option value="sbir">SBIR/STTR</option>
+              <option value="grants">Grants</option>
+              <option value="subcontracting">Subcontracting</option>
+              <option value="recompetes">Recompetes</option>
+            </select>
             <select
               value={filters.setAside}
               onChange={(e) => setFilters((f) => ({ ...f, setAside: e.target.value }))}
@@ -335,7 +410,7 @@ export default function DashboardPage() {
                   Your first digest arrives tomorrow at 7am
                 </h2>
                 <p className="text-sm text-[#4b5563] max-w-lg mx-auto">
-                  Every night we scan 35,000+ portals and match opportunities to your certifications. Your first ranked digest will be here by morning.
+                  Every night we scan 100+ government procurement sources and match opportunities to your certifications. Your first ranked digest will be here by morning.
                 </p>
               </div>
 
@@ -468,6 +543,7 @@ export default function DashboardPage() {
                             >
                               {match.bid_recommendation}
                             </span>
+                            {sourceBadge(opp.source, match.bid_recommendation)}
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-[#4b5563] mb-2">
