@@ -1,4 +1,10 @@
 import type { ScraperResult } from "./index";
+import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+
+// Sources that are JS SPAs requiring browser rendering
+const JS_FORECAST_SOURCES: Record<string, string> = {
+  govtribe: "https://govtribe.com/opportunities",
+};
 
 const FORECAST_SOURCES = [
   { id: "fpds", name: "FPDS Reports", url: "https://www.fpds.gov/" },
@@ -66,6 +72,69 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       });
 
       if (!res.ok) {
+        // Try ScrapingBee for JS SPA sources that returned non-200
+        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FORECAST_SOURCES[source.id];
+          console.log(`[forecasts] ${source.name}: HTTP ${res.status}, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            const sbHtml = await fetchWithScrapingBee(sbUrl);
+            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${sbHtml.length} bytes`);
+            // Parse ScrapingBee-rendered HTML below by continuing with sbHtml
+            // We re-assign to use it in the rest of the loop
+            const sbProcLinks = extractLinks(sbHtml, source.url).filter(
+              (l) =>
+                /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
+                /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.href)
+            );
+            const sbTableRows = extractTableRows(sbHtml);
+            let sourceOpps = 0;
+            for (let i = 0; i < Math.min(sbProcLinks.length, 50); i++) {
+              const link = sbProcLinks[i];
+              const noticeId = `forecast-${source.id}-sblink-${i}-${Date.now()}`;
+              const { error } = await supabase.from("opportunities").upsert(
+                {
+                  notice_id: noticeId,
+                  title: `[${source.name}] ${link.text.substring(0, 200)}`,
+                  agency: source.name,
+                  source: "forecasts",
+                  source_url: link.href,
+                  description: link.text,
+                  last_seen_at: new Date().toISOString(),
+                },
+                { onConflict: "notice_id" }
+              );
+              if (!error) { sourceOpps++; totalUpserted++; }
+            }
+            for (let i = 0; i < Math.min(sbTableRows.length, 50); i++) {
+              const row = sbTableRows[i];
+              const noticeId = `forecast-${source.id}-sbtable-${i}-${Date.now()}`;
+              const { error } = await supabase.from("opportunities").upsert(
+                {
+                  notice_id: noticeId,
+                  title: `[${source.name}] ${row.substring(0, 200)}`,
+                  agency: source.name,
+                  source: "forecasts",
+                  source_url: source.url,
+                  description: row,
+                  last_seen_at: new Date().toISOString(),
+                },
+                { onConflict: "notice_id" }
+              );
+              if (!error) { sourceOpps++; totalUpserted++; }
+            }
+            totalFound += sourceOpps;
+            if (sourceOpps > 0) {
+              console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items via ScrapingBee`);
+              sourceResults.push(`${source.id}: ${sourceOpps} items (ScrapingBee)`);
+            } else {
+              sourceResults.push(`${source.id}: BLOCKED (ScrapingBee returned no data)`);
+            }
+            continue;
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+          }
+        }
         console.log(`[forecasts] ${source.name}: HTTP ${res.status} BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
@@ -86,46 +155,93 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         continue;
       }
 
-      const html = await res.text();
+      let html = await res.text();
 
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
-        console.log(`[forecasts] ${source.name}: ${reason} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: ${reason}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (${reason})`);
-        continue;
+
+        // Try ScrapingBee fallback for known JS SPA sources
+        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FORECAST_SOURCES[source.id];
+          console.log(`[forecasts] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            await supabase.from("scraper_runs").insert({
+              source: source.id,
+              status: "error",
+              opportunities_found: 0,
+              matches_created: 0,
+              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
+              started_at: startedAt,
+              completed_at: new Date().toISOString(),
+            });
+            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
+            continue;
+          }
+        } else {
+          console.log(`[forecasts] ${source.name}: ${reason} BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: `BLOCKED: ${reason}`,
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (${reason})`);
+          continue;
+        }
       }
 
       // Look for procurement/forecast related links and tables
-      const procLinks = extractLinks(html, source.url).filter(
+      let procLinks = extractLinks(html, source.url).filter(
         (l) =>
           /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
           /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.href)
       );
-      const tableRows = extractTableRows(html);
-      const hasData = procLinks.length >= 1 || tableRows.length >= 3;
+      let tableRows = extractTableRows(html);
+      let hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        console.log(`[forecasts] ${source.name}: No parseable forecast data BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: "BLOCKED: no parseable forecast data in HTML",
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
-        continue;
+        // Try ScrapingBee fallback for known JS SPA sources
+        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FORECAST_SOURCES[source.id];
+          console.log(`[forecasts] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            procLinks = extractLinks(html, source.url).filter(
+              (l) =>
+                /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
+                /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.href)
+            );
+            tableRows = extractTableRows(html);
+            hasData = procLinks.length >= 1 || tableRows.length >= 3;
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+          }
+        }
+
+        if (!hasData) {
+          console.log(`[forecasts] ${source.name}: No parseable forecast data BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: "BLOCKED: no parseable forecast data in HTML",
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
+          continue;
+        }
       }
 
       let sourceOpps = 0;
@@ -280,6 +396,9 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
   }
 
   console.log(`[forecasts] Results: ${sourceResults.join(", ")}`);
+
+  // Log ScrapingBee API usage for budget tracking
+  await logScrapingBeeUsage(supabase);
 
   return {
     source: "forecasts",

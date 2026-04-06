@@ -1,6 +1,12 @@
 import type { ScraperResult } from "./index";
+import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
 
 const SBIR_API = "https://www.sbir.gov/api/solicitations.json";
+
+// Sources that are JS SPAs requiring browser rendering
+const JS_SBIR_SOURCES: Record<string, string> = {
+  sbir_dod: "https://www.dodsbirsttr.mil/submissions/",
+};
 
 const SBIR_SOURCES = [
   { id: "sbir_gov", name: "SBIR.gov", url: "https://www.sbir.gov/" },
@@ -115,22 +121,47 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         continue;
       }
 
-      const html = await res.text();
+      let html = await res.text();
 
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
-        console.log(`[sbir-sttr] ${source.name}: ${reason} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: ${reason}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (${reason})`);
-        continue;
+
+        // Try ScrapingBee fallback for known JS SPA sources
+        if (JS_SBIR_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_SBIR_SOURCES[source.id];
+          console.log(`[sbir-sttr] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[sbir-sttr] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[sbir-sttr] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            await supabase.from("scraper_runs").insert({
+              source: source.id,
+              status: "error",
+              opportunities_found: 0,
+              matches_created: 0,
+              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
+              started_at: startedAt,
+              completed_at: new Date().toISOString(),
+            });
+            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
+            continue;
+          }
+        } else {
+          console.log(`[sbir-sttr] ${source.name}: ${reason} BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: `BLOCKED: ${reason}`,
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (${reason})`);
+          continue;
+        }
       }
 
       // Extract solicitation links
@@ -153,18 +184,50 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       }
 
       if (solLinks.length === 0) {
-        console.log(`[sbir-sttr] ${source.name}: No parseable solicitation data BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: "BLOCKED: no parseable solicitation data in HTML",
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
-        continue;
+        // Try ScrapingBee fallback for known JS SPA sources with no parseable data
+        if (JS_SBIR_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_SBIR_SOURCES[source.id];
+          console.log(`[sbir-sttr] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[sbir-sttr] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            // Re-parse rendered HTML for solicitation links
+            const sbLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+            let sbMatch;
+            while ((sbMatch = sbLinkRegex.exec(html)) !== null) {
+              const text = sbMatch[2].replace(/<[^>]+>/g, "").trim();
+              if (
+                text &&
+                text.length > 5 &&
+                text.length < 300 &&
+                /sbir|sttr|solicit|topic|fund|grant|award|proposal/i.test(text + " " + sbMatch[1])
+              ) {
+                const href = sbMatch[1].startsWith("http")
+                  ? sbMatch[1]
+                  : (() => { try { return new URL(sbMatch[1], source.url).toString(); } catch { return sbMatch[1]; } })();
+                solLinks.push({ text, href });
+              }
+            }
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[sbir-sttr] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+          }
+        }
+
+        if (solLinks.length === 0) {
+          console.log(`[sbir-sttr] ${source.name}: No parseable solicitation data BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: "BLOCKED: no parseable solicitation data in HTML",
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
+          continue;
+        }
       }
 
       let sourceOpps = 0;
@@ -210,6 +273,9 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
   }
 
   console.log(`[sbir-sttr] Agency sources: ${sourceResults.join(", ")}`);
+
+  // Log ScrapingBee API usage for budget tracking
+  await logScrapingBeeUsage(supabase);
 
   return {
     source: "sbir_sttr",

@@ -1,4 +1,11 @@
 import type { ScraperResult } from "./index";
+import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+
+// Sources that are JS SPAs requiring browser rendering
+const JS_FEDERAL_SOURCES: Record<string, string> = {
+  gsa_ebuy: "https://www.ebuy.gsa.gov/ebuy/",
+  nih_nitaac: "https://nitaac.nih.gov/buy/opportunities",
+};
 
 const FEDERAL_CIVILIAN_SOURCES = [
   { id: "gsa_ebuy", name: "GSA eBuy", url: "https://www.ebuy.gsa.gov/" },
@@ -94,46 +101,94 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         continue;
       }
 
-      const html = await res.text();
+      let html = await res.text();
 
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
-        console.log(`[federal-civilian] ${source.name}: ${reason} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: ${reason}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (${reason})`);
-        continue;
+
+        // Try ScrapingBee fallback for known JS SPA sources
+        if (JS_FEDERAL_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FEDERAL_SOURCES[source.id];
+          console.log(`[federal-civilian] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[federal-civilian] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            await supabase.from("scraper_runs").insert({
+              source: source.id,
+              status: "error",
+              opportunities_found: 0,
+              matches_created: 0,
+              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
+              started_at: startedAt,
+              completed_at: new Date().toISOString(),
+            });
+            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
+            continue;
+          }
+        } else {
+          console.log(`[federal-civilian] ${source.name}: ${reason} BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: `BLOCKED: ${reason}`,
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (${reason})`);
+          continue;
+        }
       }
 
       // Look for procurement related links and tables
-      const procLinks = extractLinks(html, source.url).filter(
+      let procLinks = extractLinks(html, source.url).filter(
         (l) =>
           /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
           /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
       );
-      const tableRows = extractTableRows(html);
+      let tableRows = extractTableRows(html);
       const hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        console.log(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: "BLOCKED: no parseable procurement data in HTML",
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
-        continue;
+        // Try ScrapingBee fallback for known JS SPA sources that returned HTML but no data
+        if (JS_FEDERAL_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FEDERAL_SOURCES[source.id];
+          console.log(`[federal-civilian] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+          try {
+            html = await fetchWithScrapingBee(sbUrl);
+            console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            // Re-parse with ScrapingBee-rendered HTML
+            procLinks = extractLinks(html, source.url).filter(
+              (l) =>
+                /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
+                /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
+            );
+            tableRows = extractTableRows(html);
+          } catch (sbErr) {
+            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+            console.log(`[federal-civilian] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+          }
+        }
+
+        // Re-check after potential ScrapingBee attempt
+        if (procLinks.length < 1 && tableRows.length < 3) {
+          console.log(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
+          await supabase.from("scraper_runs").insert({
+            source: source.id,
+            status: "error",
+            opportunities_found: 0,
+            matches_created: 0,
+            error_message: "BLOCKED: no parseable procurement data in HTML",
+            started_at: startedAt,
+            completed_at: new Date().toISOString(),
+          });
+          sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
+          continue;
+        }
       }
 
       let sourceOpps = 0;
@@ -201,6 +256,9 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
   }
 
   console.log(`[federal-civilian] Results: ${sourceResults.join(", ")}`);
+
+  // Log ScrapingBee API usage for budget tracking
+  await logScrapingBeeUsage(supabase);
 
   return {
     source: "federal_civilian",

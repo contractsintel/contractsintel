@@ -1,4 +1,22 @@
 import type { ScraperResult } from "./index";
+import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+
+// States whose procurement portals are JS SPAs requiring browser rendering
+const JS_STATES = new Set(["CA", "TX", "FL", "CO", "MD", "MI", "KY", "KS", "MO", "AK"]);
+
+// JS SPA URLs that differ from the default portal URL
+const JS_STATE_URLS: Record<string, string> = {
+  CA: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx",
+  TX: "https://www.txsmartbuy.com/sp",
+  FL: "https://vendor.myfloridamarketplace.com/search/bids",
+  CO: "https://bids.coloradovssc.com/",
+  MD: "https://emaryland.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml",
+  MI: "https://sigma.michigan.gov/webapp/PRDVSS2X1/AltSelfService",
+  KY: "https://emars.ky.gov/online/vss/AltSelfService",
+  KS: "https://supplier.sok.ks.gov/psc/sokfssprd/SUPPLIER/ERP/h/?tab=SOK_EBID",
+  MO: "https://www.moolb.mo.gov/MOSCEnterprise/solicitationSearch.html",
+  AK: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService",
+};
 
 const STATE_PORTALS = [
   { state: "AL", name: "Alabama", url: "https://purchasing.alabama.gov/" },
@@ -51,7 +69,7 @@ const STATE_PORTALS = [
   { state: "WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/" },
   { state: "WI", name: "Wisconsin", url: "https://vendornet.wi.gov/" },
   { state: "WY", name: "Wyoming", url: "https://sites.google.com/wyo.gov/procurement/" },
-  { state: "DC", name: "District of Columbia", url: "https://ocp.dc.gov/page/open-solicitations" },
+  { state: "DC", name: "District of Columbia", url: "https://ocp.dc.gov/page/solicitations" },
   { state: "PR", name: "Puerto Rico", url: "https://www.asg.pr.gov/" },
   { state: "GU", name: "Guam", url: "https://www.guamopa.com/" },
   { state: "VI", name: "US Virgin Islands", url: "https://dpp.vi.gov/" },
@@ -202,12 +220,21 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
       try {
         console.log(`[state-local] Fetching ${portal.name} (${portal.url})...`);
 
+        // AZ needs full browser headers to avoid 403
+        const headers: Record<string, string> = portal.state === "AZ"
+          ? {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9",
+            }
+          : {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "text/html,application/xhtml+xml",
+            };
+
         const res = await fetch(portal.url, {
           method: "GET",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml",
-          },
+          headers,
           signal: AbortSignal.timeout(10000),
           redirect: "follow",
         });
@@ -223,13 +250,33 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           continue;
         }
 
-        const html = await res.text();
+        let html = await res.text();
 
         // Check for common JS-required indicators
-        if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
-          console.log(`[state-local] ${portal.name}: Requires JavaScript BLOCKED`);
-          stateResults.push(`${portal.state}: BLOCKED (requires JavaScript)`);
-          continue;
+        const directFetchBlocked =
+          html.length < 500 ||
+          html.includes("JavaScript is required") ||
+          html.includes("enable JavaScript");
+
+        // For JS SPA states, try ScrapingBee as fallback when direct fetch fails
+        if (directFetchBlocked || (JS_STATES.has(portal.state) && html.length < 1000 && !/bid|solicit|rfp|rfq/i.test(html))) {
+          if (JS_STATES.has(portal.state) && process.env.SCRAPINGBEE_KEY) {
+            const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
+            console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying ScrapingBee for ${sbUrl}...`);
+            try {
+              html = await fetchWithScrapingBee(sbUrl);
+              console.log(`[state-local] ${portal.name}: ScrapingBee returned ${html.length} bytes`);
+            } catch (sbErr) {
+              const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+              console.log(`[state-local] ${portal.name}: ScrapingBee failed: ${sbMsg}`);
+              stateResults.push(`${portal.state}: BLOCKED (ScrapingBee fallback failed)`);
+              continue;
+            }
+          } else if (directFetchBlocked) {
+            console.log(`[state-local] ${portal.name}: Requires JavaScript BLOCKED`);
+            stateResults.push(`${portal.state}: BLOCKED (requires JavaScript)`);
+            continue;
+          }
         }
 
         // Try to find table rows with bid data
@@ -422,6 +469,9 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
     }
 
     console.log(`[state-local] Results: ${stateResults.join(", ")}`);
+
+    // Log ScrapingBee API usage for budget tracking
+    await logScrapingBeeUsage(supabase);
 
     return {
       source: "state_local",
