@@ -98,6 +98,95 @@ function extractLinks(html: string): Array<{ text: string; href: string }> {
   return links;
 }
 
+// Extract <tr> rows containing procurement keywords
+function extractBidTableRows(html: string): string[] {
+  const rows: string[] = [];
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const kwRegex = /\b(?:bid|solicitation|rfp|rfq|procurement)\b/i;
+  let match;
+  while ((match = trRegex.exec(html)) !== null) {
+    const rowHtml = match[1];
+    const rowText = rowHtml.replace(/<[^>]+>/g, " ").trim();
+    if (kwRegex.test(rowText) && rowText.length > 10) {
+      rows.push(rowText.replace(/\s+/g, " ").substring(0, 300));
+    }
+  }
+  return rows;
+}
+
+// Extract <a> tags within <td> elements that link to bid detail pages
+function extractTdLinks(html: string): Array<{ text: string; href: string }> {
+  const links: Array<{ text: string; href: string }> = [];
+  const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let tdMatch;
+  while ((tdMatch = tdRegex.exec(html)) !== null) {
+    let linkMatch;
+    linkRegex.lastIndex = 0;
+    while ((linkMatch = linkRegex.exec(tdMatch[1])) !== null) {
+      const text = linkMatch[2].replace(/<[^>]+>/g, "").trim();
+      const href = linkMatch[1];
+      if (text.length > 3 && text.length < 300 && /bid|solicit|rfp|rfq|detail|view|procurement/i.test(href + " " + text)) {
+        links.push({ text, href });
+      }
+    }
+  }
+  return links;
+}
+
+// Extract <div> or <li> elements with class names containing bid-related terms
+function extractBidElements(html: string): string[] {
+  const items: string[] = [];
+  const elRegex = /<(?:div|li)[^>]*class="[^"]*(?:bid|solicitation|listing|result)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|li)>/gi;
+  let match;
+  while ((match = elRegex.exec(html)) !== null) {
+    const text = match[1].replace(/<[^>]+>/g, " ").trim().replace(/\s+/g, " ");
+    if (text.length > 10 && text.length < 500) {
+      items.push(text);
+    }
+  }
+  return items;
+}
+
+// Nevada ePro specific parser - extracts bid listings from the advanced search results table
+function extractNevadaEproBids(html: string): Array<{ title: string; href: string; refNumber: string }> {
+  const bids: Array<{ title: string; href: string; refNumber: string }> = [];
+  // Nevada ePro uses a data table with bid references. Look for rows with bid IDs/links.
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let trMatch;
+  while ((trMatch = trRegex.exec(html)) !== null) {
+    const row = trMatch[1];
+    // Extract all links from this row
+    const rowLinks: Array<{ text: string; href: string }> = [];
+    const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let lm;
+    while ((lm = linkRegex.exec(row)) !== null) {
+      rowLinks.push({ text: lm[2].replace(/<[^>]+>/g, "").trim(), href: lm[1] });
+    }
+    // Extract all cell text
+    const cells: string[] = [];
+    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let tdM;
+    while ((tdM = tdRegex.exec(row)) !== null) {
+      cells.push(tdM[1].replace(/<[^>]+>/g, "").trim());
+    }
+    if (cells.length >= 2) {
+      // Look for bid reference pattern (e.g., numbers, alphanumeric IDs)
+      const refCell = cells.find((c) => /^[A-Z0-9][-A-Z0-9]{2,30}$/i.test(c));
+      const titleCell = cells.find((c) => c.length > 15 && c !== refCell) || cells.join(" | ");
+      const bidLink = rowLinks.find((l) => l.href.includes("bid") || l.href.includes("solicit") || l.href.includes("view"));
+      if (titleCell || bidLink) {
+        bids.push({
+          title: bidLink?.text || titleCell || cells.join(" | "),
+          href: bidLink?.href || "",
+          refNumber: refCell || "",
+        });
+      }
+    }
+  }
+  return bids;
+}
+
 export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
@@ -151,17 +240,57 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
             /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.href)
         );
 
+        // FIX 5: Broader parsing - keyword table rows, td links, and bid-class elements
+        const bidTableRows = extractBidTableRows(html);
+        const tdLinks = extractTdLinks(html);
+        const bidElements = extractBidElements(html);
+
+        // FIX 4: Nevada ePro specific parsing
+        let nevadaBids: Array<{ title: string; href: string; refNumber: string }> = [];
+        if (portal.state === "NV") {
+          nevadaBids = extractNevadaEproBids(html);
+          console.log(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from HTML table`);
+        }
+
         const hasTableData = tableRows.length >= 3;
         const hasBidLinks = bidLinks.length >= 1;
+        const hasBidTableRows = bidTableRows.length >= 1;
+        const hasTdLinks = tdLinks.length >= 1;
+        const hasBidElements = bidElements.length >= 1;
+        const hasNevadaBids = nevadaBids.length >= 1;
 
-        if (!hasTableData && !hasBidLinks) {
+        if (!hasTableData && !hasBidLinks && !hasBidTableRows && !hasTdLinks && !hasBidElements && !hasNevadaBids) {
           console.log(`[state-local] ${portal.name}: No parseable bid data found BLOCKED`);
           stateResults.push(`${portal.state}: BLOCKED (no parseable bid data in HTML)`);
           continue;
         }
 
-        // Extract opportunities from table rows or bid links
+        // Extract opportunities from all sources
         let stateOpps = 0;
+
+        // Nevada ePro specific bids
+        if (hasNevadaBids) {
+          for (let i = 0; i < Math.min(nevadaBids.length, 100); i++) {
+            const bid = nevadaBids[i];
+            const noticeId = `state-NV-epro-${bid.refNumber || i}-${Date.now()}`;
+            const fullUrl = bid.href
+              ? (bid.href.startsWith("http") ? bid.href : `https://nevadaepro.com${bid.href}`)
+              : portal.url;
+            const { error } = await supabase.from("opportunities").upsert(
+              {
+                notice_id: noticeId,
+                title: `[NV] ${bid.title.substring(0, 200)}`,
+                agency: "Nevada State Procurement",
+                solicitation_number: bid.refNumber || undefined,
+                source: "state_local",
+                source_url: fullUrl,
+                description: bid.title,
+              },
+              { onConflict: "notice_id" }
+            );
+            if (!error) { stateOpps++; totalUpserted++; }
+          }
+        }
 
         if (hasTableData) {
           // Use table rows as opportunities
@@ -212,8 +341,71 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           }
         }
 
+        // FIX 5: Broader parsing - keyword-matching table rows
+        if (hasBidTableRows) {
+          for (let i = 0; i < Math.min(bidTableRows.length, 50); i++) {
+            const row = bidTableRows[i];
+            const noticeId = `state-${portal.state}-bidrow-${i}-${Date.now()}`;
+            const { error } = await supabase.from("opportunities").upsert(
+              {
+                notice_id: noticeId,
+                title: `[${portal.state}] ${row.substring(0, 200)}`,
+                agency: `${portal.name} State Procurement`,
+                source: "state_local",
+                source_url: portal.url,
+                description: row,
+              },
+              { onConflict: "notice_id" }
+            );
+            if (!error) { stateOpps++; totalUpserted++; }
+          }
+        }
+
+        // FIX 5: Links inside <td> elements pointing to bid detail pages
+        if (hasTdLinks) {
+          for (let i = 0; i < Math.min(tdLinks.length, 50); i++) {
+            const link = tdLinks[i];
+            const noticeId = `state-${portal.state}-tdlink-${i}-${Date.now()}`;
+            const fullUrl = link.href.startsWith("http")
+              ? link.href
+              : new URL(link.href, portal.url).toString();
+            const { error } = await supabase.from("opportunities").upsert(
+              {
+                notice_id: noticeId,
+                title: `[${portal.state}] ${link.text.substring(0, 200)}`,
+                agency: `${portal.name} State Procurement`,
+                source: "state_local",
+                source_url: fullUrl,
+                description: link.text,
+              },
+              { onConflict: "notice_id" }
+            );
+            if (!error) { stateOpps++; totalUpserted++; }
+          }
+        }
+
+        // FIX 5: Div/li elements with bid-related class names
+        if (hasBidElements) {
+          for (let i = 0; i < Math.min(bidElements.length, 50); i++) {
+            const elem = bidElements[i];
+            const noticeId = `state-${portal.state}-bidel-${i}-${Date.now()}`;
+            const { error } = await supabase.from("opportunities").upsert(
+              {
+                notice_id: noticeId,
+                title: `[${portal.state}] ${elem.substring(0, 200)}`,
+                agency: `${portal.name} State Procurement`,
+                source: "state_local",
+                source_url: portal.url,
+                description: elem,
+              },
+              { onConflict: "notice_id" }
+            );
+            if (!error) { stateOpps++; totalUpserted++; }
+          }
+        }
+
         totalFound += stateOpps;
-        console.log(`[state-local] ${portal.name}: Found ${stateOpps} items (${tableRows.length} table rows, ${bidLinks.length} bid links)`);
+        console.log(`[state-local] ${portal.name}: Found ${stateOpps} items (${tableRows.length} table rows, ${bidLinks.length} bid links, ${bidTableRows.length} kw rows, ${tdLinks.length} td links, ${bidElements.length} bid elements${nevadaBids.length ? `, ${nevadaBids.length} NV ePro bids` : ""})`);
         stateResults.push(`${portal.state}: ${stateOpps} items found`);
       } catch (stateErr) {
         const msg = stateErr instanceof Error ? stateErr.message : String(stateErr);

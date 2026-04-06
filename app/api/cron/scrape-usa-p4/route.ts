@@ -1,9 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-function getDaysAgo(d: number) { const dt = new Date(); dt.setDate(dt.getDate() - d); return dt.toISOString().split("T")[0]; }
-function getToday() { return new Date().toISOString().split("T")[0]; }
-
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -17,7 +14,7 @@ export async function GET(request: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        filters: { time_period: [{ start_date: getDaysAgo(90), end_date: getToday() }], award_type_codes: ["A","B","C","D"] },
+        filters: { award_type_codes: ["A","B","C","D"] },
         fields: ["Award ID","Recipient Name","Award Amount","Period of Performance Current End Date","Awarding Agency","Awarding Sub Agency","NAICS Code","generated_internal_id","Description"],
         limit: 100, page: 4, sort: "Award Amount", order: "desc", subawards: false
       }),

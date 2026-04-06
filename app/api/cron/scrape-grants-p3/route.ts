@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const res = await fetch(GRANTS_GOV_API, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ keyword: "", oppStatuses: "forecasted|posted", sortBy: "openDate|desc", rows: 500, offset: 1000 }),
+      body: JSON.stringify({ keyword: "", oppStatuses: "forecasted|posted", sortBy: "openDate|desc", rows: 500, offset: 0, agencies: "DOC,DOS,DOJ,EPA,USDOJ,VA" }),
       signal: AbortSignal.timeout(45000),
     });
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       if (!error) saved++;
     }
 
-    return NextResponse.json({ success: true, page: 3, offset: 1000, fetched: opps.length, saved, hitCount: data.hitCount ?? 0 });
+    return NextResponse.json({ success: true, page: 3, agencies: "DOC,DOS,DOJ,EPA,USDOJ,VA", offset: 0, fetched: opps.length, saved, hitCount: data.hitCount ?? 0 });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

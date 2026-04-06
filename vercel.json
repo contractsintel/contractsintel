@@ -18,6 +18,7 @@
     { "path": "/api/cron/scrape-usa-p10", "schedule": "10 8 * * *" },
     { "path": "/api/cron/scrape-military", "schedule": "15 8 * * *" },
     { "path": "/api/cron/scrape-states", "schedule": "20 8 * * *" },
+    { "path": "/api/cron/scrape-bidnet", "schedule": "25 8 * * *" },
     { "path": "/api/cron/scrape-sbir", "schedule": "30 8 * * *" },
     { "path": "/api/cron/scrape-forecasts", "schedule": "0 7 * * 0" },
     { "path": "/api/cron/send-digests", "schedule": "0 12 * * *" },
