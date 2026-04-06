@@ -8,6 +8,16 @@ import { tierLabel } from "@/lib/feature-gate";
 import { HelpButton } from "../help-panel";
 
 const CERTIFICATIONS = ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business", "Service-Disabled Veteran"];
+
+const CERT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "8(a)": { bg: "bg-[#eff4ff]", text: "text-[#2563eb]", border: "border-[#2563eb]" },
+  "HUBZone": { bg: "bg-[#ecfdf5]", text: "text-[#059669]", border: "border-[#059669]" },
+  "WOSB": { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", border: "border-[#7c3aed]" },
+  "EDWOSB": { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", border: "border-[#7c3aed]" },
+  "SDVOSB": { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", border: "border-[#dc2626]" },
+  "Small Business": { bg: "bg-[#fffbeb]", text: "text-[#d97706]", border: "border-[#d97706]" },
+  "Service-Disabled Veteran": { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", border: "border-[#dc2626]" },
+};
 const GEO_OPTIONS = ["Nationwide", "DC Metro", "Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific"];
 const SIZE_OPTIONS = ["Micro (<$150K)", "Small ($150K-$750K)", "Medium ($750K-$5M)", "Large ($5M+)"];
 
@@ -99,12 +109,15 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-serif text-[#111827]">Settings</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#6b7280"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Settings</h1>
+        </div>
         <HelpButton page="settings" />
       </div>
 
       {/* Company Profile */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#2563eb] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Company Profile</h2>
         <div className="space-y-4">
           <div>
@@ -128,14 +141,17 @@ export default function SettingsPage() {
           <div>
             <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Certifications</label>
             <div className="flex flex-wrap gap-2">
-              {CERTIFICATIONS.map((c) => (
-                <button key={c} type="button" onClick={() => toggleCert(c)}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${certs.includes(c)
-                    ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
-                    : "border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db]"}`}>
-                  {c}
-                </button>
-              ))}
+              {CERTIFICATIONS.map((c) => {
+                const colors = CERT_COLORS[c] ?? { bg: "bg-[#f1f5f9]", text: "text-[#94a3b8]", border: "border-[#e5e7eb]" };
+                return (
+                  <button key={c} type="button" onClick={() => toggleCert(c)}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${certs.includes(c)
+                      ? `${colors.border} ${colors.bg} ${colors.text}`
+                      : "bg-[#f1f5f9] text-[#94a3b8] border-[#e5e7eb]"}`}>
+                    {c}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <div>
@@ -163,7 +179,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Opportunity Preferences */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#d97706] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Opportunity Preferences</h2>
         <div className="space-y-4">
           <div>
@@ -210,7 +226,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Subscription */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#059669] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Subscription</h2>
         <div className="flex items-center justify-between">
           <div>
@@ -235,7 +251,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Notifications */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#7c3aed] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Notifications</h2>
         <div className="space-y-3">
           {[
@@ -261,7 +277,7 @@ export default function SettingsPage() {
       </section>
 
       {/* CMMC Status */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#dc2626] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">CMMC Status</h2>
         <div>
           <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Target Level</label>
@@ -275,7 +291,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Google Calendar */}
-      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <section className="border border-[#e5e7eb] border-l-[3px] border-l-[#0891b2] bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Google Calendar</h2>
         {calendarConnected ? (
           <div className="space-y-3">

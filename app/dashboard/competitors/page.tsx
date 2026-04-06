@@ -100,11 +100,14 @@ export default function CompetitorsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Competitor Intelligence</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Competitor Intelligence</h1>
+        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 text-sm bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
+            className="px-4 py-2 text-sm bg-[#7c3aed] text-white hover:bg-[#6d28d9] transition-colors"
           >
             {showForm ? "Cancel" : "Add Competitor"}
           </button>
@@ -150,7 +153,7 @@ export default function CompetitorsPage() {
             <button
               type="submit"
               disabled={submitting || !form.name}
-              className="bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors disabled:opacity-50"
+              className="bg-[#7c3aed] text-white px-6 py-2 text-sm font-medium hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
             >
               {submitting ? "Adding..." : "Add Competitor"}
             </button>
@@ -200,7 +203,7 @@ export default function CompetitorsPage() {
                     <button
                       onClick={() => analyzeCompetitor(comp.id)}
                       disabled={analyzingId === comp.id}
-                      className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors disabled:opacity-50"
+                      className="px-3 py-1 text-xs bg-[#7c3aed] text-white hover:bg-[#6d28d9] transition-colors disabled:opacity-50"
                     >
                       {analyzingId === comp.id ? "Analyzing..." : "AI Analysis"}
                     </button>

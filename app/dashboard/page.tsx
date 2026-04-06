@@ -176,9 +176,12 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-serif text-[#111827]">
-            {greeting}, {displayName}
-          </h1>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
+            <h1 className="text-2xl font-serif text-[#111827]">
+              {greeting}, {displayName}
+            </h1>
+          </div>
           <p className="text-sm text-[#9ca3af] mt-1 font-mono">{today}</p>
           {!loading && (
             <p className="text-sm text-[#4b5563] mt-1">
@@ -197,20 +200,20 @@ export default function DashboardPage() {
 
       {/* Stats Bar */}
       <div data-tour="stats-bar" className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
-        <div className="bg-white p-5">
-          <div className="text-2xl font-bold text-[#111827] font-mono">{matches.length}</div>
+        <div className="bg-white p-5 border-t-2 border-t-[#2563eb]">
+          <div className="text-2xl font-bold text-[#2563eb] font-mono">{matches.length}</div>
           <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">New Matches</div>
         </div>
-        <div className="bg-white p-5">
-          <div className="text-2xl font-bold text-[#3b82f6] font-mono">{formatCurrency(totalValue)}</div>
+        <div className="bg-white p-5 border-t-2 border-t-[#059669]">
+          <div className="text-2xl font-bold text-[#059669] font-mono">{formatCurrency(totalValue)}</div>
           <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Total Value</div>
         </div>
-        <div className="bg-white p-5">
-          <div className="text-2xl font-bold text-[#f59e0b] font-mono">{urgentCount}</div>
+        <div className="bg-white p-5 border-t-2 border-t-[#dc2626]">
+          <div className="text-2xl font-bold text-[#dc2626] font-mono">{urgentCount}</div>
           <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Urgent (&lt;7d)</div>
         </div>
-        <div className="bg-white p-5">
-          <div className="text-2xl font-bold text-[#22c55e] font-mono">{topScore}</div>
+        <div className="bg-white p-5 border-t-2 border-t-[#d97706]">
+          <div className="text-2xl font-bold text-[#d97706] font-mono">{topScore}</div>
           <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Top Score</div>
         </div>
       </div>

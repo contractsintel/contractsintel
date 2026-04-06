@@ -131,7 +131,10 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Contract Delivery</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#0891b2"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Contract Delivery</h1>
+        </div>
         <HelpButton page="contracts" />
       </div>
       <InlineGuide page="contracts" />
@@ -172,7 +175,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                   </div>
                   <button
                     onClick={() => setShowMilestoneModal(contract.id)}
-                    className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
+                    className="px-3 py-1 text-xs bg-[#0891b2] text-white hover:bg-[#0e7490] transition-colors"
                   >
                     Add Milestone
                   </button>

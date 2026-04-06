@@ -114,7 +114,10 @@ export default function ProposalsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">AI Proposals</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">AI Proposals</h1>
+        </div>
         <HelpButton page="proposals" />
       </div>
       <InlineGuide page="proposals" />
@@ -191,7 +194,7 @@ export default function ProposalsPage() {
                     <button
                       onClick={() => selectedMatch && generateDraft(selectedMatch)}
                       disabled={generating}
-                      className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] disabled:opacity-50 transition-colors"
+                      className="px-3 py-1 text-xs bg-[#7c3aed] text-white hover:bg-[#6d28d9] disabled:opacity-50 transition-colors"
                     >
                       {generating ? "Generating..." : proposal ? "Regenerate" : "Generate Draft"}
                     </button>

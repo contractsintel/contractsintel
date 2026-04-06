@@ -129,7 +129,10 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-serif text-[#111827] mb-6">Analytics</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
+        <h1 className="text-2xl font-serif text-[#111827]">Analytics</h1>
+      </div>
 
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading analytics...</div>

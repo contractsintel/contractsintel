@@ -7,11 +7,11 @@ import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
 
 const STAGES = [
-  { key: "monitoring", label: "Monitoring", color: "#4b5563" },
-  { key: "preparing_bid", label: "Preparing Bid", color: "#3b82f6" },
-  { key: "submitted", label: "Submitted", color: "#f59e0b" },
-  { key: "won", label: "Won", color: "#22c55e" },
-  { key: "lost", label: "Lost", color: "#ef4444" },
+  { key: "monitoring", label: "Monitoring", color: "#6b7280", bg: "bg-[#f1f5f9]", text: "text-[#6b7280]" },
+  { key: "preparing_bid", label: "Preparing Bid", color: "#d97706", bg: "bg-[#fffbeb]", text: "text-[#d97706]" },
+  { key: "submitted", label: "Submitted", color: "#2563eb", bg: "bg-[#eff4ff]", text: "text-[#2563eb]" },
+  { key: "won", label: "Won", color: "#059669", bg: "bg-[#ecfdf5]", text: "text-[#059669]" },
+  { key: "lost", label: "Lost", color: "#dc2626", bg: "bg-[#fef2f2]", text: "text-[#dc2626]" },
 ];
 
 const LOSS_REASONS = [
@@ -219,7 +219,10 @@ export default function PipelinePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Pipeline</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Pipeline</h1>
+        </div>
         <HelpButton page="pipeline" />
       </div>
       <InlineGuide page="pipeline" />
@@ -248,8 +251,7 @@ export default function PipelinePage() {
           {STAGES.map((stage) => (
             <div key={stage.key} className="min-h-[400px]">
               <div
-                className="text-xs font-mono uppercase tracking-wider mb-3 pb-2 border-b"
-                style={{ color: stage.color, borderColor: stage.color + "33" }}
+                className={`text-xs font-mono uppercase tracking-wider mb-3 px-2 py-1.5 ${stage.bg} ${stage.text}`}
               >
                 {stage.label} ({(grouped[stage.key] ?? []).length})
               </div>

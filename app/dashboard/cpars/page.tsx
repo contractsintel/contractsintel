@@ -142,7 +142,10 @@ export default function CparsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">CPARS Monitor</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#e11d48"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">CPARS Monitor</h1>
+        </div>
         <HelpButton page="cpars" />
       </div>
       <InlineGuide page="cpars" />
@@ -212,7 +215,7 @@ export default function CparsPage() {
           <button
             type="submit"
             disabled={submitting || !form.contract_id || !form.narrative}
-            className="bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors disabled:opacity-50"
+            className="bg-[#e11d48] text-white px-6 py-2 text-sm font-medium hover:bg-[#be123c] transition-colors disabled:opacity-50"
           >
             {submitting ? "Saving..." : "Add Rating"}
           </button>
@@ -265,7 +268,7 @@ export default function CparsPage() {
                     <button
                       onClick={() => generateResponse(r.id)}
                       disabled={generatingId === r.id}
-                      className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors disabled:opacity-50"
+                      className="px-3 py-1 text-xs bg-[#e11d48] text-white hover:bg-[#be123c] transition-colors disabled:opacity-50"
                     >
                       {generatingId === r.id ? "Generating..." : "Generate Response"}
                     </button>

@@ -77,7 +77,10 @@ export default function CompliancePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Compliance Monitor</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#059669"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Compliance Monitor</h1>
+        </div>
         <HelpButton page="compliance" />
       </div>
       <InlineGuide page="compliance" />

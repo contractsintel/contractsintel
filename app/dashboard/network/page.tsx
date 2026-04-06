@@ -141,7 +141,10 @@ export default function NetworkPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Subcontracting Network</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Subcontracting Network</h1>
+        </div>
         <HelpButton page="network" />
       </div>
       <InlineGuide page="network" />

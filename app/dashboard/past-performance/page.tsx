@@ -116,7 +116,10 @@ export default function PastPerformancePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#111827]">Past Performance</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#dc2626"}} />
+          <h1 className="text-2xl font-serif text-[#111827]">Past Performance</h1>
+        </div>
         <HelpButton page="past-performance" />
       </div>
       <InlineGuide page="past-performance" />
@@ -158,7 +161,7 @@ export default function PastPerformancePage() {
                   <button
                     onClick={() => generatePpq(record.id)}
                     disabled={generatingPpq === record.id}
-                    className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] disabled:opacity-50 transition-colors"
+                    className="px-3 py-1 text-xs bg-[#dc2626] text-white hover:bg-[#b91c1c] disabled:opacity-50 transition-colors"
                   >
                     {generatingPpq === record.id ? "Generating..." : "Generate PPQ"}
                   </button>
