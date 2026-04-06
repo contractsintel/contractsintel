@@ -55,8 +55,52 @@ body {
 }
 
 /* Button hover */
-.ci-btn { transition: all 0.2s ease; }
-.ci-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.ci-btn { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+.ci-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); filter: brightness(1.05); }
+.ci-btn:active { transform: translateY(0); }
+
+/* Global card hover effects */
+[class*="border"][class*="rounded"] {
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+[class*="border"][class*="rounded"]:hover {
+  border-color: #e2e8f0;
+}
+
+/* Primary buttons global */
+button[class*="bg-[#2563eb]"],
+button[class*="bg-[#7c3aed]"],
+button[class*="bg-[#059669]"],
+button[class*="bg-[#dc2626]"],
+button[class*="bg-[#d97706]"],
+button[class*="bg-[#0891b2]"],
+button[class*="bg-[#e11d48]"],
+a[class*="bg-[#2563eb]"] {
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+button[class*="bg-[#2563eb]"]:hover,
+button[class*="bg-[#7c3aed]"]:hover,
+button[class*="bg-[#059669]"]:hover,
+button[class*="bg-[#dc2626]"]:hover,
+button[class*="bg-[#d97706]"]:hover,
+button[class*="bg-[#0891b2]"]:hover,
+button[class*="bg-[#e11d48]"]:hover,
+a[class*="bg-[#2563eb]"]:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+button[class*="bg-[#2563eb]"]:active,
+button[class*="bg-[#7c3aed]"]:active,
+a[class*="bg-[#2563eb]"]:active {
+  transform: translateY(0);
+}
+
+/* Link hover underline slide-in */
+a[class*="text-[#2563eb]"] {
+  position: relative;
+  transition: color 0.15s ease;
+}
 
 /* Shimmer animation for empty state preview */
 @keyframes shimmer {
