@@ -71,7 +71,8 @@ const TIER_LEVELS: Record<Tier, number> = {
 export function isTrialActive(org: any): boolean {
   if (!org) return false;
   if (org.subscription_status !== "trialing") return false;
-  if (!org.trial_ends_at) return false;
+  // If trial_ends_at is not set, treat trialing status as active trial
+  if (!org.trial_ends_at) return true;
   return new Date(org.trial_ends_at) > new Date();
 }
 

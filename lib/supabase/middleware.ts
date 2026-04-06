@@ -70,9 +70,9 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Get-started redirect: if user is on /dashboard exactly (not a sub-page),
-    // check if they should be redirected to get-started
-    if (pathname === "/dashboard" && orgId) {
+    // Get-started redirect: only on first visit per session (not every click)
+    // Uses a cookie to prevent redirect loop when user clicks "Dashboard"
+    if (pathname === "/dashboard" && orgId && !request.cookies.get("ci_onboarded")) {
       const { data: prefs } = await supabase
         .from("user_preferences")
         .select("default_page")
@@ -82,7 +82,10 @@ export async function updateSession(request: NextRequest) {
       if (prefs?.default_page === "get-started") {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard/get-started";
-        return NextResponse.redirect(url);
+        const response = NextResponse.redirect(url);
+        // Set cookie so we don't redirect again this session
+        response.cookies.set("ci_onboarded", "1", { maxAge: 60 * 60 * 24 }); // 24 hours
+        return response;
       }
     }
   }
