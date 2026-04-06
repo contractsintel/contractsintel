@@ -1,9 +1,5 @@
 import type { ScraperResult } from "./index";
 
-// Military/Defense procurement portals are HTML-based and require
-// per-source configuration. Most require CAC authentication or
-// are behind government firewalls.
-
 const MILITARY_SOURCES = [
   { id: "dla_dibbs", name: "DLA DIBBS", url: "https://www.dibbs.bsm.dla.mil/" },
   { id: "army_asfi", name: "Army ASFI", url: "https://acquisition.army.mil/asfi/" },
@@ -23,25 +19,190 @@ const MILITARY_SOURCES = [
 
 export { MILITARY_SOURCES };
 
-export async function scrapeMilitaryDefense(_supabase: any): Promise<ScraperResult> {
+// Sources to actively attempt fetching (public-facing sites)
+const FETCH_TARGETS = [
+  { id: "usace", name: "Army Corps of Engineers", url: "https://www.usace.army.mil/Business-With-Us/" },
+  { id: "dla_dibbs", name: "DLA DIBBS", url: "https://www.dibbs.bsm.dla.mil/" },
+];
+
+function extractLinks(html: string, baseUrl: string): Array<{ text: string; href: string }> {
+  const links: Array<{ text: string; href: string }> = [];
+  const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const text = match[2].replace(/<[^>]+>/g, "").trim();
+    if (text && text.length > 3 && text.length < 300) {
+      const href = match[1].startsWith("http") ? match[1] : (() => {
+        try { return new URL(match[1], baseUrl).toString(); } catch { return match[1]; }
+      })();
+      links.push({ text, href });
+    }
+  }
+  return links;
+}
+
+function extractTableRows(html: string): string[] {
+  const rows: string[] = [];
+  const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  let match;
+  while ((match = trRegex.exec(html)) !== null) {
+    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    const cells: string[] = [];
+    let tdMatch;
+    while ((tdMatch = tdRegex.exec(match[1])) !== null) {
+      const text = tdMatch[1].replace(/<[^>]+>/g, "").trim();
+      if (text) cells.push(text);
+    }
+    if (cells.length >= 2) {
+      rows.push(cells.join(" | "));
+    }
+  }
+  return rows;
+}
+
+export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
-  console.log(
-    `[military-defense] ${MILITARY_SOURCES.length} military procurement sources registered. ` +
-    `These sources require manual HTML scraping configuration. ` +
-    `Many require CAC authentication or are behind government networks. ` +
-    `Source requires manual configuration.`
-  );
+  try {
+    let totalFound = 0;
+    let totalUpserted = 0;
+    const sourceResults: string[] = [];
 
-  return {
-    source: "military_defense",
-    status: "stub",
-    opportunities_found: 0,
-    matches_created: 0,
-    error_message:
-      `Military procurement portals require per-source HTML scraping configuration. ` +
-      `${MILITARY_SOURCES.length} sources registered. Most require CAC authentication.`,
-    started_at: startedAt,
-    completed_at: new Date().toISOString(),
-  };
+    for (const target of FETCH_TARGETS) {
+      try {
+        console.log(`[military-defense] Fetching ${target.name} (${target.url})...`);
+
+        const res = await fetch(target.url, {
+          method: "GET",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+            Accept: "text/html,application/xhtml+xml",
+          },
+          signal: AbortSignal.timeout(10000),
+          redirect: "follow",
+        });
+
+        if (!res.ok) {
+          console.log(`[military-defense] ${target.name}: HTTP ${res.status} BLOCKED`);
+          sourceResults.push(`${target.id}: BLOCKED (HTTP ${res.status})`);
+          continue;
+        }
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+          console.log(`[military-defense] ${target.name}: Non-HTML response BLOCKED`);
+          sourceResults.push(`${target.id}: BLOCKED (non-HTML)`);
+          continue;
+        }
+
+        const html = await res.text();
+
+        if (html.length < 500) {
+          console.log(`[military-defense] ${target.name}: Empty/minimal response BLOCKED`);
+          sourceResults.push(`${target.id}: BLOCKED (minimal response)`);
+          continue;
+        }
+
+        // Try to extract procurement-related links and table data
+        const procurementLinks = extractLinks(html, target.url).filter(
+          (l) =>
+            /bid|rfp|rfq|solicit|procurement|contract|award|opportunity/i.test(l.text) ||
+            /bid|rfp|rfq|solicit|procurement|contract|award|opportunity/i.test(l.href)
+        );
+        const tableRows = extractTableRows(html);
+        const hasData = procurementLinks.length >= 1 || tableRows.length >= 3;
+
+        if (!hasData) {
+          console.log(`[military-defense] ${target.name}: No parseable procurement data BLOCKED`);
+          sourceResults.push(`${target.id}: BLOCKED (no parseable data)`);
+          continue;
+        }
+
+        let sourceOpps = 0;
+
+        // Store procurement links as opportunities
+        for (let i = 0; i < Math.min(procurementLinks.length, 50); i++) {
+          const link = procurementLinks[i];
+          const noticeId = `mil-${target.id}-link-${i}-${Date.now()}`;
+
+          const { error } = await supabase.from("opportunities").upsert(
+            {
+              notice_id: noticeId,
+              title: `[${target.name}] ${link.text.substring(0, 200)}`,
+              agency: target.name,
+              source: "military_defense",
+              source_url: link.href,
+              description: link.text,
+            },
+            { onConflict: "notice_id" }
+          );
+          if (!error) {
+            sourceOpps++;
+            totalUpserted++;
+          }
+        }
+
+        // Store table data as opportunities
+        for (let i = 0; i < Math.min(tableRows.length, 50); i++) {
+          const row = tableRows[i];
+          const noticeId = `mil-${target.id}-table-${i}-${Date.now()}`;
+
+          const { error } = await supabase.from("opportunities").upsert(
+            {
+              notice_id: noticeId,
+              title: `[${target.name}] ${row.substring(0, 200)}`,
+              agency: target.name,
+              source: "military_defense",
+              source_url: target.url,
+              description: row,
+            },
+            { onConflict: "notice_id" }
+          );
+          if (!error) {
+            sourceOpps++;
+            totalUpserted++;
+          }
+        }
+
+        totalFound += sourceOpps;
+        console.log(`[military-defense] ${target.name}: Found ${sourceOpps} items`);
+        sourceResults.push(`${target.id}: ${sourceOpps} items`);
+      } catch (targetErr) {
+        const msg = targetErr instanceof Error ? targetErr.message : String(targetErr);
+        const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
+        console.log(`[military-defense] ${target.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+        sourceResults.push(`${target.id}: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
+      }
+    }
+
+    // Log remaining sources that require CAC/special access
+    const remainingSources = MILITARY_SOURCES.filter(
+      (s) => !FETCH_TARGETS.find((t) => t.id === s.id)
+    );
+    console.log(
+      `[military-defense] ${remainingSources.length} additional sources require CAC/special access: ${remainingSources.map((s) => s.id).join(", ")}`
+    );
+
+    return {
+      source: "military_defense",
+      status: "success",
+      opportunities_found: totalFound,
+      matches_created: totalUpserted,
+      error_message: totalFound === 0
+        ? `Attempted ${FETCH_TARGETS.length} public targets. ${sourceResults.join("; ")}. ${remainingSources.length} sources require CAC auth.`
+        : undefined,
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+    };
+  } catch (err) {
+    return {
+      source: "military_defense",
+      status: "error",
+      opportunities_found: 0,
+      matches_created: 0,
+      error_message: err instanceof Error ? err.message : String(err),
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+    };
+  }
 }

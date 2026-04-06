@@ -2,22 +2,9 @@ import type { ScraperResult } from "./index";
 
 const USASPENDING_API = "https://api.usaspending.gov/api/v2/search/spending_by_award/";
 
-interface USASpendingAward {
-  Award_ID?: string;
-  Recipient_Name?: string;
-  Award_Amount?: number;
-  Period_of_Performance_Current_End_Date?: string;
-  Awarding_Agency?: string;
-  Awarding_Sub_Agency?: string;
-  Contract_Award_Type?: string;
-  NAICS_Code?: string;
-  generated_internal_id?: string;
-  Description?: string;
-}
-
-function getDateMonthsFromNow(months: number): string {
+function getDaysAgo(days: number): string {
   const d = new Date();
-  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() - days);
   return d.toISOString().split("T")[0];
 }
 
@@ -54,63 +41,84 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
       };
     }
 
-    const naicsList = Array.from(allNaics).slice(0, 10); // Limit to avoid huge queries
+    const naicsList = Array.from(allNaics).slice(0, 10);
 
-    // Search for contracts expiring in the next 6 months
-    const payload = {
-      filters: {
-        time_period: [
-          {
-            start_date: getToday(),
-            end_date: getDateMonthsFromNow(6),
-          },
+    // Pull ALL contracts from last 90 days, sorted by award amount descending
+    const MAX_RESULTS = 5000;
+    const PER_PAGE = 100;
+    let page = 1;
+    const allAwards: any[] = [];
+    let hasNext = true;
+
+    while (hasNext && allAwards.length < MAX_RESULTS) {
+      const payload = {
+        filters: {
+          time_period: [
+            {
+              start_date: getDaysAgo(90),
+              end_date: getToday(),
+            },
+          ],
+          award_type_codes: ["A", "B", "C", "D"],
+          naics_codes: { require: naicsList },
+        },
+        fields: [
+          "Award ID",
+          "Recipient Name",
+          "Award Amount",
+          "Period of Performance Current End Date",
+          "Awarding Agency",
+          "Awarding Sub Agency",
+          "Contract Award Type",
+          "NAICS Code",
+          "generated_internal_id",
+          "Description",
         ],
-        award_type_codes: ["A", "B", "C", "D"],
-        naics_codes: { require: naicsList },
-      },
-      fields: [
-        "Award ID",
-        "Recipient Name",
-        "Award Amount",
-        "Period of Performance Current End Date",
-        "Awarding Agency",
-        "Awarding Sub Agency",
-        "Contract Award Type",
-        "NAICS Code",
-        "generated_internal_id",
-        "Description",
-      ],
-      limit: 100,
-      page: 1,
-      sort: "Award Amount",
-      order: "desc",
-      subawards: false,
-    };
-
-    const res = await fetch(USASPENDING_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => "unknown");
-      return {
-        source: "usaspending",
-        status: "error",
-        opportunities_found: 0,
-        matches_created: 0,
-        error_message: `USASpending API returned ${res.status}: ${errorText.substring(0, 200)}`,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
+        limit: PER_PAGE,
+        page,
+        sort: "Award Amount",
+        order: "desc",
+        subawards: false,
       };
+
+      const res = await fetch(USASPENDING_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "unknown");
+        if (allAwards.length > 0) {
+          // We got some results already, continue with what we have
+          console.log(`[usaspending] API error on page ${page}, proceeding with ${allAwards.length} results: ${res.status}`);
+          break;
+        }
+        return {
+          source: "usaspending",
+          status: "error",
+          opportunities_found: 0,
+          matches_created: 0,
+          error_message: `USASpending API returned ${res.status}: ${errorText.substring(0, 200)}`,
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+        };
+      }
+
+      const data = await res.json();
+      const awards = data.results ?? [];
+      allAwards.push(...awards);
+
+      hasNext = data.hasNext === true;
+      page++;
+
+      console.log(`[usaspending] Page ${page - 1}: fetched ${awards.length} awards (total: ${allAwards.length})`);
     }
 
-    const data = await res.json();
-    const awards = data.results ?? [];
     let upserted = 0;
 
-    for (const award of awards) {
+    for (const award of allAwards) {
       const awardId = award["Award ID"];
       const endDate = award["Period of Performance Current End Date"];
       const incumbent = award["Recipient Name"];
@@ -185,7 +193,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
     return {
       source: "usaspending",
       status: "success",
-      opportunities_found: awards.length,
+      opportunities_found: allAwards.length,
       matches_created: matchesCreated,
       started_at: startedAt,
       completed_at: new Date().toISOString(),

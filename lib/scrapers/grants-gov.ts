@@ -24,45 +24,64 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
-    // Search for open grant opportunities
-    const payload = {
-      keyword: "",
-      oppStatuses: "forecasted|posted",
-      sortBy: "openDate|desc",
-      rows: 100,
-      offset: 0,
-    };
+    const PER_PAGE = 500;
+    let offset = 0;
+    const allOpportunities: GrantsGovOpportunity[] = [];
+    let hitCount = 0;
 
-    const res = await fetch(GRANTS_GOV_API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      // Grants.gov API can be unreliable; handle gracefully
-      const errorText = await res.text().catch(() => "unknown");
-      console.log(`Grants.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
-      return {
-        source: "grants_gov",
-        status: "error",
-        opportunities_found: 0,
-        matches_created: 0,
-        error_message: `Grants.gov API returned ${res.status}`,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
+    // Paginate through all results
+    do {
+      const payload = {
+        keyword: "",
+        oppStatuses: "forecasted|posted",
+        sortBy: "openDate|desc",
+        rows: PER_PAGE,
+        offset,
       };
-    }
 
-    const data = await res.json();
-    const opportunities: GrantsGovOpportunity[] = data.oppHits ?? [];
+      const res = await fetch(GRANTS_GOV_API, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "unknown");
+        console.log(`Grants.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
+        if (allOpportunities.length > 0) {
+          console.log(`[grants-gov] API error at offset ${offset}, proceeding with ${allOpportunities.length} results`);
+          break;
+        }
+        return {
+          source: "grants_gov",
+          status: "error",
+          opportunities_found: 0,
+          matches_created: 0,
+          error_message: `Grants.gov API returned ${res.status}`,
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+        };
+      }
+
+      const data = await res.json();
+      const opportunities: GrantsGovOpportunity[] = data.oppHits ?? [];
+      hitCount = data.hitCount ?? 0;
+
+      allOpportunities.push(...opportunities);
+      offset += PER_PAGE;
+
+      console.log(`[grants-gov] Fetched ${opportunities.length} at offset ${offset - PER_PAGE} (total: ${allOpportunities.length}/${hitCount})`);
+
+      // Stop if we got fewer than requested (last page) or we have all hits
+    } while (allOpportunities.length < hitCount && offset < hitCount);
 
     let upserted = 0;
 
-    for (const opp of opportunities) {
+    for (const opp of allOpportunities) {
       const oppId = opp.id ?? opp.opportunityId;
       if (!oppId) continue;
 
@@ -103,7 +122,7 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
     return {
       source: "grants_gov",
       status: "success",
-      opportunities_found: opportunities.length,
+      opportunities_found: allOpportunities.length,
       matches_created: upserted,
       started_at: startedAt,
       completed_at: new Date().toISOString(),
