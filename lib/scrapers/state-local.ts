@@ -60,8 +60,8 @@ const STATE_PORTALS = [
 
 export { STATE_PORTALS };
 
-// Top 10 most accessible states to attempt scraping
-const PRIORITY_STATES = ["CA", "TX", "NY", "FL", "VA", "OH", "IL", "PA", "GA", "NC"];
+// All states and territories to attempt scraping
+const ALL_STATES = STATE_PORTALS.map((p) => p.state);
 
 function extractTableRows(html: string): string[] {
   // Extract text content from <tr> elements
@@ -106,7 +106,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
     let totalUpserted = 0;
     const stateResults: string[] = [];
 
-    for (const stateCode of PRIORITY_STATES) {
+    for (const stateCode of ALL_STATES) {
       const portal = STATE_PORTALS.find((p) => p.state === stateCode);
       if (!portal) continue;
 
@@ -233,7 +233,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
       opportunities_found: totalFound,
       matches_created: totalUpserted,
       error_message: totalFound === 0
-        ? `Attempted ${PRIORITY_STATES.length} priority states. ${stateResults.join("; ")}`
+        ? `Attempted ${ALL_STATES.length} priority states. ${stateResults.join("; ")}`
         : undefined,
       started_at: startedAt,
       completed_at: new Date().toISOString(),

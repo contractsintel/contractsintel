@@ -19,11 +19,8 @@ const MILITARY_SOURCES = [
 
 export { MILITARY_SOURCES };
 
-// Sources to actively attempt fetching (public-facing sites)
-const FETCH_TARGETS = [
-  { id: "usace", name: "Army Corps of Engineers", url: "https://www.usace.army.mil/Business-With-Us/" },
-  { id: "dla_dibbs", name: "DLA DIBBS", url: "https://www.dibbs.bsm.dla.mil/" },
-];
+// All sources to attempt fetching
+const FETCH_TARGETS = MILITARY_SOURCES;
 
 function extractLinks(html: string, baseUrl: string): Array<{ text: string; href: string }> {
   const links: Array<{ text: string; href: string }> = [];
@@ -175,13 +172,7 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
       }
     }
 
-    // Log remaining sources that require CAC/special access
-    const remainingSources = MILITARY_SOURCES.filter(
-      (s) => !FETCH_TARGETS.find((t) => t.id === s.id)
-    );
-    console.log(
-      `[military-defense] ${remainingSources.length} additional sources require CAC/special access: ${remainingSources.map((s) => s.id).join(", ")}`
-    );
+    console.log(`[military-defense] Attempted all ${FETCH_TARGETS.length} sources. Results: ${sourceResults.join(", ")}`);
 
     return {
       source: "military_defense",
@@ -189,7 +180,7 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
       opportunities_found: totalFound,
       matches_created: totalUpserted,
       error_message: totalFound === 0
-        ? `Attempted ${FETCH_TARGETS.length} public targets. ${sourceResults.join("; ")}. ${remainingSources.length} sources require CAC auth.`
+        ? `Attempted ${FETCH_TARGETS.length} sources. ${sourceResults.join("; ")}`
         : undefined,
       started_at: startedAt,
       completed_at: new Date().toISOString(),

@@ -16,6 +16,8 @@ export { SBIR_SOURCES };
 
 export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
+  let apiFound = 0;
+  let apiUpserted = 0;
 
   try {
     console.log(`[sbir-sttr] Attempting SBIR.gov API fetch with 30s timeout...`);
@@ -29,23 +31,13 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
     if (!res.ok) {
       const errorText = await res.text().catch(() => "unknown");
       console.log(`[sbir-sttr] SBIR.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
-      return {
-        source: "sbir_sttr",
-        status: "error",
-        opportunities_found: 0,
-        matches_created: 0,
-        error_message: `SBIR.gov API returned ${res.status}: ${errorText.substring(0, 200)}`,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
-      };
-    }
+      // Don't return early - continue to agency HTML sources below
+    } else {
+      const data = await res.json();
+      const solicitations: any[] = Array.isArray(data) ? data : (data.solicitations ?? data.results ?? []);
 
-    const data = await res.json();
-    const solicitations: any[] = Array.isArray(data) ? data : (data.solicitations ?? data.results ?? []);
-
-    console.log(`[sbir-sttr] Fetched ${solicitations.length} solicitations from SBIR.gov`);
-
-    let upserted = 0;
+      console.log(`[sbir-sttr] Fetched ${solicitations.length} solicitations from SBIR.gov`);
+      apiFound = solicitations.length;
 
     for (const sol of solicitations) {
       const solId = sol.id ?? sol.solicitation_id ?? sol.solicitationId;
@@ -76,33 +68,164 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         { onConflict: "notice_id" }
       );
 
-      if (!error) upserted++;
+      if (!error) apiUpserted++;
     }
 
-    return {
-      source: "sbir_sttr",
-      status: "success",
-      opportunities_found: solicitations.length,
-      matches_created: upserted,
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-    };
+    } // end else (API success)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const isTimeout = message.includes("abort") || message.includes("timeout") || message.includes("TimeoutError");
 
     console.log(`[sbir-sttr] ${isTimeout ? "API timeout" : "Error"}: ${message}`);
 
-    return {
-      source: "sbir_sttr",
-      status: "error",
-      opportunities_found: 0,
-      matches_created: 0,
-      error_message: isTimeout
-        ? `SBIR.gov API timeout after 30s. ${SBIR_SOURCES.length} sources registered.`
-        : message,
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-    };
+    // Even if main API fails, try the individual agency sources below
   }
+
+  // Now attempt each additional SBIR agency source via HTML scraping
+  const additionalSources = SBIR_SOURCES.filter((s) => s.id !== "sbir_gov");
+  let htmlFound = 0;
+  let htmlUpserted = 0;
+  const sourceResults: string[] = [];
+
+  for (const source of additionalSources) {
+    try {
+      console.log(`[sbir-sttr] Fetching ${source.name} (${source.url})...`);
+
+      const res = await fetch(source.url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+          Accept: "text/html,application/xhtml+xml",
+        },
+        signal: AbortSignal.timeout(10000),
+        redirect: "follow",
+      });
+
+      if (!res.ok) {
+        console.log(`[sbir-sttr] ${source.name}: HTTP ${res.status} BLOCKED`);
+        await supabase.from("scraper_runs").insert({
+          source: source.id,
+          status: "error",
+          opportunities_found: 0,
+          matches_created: 0,
+          error_message: `BLOCKED: HTTP ${res.status}`,
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+        });
+        sourceResults.push(`${source.id}: BLOCKED (HTTP ${res.status})`);
+        continue;
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+        sourceResults.push(`${source.id}: BLOCKED (non-HTML)`);
+        continue;
+      }
+
+      const html = await res.text();
+
+      if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
+        const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
+        console.log(`[sbir-sttr] ${source.name}: ${reason} BLOCKED`);
+        await supabase.from("scraper_runs").insert({
+          source: source.id,
+          status: "error",
+          opportunities_found: 0,
+          matches_created: 0,
+          error_message: `BLOCKED: ${reason}`,
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+        });
+        sourceResults.push(`${source.id}: BLOCKED (${reason})`);
+        continue;
+      }
+
+      // Extract solicitation links
+      const linkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+      const solLinks: Array<{ text: string; href: string }> = [];
+      let match;
+      while ((match = linkRegex.exec(html)) !== null) {
+        const text = match[2].replace(/<[^>]+>/g, "").trim();
+        if (
+          text &&
+          text.length > 5 &&
+          text.length < 300 &&
+          /sbir|sttr|solicit|topic|fund|grant|award|proposal/i.test(text + " " + match[1])
+        ) {
+          const href = match[1].startsWith("http")
+            ? match[1]
+            : (() => { try { return new URL(match[1], source.url).toString(); } catch { return match[1]; } })();
+          solLinks.push({ text, href });
+        }
+      }
+
+      if (solLinks.length === 0) {
+        console.log(`[sbir-sttr] ${source.name}: No parseable solicitation data BLOCKED`);
+        await supabase.from("scraper_runs").insert({
+          source: source.id,
+          status: "error",
+          opportunities_found: 0,
+          matches_created: 0,
+          error_message: "BLOCKED: no parseable solicitation data in HTML",
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+        });
+        sourceResults.push(`${source.id}: BLOCKED (no parseable data)`);
+        continue;
+      }
+
+      let sourceOpps = 0;
+      for (let i = 0; i < Math.min(solLinks.length, 50); i++) {
+        const link = solLinks[i];
+        const noticeId = `${source.id}-link-${i}-${Date.now()}`;
+        const { error } = await supabase.from("opportunities").upsert(
+          {
+            notice_id: noticeId,
+            title: `[${source.name}] ${link.text.substring(0, 200)}`,
+            agency: source.name,
+            source: "sbir_sttr",
+            source_url: link.href,
+            description: link.text,
+          },
+          { onConflict: "notice_id" }
+        );
+        if (!error) {
+          sourceOpps++;
+          htmlUpserted++;
+        }
+      }
+
+      htmlFound += sourceOpps;
+      console.log(`[sbir-sttr] ${source.name}: Found ${sourceOpps} items`);
+      sourceResults.push(`${source.id}: ${sourceOpps} items`);
+    } catch (srcErr) {
+      const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
+      const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
+      console.log(`[sbir-sttr] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+      await supabase.from("scraper_runs").insert({
+        source: source.id,
+        status: "error",
+        opportunities_found: 0,
+        matches_created: 0,
+        error_message: `BLOCKED: ${isTimeout ? "timeout" : msg.substring(0, 100)}`,
+        started_at: startedAt,
+        completed_at: new Date().toISOString(),
+      });
+      sourceResults.push(`${source.id}: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
+    }
+  }
+
+  console.log(`[sbir-sttr] Agency sources: ${sourceResults.join(", ")}`);
+
+  return {
+    source: "sbir_sttr",
+    status: "success",
+    opportunities_found: apiFound + htmlFound,
+    matches_created: apiUpserted + htmlUpserted,
+    error_message: apiFound + htmlFound === 0
+      ? `Attempted SBIR API + ${additionalSources.length} agency sources. ${sourceResults.join("; ")}`
+      : undefined,
+    started_at: startedAt,
+    completed_at: new Date().toISOString(),
+  };
 }

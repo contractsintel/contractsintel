@@ -6,6 +6,7 @@ import { scrapeStateLocal } from "./state-local";
 import { scrapeSbirSttr } from "./sbir-sttr";
 import { scrapeForecasts } from "./forecasts";
 import { scrapeSubcontracting } from "./subcontracting";
+import { scrapeFederalCivilian } from "./federal-civilian";
 
 export interface ScraperResult {
   source: string;
@@ -20,7 +21,7 @@ export interface ScraperResult {
 type ScraperFn = (supabase: any) => Promise<ScraperResult>;
 
 const SCRAPER_CATEGORIES: Record<string, ScraperFn[]> = {
-  federal: [scrapeSamGov, scrapeUsaspending, scrapeGrantsGov],
+  federal: [scrapeSamGov, scrapeUsaspending, scrapeGrantsGov, scrapeFederalCivilian],
   military: [scrapeMilitaryDefense],
   states: [scrapeStateLocal],
   sbir: [scrapeSbirSttr],

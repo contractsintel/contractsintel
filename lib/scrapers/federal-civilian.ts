@@ -1,13 +1,31 @@
 import type { ScraperResult } from "./index";
 
-const FORECAST_SOURCES = [
-  { id: "fpds", name: "FPDS Reports", url: "https://www.fpds.gov/" },
-  { id: "govtribe", name: "GovTribe (public data)", url: "https://govtribe.com/" },
-  { id: "fsrs", name: "FSRS (Subaward Reporting)", url: "https://www.fsrs.gov/" },
-  { id: "sam_forecasts", name: "SAM.gov Procurement Forecasts", url: "https://sam.gov/search?index=fpf" },
+const FEDERAL_CIVILIAN_SOURCES = [
+  { id: "gsa_ebuy", name: "GSA eBuy", url: "https://www.ebuy.gsa.gov/" },
+  { id: "nasa_procurement", name: "NASA Procurement", url: "https://procurement.nasa.gov/" },
+  { id: "nih_nitaac", name: "NIH NITAAC", url: "https://nitaac.nih.gov/" },
+  { id: "epa_contracts", name: "EPA Contracts", url: "https://www.epa.gov/contracts" },
+  { id: "doe_procurement", name: "DOE Procurement", url: "https://www.energy.gov/management/office-management/operational-management/procurement-and-acquisition" },
+  { id: "dot_osdbu", name: "DOT OSDBU", url: "https://www.transportation.gov/osdbu" },
+  { id: "hhs_contracts", name: "HHS Grants & Contracts", url: "https://www.hhs.gov/grants-contracts/index.html" },
+  { id: "doj_procurement", name: "DOJ Procurement", url: "https://www.justice.gov/jmd/procurement" },
+  { id: "doi_acquisition", name: "DOI Acquisition", url: "https://www.doi.gov/pam/acquisition" },
+  { id: "usda_procurement", name: "USDA Procurement", url: "https://www.dm.usda.gov/procurement/" },
+  { id: "commerce_oam", name: "Commerce OAM", url: "https://www.commerce.gov/oam" },
+  { id: "treasury_procurement", name: "Treasury Procurement", url: "https://home.treasury.gov/about/offices/management/procurement" },
+  { id: "ssa_contracts", name: "SSA Contracts", url: "https://www.ssa.gov/oag/contracts/" },
+  { id: "va_procurement", name: "VA Procurement", url: "https://www.va.gov/opal/nac/" },
+  { id: "dhs_procurement", name: "DHS Procurement", url: "https://www.dhs.gov/procurement" },
+  { id: "state_procurement", name: "State Dept Procurement", url: "https://www.state.gov/procurement/" },
+  { id: "hud_cpo", name: "HUD CPO", url: "https://www.hud.gov/program_offices/cpo" },
+  { id: "ed_contracts", name: "Education Contracts", url: "https://www.ed.gov/fund/contract" },
+  { id: "dol_procurement", name: "Labor Procurement", url: "https://www.dol.gov/general/procurement" },
+  { id: "opm_procurement", name: "OPM Procurement", url: "https://www.opm.gov/about-us/doing-business-with-opm/contracting/" },
+  { id: "faa_contracting", name: "FAA Contracting", url: "https://faaco.faa.gov/" },
+  { id: "fema_procurement", name: "FEMA Procurement", url: "https://www.fema.gov/about/doing-business-with-fema" },
 ];
 
-export { FORECAST_SOURCES };
+export { FEDERAL_CIVILIAN_SOURCES };
 
 function extractLinks(html: string, baseUrl: string): Array<{ text: string; href: string }> {
   const links: Array<{ text: string; href: string }> = [];
@@ -44,16 +62,16 @@ function extractTableRows(html: string): string[] {
   return rows;
 }
 
-export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
+export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   let totalFound = 0;
   let totalUpserted = 0;
   const sourceResults: string[] = [];
 
-  for (const source of FORECAST_SOURCES) {
+  for (const source of FEDERAL_CIVILIAN_SOURCES) {
     try {
-      console.log(`[forecasts] Fetching ${source.name} (${source.url})...`);
+      console.log(`[federal-civilian] Fetching ${source.name} (${source.url})...`);
 
       const res = await fetch(source.url, {
         method: "GET",
@@ -66,7 +84,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       });
 
       if (!res.ok) {
-        console.log(`[forecasts] ${source.name}: HTTP ${res.status} BLOCKED`);
+        console.log(`[federal-civilian] ${source.name}: HTTP ${res.status} BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
@@ -90,7 +108,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
-        console.log(`[forecasts] ${source.name}: ${reason} BLOCKED`);
+        console.log(`[federal-civilian] ${source.name}: ${reason} BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
@@ -104,23 +122,23 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         continue;
       }
 
-      // Look for procurement/forecast related links and tables
+      // Look for procurement related links and tables
       const procLinks = extractLinks(html, source.url).filter(
         (l) =>
-          /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
-          /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.href)
+          /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
+          /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
       );
       const tableRows = extractTableRows(html);
       const hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        console.log(`[forecasts] ${source.name}: No parseable forecast data BLOCKED`);
+        console.log(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
           opportunities_found: 0,
           matches_created: 0,
-          error_message: "BLOCKED: no parseable forecast data in HTML",
+          error_message: "BLOCKED: no parseable procurement data in HTML",
           started_at: startedAt,
           completed_at: new Date().toISOString(),
         });
@@ -132,13 +150,13 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
       for (let i = 0; i < Math.min(procLinks.length, 50); i++) {
         const link = procLinks[i];
-        const noticeId = `forecast-${source.id}-link-${i}-${Date.now()}`;
+        const noticeId = `fedciv-${source.id}-link-${i}-${Date.now()}`;
         const { error } = await supabase.from("opportunities").upsert(
           {
             notice_id: noticeId,
             title: `[${source.name}] ${link.text.substring(0, 200)}`,
             agency: source.name,
-            source: "forecasts",
+            source: "federal_civilian",
             source_url: link.href,
             description: link.text,
           },
@@ -152,13 +170,13 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
       for (let i = 0; i < Math.min(tableRows.length, 50); i++) {
         const row = tableRows[i];
-        const noticeId = `forecast-${source.id}-table-${i}-${Date.now()}`;
+        const noticeId = `fedciv-${source.id}-table-${i}-${Date.now()}`;
         const { error } = await supabase.from("opportunities").upsert(
           {
             notice_id: noticeId,
             title: `[${source.name}] ${row.substring(0, 200)}`,
             agency: source.name,
-            source: "forecasts",
+            source: "federal_civilian",
             source_url: source.url,
             description: row,
           },
@@ -171,12 +189,12 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       }
 
       totalFound += sourceOpps;
-      console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items`);
+      console.log(`[federal-civilian] ${source.name}: Found ${sourceOpps} items`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[forecasts] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+      console.log(`[federal-civilian] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
       await supabase.from("scraper_runs").insert({
         source: source.id,
         status: "error",
@@ -190,15 +208,15 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
     }
   }
 
-  console.log(`[forecasts] Results: ${sourceResults.join(", ")}`);
+  console.log(`[federal-civilian] Results: ${sourceResults.join(", ")}`);
 
   return {
-    source: "forecasts",
+    source: "federal_civilian",
     status: "success",
     opportunities_found: totalFound,
     matches_created: totalUpserted,
     error_message: totalFound === 0
-      ? `Attempted ${FORECAST_SOURCES.length} forecast sources. ${sourceResults.join("; ")}`
+      ? `Attempted ${FEDERAL_CIVILIAN_SOURCES.length} federal civilian sources. ${sourceResults.join("; ")}`
       : undefined,
     started_at: startedAt,
     completed_at: new Date().toISOString(),

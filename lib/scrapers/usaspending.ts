@@ -16,34 +16,14 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
-    // Fetch organizations' NAICS codes to search for relevant expiring contracts
+    // Fetch organizations' NAICS codes for matching after storage
     const { data: orgs } = await supabase
       .from("organizations")
       .select("id, naics_codes")
       .not("naics_codes", "is", null);
 
-    const allNaics = new Set<string>();
-    for (const org of orgs || []) {
-      if (org.naics_codes?.length) {
-        org.naics_codes.forEach((n: string) => allNaics.add(n));
-      }
-    }
-
-    if (allNaics.size === 0) {
-      return {
-        source: "usaspending",
-        status: "success",
-        opportunities_found: 0,
-        matches_created: 0,
-        error_message: "No NAICS codes configured for any organization",
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
-      };
-    }
-
-    const naicsList = Array.from(allNaics).slice(0, 10);
-
-    // Pull ALL contracts from last 90 days, sorted by award amount descending
+    // Pull ALL contract awards from last 90 days, sorted by award amount descending
+    // No NAICS filter -- we match by NAICS after storing
     const MAX_RESULTS = 5000;
     const PER_PAGE = 100;
     let page = 1;
@@ -60,7 +40,6 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
             },
           ],
           award_type_codes: ["A", "B", "C", "D"],
-          naics_codes: { require: naicsList },
         },
         fields: [
           "Award ID",
