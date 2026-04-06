@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
       <div className="relative">
       <InlineGuide page="analytics" />
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
@@ -118,8 +118,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">Analytics</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Analytics</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample analytics content...
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
-        <h1 className="text-2xl font-serif text-[#111827]">Analytics</h1>
+        <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Analytics</h1>
       </div>
 
       {loading ? (
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
       ) : (
         <>
           {/* Agency Heat Map Table */}
-          <div className="border border-[#e5e7eb] bg-white mb-6">
+          <div className="border border-[#f0f1f3] bg-white mb-6">
             <div className="p-5 border-b border-[#e5e7eb]">
               <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">Agency Heat Map</h2>
             </div>
@@ -183,15 +183,15 @@ export default function AnalyticsPage() {
 
           {/* Loss Analysis Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="border border-[#e5e7eb] bg-white p-5">
+            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Total Losses Analyzed</div>
               <div className="text-2xl font-mono text-[#111827]">{totalLosses}</div>
             </div>
-            <div className="border border-[#e5e7eb] bg-white p-5">
+            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Most Common Reason</div>
               <div className="text-sm text-[#111827] mt-1">{mostCommonReason}</div>
             </div>
-            <div className="border border-[#e5e7eb] bg-white p-5">
+            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Lowest Win Rate Agency</div>
               <div className="text-sm text-[#111827] mt-1">
                 {lowestWinRate[0] ? `${lowestWinRate[0].agency} (${lowestWinRate[0].win_rate.toFixed(0)}%)` : "N/A"}
@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Loss Analyses */}
-          <div className="border border-[#e5e7eb] bg-white">
+          <div className="border border-[#f0f1f3] bg-white">
             <div className="p-5 border-b border-[#e5e7eb]">
               <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">Loss Analysis Insights</h2>
             </div>

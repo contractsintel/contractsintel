@@ -52,7 +52,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardProvider user={userProfile} organization={org}>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-[#f8f9fb]">
         <TopNav
           companyName={(org.name || "").includes("@") ? (org.name || "").split("@")[0].charAt(0).toUpperCase() + (org.name || "").split("@")[0].slice(1) : (org.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
           userEmail={authUser.email ?? ""}
@@ -60,7 +60,7 @@ export default async function DashboardLayout({
         />
         <div className="flex pt-16">
           <Sidebar plan={org.plan} />
-          <main className="flex-1 ml-[220px] p-8">
+          <main className="flex-1 ml-[240px] p-8">
             <div className="max-w-dashboard mx-auto">{children}</div>
           </main>
           <TourWrapper />

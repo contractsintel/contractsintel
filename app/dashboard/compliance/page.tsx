@@ -79,7 +79,7 @@ export default function CompliancePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#059669"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">Compliance Monitor</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Compliance Monitor</h1>
         </div>
         <HelpButton page="compliance" />
       </div>
@@ -90,7 +90,7 @@ export default function CompliancePage() {
       ) : (
         <>
           {/* Health Score */}
-          <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
+          <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
             <div className="flex items-center gap-8">
               <div>
                 <div className={`text-5xl font-bold font-mono ${healthColor}`}>
@@ -120,7 +120,7 @@ export default function CompliancePage() {
           </div>
 
           {/* Category Breakdown */}
-          <div className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
+          <div className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#f0f1f3] mb-6">
             {grouped.map((cat) => {
               const pct = cat.total > 0 ? Math.round((cat.complete / cat.total) * 100) : 0;
               const catColor =
@@ -151,7 +151,7 @@ export default function CompliancePage() {
                 Upcoming Deadlines
               </h2>
               {upcoming.length === 0 ? (
-                <div className="border border-[#e5e7eb] bg-white p-6 text-center text-sm text-[#9ca3af]">
+                <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center text-sm text-[#9ca3af]">
                   No pending deadlines
                 </div>
               ) : (
@@ -159,7 +159,7 @@ export default function CompliancePage() {
                   {upcoming.map((item) => (
                     <div
                       key={item.id}
-                      className={`border border-[#e5e7eb] border-l-4 ${urgencyBorder(item.due_date)} bg-white p-4`}
+                      className={`border border-[#f0f1f3] border-l-4 ${urgencyBorder(item.due_date)} bg-white p-4`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -192,7 +192,7 @@ export default function CompliancePage() {
                 <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
                   FAR Change Alerts
                 </h2>
-                <div className="border border-[#e5e7eb] bg-white p-6 text-center">
+                <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
                   <div className="text-sm text-[#9ca3af]">No recent FAR changes affecting your profile</div>
                   <p className="text-xs text-[#9ca3af] mt-1">
                     We monitor Federal Acquisition Regulation updates relevant to your certifications.
@@ -205,7 +205,7 @@ export default function CompliancePage() {
                 <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
                   CMMC Readiness
                 </h2>
-                <div className="border border-[#e5e7eb] bg-white p-5">
+                <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-[#111827]">Target Level</span>
                     <span className="text-sm font-mono text-[#3b82f6]">

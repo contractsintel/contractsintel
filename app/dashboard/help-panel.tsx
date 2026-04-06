@@ -223,13 +223,13 @@ export function HelpPanel({
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 bottom-0 w-[400px] z-[101] bg-white border-l border-[#e5e7eb] overflow-y-auto transition-transform duration-200 ease-out"
+        className="fixed top-0 right-0 bottom-0 w-[400px] z-[101] bg-white border-l border-[#f0f1f3] overflow-y-auto transition-transform duration-200 ease-out shadow-[0_12px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]"
         style={{
           transform: mounted ? "translateX(0)" : "translateX(100%)",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#e5e7eb]">
+        <div className="flex items-center justify-between p-5 border-b border-[#f0f1f3]">
           <h2 className="text-sm font-medium text-[#111827]">
             {content.title} Help
           </h2>
@@ -320,7 +320,7 @@ export function HelpPanel({
           )}
 
           {/* Need help? */}
-          <div className="border-t border-[#e5e7eb] pt-5">
+          <div className="border-t border-[#f0f1f3] pt-5">
             <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
               Need help?
             </h3>
@@ -351,7 +351,7 @@ export function HelpButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-8 h-8 border border-[#e5e7eb] bg-white flex items-center justify-center text-[#9ca3af] hover:text-[#111827] hover:border-[#d1d5db] transition-colors"
+        className="w-8 h-8 border border-[#f0f1f3] bg-white flex items-center justify-center text-[#9ca3af] hover:text-[#111827] hover:border-[#d1d5db] rounded-lg transition-all duration-200 ci-help-pulse"
         title="Help"
       >
         <span className="text-sm font-medium">?</span>

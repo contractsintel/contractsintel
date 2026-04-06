@@ -90,11 +90,11 @@ export default function PastPerformancePage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">Past Performance Builder — BD Pro Feature</h2>
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Past Performance Builder — BD Pro Feature</h2>
             <p className="text-sm text-[#4b5563] mb-4">
               Build and manage past performance records with AI-generated PPQ narratives.
             </p>
@@ -104,8 +104,8 @@ export default function PastPerformancePage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">Past Performance</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Past Performance</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample past performance content...
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function PastPerformancePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#dc2626"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">Past Performance</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Past Performance</h1>
         </div>
         <HelpButton page="past-performance" />
       </div>
@@ -130,7 +130,7 @@ export default function PastPerformancePage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading records...</div>
       ) : records.length === 0 ? (
-        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
           <div className="text-[#9ca3af] text-lg mb-2">No past performance records</div>
           <p className="text-sm text-[#4b5563]">
             Past performance records will appear here as you win contracts.
@@ -139,7 +139,7 @@ export default function PastPerformancePage() {
       ) : (
         <div className="space-y-4">
           {records.map((record) => (
-            <div key={record.id} className="border border-[#e5e7eb] bg-white p-5">
+            <div key={record.id} className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-sm text-[#111827] font-medium">{record.contract_title}</h3>
@@ -154,7 +154,7 @@ export default function PastPerformancePage() {
                       setSelectedRecord(record.id);
                       setShowLogModal(true);
                     }}
-                    className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+                    className="px-3 py-1 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
                   >
                     Log This Month
                   </button>
@@ -215,7 +215,7 @@ export default function PastPerformancePage() {
                       {copied ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <div className="text-sm text-[#4b5563] whitespace-pre-wrap leading-relaxed bg-[#f8f9fb] p-4 border border-[#e5e7eb]">
+                  <div className="text-sm text-[#4b5563] whitespace-pre-wrap leading-relaxed bg-[#f8f9fb] p-4 border border-[#f0f1f3]">
                     {ppqNarrative}
                   </div>
                 </div>
@@ -241,14 +241,14 @@ export default function PastPerformancePage() {
       {/* Log Modal */}
       {showLogModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md border border-[#e5e7eb] bg-white p-6">
-            <h2 className="text-lg font-serif text-[#111827] mb-4">Log Monthly Performance</h2>
+          <div className="w-full max-w-md border border-[#f0f1f3] bg-white p-6">
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Log Monthly Performance</h2>
             <textarea
               value={logText}
               onChange={(e) => setLogText(e.target.value)}
               rows={6}
               placeholder="Describe key accomplishments, deliverables, metrics, and any challenges this month..."
-              className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+              className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -259,7 +259,7 @@ export default function PastPerformancePage() {
               </button>
               <button
                 onClick={() => { setShowLogModal(false); setLogText(""); }}
-                className="flex-1 border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+                className="flex-1 border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Cancel
               </button>

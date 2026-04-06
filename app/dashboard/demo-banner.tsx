@@ -21,7 +21,7 @@ export function DemoBanner() {
   if (!visible) return null;
 
   return (
-    <div className="border border-[#e5e7eb] bg-[#eff4ff] px-5 py-3 mb-6 flex items-center justify-between">
+    <div className="border border-[#f0f1f3] bg-[#eff4ff] px-5 py-3 mb-6 rounded-xl flex items-center justify-between">
       <p className="text-sm text-[#4b5563]">
         <span className="mr-2">&#128203;</span>
         Sample data — your real opportunities will appear after your first daily

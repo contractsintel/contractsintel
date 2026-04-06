@@ -243,7 +243,7 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
         }
       >
         <div
-          className="bg-white border border-[#2563eb] p-6"
+          className="bg-white border border-[#2563eb] p-6 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]"
           style={{ maxWidth: 360 }}
         >
           {/* Step counter */}

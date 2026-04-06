@@ -10,63 +10,63 @@ import { useDashboard } from "./context";
 
 const ICONS: Record<string, JSX.Element> = {
   home: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M3 12l9-9 9 9M5 10v10h14V10" />
     </svg>
   ),
   rocket: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.841m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-6.233 0c-1.031 1.031-1.032 2.741 0 3.772l.003.003a4.493 4.493 0 003.772 0c1.031-1.031 2.741-1.032 3.772 0" />
     </svg>
   ),
   kanban: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
     </svg>
   ),
   document: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   ),
   shield: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   ),
   briefcase: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
     </svg>
   ),
   gear: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="square" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
     </svg>
   ),
   star: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
     </svg>
   ),
   cpars_star: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
     </svg>
   ),
   handshake: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M7 11l3.5 3.5L21 4M3 11l3.5 3.5M14 4l3.5 3.5" />
     </svg>
   ),
   search: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   ),
   chart: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="square" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
     </svg>
   ),
@@ -112,39 +112,43 @@ const MORE_NAV: NavItem[] = [
 /* ── Setup progress ring ───────────────────────────────────────────────── */
 
 function SetupProgressRing({ completed, total }: { completed: number; total: number }) {
-  const size = 32;
+  const size = 36;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = total > 0 ? completed / total : 0;
   const dashOffset = circumference * (1 - pct);
+  const pctText = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
     <Link
       href="/dashboard/get-started"
-      className="flex items-center gap-2.5 px-5 py-2 hover:bg-[#f8f9fb] transition-colors"
+      className="flex items-center gap-2.5 px-5 py-2 hover:bg-[#f0f1f3] transition-colors rounded-lg mx-2"
     >
-      <svg width={size} height={size} className="shrink-0 -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#e5e7eb"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#059669"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          strokeLinecap="round"
-        />
-      </svg>
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="#059669"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-['JetBrains_Mono'] text-[#4b5563]">{pctText}%</span>
+      </div>
       <span className="text-xs text-[#4b5563]">Setup: {completed}/{total}</span>
     </Link>
   );
@@ -167,17 +171,17 @@ function SidebarLink({
     <Link
       href={isLocked ? "#" : item.href}
       data-tour={item.tourId || undefined}
-      className={`group relative flex items-center gap-3 ${indented ? "pl-7" : "pl-5"} pr-5 py-2.5 text-sm transition-colors border-l-2 ${
+      className={`group relative flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm border-l-[3px] ${
         isActive
           ? "text-[#111827]"
           : "text-[#4b5563] hover:text-[#111827] border-transparent"
       } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-      style={isActive ? { borderColor: item.color, backgroundColor: item.lightBg } : undefined}
+      style={isActive ? { borderColor: item.color, backgroundColor: item.lightBg, transition: 'all 0.15s ease' } : { transition: 'all 0.15s ease' }}
       onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = item.lightBg + "80"; } }}
       onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = ""; } }}
       onClick={isLocked ? (e) => e.preventDefault() : undefined}
     >
-      <span style={isActive ? { color: item.color } : { color: item.color, opacity: 0.6 }}>
+      <span style={isActive ? { color: item.color, opacity: 1 } : { color: item.color, opacity: 0.7 }} className="group-hover:opacity-100">
         {ICONS[item.icon]}
       </span>
       <span>{item.label}</span>
@@ -241,7 +245,7 @@ export function Sidebar({ plan }: { plan: string }) {
   const setupTotal = 7;
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-[220px] border-r border-[#e5e7eb] bg-[#f8f9fb] flex flex-col z-40">
+    <aside className="fixed left-0 top-16 bottom-0 w-[240px] border-r border-[#f0f1f3] bg-[#fafbfc] flex flex-col z-40">
       {/* Top nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
         {TOP_NAV.map((item) => (
@@ -253,10 +257,11 @@ export function Sidebar({ plan }: { plan: string }) {
           />
         ))}
 
-        {/* "More Products" toggle */}
+        {/* "More Products" divider + toggle */}
+        <div className="border-t border-[#f0f1f3] mx-4 my-2" />
         <button
           onClick={toggleMore}
-          className="w-full flex items-center justify-between px-5 py-2.5 mt-2 text-xs uppercase tracking-wider text-[#9ca3af] hover:text-[#4b5563] transition-colors"
+          className="w-full flex items-center justify-between px-5 py-2.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-[0.06em] text-[#94a3b8] hover:text-[#4b5563] transition-colors"
         >
           <span className="flex items-center gap-2">
             <span
@@ -290,7 +295,7 @@ export function Sidebar({ plan }: { plan: string }) {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-[#e5e7eb]">
+      <div className="border-t border-[#f0f1f3]">
         {/* Setup progress ring */}
         <SetupProgressRing completed={setupCompleted} total={setupTotal} />
 

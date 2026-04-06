@@ -105,11 +105,11 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">Contract Delivery — BD Pro Feature</h2>
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Contract Delivery — BD Pro Feature</h2>
             <p className="text-sm text-[#4b5563] mb-4">
               Manage active contracts, milestones, invoices, and option periods.
             </p>
@@ -119,8 +119,8 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">Contracts</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Contracts</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample contracts content...
           </div>
         </div>
@@ -133,7 +133,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#0891b2"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">Contract Delivery</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Contract Delivery</h1>
         </div>
         <HelpButton page="contracts" />
       </div>
@@ -145,7 +145,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading contracts...</div>
       ) : contracts.length === 0 ? (
-        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
           <div className="text-[#9ca3af] text-lg mb-2">No active contracts</div>
           <p className="text-sm text-[#4b5563]">
             Won contracts will appear here for delivery tracking.
@@ -154,7 +154,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       ) : (
         <div className="space-y-6">
           {contracts.map((contract) => (
-            <div key={contract.id} className="border border-[#e5e7eb] bg-white">
+            <div key={contract.id} className="border border-[#f0f1f3] bg-white">
               {/* Contract Header */}
               <div className="p-5 border-b border-[#e5e7eb]">
                 <div className="flex items-start justify-between">
@@ -293,8 +293,8 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       {/* Milestone Modal */}
       {showMilestoneModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md border border-[#e5e7eb] bg-white p-6">
-            <h2 className="text-lg font-serif text-[#111827] mb-4">Add Milestone</h2>
+          <div className="w-full max-w-md border border-[#f0f1f3] bg-white p-6">
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Add Milestone</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
@@ -304,7 +304,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                   type="text"
                   value={milestoneData.title}
                   onChange={(e) => setMilestoneData((d) => ({ ...d, title: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
               <div>
@@ -315,7 +315,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                   type="date"
                   value={milestoneData.due_date}
                   onChange={(e) => setMilestoneData((d) => ({ ...d, due_date: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
             </div>
@@ -328,7 +328,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               </button>
               <button
                 onClick={() => setShowMilestoneModal(null)}
-                className="flex-1 border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+                className="flex-1 border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Cancel
               </button>
@@ -340,12 +340,12 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       {/* Demand Letter Modal */}
       {demandLetter && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-2xl border border-[#e5e7eb] bg-white p-6 max-h-[80vh] overflow-y-auto">
+          <div className="w-full max-w-2xl border border-[#f0f1f3] bg-white p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif text-[#111827]">Prompt Payment Act — Demand Letter</h2>
+              <h2 className="text-lg font-semibold text-[#0f172a]">Prompt Payment Act — Demand Letter</h2>
               <button onClick={() => setDemandLetter(null)} className="text-[#9ca3af] hover:text-[#111827] text-xl">&times;</button>
             </div>
-            <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-6 mb-4">
+            <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-6 mb-4">
               <pre className="text-xs text-[#111827] font-mono whitespace-pre-wrap leading-relaxed">{demandLetter}</pre>
             </div>
             <div className="flex gap-3">
@@ -357,7 +357,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               </button>
               <button
                 onClick={() => setDemandLetter(null)}
-                className="flex-1 border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+                className="flex-1 border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Close
               </button>

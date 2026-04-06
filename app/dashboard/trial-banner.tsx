@@ -18,7 +18,7 @@ export function TrialTierBanner({ page }: { page: string }) {
 
   return (
     <div
-      className={`flex items-center justify-between px-4 py-2 mb-4 text-xs border-b ${
+      className={`flex items-center justify-between px-4 py-2 mb-4 text-xs rounded-lg border ${
         isBdPro
           ? "bg-[#eff4ff] border-[#bfdbfe] text-[#1e40af]"
           : "bg-[#f5f3ff] border-[#ddd6fe] text-[#5b21b6]"

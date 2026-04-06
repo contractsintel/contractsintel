@@ -12,11 +12,11 @@ import { ProductTour } from "../tour";
 
 function MockDigestEmail() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Sample digest email
       </div>
-      <div className="border border-[#e5e7eb] bg-[#f8f9fb] p-4 space-y-2">
+      <div className="border border-[#f0f1f3] bg-[#f8f9fb] p-4 space-y-2">
         <div className="text-xs text-[#2563eb] font-medium">
           ContractsIntel Daily Digest — 7 New Matches
         </div>
@@ -40,11 +40,11 @@ function MockDigestEmail() {
 
 function MockOpportunityCard() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Opportunity card with recommendation
       </div>
-      <div className="border border-[#e5e7eb] bg-[#f8f9fb] p-4">
+      <div className="border border-[#f0f1f3] bg-[#f8f9fb] p-4">
         <div className="flex items-start gap-3">
           <span className="text-2xl font-bold font-mono text-[#22c55e]">94</span>
           <div className="flex-1">
@@ -67,11 +67,11 @@ function MockOpportunityCard() {
 
 function MockActionButtons() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Action buttons highlighted
       </div>
-      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="px-3 py-1.5 text-xs border border-[#2563eb] text-[#2563eb] bg-[#2563eb]/5">Track</div>
         <div className="px-3 py-1.5 text-xs bg-[#2563eb] text-white">Bid</div>
         <div className="px-3 py-1.5 text-xs text-[#9ca3af]">Skip</div>
@@ -83,21 +83,21 @@ function MockActionButtons() {
 
 function MockFilterBar() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Filter bar
       </div>
-      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#e5e7eb] p-3">
-        <div className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] bg-white">
+      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#f0f1f3] p-3">
+        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
           All Set-Asides &#x25BC;
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
           Filter agency...
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
           Min Score: Any &#x25BC;
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
           Sort: Score &#x25BC;
         </div>
       </div>
@@ -107,7 +107,7 @@ function MockFilterBar() {
 
 function MockPipeline() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Pipeline page with cards in stages
       </div>
@@ -118,12 +118,12 @@ function MockPipeline() {
           { label: "Submitted", count: 0, items: [] },
           { label: "Won", count: 0, items: [] },
         ].map((col) => (
-          <div key={col.label} className="flex-1 bg-[#f8f9fb] border border-[#e5e7eb] p-2">
+          <div key={col.label} className="flex-1 bg-[#f8f9fb] border border-[#f0f1f3] p-2">
             <div className="text-[9px] font-mono text-[#9ca3af] uppercase mb-2">
               {col.label} ({col.count})
             </div>
             {col.items.map((item, i) => (
-              <div key={i} className="bg-white border border-[#e5e7eb] p-1.5 mb-1 text-[9px] text-[#4b5563] truncate">
+              <div key={i} className="bg-white border border-[#f0f1f3] p-1.5 mb-1 text-[9px] text-[#4b5563] truncate">
                 {item}
               </div>
             ))}
@@ -136,11 +136,11 @@ function MockPipeline() {
 
 function MockComplianceDashboard() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Compliance dashboard with health score
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="flex items-center gap-4 mb-3">
           <span className="text-2xl font-bold font-mono text-[#22c55e]">87</span>
           <div className="flex-1">
@@ -166,11 +166,11 @@ function MockComplianceDashboard() {
 
 function MockCalendarSync() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Google Calendar with synced deadlines
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4 space-y-1.5">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 space-y-1.5">
         {[
           { date: "Apr 9", title: "Bid Due: Program Support Services", color: "border-l-[#ef4444]" },
           { date: "Apr 13", title: "Bid Due: IT Support Services", color: "border-l-[#f59e0b]" },
@@ -188,15 +188,15 @@ function MockCalendarSync() {
 
 function MockProposalDraft() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Proposal draft with tabs
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="flex gap-1 mb-3">
           <div className="px-2 py-1 text-[9px] bg-[#2563eb] text-white">Technical Approach</div>
-          <div className="px-2 py-1 text-[9px] border border-[#e5e7eb] text-[#9ca3af]">Past Performance</div>
-          <div className="px-2 py-1 text-[9px] border border-[#e5e7eb] text-[#9ca3af]">Executive Summary</div>
+          <div className="px-2 py-1 text-[9px] border border-[#f0f1f3] text-[#9ca3af]">Past Performance</div>
+          <div className="px-2 py-1 text-[9px] border border-[#f0f1f3] text-[#9ca3af]">Executive Summary</div>
         </div>
         <div className="space-y-1">
           <div className="h-2 bg-[#e5e7eb] w-full" />
@@ -211,11 +211,11 @@ function MockProposalDraft() {
 
 function MockPastPerformance() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Past performance record with monthly logs
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="text-xs text-[#111827] mb-2">VA IT Support Contract</div>
         <div className="text-[10px] text-[#9ca3af] mb-3">DEMO-VA-2025-001 | $320,000</div>
         {["Jan 2026", "Feb 2026", "Mar 2026"].map((month, i) => (
@@ -231,11 +231,11 @@ function MockPastPerformance() {
 
 function MockContractDashboard() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Contract delivery dashboard with milestones
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         {[
           { title: "Kick-off Meeting", status: "Completed", color: "text-[#22c55e]" },
           { title: "Q1 Performance Report", status: "Completed", color: "text-[#22c55e]" },
@@ -254,11 +254,11 @@ function MockContractDashboard() {
 
 function MockCpars() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: CPARS rating trends
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         {["Quality", "Schedule", "Cost Control", "Management"].map((cat, i) => (
           <div key={i} className="flex items-center justify-between py-1 text-[10px]">
             <span className="text-[#4b5563]">{cat}</span>
@@ -274,11 +274,11 @@ function MockCpars() {
 
 function MockNetwork() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Teaming opportunity matches
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4 space-y-2">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 space-y-2">
         {[
           { prime: "Lockheed Martin", need: "SDVOSB Subcontractor", naics: "541512" },
           { prime: "Raytheon", need: "8(a) IT Support", naics: "541511" },
@@ -299,11 +299,11 @@ function MockNetwork() {
 
 function MockCompetitors() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Competitor profile with win/loss history
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="text-xs text-[#111827] mb-2">Apex Systems Inc.</div>
         <div className="flex gap-4 text-[10px] mb-2">
           <span className="text-[#22c55e]">2 Wins vs them</span>
@@ -319,11 +319,11 @@ function MockCompetitors() {
 
 function MockVehicleAlerts() {
   return (
-    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
         Screenshot: Contract vehicle alert
       </div>
-      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] px-2 py-0.5 bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20 font-mono uppercase">
             On-Ramp Open
@@ -820,7 +820,7 @@ export default function GetStartedPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-serif text-[#111827]">Get Started</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Get Started</h1>
           <p className="text-sm text-[#4b5563] mt-1">
             Welcome to ContractsIntel, {(organization.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}. Here is everything
             you need to get up and running.
@@ -893,7 +893,7 @@ export default function GetStartedPage() {
                   Go &rarr;
                 </Link>
               ) : (
-                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded border border-[#e5e7eb] text-[#9ca3af]">
+                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded border border-[#f0f1f3] text-[#9ca3af]">
                   Pending
                 </span>
               )}
@@ -906,20 +906,20 @@ export default function GetStartedPage() {
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={handleRestartTour}
-          className="border border-[#e5e7eb] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+          className="border border-[#f0f1f3] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
         >
           Restart Product Tour
         </button>
         <button
           onClick={handleSetHomepage}
-          className="border border-[#e5e7eb] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+          className="border border-[#f0f1f3] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
         >
           Set Dashboard as Homepage
         </button>
       </div>
 
       {/* Quick Start Guide */}
-      <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
+      <div className="border border-[#f0f1f3] bg-white p-6 mb-6">
         <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">Quick Start Guide</h2>
         <p className="text-sm text-[#4b5563]">Written guides for every product, grouped by tier. Each explains what it does, why it matters, and how to use it step by step.</p>
       </div>
@@ -934,7 +934,7 @@ export default function GetStartedPage() {
           const catKey = category.label;
           const isCatOpen = expandedCategories[catKey] ?? category.defaultOpen;
           return (
-            <div key={catKey} className="border border-[#e5e7eb] rounded-lg overflow-hidden">
+            <div key={catKey} className="border border-[#f0f1f3] rounded-lg overflow-hidden">
               {/* Category header */}
               <button
                 onClick={() => setExpandedCategories((prev) => ({ ...prev, [catKey]: !isCatOpen }))}

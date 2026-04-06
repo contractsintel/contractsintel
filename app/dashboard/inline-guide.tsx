@@ -64,8 +64,8 @@ export function InlineGuide({ page }: { page: string }) {
 
   return (
     <div
-      className="mb-5 border border-[#e5e7eb] bg-[#f8f9fb]"
-      style={{ borderRadius: "10px", overflow: "hidden" }}
+      className="mb-5 border border-[#f0f1f3] bg-[#f8f9fb]"
+      style={{ borderRadius: "12px", overflow: "hidden" }}
     >
       <button
         onClick={handleToggle}

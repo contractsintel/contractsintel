@@ -221,14 +221,14 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">Pipeline</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Pipeline</h1>
         </div>
         <HelpButton page="pipeline" />
       </div>
       <InlineGuide page="pipeline" />
 
       {/* Summary Bar */}
-      <div className="grid grid-cols-5 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
+      <div className="grid grid-cols-5 gap-px bg-[#e5e7eb] border border-[#f0f1f3] mb-6">
         {STAGES.map((s) => {
           const items = grouped[s.key] ?? [];
           const total = items.reduce((sum: number, m: any) => sum + (m.opportunities?.estimated_value ?? 0), 0);
@@ -261,7 +261,7 @@ export default function PipelinePage() {
                   return (
                     <div
                       key={match.id}
-                      className="border border-[#e5e7eb] bg-white p-3 hover:border-[#d1d5db] transition-colors"
+                      className="border border-[#f0f1f3] bg-white p-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
                     >
                       <h4 className="text-xs text-[#111827] font-medium truncate mb-1">
                         {opp?.title ?? "Untitled"}
@@ -280,7 +280,7 @@ export default function PipelinePage() {
                       <select
                         value={match.pipeline_stage}
                         onChange={(e) => moveToStage(match.id, e.target.value)}
-                        className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
+                        className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
                       >
                         {STAGES.map((s) => (
                           <option key={s.key} value={s.key}>
@@ -300,8 +300,8 @@ export default function PipelinePage() {
       {/* Won Modal */}
       {wonModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md border border-[#e5e7eb] bg-white p-6">
-            <h2 className="text-lg font-serif text-[#111827] mb-4">Award Details</h2>
+          <div className="w-full max-w-md border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Award Details</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
@@ -312,7 +312,7 @@ export default function PipelinePage() {
                   value={wonData.award_amount}
                   onChange={(e) => setWonData((d) => ({ ...d, award_amount: e.target.value }))}
                   placeholder="e.g. 500000"
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
               <div>
@@ -324,7 +324,7 @@ export default function PipelinePage() {
                   value={wonData.contract_number}
                   onChange={(e) => setWonData((d) => ({ ...d, contract_number: e.target.value }))}
                   placeholder="e.g. GS-35F-0001X"
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function PipelinePage() {
               </button>
               <button
                 onClick={() => setWonModal(null)}
-                className="flex-1 border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+                className="flex-1 border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Cancel
               </button>
@@ -349,8 +349,8 @@ export default function PipelinePage() {
       {/* Lost Modal */}
       {lostModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md border border-[#e5e7eb] bg-white p-6">
-            <h2 className="text-lg font-serif text-[#111827] mb-4">Loss Details</h2>
+          <div className="w-full max-w-md border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Loss Details</h2>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
@@ -359,7 +359,7 @@ export default function PipelinePage() {
                 <select
                   value={lostData.loss_reason}
                   onChange={(e) => setLostData((d) => ({ ...d, loss_reason: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 >
                   {LOSS_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -376,7 +376,7 @@ export default function PipelinePage() {
                   value={lostData.loss_notes}
                   onChange={(e) => setLostData((d) => ({ ...d, loss_notes: e.target.value }))}
                   rows={3}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
                 />
               </div>
             </div>
@@ -389,7 +389,7 @@ export default function PipelinePage() {
               </button>
               <button
                 onClick={() => setLostModal(null)}
-                className="flex-1 border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+                className="flex-1 border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Cancel
               </button>

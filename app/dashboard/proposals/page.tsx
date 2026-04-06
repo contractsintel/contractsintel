@@ -85,11 +85,11 @@ export default function ProposalsPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">AI Proposals — BD Pro Feature</h2>
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">AI Proposals — BD Pro Feature</h2>
             <p className="text-sm text-[#4b5563] mb-4">
               Generate tailored proposal drafts with AI. Upgrade to BD Pro to unlock this feature.
             </p>
@@ -102,8 +102,8 @@ export default function ProposalsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">AI Proposals</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">AI Proposals</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample proposal content would appear here...
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function ProposalsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">AI Proposals</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">AI Proposals</h1>
         </div>
         <HelpButton page="proposals" />
       </div>
@@ -128,7 +128,7 @@ export default function ProposalsPage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading opportunities...</div>
       ) : matches.length === 0 ? (
-        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
           <div className="text-[#9ca3af] text-lg mb-2">No active bids</div>
           <p className="text-sm text-[#4b5563]">
             Mark opportunities as &quot;Bidding&quot; from the{" "}
@@ -159,7 +159,7 @@ export default function ProposalsPage() {
           {/* Proposal Viewer */}
           <div className="col-span-2">
             {selectedMatch ? (
-              <div className="border border-[#e5e7eb] bg-white">
+              <div className="border border-[#f0f1f3] bg-white">
                 <div className="flex items-center justify-between p-4 border-b border-[#e5e7eb]">
                   <div className="flex gap-1">
                     {TABS.map((tab) => (
@@ -180,14 +180,14 @@ export default function ProposalsPage() {
                     <button
                       onClick={copyToClipboard}
                       disabled={!proposal}
-                      className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-30 transition-colors"
+                      className="px-3 py-1 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-30 transition-colors"
                     >
                       {copied ? "Copied" : "Copy"}
                     </button>
                     <button
                       onClick={downloadProposal}
                       disabled={!proposal}
-                      className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-30 transition-colors"
+                      className="px-3 py-1 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-30 transition-colors"
                     >
                       Download
                     </button>
@@ -217,7 +217,7 @@ export default function ProposalsPage() {
                 </div>
               </div>
             ) : (
-              <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+              <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
                 Select an opportunity to generate a proposal
               </div>
             )}

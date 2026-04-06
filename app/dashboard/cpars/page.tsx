@@ -116,11 +116,11 @@ export default function CparsPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">CPARS Monitor — Team Feature</h2>
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">CPARS Monitor — Team Feature</h2>
             <p className="text-sm text-[#4b5563] mb-4">
               Track CPARS evaluations, generate AI-powered responses to unfavorable ratings.
             </p>
@@ -130,8 +130,8 @@ export default function CparsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">CPARS Monitor</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">CPARS Monitor</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample CPARS content...
           </div>
         </div>
@@ -144,14 +144,14 @@ export default function CparsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#e11d48"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">CPARS Monitor</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">CPARS Monitor</h1>
         </div>
         <HelpButton page="cpars" />
       </div>
       <InlineGuide page="cpars" />
 
       {/* Add Rating Form */}
-      <div className="border border-[#e5e7eb] bg-white p-5 mb-6">
+      <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
         <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-4">Add CPARS Rating</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -160,7 +160,7 @@ export default function CparsPage() {
               <select
                 value={form.contract_id}
                 onChange={(e) => setForm((f) => ({ ...f, contract_id: e.target.value }))}
-                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 <option value="">Select contract...</option>
                 {contracts.map((c) => (
@@ -173,7 +173,7 @@ export default function CparsPage() {
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 {RATING_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -185,7 +185,7 @@ export default function CparsPage() {
               <select
                 value={form.rating}
                 onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))}
-                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 {RATING_VALUES.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -198,7 +198,7 @@ export default function CparsPage() {
                 type="date"
                 value={form.evaluation_date}
                 onChange={(e) => setForm((f) => ({ ...f, evaluation_date: e.target.value }))}
-                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               />
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function CparsPage() {
               value={form.narrative}
               onChange={(e) => setForm((f) => ({ ...f, narrative: e.target.value }))}
               rows={4}
-              className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+              className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
               placeholder="Enter the evaluator's narrative..."
             />
           </div>
@@ -226,14 +226,14 @@ export default function CparsPage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading ratings...</div>
       ) : ratings.length === 0 ? (
-        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
           <div className="text-[#9ca3af] text-lg mb-2">No CPARS ratings recorded</div>
           <p className="text-sm text-[#4b5563]">Add your first CPARS evaluation above.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {ratings.map((r) => (
-            <div key={r.id} className="border border-[#e5e7eb] bg-white p-5">
+            <div key={r.id} className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-sm text-[#111827] font-medium">
@@ -283,9 +283,9 @@ export default function CparsPage() {
       {/* Response Viewer Modal */}
       {responseView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-2xl border border-[#e5e7eb] bg-white p-6 max-h-[80vh] overflow-y-auto">
+          <div className="w-full max-w-2xl border border-[#f0f1f3] bg-white p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif text-[#111827]">CPARS Response Draft</h2>
+              <h2 className="text-lg font-semibold text-[#0f172a]">CPARS Response Draft</h2>
               <button
                 onClick={copyResponse}
                 className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
@@ -293,12 +293,12 @@ export default function CparsPage() {
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
-            <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4 text-sm text-[#111827] whitespace-pre-wrap">
+            <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 text-sm text-[#111827] whitespace-pre-wrap">
               {responseView.text}
             </div>
             <button
               onClick={() => setResponseView(null)}
-              className="mt-4 w-full border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+              className="mt-4 w-full border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
             >
               Close
             </button>

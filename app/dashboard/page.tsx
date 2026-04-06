@@ -178,11 +178,11 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
-            <h1 className="text-2xl font-serif text-[#111827]">
+            <h1 className="font-['DM_Serif_Display'] text-[32px] font-bold tracking-[-0.02em] text-[#0f172a]">
               {greeting}, {displayName}
             </h1>
           </div>
-          <p className="text-sm text-[#9ca3af] mt-1 font-mono">{today}</p>
+          <p className="text-sm text-[#94a3b8] mt-1 font-['JetBrains_Mono']">{today}</p>
           {!loading && (
             <p className="text-sm text-[#4b5563] mt-1">
               {matches.length > 0
@@ -199,28 +199,52 @@ export default function DashboardPage() {
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar */}
-      <div data-tour="stats-bar" className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
-        <div className="bg-white p-5 border-t-2 border-t-[#2563eb]">
-          <div className="text-2xl font-bold text-[#2563eb] font-mono">{matches.length}</div>
-          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">New Matches</div>
+      <div data-tour="stats-bar" className="grid grid-cols-4 gap-4 mb-6">
+        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#2563eb]">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#2563eb]">{matches.length}</div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <svg className="w-3.5 h-3.5 text-[#2563eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">New Matches</div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-5 border-t-2 border-t-[#059669]">
-          <div className="text-2xl font-bold text-[#059669] font-mono">{formatCurrency(totalValue)}</div>
-          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Total Value</div>
+        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#059669]">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-50/50 to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#059669]">{formatCurrency(totalValue)}</div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <svg className="w-3.5 h-3.5 text-[#059669]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Total Value</div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-5 border-t-2 border-t-[#dc2626]">
-          <div className="text-2xl font-bold text-[#dc2626] font-mono">{urgentCount}</div>
-          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Urgent (&lt;7d)</div>
+        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#dc2626]">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-50/50 to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#dc2626]">{urgentCount}</div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <svg className="w-3.5 h-3.5 text-[#dc2626]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Urgent (&lt;7d)</div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white p-5 border-t-2 border-t-[#d97706]">
-          <div className="text-2xl font-bold text-[#d97706] font-mono">{topScore}</div>
-          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Top Score</div>
+        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#d97706]">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-transparent pointer-events-none" />
+          <div className="relative">
+            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#d97706]">{topScore}</div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <svg className="w-3.5 h-3.5 text-[#d97706]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Top Score</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Compliance Alert */}
       {complianceAlerts.length > 0 && (
-        <div className="border border-[#e5e7eb] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6">
+        <div className="border border-[#f0f1f3] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center gap-2 mb-1">
             <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -247,7 +271,7 @@ export default function DashboardPage() {
             <select
               value={filters.setAside}
               onChange={(e) => setFilters((f) => ({ ...f, setAside: e.target.value }))}
-              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
             >
               <option value="">All Set-Asides</option>
               {setAsides.map((s) => (
@@ -266,7 +290,7 @@ export default function DashboardPage() {
             <select
               value={filters.minScore}
               onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
-              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
             >
               <option value={0}>Min Score: Any</option>
               <option value={50}>50+</option>
@@ -276,7 +300,7 @@ export default function DashboardPage() {
             <select
               value={filters.sort}
               onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
-              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
             >
               <option value="score">Sort: Score</option>
               <option value="deadline">Sort: Deadline</option>
@@ -286,12 +310,12 @@ export default function DashboardPage() {
 
           {/* Opportunity Cards */}
           {loading ? (
-            <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+            <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               Loading matches...
             </div>
           ) : filtered.length === 0 ? (
             /* ── Empty state welcome card ─────────────────────────────── */
-            <div className="border border-[#e5e7eb] bg-white rounded-xl p-8">
+            <div className="border border-[#f0f1f3] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-center mb-8">
                 <h2 className="text-xl font-semibold text-[#111827] mb-2">
                   Your first digest arrives tomorrow at 7am
@@ -302,7 +326,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Sample opportunity mockup */}
-              <div className="border border-[#e5e7eb] bg-[#f8f9fb] rounded-lg p-5 max-w-xl mx-auto mb-8">
+              <div className="ci-shimmer border border-[#f0f1f3] bg-[#f8f9fb] rounded-lg p-5 max-w-xl mx-auto mb-8">
                 <div className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-wider mb-3">
                   Sample opportunity preview
                 </div>
@@ -339,7 +363,7 @@ export default function DashboardPage() {
                   {/* Card 1: Complete profile */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group"
+                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -355,7 +379,7 @@ export default function DashboardPage() {
                   {/* Card 2: Connect Calendar */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group"
+                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -372,7 +396,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleSeedDemo}
                     disabled={seedingDemo}
-                    className="border border-[#e5e7eb] rounded-lg p-5 hover:border-[#d1d5db] hover:bg-[#f8f9fb] transition-colors group text-left disabled:opacity-50"
+                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group text-left disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -407,7 +431,7 @@ export default function DashboardPage() {
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className="border border-[#e5e7eb] bg-white hover:border-[#d1d5db] transition-colors"
+                    className="border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
                   >
                     <div className="p-5">
                       <div className="flex items-start gap-4">
@@ -419,7 +443,7 @@ export default function DashboardPage() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-[#111827] font-medium text-sm truncate">
+                            <h3 className="text-[16px] font-semibold text-[#0f172a] truncate">
                               {opp.title}
                             </h3>
                             <span
@@ -444,17 +468,17 @@ export default function DashboardPage() {
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-2">
                             {opp.set_aside && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563]">
+                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">
                                 {opp.set_aside}
                               </span>
                             )}
                             {opp.naics_code && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] font-mono">
+                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">
                                 NAICS {opp.naics_code}
                               </span>
                             )}
                             {opp.place_of_performance && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563]">
+                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">
                                 {opp.place_of_performance}
                               </span>
                             )}
@@ -480,19 +504,19 @@ export default function DashboardPage() {
                             <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-2">
                               <button
                                 onClick={() => updateStatus(match.id, "tracking")}
-                                className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+                                className="px-3 py-1 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#e2e8f0] hover:text-[#111827] rounded-lg transition-all duration-200"
                               >
                                 Track
                               </button>
                               <button
                                 onClick={() => updateStatus(match.id, "bidding")}
-                                className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
+                                className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all duration-200"
                               >
                                 Bid
                               </button>
                               <button
                                 onClick={() => updateStatus(match.id, "skipped")}
-                                className="px-3 py-1 text-xs text-[#9ca3af] hover:text-[#4b5563] transition-colors"
+                                className="px-3 py-1 text-xs text-[#9ca3af] hover:text-[#4b5563] rounded-lg transition-all duration-200"
                               >
                                 Skip
                               </button>
@@ -521,8 +545,8 @@ export default function DashboardPage() {
         {/* Right Sidebar */}
         <div className="w-[300px] shrink-0 hidden lg:block space-y-4">
           {/* Pipeline Summary */}
-          <div className="border border-[#e5e7eb] bg-white p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
               Pipeline Summary
             </h3>
             {[
@@ -546,8 +570,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Compliance Score */}
-          <div className="border border-[#e5e7eb] bg-white p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
               Compliance Health
             </h3>
             <div className="text-3xl font-bold font-mono text-[#22c55e] mb-2">--</div>
@@ -563,8 +587,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Upcoming Deadlines */}
-          <div className="border border-[#e5e7eb] bg-white p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
               Upcoming Deadlines
             </h3>
             {matches

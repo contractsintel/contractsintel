@@ -74,11 +74,11 @@ export default function CompetitorsPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">Competitor Intelligence — Team Feature</h2>
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Competitor Intelligence — Team Feature</h2>
             <p className="text-sm text-[#4b5563] mb-4">
               Track competitors, analyze win/loss patterns, and get AI-powered competitive insights.
             </p>
@@ -88,8 +88,8 @@ export default function CompetitorsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#111827] mb-6">Competitor Intelligence</h1>
-          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Competitor Intelligence</h1>
+          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample competitor content...
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function CompetitorsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
-          <h1 className="text-2xl font-serif text-[#111827]">Competitor Intelligence</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Competitor Intelligence</h1>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -118,7 +118,7 @@ export default function CompetitorsPage() {
 
       {/* Add Form */}
       {showForm && (
-        <div className="border border-[#e5e7eb] bg-white p-5 mb-6">
+        <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -127,7 +127,7 @@ export default function CompetitorsPage() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                   placeholder="Competitor name"
                 />
               </div>
@@ -137,7 +137,7 @@ export default function CompetitorsPage() {
                   type="text"
                   value={form.uei}
                   onChange={(e) => setForm((f) => ({ ...f, uei: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function CompetitorsPage() {
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={3}
-                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+                className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
               />
             </div>
             <button
@@ -165,7 +165,7 @@ export default function CompetitorsPage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading competitors...</div>
       ) : competitors.length === 0 ? (
-        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
           <div className="text-[#9ca3af] text-lg mb-2">No competitors tracked</div>
           <p className="text-sm text-[#4b5563]">Add competitors to start building intelligence.</p>
         </div>
@@ -176,7 +176,7 @@ export default function CompetitorsPage() {
             const wins = encounters.filter((e: any) => e.outcome === "win").length;
             const losses = encounters.filter((e: any) => e.outcome === "loss").length;
             return (
-              <div key={comp.id} className="border border-[#e5e7eb] bg-white">
+              <div key={comp.id} className="border border-[#f0f1f3] bg-white">
                 <div className="p-5 border-b border-[#e5e7eb]">
                   <div className="flex items-start justify-between">
                     <div>
@@ -246,14 +246,14 @@ export default function CompetitorsPage() {
       {/* Analysis Modal */}
       {analysisView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-2xl border border-[#e5e7eb] bg-white p-6 max-h-[80vh] overflow-y-auto">
-            <h2 className="text-lg font-serif text-[#111827] mb-4">Competitive Analysis</h2>
-            <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4 text-sm text-[#111827] whitespace-pre-wrap">
+          <div className="w-full max-w-2xl border border-[#f0f1f3] bg-white p-6 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Competitive Analysis</h2>
+            <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 text-sm text-[#111827] whitespace-pre-wrap">
               {analysisView.text}
             </div>
             <button
               onClick={() => setAnalysisView(null)}
-              className="mt-4 w-full border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
+              className="mt-4 w-full border border-[#f0f1f3] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
             >
               Close
             </button>
