@@ -16,10 +16,10 @@ function ratingColor(value: string): string {
   switch (value) {
     case "Exceptional": return "text-[#22c55e]";
     case "Very Good": return "text-[#3b82f6]";
-    case "Satisfactory": return "text-[#e8edf8]";
+    case "Satisfactory": return "text-[#111827]";
     case "Marginal": return "text-[#f59e0b]";
     case "Unsatisfactory": return "text-[#ef4444]";
-    default: return "text-[#8b9ab5]";
+    default: return "text-[#4b5563]";
   }
 }
 
@@ -27,10 +27,10 @@ function ratingBg(value: string): string {
   switch (value) {
     case "Exceptional": return "bg-[#22c55e]/10";
     case "Very Good": return "bg-[#3b82f6]/10";
-    case "Satisfactory": return "bg-[#e8edf8]/5";
+    case "Satisfactory": return "bg-[#111827]/5";
     case "Marginal": return "bg-[#f59e0b]/10";
     case "Unsatisfactory": return "bg-[#ef4444]/10";
-    default: return "bg-[#111520]";
+    default: return "bg-[#f8f9fb]";
   }
 }
 
@@ -116,12 +116,12 @@ export default function CparsPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#1e2535] bg-[#0d1018] p-8 max-w-md text-center">
-            <svg className="w-12 h-12 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+            <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#e8edf8] mb-2">CPARS Monitor — Team Feature</h2>
-            <p className="text-sm text-[#8b9ab5] mb-4">
+            <h2 className="text-lg font-serif text-[#111827] mb-2">CPARS Monitor — Team Feature</h2>
+            <p className="text-sm text-[#4b5563] mb-4">
               Track CPARS evaluations, generate AI-powered responses to unfavorable ratings.
             </p>
             <Link href="/dashboard/settings" className="inline-block bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors">
@@ -130,8 +130,8 @@ export default function CparsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-2xl font-serif text-[#e8edf8] mb-6">CPARS Monitor</h1>
-          <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center text-[#4a5a75]">
+          <h1 className="text-2xl font-serif text-[#111827] mb-6">CPARS Monitor</h1>
+          <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
             Sample CPARS content...
           </div>
         </div>
@@ -142,22 +142,22 @@ export default function CparsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#e8edf8]">CPARS Monitor</h1>
+        <h1 className="text-2xl font-serif text-[#111827]">CPARS Monitor</h1>
         <HelpButton page="cpars" />
       </div>
       <InlineGuide page="cpars" />
 
       {/* Add Rating Form */}
-      <div className="border border-[#1e2535] bg-[#0d1018] p-5 mb-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#4a5a75] mb-4">Add CPARS Rating</h2>
+      <div className="border border-[#e5e7eb] bg-white p-5 mb-6">
+        <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-4">Add CPARS Rating</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1 font-mono uppercase tracking-wider">Contract</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Contract</label>
               <select
                 value={form.contract_id}
                 onChange={(e) => setForm((f) => ({ ...f, contract_id: e.target.value }))}
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 <option value="">Select contract...</option>
                 {contracts.map((c) => (
@@ -166,11 +166,11 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1 font-mono uppercase tracking-wider">Category</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 {RATING_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -178,11 +178,11 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1 font-mono uppercase tracking-wider">Rating</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Rating</label>
               <select
                 value={form.rating}
                 onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))}
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               >
                 {RATING_VALUES.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -190,22 +190,22 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1 font-mono uppercase tracking-wider">Evaluation Date</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Evaluation Date</label>
               <input
                 type="date"
                 value={form.evaluation_date}
                 onChange={(e) => setForm((f) => ({ ...f, evaluation_date: e.target.value }))}
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1 font-mono uppercase tracking-wider">Narrative</label>
+            <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Narrative</label>
             <textarea
               value={form.narrative}
               onChange={(e) => setForm((f) => ({ ...f, narrative: e.target.value }))}
               rows={4}
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+              className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
               placeholder="Enter the evaluator's narrative..."
             />
           </div>
@@ -221,28 +221,28 @@ export default function CparsPage() {
 
       {/* Ratings List */}
       {loading ? (
-        <div className="text-center text-[#4a5a75] py-12">Loading ratings...</div>
+        <div className="text-center text-[#9ca3af] py-12">Loading ratings...</div>
       ) : ratings.length === 0 ? (
-        <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center">
-          <div className="text-[#4a5a75] text-lg mb-2">No CPARS ratings recorded</div>
-          <p className="text-sm text-[#8b9ab5]">Add your first CPARS evaluation above.</p>
+        <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+          <div className="text-[#9ca3af] text-lg mb-2">No CPARS ratings recorded</div>
+          <p className="text-sm text-[#4b5563]">Add your first CPARS evaluation above.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {ratings.map((r) => (
-            <div key={r.id} className="border border-[#1e2535] bg-[#0d1018] p-5">
+            <div key={r.id} className="border border-[#e5e7eb] bg-white p-5">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-sm text-[#e8edf8] font-medium">
+                  <h3 className="text-sm text-[#111827] font-medium">
                     {r.contracts?.title ?? "Unknown Contract"}
                   </h3>
-                  <p className="text-xs text-[#4a5a75] font-mono mt-0.5">
+                  <p className="text-xs text-[#9ca3af] font-mono mt-0.5">
                     {r.contracts?.contract_number} — {r.category}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   {r.evaluation_date && (
-                    <span className="text-xs font-mono text-[#4a5a75]">
+                    <span className="text-xs font-mono text-[#9ca3af]">
                       {new Date(r.evaluation_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   )}
@@ -251,13 +251,13 @@ export default function CparsPage() {
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-[#8b9ab5] mb-3">{r.narrative}</p>
+              <p className="text-sm text-[#4b5563] mb-3">{r.narrative}</p>
               {(r.rating === "Marginal" || r.rating === "Unsatisfactory") && (
                 <div className="flex items-center gap-3">
                   {r.response_draft ? (
                     <button
                       onClick={() => setResponseView({ id: r.id, text: r.response_draft })}
-                      className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                      className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
                     >
                       View Response Draft
                     </button>
@@ -280,9 +280,9 @@ export default function CparsPage() {
       {/* Response Viewer Modal */}
       {responseView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-2xl border border-[#1e2535] bg-[#0d1018] p-6 max-h-[80vh] overflow-y-auto">
+          <div className="w-full max-w-2xl border border-[#e5e7eb] bg-white p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-serif text-[#e8edf8]">CPARS Response Draft</h2>
+              <h2 className="text-lg font-serif text-[#111827]">CPARS Response Draft</h2>
               <button
                 onClick={copyResponse}
                 className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors"
@@ -290,12 +290,12 @@ export default function CparsPage() {
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
-            <div className="bg-[#111520] border border-[#1e2535] p-4 text-sm text-[#e8edf8] whitespace-pre-wrap">
+            <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4 text-sm text-[#111827] whitespace-pre-wrap">
               {responseView.text}
             </div>
             <button
               onClick={() => setResponseView(null)}
-              className="mt-4 w-full border border-[#1e2535] text-[#8b9ab5] py-2 text-sm hover:border-[#2a3548] transition-colors"
+              className="mt-4 w-full border border-[#e5e7eb] text-[#4b5563] py-2 text-sm hover:border-[#d1d5db] transition-colors"
             >
               Close
             </button>

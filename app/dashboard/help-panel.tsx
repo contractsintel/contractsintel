@@ -223,19 +223,19 @@ export function HelpPanel({
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 bottom-0 w-[400px] z-[101] bg-[#0d1018] border-l border-[#1e2535] overflow-y-auto transition-transform duration-200 ease-out"
+        className="fixed top-0 right-0 bottom-0 w-[400px] z-[101] bg-white border-l border-[#e5e7eb] overflow-y-auto transition-transform duration-200 ease-out"
         style={{
           transform: mounted ? "translateX(0)" : "translateX(100%)",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#1e2535]">
-          <h2 className="text-sm font-medium text-[#e8edf8]">
+        <div className="flex items-center justify-between p-5 border-b border-[#e5e7eb]">
+          <h2 className="text-sm font-medium text-[#111827]">
             {content.title} Help
           </h2>
           <button
             onClick={onClose}
-            className="text-[#4a5a75] hover:text-[#e8edf8] transition-colors"
+            className="text-[#9ca3af] hover:text-[#111827] transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -255,10 +255,10 @@ export function HelpPanel({
         <div className="p-5 space-y-6">
           {/* What is this page? */}
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
               What is this page?
             </h3>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
+            <p className="text-sm text-[#4b5563] leading-relaxed">
               {content.what}
             </p>
           </div>
@@ -266,14 +266,14 @@ export function HelpPanel({
           {/* Quick actions */}
           {content.quickActions.length > 0 && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
                 Quick actions
               </h3>
               <ul className="space-y-1.5">
                 {content.quickActions.map((action, i) => (
                   <li
                     key={i}
-                    className="text-sm text-[#8b9ab5] flex items-start gap-2"
+                    className="text-sm text-[#4b5563] flex items-start gap-2"
                   >
                     <span className="text-[#2563eb] mt-0.5 shrink-0">
                       &bull;
@@ -288,10 +288,10 @@ export function HelpPanel({
           {/* How it works */}
           {content.howItWorks && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
                 How it works
               </h3>
-              <p className="text-sm text-[#8b9ab5] leading-relaxed">
+              <p className="text-sm text-[#4b5563] leading-relaxed">
                 {content.howItWorks}
               </p>
             </div>
@@ -300,14 +300,14 @@ export function HelpPanel({
           {/* Tips */}
           {content.tips.length > 0 && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
                 Tips
               </h3>
               <ul className="space-y-2">
                 {content.tips.map((tip, i) => (
                   <li
                     key={i}
-                    className="text-sm text-[#8b9ab5] leading-relaxed flex items-start gap-2"
+                    className="text-sm text-[#4b5563] leading-relaxed flex items-start gap-2"
                   >
                     <span className="text-[#f59e0b] mt-0.5 shrink-0">
                       &#9733;
@@ -320,15 +320,15 @@ export function HelpPanel({
           )}
 
           {/* Need help? */}
-          <div className="border-t border-[#1e2535] pt-5">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+          <div className="border-t border-[#e5e7eb] pt-5">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
               Need help?
             </h3>
-            <p className="text-sm text-[#8b9ab5]">
+            <p className="text-sm text-[#4b5563]">
               Email us at{" "}
               <a
                 href="mailto:support@contractsintel.com"
-                className="text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                className="text-[#3b82f6] hover:text-[#111827] transition-colors"
               >
                 support@contractsintel.com
               </a>
@@ -351,7 +351,7 @@ export function HelpButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-8 h-8 border border-[#1e2535] bg-[#0d1018] flex items-center justify-center text-[#4a5a75] hover:text-[#e8edf8] hover:border-[#2a3548] transition-colors"
+        className="w-8 h-8 border border-[#e5e7eb] bg-white flex items-center justify-center text-[#9ca3af] hover:text-[#111827] hover:border-[#d1d5db] transition-colors"
         title="Help"
       >
         <span className="text-sm font-medium">?</span>

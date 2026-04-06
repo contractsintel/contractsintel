@@ -99,55 +99,55 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-serif text-[#e8edf8]">Settings</h1>
+        <h1 className="text-2xl font-serif text-[#111827]">Settings</h1>
         <HelpButton page="settings" />
       </div>
 
       {/* Company Profile */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Company Profile</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Company Profile</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Company Name</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Company Name</label>
             <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+              className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">UEI</label>
+              <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">UEI</label>
               <input type="text" value={uei} onChange={(e) => setUei(e.target.value)}
                 placeholder="e.g. J7M9HPTGJ1S8"
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+                className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
             </div>
             <div>
-              <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">CAGE Code</label>
+              <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">CAGE Code</label>
               <input type="text" value={cageCode} onChange={(e) => setCageCode(e.target.value)}
-                className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+                className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Certifications</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Certifications</label>
             <div className="flex flex-wrap gap-2">
               {CERTIFICATIONS.map((c) => (
                 <button key={c} type="button" onClick={() => toggleCert(c)}
                   className={`px-3 py-1.5 text-xs border transition-colors ${certs.includes(c)
                     ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
-                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
+                    : "border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db]"}`}>
                   {c}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">NAICS Codes (comma-separated)</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">NAICS Codes (comma-separated)</label>
             <input type="text" value={naicsCodes} onChange={(e) => setNaicsCodes(e.target.value)}
               placeholder="541511, 541512, 541330"
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+              className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Address</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Address</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+              className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div className="flex items-center gap-3">
             <button onClick={handleSave} disabled={saving}
@@ -155,7 +155,7 @@ export default function SettingsPage() {
               {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
             </button>
             <button onClick={refreshFromSam} disabled={refreshingSam || !uei}
-              className="border border-[#1e2535] text-[#8b9ab5] px-6 py-3 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors disabled:opacity-30">
+              className="border border-[#e5e7eb] text-[#4b5563] px-6 py-3 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors disabled:opacity-30">
               {refreshingSam ? "Refreshing..." : "Refresh from SAM.gov"}
             </button>
           </div>
@@ -163,43 +163,43 @@ export default function SettingsPage() {
       </section>
 
       {/* Opportunity Preferences */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Opportunity Preferences</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Opportunity Preferences</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Geography</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Geography</label>
             <div className="flex flex-wrap gap-2">
               {GEO_OPTIONS.map((g) => (
                 <button key={g} type="button" onClick={() => toggleGeo(g)}
                   className={`px-3 py-1.5 text-xs border transition-colors ${geography.includes(g)
                     ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
-                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
+                    : "border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db]"}`}>
                   {g}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-2 font-mono uppercase tracking-wider">Contract Size</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Contract Size</label>
             <div className="flex flex-wrap gap-2">
               {SIZE_OPTIONS.map((s) => (
                 <button key={s} type="button" onClick={() => toggleSize(s)}
                   className={`px-3 py-1.5 text-xs border transition-colors ${contractSize.includes(s)
                     ? "border-[#2563eb] bg-[#2563eb]/10 text-[#3b82f6]"
-                    : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"}`}>
+                    : "border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db]"}`}>
                   {s}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Preferred Agencies (comma-separated)</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Preferred Agencies (comma-separated)</label>
             <input type="text" value={agencies} onChange={(e) => setAgencies(e.target.value)}
               placeholder="DoD, VA, GSA, DHS..."
-              className="w-full bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
+              className="w-full bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div>
-            <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">
               Minimum Match Score: {minScore}
             </label>
             <input type="range" min={0} max={100} step={5} value={minScore}
@@ -210,17 +210,17 @@ export default function SettingsPage() {
       </section>
 
       {/* Subscription */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Subscription</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Subscription</h2>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-[#e8edf8]">
+            <p className="text-sm text-[#111827]">
               Current plan: <span className="text-[#3b82f6] font-medium">{tierLabel(organization.plan)}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
             {organization.stripe_customer_id && (
-              <a href="/api/stripe/portal" className="px-4 py-2 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] transition-colors">
+              <a href="/api/stripe/portal" className="px-4 py-2 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] transition-colors">
                 Manage Billing
               </a>
             )}
@@ -235,8 +235,8 @@ export default function SettingsPage() {
       </section>
 
       {/* Notifications */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-5">Notifications</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Notifications</h2>
         <div className="space-y-3">
           {[
             { label: "Daily Digest", desc: "Morning email with new matches", value: digestEnabled, set: setDigestEnabled },
@@ -246,12 +246,12 @@ export default function SettingsPage() {
           ].map((n) => (
             <label key={n.label} className="flex items-center justify-between cursor-pointer">
               <div>
-                <span className="text-sm text-[#e8edf8]">{n.label}</span>
-                <p className="text-xs text-[#4a5a75]">{n.desc}</p>
+                <span className="text-sm text-[#111827]">{n.label}</span>
+                <p className="text-xs text-[#9ca3af]">{n.desc}</p>
               </div>
               <button
                 onClick={() => n.set(!n.value)}
-                className={`w-10 h-5 flex items-center transition-colors ${n.value ? "bg-[#2563eb]" : "bg-[#1e2535]"}`}
+                className={`w-10 h-5 flex items-center transition-colors ${n.value ? "bg-[#2563eb]" : "bg-[#e5e7eb]"}`}
               >
                 <div className={`w-4 h-4 bg-white transition-transform ${n.value ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
@@ -261,12 +261,12 @@ export default function SettingsPage() {
       </section>
 
       {/* CMMC Status */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">CMMC Status</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">CMMC Status</h2>
         <div>
-          <label className="block text-xs text-[#8b9ab5] mb-1.5 font-mono uppercase tracking-wider">Target Level</label>
+          <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Target Level</label>
           <select value={cmmcLevel} onChange={(e) => setCmmcLevel(e.target.value)}
-            className="bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
+            className="bg-white border border-[#e5e7eb] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
             <option value="1">Level 1 — Basic Cyber Hygiene</option>
             <option value="2">Level 2 — Advanced Cyber Hygiene</option>
             <option value="3">Level 3 — Expert</option>
@@ -275,22 +275,22 @@ export default function SettingsPage() {
       </section>
 
       {/* Google Calendar */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Google Calendar</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Google Calendar</h2>
         {calendarConnected ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-[#22c55e]" />
-              <span className="text-sm text-[#e8edf8]">Connected</span>
+              <span className="text-sm text-[#111827]">Connected</span>
             </div>
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm text-[#8b9ab5]">Sync bid deadlines</span>
+              <span className="text-sm text-[#4b5563]">Sync bid deadlines</span>
               <div className="w-10 h-5 bg-[#2563eb] flex items-center">
                 <div className="w-4 h-4 bg-white translate-x-5" />
               </div>
             </label>
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm text-[#8b9ab5]">Sync compliance deadlines</span>
+              <span className="text-sm text-[#4b5563]">Sync compliance deadlines</span>
               <div className="w-10 h-5 bg-[#2563eb] flex items-center">
                 <div className="w-4 h-4 bg-white translate-x-5" />
               </div>
@@ -305,7 +305,7 @@ export default function SettingsPage() {
         ) : (
           <button
             onClick={() => setCalendarConnected(true)}
-            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+            className="border border-[#e5e7eb] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
           >
             Connect Google Calendar
           </button>
@@ -313,21 +313,21 @@ export default function SettingsPage() {
       </section>
 
       {/* Onboarding */}
-      <section className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-        <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Onboarding</h2>
+      <section className="border border-[#e5e7eb] bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Onboarding</h2>
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
               localStorage.removeItem("ci_tour_completed");
               window.location.href = "/dashboard";
             }}
-            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+            className="border border-[#e5e7eb] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
           >
             Restart Product Tour
           </button>
           <a
             href="/dashboard/get-started"
-            className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+            className="border border-[#e5e7eb] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
           >
             View Get Started Guide
           </a>

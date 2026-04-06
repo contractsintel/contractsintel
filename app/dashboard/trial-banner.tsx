@@ -20,8 +20,8 @@ export function TrialTierBanner({ page }: { page: string }) {
     <div
       className={`flex items-center justify-between px-4 py-2 mb-4 text-xs border-b ${
         isBdPro
-          ? "bg-[#0c1a3d] border-[#1e3a6e] text-[#93b4e8]"
-          : "bg-[#1a0c3d] border-[#3a1e6e] text-[#b493e8]"
+          ? "bg-[#eff4ff] border-[#bfdbfe] text-[#1e40af]"
+          : "bg-[#f5f3ff] border-[#ddd6fe] text-[#5b21b6]"
       }`}
     >
       <span>
@@ -37,7 +37,7 @@ export function TrialTierBanner({ page }: { page: string }) {
       </span>
       <button
         onClick={() => setDismissed(true)}
-        className="ml-4 text-[#4a5a75] hover:text-[#e8edf8] text-base leading-none"
+        className="ml-4 text-[#9ca3af] hover:text-[#111827] text-base leading-none"
       >
         &times;
       </button>

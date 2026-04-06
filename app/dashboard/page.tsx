@@ -34,14 +34,14 @@ function scoreColor(score: number): string {
   if (score >= 80) return "text-[#22c55e]";
   if (score >= 60) return "text-[#3b82f6]";
   if (score >= 40) return "text-[#f59e0b]";
-  return "text-[#4a5a75]";
+  return "text-[#9ca3af]";
 }
 
 function recBadge(rec: string) {
   const map: Record<string, string> = {
     bid: "bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20",
     review: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20",
-    skip: "bg-[#4a5a75]/10 text-[#4a5a75] border-[#4a5a75]/20",
+    skip: "bg-[#9ca3af]/10 text-[#9ca3af] border-[#9ca3af]/20",
   };
   return map[rec] ?? map.skip;
 }
@@ -162,10 +162,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-serif text-[#e8edf8]">
+          <h1 className="text-2xl font-serif text-[#111827]">
             {greeting()}, {organization.name}
           </h1>
-          <p className="text-sm text-[#4a5a75] mt-1 font-mono">{today}</p>
+          <p className="text-sm text-[#9ca3af] mt-1 font-mono">{today}</p>
         </div>
         <HelpButton page="dashboard" />
       </div>
@@ -175,28 +175,28 @@ export default function DashboardPage() {
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar */}
-      <div data-tour="stats-bar" className="grid grid-cols-4 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
-        <div className="bg-[#0d1018] p-5">
-          <div className="text-2xl font-bold text-[#e8edf8] font-mono">{matches.length}</div>
-          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">New Matches</div>
+      <div data-tour="stats-bar" className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
+        <div className="bg-white p-5">
+          <div className="text-2xl font-bold text-[#111827] font-mono">{matches.length}</div>
+          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">New Matches</div>
         </div>
-        <div className="bg-[#0d1018] p-5">
+        <div className="bg-white p-5">
           <div className="text-2xl font-bold text-[#3b82f6] font-mono">{formatCurrency(totalValue)}</div>
-          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Total Value</div>
+          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Total Value</div>
         </div>
-        <div className="bg-[#0d1018] p-5">
+        <div className="bg-white p-5">
           <div className="text-2xl font-bold text-[#f59e0b] font-mono">{urgentCount}</div>
-          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Urgent (&lt;7d)</div>
+          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Urgent (&lt;7d)</div>
         </div>
-        <div className="bg-[#0d1018] p-5">
+        <div className="bg-white p-5">
           <div className="text-2xl font-bold text-[#22c55e] font-mono">{topScore}</div>
-          <div className="text-xs text-[#4a5a75] mt-1 font-mono uppercase tracking-wider">Top Score</div>
+          <div className="text-xs text-[#9ca3af] mt-1 font-mono uppercase tracking-wider">Top Score</div>
         </div>
       </div>
 
       {/* Compliance Alert */}
       {complianceAlerts.length > 0 && (
-        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-[#0d1018] p-4 mb-6">
+        <div className="border border-[#e5e7eb] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6">
           <div className="flex items-center gap-2 mb-1">
             <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -209,7 +209,7 @@ export default function DashboardPage() {
               {complianceAlerts.length} compliance item{complianceAlerts.length > 1 ? "s" : ""} due within 7 days
             </span>
           </div>
-          <p className="text-xs text-[#8b9ab5]">
+          <p className="text-xs text-[#4b5563]">
             {complianceAlerts.map((a) => a.title).join(", ")}
           </p>
         </div>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             <select
               value={filters.setAside}
               onChange={(e) => setFilters((f) => ({ ...f, setAside: e.target.value }))}
-              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
             >
               <option value="">All Set-Asides</option>
               {setAsides.map((s) => (
@@ -237,12 +237,12 @@ export default function DashboardPage() {
               placeholder="Filter agency..."
               value={filters.agency}
               onChange={(e) => setFilters((f) => ({ ...f, agency: e.target.value }))}
-              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 w-40 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 w-40 focus:outline-none focus:border-[#2563eb]"
             />
             <select
               value={filters.minScore}
               onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
-              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
             >
               <option value={0}>Min Score: Any</option>
               <option value={50}>50+</option>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
             <select
               value={filters.sort}
               onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
-              className="bg-[#111520] border border-[#1e2535] text-[#8b9ab5] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
+              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 focus:outline-none focus:border-[#2563eb]"
             >
               <option value="score">Sort: Score</option>
               <option value="deadline">Sort: Deadline</option>
@@ -262,13 +262,13 @@ export default function DashboardPage() {
 
           {/* Opportunity Cards */}
           {loading ? (
-            <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center text-[#4a5a75]">
+            <div className="border border-[#e5e7eb] bg-white p-12 text-center text-[#9ca3af]">
               Loading matches...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="border border-[#1e2535] bg-[#0d1018] p-12 text-center">
-              <div className="text-[#4a5a75] text-lg mb-2">No matches found</div>
-              <p className="text-[#8b9ab5] text-sm">
+            <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+              <div className="text-[#9ca3af] text-lg mb-2">No matches found</div>
+              <p className="text-[#4b5563] text-sm">
                 Try adjusting your filters or{" "}
                 <Link href="/dashboard/settings" className="text-[#3b82f6]">
                   update your profile
@@ -287,13 +287,13 @@ export default function DashboardPage() {
                     ? "text-[#ef4444]"
                     : days !== null && days <= 7
                     ? "text-[#f59e0b]"
-                    : "text-[#8b9ab5]";
+                    : "text-[#4b5563]";
 
                 return (
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className="border border-[#1e2535] bg-[#0d1018] hover:border-[#2a3548] transition-colors"
+                    className="border border-[#e5e7eb] bg-white hover:border-[#d1d5db] transition-colors"
                   >
                     <div className="p-5">
                       <div className="flex items-start gap-4">
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-[#e8edf8] font-medium text-sm truncate">
+                            <h3 className="text-[#111827] font-medium text-sm truncate">
                               {opp.title}
                             </h3>
                             <span
@@ -317,11 +317,11 @@ export default function DashboardPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-3 text-xs text-[#8b9ab5] mb-2">
+                          <div className="flex items-center gap-3 text-xs text-[#4b5563] mb-2">
                             <span>{opp.agency}</span>
                             {opp.solicitation_number && (
                               <>
-                                <span className="text-[#1e2535]">|</span>
+                                <span className="text-[#e5e7eb]">|</span>
                                 <span className="font-mono">{opp.solicitation_number}</span>
                               </>
                             )}
@@ -330,17 +330,17 @@ export default function DashboardPage() {
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-2">
                             {opp.set_aside && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5]">
+                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563]">
                                 {opp.set_aside}
                               </span>
                             )}
                             {opp.naics_code && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5] font-mono">
+                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] font-mono">
                                 NAICS {opp.naics_code}
                               </span>
                             )}
                             {opp.place_of_performance && (
-                              <span className="px-2 py-0.5 text-[10px] bg-[#111520] border border-[#1e2535] text-[#8b9ab5]">
+                              <span className="px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563]">
                                 {opp.place_of_performance}
                               </span>
                             )}
@@ -348,14 +348,14 @@ export default function DashboardPage() {
 
                           {/* AI Reasoning */}
                           {match.reasoning && (
-                            <p data-tour={match === filtered[0] ? "ai-recommendation" : undefined} className="text-xs text-[#4a5a75] mb-3 line-clamp-2">{match.reasoning}</p>
+                            <p data-tour={match === filtered[0] ? "ai-recommendation" : undefined} className="text-xs text-[#9ca3af] mb-3 line-clamp-2">{match.reasoning}</p>
                           )}
 
                           {/* Bottom row: value, deadline, actions */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               {opp.estimated_value && (
-                                <span className="text-sm font-mono text-[#e8edf8]">
+                                <span className="text-sm font-mono text-[#111827]">
                                   {formatCurrency(opp.estimated_value)}
                                 </span>
                               )}
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                             <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-2">
                               <button
                                 onClick={() => updateStatus(match.id, "tracking")}
-                                className="px-3 py-1 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+                                className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
                               >
                                 Track
                               </button>
@@ -378,7 +378,7 @@ export default function DashboardPage() {
                               </button>
                               <button
                                 onClick={() => updateStatus(match.id, "skipped")}
-                                className="px-3 py-1 text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors"
+                                className="px-3 py-1 text-xs text-[#9ca3af] hover:text-[#4b5563] transition-colors"
                               >
                                 Skip
                               </button>
@@ -387,7 +387,7 @@ export default function DashboardPage() {
                                   href={opp.sam_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                                  className="px-3 py-1 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
                                 >
                                   SAM.gov
                                 </a>
@@ -407,8 +407,8 @@ export default function DashboardPage() {
         {/* Right Sidebar */}
         <div className="w-[300px] shrink-0 hidden lg:block space-y-4">
           {/* Pipeline Summary */}
-          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+          <div className="border border-[#e5e7eb] bg-white p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
               Pipeline Summary
             </h3>
             {[
@@ -419,38 +419,38 @@ export default function DashboardPage() {
               { label: "Lost", key: "lost" },
             ].map((s) => (
               <div key={s.key} className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-[#8b9ab5]">{s.label}</span>
-                <span className="text-xs font-mono text-[#e8edf8]">{pipelineCounts[s.key] ?? 0}</span>
+                <span className="text-xs text-[#4b5563]">{s.label}</span>
+                <span className="text-xs font-mono text-[#111827]">{pipelineCounts[s.key] ?? 0}</span>
               </div>
             ))}
             <Link
               href="/dashboard/pipeline"
-              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
             >
               View Pipeline →
             </Link>
           </div>
 
           {/* Compliance Score */}
-          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+          <div className="border border-[#e5e7eb] bg-white p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
               Compliance Health
             </h3>
             <div className="text-3xl font-bold font-mono text-[#22c55e] mb-2">--</div>
-            <div className="w-full h-1.5 bg-[#111520]">
+            <div className="w-full h-1.5 bg-[#f8f9fb]">
               <div className="h-full bg-[#22c55e] w-0" />
             </div>
             <Link
               href="/dashboard/compliance"
-              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
             >
               View Compliance →
             </Link>
           </div>
 
           {/* Upcoming Deadlines */}
-          <div className="border border-[#1e2535] bg-[#0d1018] p-4">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+          <div className="border border-[#e5e7eb] bg-white p-4">
+            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
               Upcoming Deadlines
             </h3>
             {matches
@@ -466,10 +466,10 @@ export default function DashboardPage() {
               .slice(0, 5)
               .map((m) => {
                 const d = daysUntil(m.opportunities?.response_deadline);
-                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#8b9ab5]";
+                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#4b5563]";
                 return (
                   <div key={m.id} className="flex items-center justify-between py-1.5">
-                    <span className="text-xs text-[#8b9ab5] truncate mr-2">
+                    <span className="text-xs text-[#4b5563] truncate mr-2">
                       {m.opportunities?.title}
                     </span>
                     <span className={`text-xs font-mono shrink-0 ${color}`}>
@@ -482,7 +482,7 @@ export default function DashboardPage() {
               const d = daysUntil(m.opportunities?.response_deadline);
               return d !== null && d >= 0 && d <= 14;
             }).length === 0 && (
-              <p className="text-xs text-[#4a5a75]">No upcoming deadlines</p>
+              <p className="text-xs text-[#9ca3af]">No upcoming deadlines</p>
             )}
           </div>
         </div>

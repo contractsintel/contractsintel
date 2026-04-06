@@ -216,7 +216,7 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
             left: spotlightRect.left - spotlightPad,
             width: spotlightRect.width + spotlightPad * 2,
             height: spotlightRect.height + spotlightPad * 2,
-            boxShadow: "0 0 0 9999px rgba(0,0,0,0.7)",
+            boxShadow: "0 0 0 9999px rgba(0,0,0,0.5)",
             zIndex: 9999,
             pointerEvents: "none",
           }}
@@ -224,7 +224,7 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
       ) : (
         <div
           className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
         />
       )}
 
@@ -243,24 +243,24 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
         }
       >
         <div
-          className="bg-[#111520] border border-[#2563eb] p-6"
+          className="bg-white border border-[#2563eb] p-6"
           style={{ maxWidth: 360 }}
         >
           {/* Step counter */}
           <p
-            className="text-[11px] text-[#4a5a75] mb-3"
+            className="text-[11px] text-[#9ca3af] mb-3"
             style={{ fontFamily: "var(--font-geist-mono, monospace)" }}
           >
             Step {currentStep + 1} of {totalSteps}
           </p>
 
           {/* Title */}
-          <h3 className="text-[16px] font-bold text-white mb-2">
+          <h3 className="text-[16px] font-bold text-[#111827] mb-2">
             {step.title}
           </h3>
 
           {/* Description */}
-          <p className="text-[14px] text-[#8b9ab5] leading-[1.6] mb-5">
+          <p className="text-[14px] text-[#4b5563] leading-[1.6] mb-5">
             {step.description}
           </p>
 
@@ -269,7 +269,7 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
             {currentStep > 0 && (
               <button
                 onClick={handleBack}
-                className="text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors"
+                className="text-xs text-[#9ca3af] hover:text-[#4b5563] transition-colors"
               >
                 Back
               </button>
@@ -284,14 +284,14 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
           </div>
 
           {step.belowButton && (
-            <p className="text-xs text-[#4a5a75] mt-3">{step.belowButton}</p>
+            <p className="text-xs text-[#9ca3af] mt-3">{step.belowButton}</p>
           )}
 
           {/* Skip */}
           {currentStep < totalSteps - 1 && (
             <button
               onClick={handleSkip}
-              className="text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors mt-3 block"
+              className="text-xs text-[#9ca3af] hover:text-[#4b5563] transition-colors mt-3 block"
             >
               Skip Tour
             </button>

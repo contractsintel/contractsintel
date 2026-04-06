@@ -92,7 +92,7 @@ export function Sidebar({ plan }: { plan: string }) {
   const teamTier = trial ? true : isTeam(plan);
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-[220px] border-r border-[#1e2535] bg-[#080a0f] flex flex-col z-40">
+    <aside className="fixed left-0 top-16 bottom-0 w-[220px] border-r border-[#e5e7eb] bg-[#f8f9fb] flex flex-col z-40">
       <nav className="flex-1 py-4">
         {NAV_ITEMS.map((item) => {
           const isActive =
@@ -108,8 +108,8 @@ export function Sidebar({ plan }: { plan: string }) {
               data-tour={item.tourId || undefined}
               className={`group relative flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${
                 isActive
-                  ? "text-[#e8edf8] border-l-2 border-[#2563eb] bg-[#2563eb]/5"
-                  : "text-[#8b9ab5] hover:text-[#e8edf8] hover:bg-[#0d1018] border-l-2 border-transparent"
+                  ? "text-[#111827] border-l-2 border-[#2563eb] bg-[#eff4ff]"
+                  : "text-[#4b5563] hover:text-[#111827] hover:bg-white border-l-2 border-transparent"
               } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={isLocked ? (e) => e.preventDefault() : undefined}
             >
@@ -117,14 +117,14 @@ export function Sidebar({ plan }: { plan: string }) {
               <span>{item.label}</span>
               {isLocked && (
                 <>
-                  <svg className="w-3 h-3 ml-auto text-[#4a5a75]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-3 h-3 ml-auto text-[#9ca3af]" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="absolute left-full ml-2 px-2 py-1 text-xs text-[#e8edf8] bg-[#111520] border border-[#1e2535] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                  <span className="absolute left-full ml-2 px-2 py-1 text-xs text-[#111827] bg-[#f8f9fb] border border-[#e5e7eb] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
                     {item.teamOnly ? "Upgrade to Team" : "Upgrade to BD Pro"}
                   </span>
                 </>
@@ -134,15 +134,15 @@ export function Sidebar({ plan }: { plan: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-[#1e2535]">
+      <div className="p-4 border-t border-[#e5e7eb]">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono uppercase tracking-wider text-[#4a5a75]">
+          <span className="text-xs font-mono uppercase tracking-wider text-[#9ca3af]">
             {trial ? "Free Trial" : tierLabel(plan)}
           </span>
           {!trial && plan !== "team" && (
             <Link
               href="/dashboard/settings"
-              className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+              className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
             >
               Upgrade
             </Link>

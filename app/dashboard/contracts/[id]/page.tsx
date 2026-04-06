@@ -43,22 +43,22 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   const popStr = pop ? [pop.city?.name, pop.state?.name, pop.country?.name].filter(Boolean).join(", ") : "Not specified";
 
   return (
-    <div className="min-h-screen bg-[#080a0f]">
-      <nav className="border-b border-[#1e2535] bg-[#080a0f]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-white">
+      <nav className="border-b border-[#e5e7eb] bg-white/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
+          <span className="font-semibold text-[15px] text-[#111827]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
         </Link>
-        <Link href="/dashboard" className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">← Back to Dashboard</Link>
+        <Link href="/dashboard" className="text-sm text-[#4b5563] hover:text-[#111827]">← Back to Dashboard</Link>
       </nav>
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+        <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-semibold text-[#e8edf8] mb-2">{contract.title}</h1>
-              <p className="text-sm text-[#8b9ab5]">{contract.agency}</p>
+              <h1 className="text-xl font-semibold text-[#111827] mb-2">{contract.title}</h1>
+              <p className="text-sm text-[#4b5563]">{contract.agency}</p>
             </div>
             {match && (
               <div className="text-center shrink-0">
@@ -71,11 +71,11 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
               </div>
             )}
           </div>
-          {match?.reasoning && <p className="text-sm text-[#4a5a75] mt-3 border-t border-[#1e2535] pt-3">{match.reasoning}</p>}
+          {match?.reasoning && <p className="text-sm text-[#9ca3af] mt-3 border-t border-[#e5e7eb] pt-3">{match.reasoning}</p>}
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
+        <div className="grid grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
           {[
             ["Notice ID", contract.notice_id],
             ["Type", raw.baseType || raw.type || "N/A"],
@@ -86,24 +86,24 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             ["Place of Performance", popStr],
             ["Solicitation #", raw.solicitationNumber || "N/A"],
           ].map(([label, value]) => (
-            <div key={label as string} className="bg-[#0d1018] p-4">
-              <div className="text-[10px] text-[#4a5a75] font-mono uppercase tracking-wider mb-1">{label}</div>
-              <div className="text-sm text-[#e8edf8]">{value}</div>
+            <div key={label as string} className="bg-white p-4">
+              <div className="text-[10px] text-[#9ca3af] font-mono uppercase tracking-wider mb-1">{label}</div>
+              <div className="text-sm text-[#111827]">{value}</div>
             </div>
           ))}
         </div>
 
         {/* Contacts */}
         {contacts.length > 0 && (
-          <div className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
-            <h2 className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mb-4">Point of Contact</h2>
+          <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
+            <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Point of Contact</h2>
             <div className="space-y-3">
               {contacts.map((c: any, i: number) => (
                 <div key={i} className="flex items-center gap-4 text-sm">
-                  <span className="text-[#e8edf8] font-medium">{c.fullName || "Unknown"}</span>
-                  {c.title && <span className="text-[#4a5a75]">{c.title}</span>}
+                  <span className="text-[#111827] font-medium">{c.fullName || "Unknown"}</span>
+                  {c.title && <span className="text-[#9ca3af]">{c.title}</span>}
                   {c.email && <a href={`mailto:${c.email}`} className="text-[#3b82f6] hover:underline">{c.email}</a>}
-                  {c.phone && <span className="text-[#8b9ab5]">{c.phone}</span>}
+                  {c.phone && <span className="text-[#4b5563]">{c.phone}</span>}
                 </div>
               ))}
             </div>

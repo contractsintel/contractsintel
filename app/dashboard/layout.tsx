@@ -52,7 +52,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardProvider user={userProfile} organization={org}>
-      <div className="min-h-screen bg-[#080a0f]">
+      <div className="min-h-screen bg-white">
         <TopNav companyName={org.name} userEmail={authUser.email ?? ""} userName={userProfile.full_name} />
         <div className="flex pt-16">
           <Sidebar plan={org.plan} />

@@ -14,7 +14,7 @@ const CATEGORIES = [
 ];
 
 function urgencyColor(dueDate: string | null): string {
-  if (!dueDate) return "text-[#4a5a75]";
+  if (!dueDate) return "text-[#9ca3af]";
   const d = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
   if (d <= 3) return "text-[#ef4444]";
   if (d <= 7) return "text-[#f59e0b]";
@@ -23,7 +23,7 @@ function urgencyColor(dueDate: string | null): string {
 }
 
 function urgencyBorder(dueDate: string | null): string {
-  if (!dueDate) return "border-l-[#4a5a75]";
+  if (!dueDate) return "border-l-[#9ca3af]";
   const d = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000);
   if (d <= 3) return "border-l-[#ef4444]";
   if (d <= 7) return "border-l-[#f59e0b]";
@@ -77,38 +77,38 @@ export default function CompliancePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif text-[#e8edf8]">Compliance Monitor</h1>
+        <h1 className="text-2xl font-serif text-[#111827]">Compliance Monitor</h1>
         <HelpButton page="compliance" />
       </div>
       <InlineGuide page="compliance" />
 
       {loading ? (
-        <div className="text-center text-[#4a5a75] py-12">Loading compliance data...</div>
+        <div className="text-center text-[#9ca3af] py-12">Loading compliance data...</div>
       ) : (
         <>
           {/* Health Score */}
-          <div className="border border-[#1e2535] bg-[#0d1018] p-6 mb-6">
+          <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
             <div className="flex items-center gap-8">
               <div>
                 <div className={`text-5xl font-bold font-mono ${healthColor}`}>
                   {items.length > 0 ? healthScore : "--"}
                 </div>
-                <div className="text-xs text-[#4a5a75] font-mono uppercase tracking-wider mt-1">
+                <div className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mt-1">
                   Health Score
                 </div>
               </div>
               <div className="flex-1">
-                <div className="w-full h-3 bg-[#111520]">
+                <div className="w-full h-3 bg-[#f8f9fb]">
                   <div
                     className={`h-full ${healthBarColor} transition-all`}
                     style={{ width: items.length > 0 ? `${healthScore}%` : "0%" }}
                   />
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-xs text-[#4a5a75]">
+                  <span className="text-xs text-[#9ca3af]">
                     {completedItems} of {items.length} items complete
                   </span>
-                  <span className="text-xs text-[#4a5a75]">
+                  <span className="text-xs text-[#9ca3af]">
                     {items.length - completedItems} pending
                   </span>
                 </div>
@@ -117,23 +117,23 @@ export default function CompliancePage() {
           </div>
 
           {/* Category Breakdown */}
-          <div className="grid grid-cols-4 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
+          <div className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
             {grouped.map((cat) => {
               const pct = cat.total > 0 ? Math.round((cat.complete / cat.total) * 100) : 0;
               const catColor =
-                pct >= 80 ? "text-[#22c55e]" : pct >= 60 ? "text-[#f59e0b]" : cat.total === 0 ? "text-[#4a5a75]" : "text-[#ef4444]";
+                pct >= 80 ? "text-[#22c55e]" : pct >= 60 ? "text-[#f59e0b]" : cat.total === 0 ? "text-[#9ca3af]" : "text-[#ef4444]";
               return (
-                <div key={cat.key} className="bg-[#0d1018] p-5">
+                <div key={cat.key} className="bg-white p-5">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-[#111520] flex items-center justify-center text-[10px] font-mono text-[#8b9ab5]">
+                    <div className="w-6 h-6 bg-[#f8f9fb] flex items-center justify-center text-[10px] font-mono text-[#4b5563]">
                       {cat.icon}
                     </div>
-                    <span className="text-xs text-[#8b9ab5]">{cat.label}</span>
+                    <span className="text-xs text-[#4b5563]">{cat.label}</span>
                   </div>
                   <div className={`text-2xl font-bold font-mono ${catColor}`}>
                     {cat.total > 0 ? `${pct}%` : "--"}
                   </div>
-                  <div className="text-[10px] text-[#4a5a75] font-mono mt-1">
+                  <div className="text-[10px] text-[#9ca3af] font-mono mt-1">
                     {cat.complete}/{cat.total} complete
                   </div>
                 </div>
@@ -144,11 +144,11 @@ export default function CompliancePage() {
           {/* Upcoming Deadlines */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h2 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
                 Upcoming Deadlines
               </h2>
               {upcoming.length === 0 ? (
-                <div className="border border-[#1e2535] bg-[#0d1018] p-6 text-center text-sm text-[#4a5a75]">
+                <div className="border border-[#e5e7eb] bg-white p-6 text-center text-sm text-[#9ca3af]">
                   No pending deadlines
                 </div>
               ) : (
@@ -156,12 +156,12 @@ export default function CompliancePage() {
                   {upcoming.map((item) => (
                     <div
                       key={item.id}
-                      className={`border border-[#1e2535] border-l-4 ${urgencyBorder(item.due_date)} bg-[#0d1018] p-4`}
+                      className={`border border-[#e5e7eb] border-l-4 ${urgencyBorder(item.due_date)} bg-white p-4`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-sm text-[#e8edf8]">{item.title}</h3>
-                          <p className="text-xs text-[#4a5a75] mt-0.5">{item.category.toUpperCase()}</p>
+                          <h3 className="text-sm text-[#111827]">{item.title}</h3>
+                          <p className="text-xs text-[#9ca3af] mt-0.5">{item.category.toUpperCase()}</p>
                         </div>
                         <div className="text-right">
                           <span className={`text-sm font-mono ${urgencyColor(item.due_date)}`}>
@@ -175,7 +175,7 @@ export default function CompliancePage() {
                         </div>
                       </div>
                       {item.details && (
-                        <p className="text-xs text-[#4a5a75] mt-2">{item.details}</p>
+                        <p className="text-xs text-[#9ca3af] mt-2">{item.details}</p>
                       )}
                     </div>
                   ))}
@@ -186,12 +186,12 @@ export default function CompliancePage() {
             <div className="space-y-6">
               {/* FAR Change Alerts */}
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+                <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
                   FAR Change Alerts
                 </h2>
-                <div className="border border-[#1e2535] bg-[#0d1018] p-6 text-center">
-                  <div className="text-sm text-[#4a5a75]">No recent FAR changes affecting your profile</div>
-                  <p className="text-xs text-[#4a5a75] mt-1">
+                <div className="border border-[#e5e7eb] bg-white p-6 text-center">
+                  <div className="text-sm text-[#9ca3af]">No recent FAR changes affecting your profile</div>
+                  <p className="text-xs text-[#9ca3af] mt-1">
                     We monitor Federal Acquisition Regulation updates relevant to your certifications.
                   </p>
                 </div>
@@ -199,20 +199,20 @@ export default function CompliancePage() {
 
               {/* CMMC Tracker */}
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-3">
+                <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
                   CMMC Readiness
                 </h2>
-                <div className="border border-[#1e2535] bg-[#0d1018] p-5">
+                <div className="border border-[#e5e7eb] bg-white p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-[#e8edf8]">Target Level</span>
+                    <span className="text-sm text-[#111827]">Target Level</span>
                     <span className="text-sm font-mono text-[#3b82f6]">
                       {organization.plan === "team" ? "Level 2" : "Level 1"}
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-[#111520] mb-2">
+                  <div className="w-full h-2 bg-[#f8f9fb] mb-2">
                     <div className="h-full bg-[#3b82f6] w-0 transition-all" />
                   </div>
-                  <p className="text-xs text-[#4a5a75]">
+                  <p className="text-xs text-[#9ca3af]">
                     Complete your CMMC assessment in Settings to track readiness.
                   </p>
                 </div>
