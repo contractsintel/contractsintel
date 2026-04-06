@@ -89,7 +89,7 @@ We respectfully request immediate processing and payment of this invoice, along 
 Please contact us if there are any questions regarding this invoice or if additional documentation is needed to process payment.
 
 Respectfully,
-${organization.name || "[Your Company Name]"}`;
+${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}`;
 
     setDemandLetter(letter);
 

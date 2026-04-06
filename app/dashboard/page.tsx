@@ -166,7 +166,7 @@ export default function DashboardPage() {
     day: "numeric",
   });
 
-  const displayName = organization.name || "there";
+  const displayName = ((organization.name || "there").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "));
 
   return (
     <div>

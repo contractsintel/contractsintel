@@ -44,7 +44,7 @@ export function TopNav({
       </Link>
 
       <div className="flex items-center gap-4">
-        <span className="text-sm text-[#4b5563] hidden md:block">{companyName}</span>
+        <span className="text-sm text-[#4b5563] hidden md:block" style={{textTransform:"capitalize"}}>{companyName}</span>
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -57,7 +57,7 @@ export function TopNav({
               <div className="fixed inset-0" onClick={() => setDropdownOpen(false)} />
               <div className="absolute right-0 mt-2 w-56 border border-[#e5e7eb] bg-white shadow-xl z-50">
                 <div className="px-4 py-3 border-b border-[#e5e7eb]">
-                  <p className="text-sm text-[#111827]">{userName ?? "User"}</p>
+                  <p className="text-sm text-[#111827]" style={{textTransform:"capitalize"}}>{userName ?? "User"}</p>
                   <p className="text-xs text-[#9ca3af]">{userEmail}</p>
                 </div>
                 <Link

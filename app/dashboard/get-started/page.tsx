@@ -822,7 +822,7 @@ export default function GetStartedPage() {
         <div>
           <h1 className="text-2xl font-serif text-[#111827]">Get Started</h1>
           <p className="text-sm text-[#4b5563] mt-1">
-            Welcome to ContractsIntel, {organization.name}. Here is everything
+            Welcome to ContractsIntel, {(organization.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}. Here is everything
             you need to get up and running.
           </p>
         </div>
