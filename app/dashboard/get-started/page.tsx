@@ -4,7 +4,7 @@ import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { isDiscovery, isBdProOrHigher, isTeam } from "@/lib/feature-gate";
+import { isTrialActive } from "@/lib/feature-gate";
 import { HelpButton } from "../help-panel";
 import { ProductTour } from "../tour";
 
@@ -341,563 +341,307 @@ function MockVehicleAlerts() {
 // ─── Product Guide Sections ──────────────────────────────────────────────
 
 interface GuideSection {
+  num: string;
   id: string;
   title: string;
-  tier: "all" | "bd_pro" | "team";
-  content: React.ReactNode;
+  maxGuideIndex: number; // Discovery: 5, BD Pro: 11, Team: 16
+  whatItDoes: string;
+  whyItMatters: string;
+  howToUseIt: string[];
+  tips: string;
 }
 
-function guide1(): GuideSection {
-  return {
+const ALL_GUIDES: GuideSection[] = [
+  {
+    num: "01",
     id: "daily-digest",
     title: "Daily Digest & Opportunity Matching",
-    tier: "all",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Every night while you sleep, ContractsIntel scans over 35,000 government procurement websites looking for new contract opportunities. It checks each one against your specific certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes (the government&apos;s system for classifying what your business does). By 7am, a ranked list of your best matches lands in your email inbox and on your dashboard.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Most small contractors check SAM.gov manually every few days. Studies show this means you miss 68% of eligible opportunities — contracts that are set aside specifically for businesses with your certifications. A single missed contract could be worth $150,000 to $2,000,000. This product makes sure you never miss one again.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Check your email every morning.</strong> Your digest arrives at 7am. Open it to see your top 10 matched opportunities ranked by fit score (0 to 100). The higher the score, the better the match for your business.
-            </p>
-            <MockDigestEmail />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Review the recommendations.</strong> Each opportunity has a recommendation:
-            </p>
-            <ul className="space-y-1 text-sm text-[#8b9ab5] ml-4">
-              <li><span className="text-[#22c55e] font-medium">BID</span> (green) — This is a strong match. You should seriously consider submitting a proposal.</li>
-              <li><span className="text-[#f59e0b] font-medium">MONITOR</span> (yellow) — Keep watching this one. It might become a better fit as more details are released.</li>
-              <li><span className="text-[#4a5a75] font-medium">SKIP</span> (gray) — This does not match your strengths. Do not waste time on it.</li>
-            </ul>
-            <MockOpportunityCard />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Take action.</strong> Click <strong className="text-[#e8edf8]">&quot;Track&quot;</strong> to save an opportunity to your Pipeline. Click <strong className="text-[#e8edf8]">&quot;Bid&quot;</strong> when you decide to pursue it. Click <strong className="text-[#e8edf8]">&quot;Skip&quot;</strong> to remove it from your feed.
-            </p>
-            <MockActionButtons />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Use the filters.</strong> Filter your opportunities by certification type, agency, minimum match score, or deadline. For example, if you only want to see SDVOSB set-asides closing in the next two weeks, set those filters and everything else disappears.
-            </p>
-            <MockFilterBar />
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Focus on opportunities scoring 80 or higher first. These are your strongest matches and where you should spend your bid preparation time.</li>
-            <li>Check the &quot;Urgent&quot; counter daily. Opportunities closing within 7 days need immediate attention or you will miss them.</li>
-            <li>Update your NAICS codes in Settings whenever you add new capabilities. Better codes mean better matches.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide2(): GuideSection {
-  return {
-    id: "pipeline",
+    maxGuideIndex: 5,
+    whatItDoes:
+      "Every night, ContractsIntel scans government procurement websites for new contract opportunities. It checks each one against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes. By 7am, a ranked list of your best matches lands in your email inbox with scores and recommendations.",
+    whyItMatters:
+      "Most small contractors check SAM.gov manually every few days. Studies show this means you miss 68% of eligible opportunities. A single missed contract could be worth $150,000 to $2,000,000. This product makes sure you never miss one again.",
+    howToUseIt: [
+      "Check your email every morning -- your digest arrives at 7am with your top 10 matches.",
+      "Review the match scores -- higher means a better fit for your business.",
+      "Read the AI recommendation -- BID (green) means go for it, MONITOR (yellow) means watch it, SKIP (gray) means don't waste time.",
+      "Click Track to save an opportunity to your Pipeline.",
+      "Click Mark as Bidding when you decide to pursue it.",
+      "Use the filters on the Dashboard to narrow by certification, agency, or deadline.",
+    ],
+    tips: "Focus on opportunities scoring 80 or higher. Check the Urgent count daily -- those close within 7 days. The AI also identifies who currently holds the contract so you know your competition.",
+  },
+  {
+    num: "02",
+    id: "pipeline-tracker",
     title: "Pipeline Tracker",
-    tier: "all",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The Pipeline Tracker organizes every government contract opportunity you are pursuing into clear stages. Think of it like a kanban board (a visual board with columns) where each column represents how far along you are in the bidding process. You can see at a glance what needs attention today.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Most small contractors track their bids in spreadsheets or their heads. This leads to missed deadlines and lost revenue. The average small government contractor pursues 8 to 15 opportunities at a time. Without a system, things fall through the cracks. The Pipeline makes sure nothing gets lost and shows you your win rate over time.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Add opportunities from your dashboard.</strong> When you click <strong className="text-[#e8edf8]">&quot;Track&quot;</strong> or <strong className="text-[#e8edf8]">&quot;Bid&quot;</strong> on any opportunity card, it automatically appears in your Pipeline.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Move opportunities through stages.</strong> Use the dropdown on each card to move it between Monitoring, Preparing Bid, Submitted, Won, and Lost. The stages match a typical government bid lifecycle.
-            </p>
-            <MockPipeline />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Mark wins and losses.</strong> When you win a contract, click <strong className="text-[#e8edf8]">&quot;Mark as Won&quot;</strong> and enter the award amount. ContractsIntel will automatically create a delivery dashboard with milestones and start a past performance record. When you lose, enter the winner and the reason — this data helps you improve over time.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Review your pipeline stats.</strong> The top of the Pipeline page shows your total pipeline value, number of active bids, and your win rate. A healthy win rate for small government contractors is 20% to 40%.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Always record why you lost a bid. After 10 to 20 recorded losses, you will start seeing patterns — maybe you lose on price at certain agencies or need stronger past performance in a specific NAICS code.</li>
-            <li>Review your pipeline at least once a week. Move stale opportunities to &quot;Lost&quot; so your pipeline value stays accurate.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide3(): GuideSection {
-  return {
-    id: "compliance",
+    maxGuideIndex: 5,
+    whatItDoes:
+      "Your Pipeline organizes every opportunity you're pursuing into stages: Monitoring, Preparing Bid, Submitted, Won, and Lost. It gives you a clear view of your entire business development pipeline with total values and win rates.",
+    whyItMatters:
+      "Without a pipeline, you lose track of what you're bidding on and what's due when. Most small contractors manage this in spreadsheets and miss deadlines. The Pipeline keeps everything organized and automatically creates records when you win.",
+    howToUseIt: [
+      "Track opportunities from your Dashboard -- they appear in the Monitoring column.",
+      "Move cards to Preparing Bid when you start working on a proposal.",
+      "Move to Submitted after you send your proposal.",
+      "When you win, enter the award amount -- your delivery dashboard and past performance record are created automatically.",
+      "When you lose, enter the reason -- this data helps you improve over time.",
+    ],
+    tips: "Your win rate is shown at the top. A healthy win rate for small contractors is 20-40%. Always record why you lost -- patterns emerge over time.",
+  },
+  {
+    num: "03",
+    id: "compliance-monitor",
     title: "Compliance Monitor",
-    tier: "all",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The Compliance Monitor tracks every government regulation, certification, and registration that affects your ability to bid on and win federal contracts. It gives you a health score from 0 to 100 so you know at a glance if anything needs attention. It also watches for changes to the Federal Acquisition Regulation (FAR) — the massive set of rules that govern all government purchasing.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            One lapsed SAM.gov registration means you cannot bid on any federal contract until it is renewed. One missed certification renewal means you lose your set-aside eligibility (the advantage that reserves contracts just for businesses like yours). These mistakes happen all the time and they cost small businesses hundreds of thousands of dollars in lost revenue.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Check your health score.</strong> Open the Compliance page and look at your score. Green (80 to 100) means you are in good shape. Yellow (50 to 79) means something needs attention soon. Red (below 50) means act immediately.
-            </p>
-            <MockComplianceDashboard />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Review the deadline list.</strong> Each compliance item shows a color-coded status. Red items are due within 30 days. Yellow items are due within 90 days. Green items are current and do not need action yet.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Act on alerts.</strong> When you get a compliance alert email, click through to the Compliance page and follow the instructions. Most items link directly to the government website where you need to take action (like SAM.gov for registration renewal).
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Track your CMMC status.</strong> CMMC (Cybersecurity Maturity Model Certification) is a requirement for most Department of Defense contracts. Set your target level in Settings and the system tracks your progress toward assessment readiness.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Set your SAM.gov registration to auto-renew, but still monitor it here. Auto-renew sometimes fails and you will not know until you try to bid.</li>
-            <li>Read FAR change alerts carefully. A new rule might require changes to your proposal templates or business processes.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide4(): GuideSection {
-  return {
-    id: "calendar",
+    maxGuideIndex: 5,
+    whatItDoes:
+      "Tracks every compliance deadline that could affect your ability to bid on or keep government contracts. It monitors your SAM.gov registration, certification renewals, CMMC requirements, and changes to federal acquisition regulations (FAR). Your health score (0-100) shows your overall compliance status at a glance.",
+    whyItMatters:
+      "One lapsed SAM.gov registration means you can't get paid on an active contract. One missed certification renewal means you can't bid on set-aside contracts. One FAR change you didn't catch means your proposal language is wrong. ContractsIntel watches all of this so you don't have to.",
+    howToUseIt: [
+      "Check your health score weekly -- anything below 80 needs attention.",
+      "Red items are due within 30 days -- act on these immediately.",
+      "Orange items are due within 90 days -- start planning.",
+      "Review FAR change alerts -- they tell you what changed and what to update in your proposals.",
+      "Check your CMMC status if you work with the Department of Defense.",
+    ],
+    tips: "A score below 80 means something needs your attention soon. Set up Google Calendar sync so deadline reminders appear on your phone.",
+  },
+  {
+    num: "04",
+    id: "google-calendar-sync",
     title: "Google Calendar Sync",
-    tier: "all",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Calendar Sync pushes every important deadline from ContractsIntel directly to your Google Calendar. Bid response deadlines, compliance due dates, contract milestones, and meeting reminders all show up on your phone and desktop calendar with automatic reminders.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Government contracting runs on deadlines. A proposal submitted one minute after the deadline is automatically rejected — no exceptions. Calendar sync means every critical date is on your phone with push notifications. Even if you forget to check the dashboard, your calendar will remind you.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Go to Settings.</strong> Click <strong className="text-[#e8edf8]">&quot;Settings&quot;</strong> in the sidebar, scroll down to the Google Calendar section, and click <strong className="text-[#e8edf8]">&quot;Connect Google Calendar.&quot;</strong>
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Authorize access.</strong> Google will ask you to allow ContractsIntel to create calendar events. Click &quot;Allow.&quot; This only gives us permission to add events — we cannot read your existing calendar.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Choose what to sync.</strong> You can toggle which types of deadlines sync to your calendar: bid deadlines, compliance deadlines, contract milestones, and meeting reminders.
-            </p>
-            <MockCalendarSync />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: To disconnect,</strong> go back to Settings and click <strong className="text-[#e8edf8]">&quot;Disconnect Calendar.&quot;</strong> All ContractsIntel events will be removed from your calendar.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Connect your calendar on day one. It takes 30 seconds and you will never miss a deadline.</li>
-            <li>If you use a shared team calendar, connect that one instead of your personal calendar so everyone on your team sees the deadlines.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide5(): GuideSection {
-  return {
-    id: "proposals",
-    title: "AI Proposal Drafts",
-    tier: "bd_pro",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The AI Proposal Drafts tool reads a government solicitation (the official document describing what the government wants to buy) and writes a first draft of your proposal. It creates three sections: your Technical Approach (how you will do the work), Past Performance narrative (proof you have done similar work before), and Executive Summary (a short overview for evaluators).
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Writing a government proposal from scratch takes 20 to 40 hours for a typical small business. That is time you are not spending on delivery or business development. The AI draft cuts that to 6 to 8 hours of review and polish. For a company bidding on 5 to 10 contracts a year, that is hundreds of hours saved.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Mark an opportunity as &quot;Bidding.&quot;</strong> On your Dashboard or Pipeline, click the <strong className="text-[#e8edf8]">&quot;Bid&quot;</strong> button on any opportunity you want to pursue.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Go to Proposals.</strong> Click <strong className="text-[#e8edf8]">&quot;Proposals&quot;</strong> in the sidebar. You will see the opportunity listed. Click <strong className="text-[#e8edf8]">&quot;Generate Draft.&quot;</strong>
-            </p>
-            <MockProposalDraft />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Review the three tabs.</strong> Switch between Technical Approach, Past Performance, and Executive Summary. Each section is tailored to the specific solicitation requirements and your company profile.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Regenerate with guidance.</strong> If the draft needs a different focus, type specific instructions in the Guidance field (for example, &quot;Emphasize our cybersecurity experience&quot;) and click <strong className="text-[#e8edf8]">&quot;Regenerate.&quot;</strong>
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 5: Copy or download.</strong> Use the <strong className="text-[#e8edf8]">&quot;Copy&quot;</strong> button to copy text to your clipboard, or <strong className="text-[#e8edf8]">&quot;Download&quot;</strong> to save as a document.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Always review and customize the draft. It is a starting point, not a finished proposal. Add your specific project examples, team bios, and pricing details.</li>
-            <li>The AI gets better at writing for your company over time as you build more past performance records in the system.</li>
-            <li>Use the Guidance field to steer the AI. Be specific: &quot;Focus on our 3 VA contracts from 2024&quot; works better than &quot;make it better.&quot;</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide6(): GuideSection {
-  return {
-    id: "past-performance",
+    maxGuideIndex: 5,
+    whatItDoes:
+      "Pushes deadlines from inside ContractsIntel to your Google Calendar. When you track opportunities, win contracts, or have compliance deadlines, they automatically show up on your phone and desktop with reminders at 14, 7, 3, and 1 day out.",
+    whyItMatters:
+      "Email alerts are awareness -- you read them and might forget. Calendar events with popup reminders on your phone mean nothing slips. This is the safety net that catches everything.",
+    howToUseIt: [
+      "Go to Settings and click Connect Google Calendar.",
+      "Sign in with your Google account and click Allow.",
+      "Choose what to sync: opportunity deadlines, contract milestones, compliance dates.",
+      "Deadlines start appearing on your calendar immediately.",
+    ],
+    tips: "Use your primary work calendar so reminders show up alongside your other meetings. You can disconnect anytime from Settings.",
+  },
+  {
+    num: "05",
+    id: "sam-profile-audit",
+    title: "SAM.gov Profile Audit",
+    maxGuideIndex: 5,
+    whatItDoes:
+      "Analyzes your SAM.gov registration and scores it from 0-100. Checks your registration status, NAICS codes, certifications, CAGE code, contact info, and entity description. Gives you specific recommendations on what to fix.",
+    whyItMatters:
+      "An incomplete SAM.gov profile means contracting officers can't find you when searching for contractors. Missing NAICS codes mean you won't match to opportunities you're qualified for. A weak profile costs you contracts you never even see.",
+    howToUseIt: [
+      "Go to the Audit page (accessible from the homepage too).",
+      "Enter your 12-character UEI number.",
+      "Review your score and category breakdown.",
+      "Follow the recommendations to improve your profile.",
+      "Re-run the audit after making changes to see your new score.",
+    ],
+    tips: "Most contractors score between 60-75. A score above 85 puts you in the top 20% of SAM.gov profiles.",
+  },
+  {
+    num: "06",
+    id: "ai-proposal-drafts",
+    title: "AI Proposal First Drafts",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "When you mark an opportunity as Bidding, the AI reads the solicitation requirements and writes three proposal sections: Technical Approach, Past Performance narrative, and Executive Summary. It tailors the draft to your company's certifications and experience.",
+    whyItMatters:
+      "Writing a government proposal from scratch takes 20-40 hours. The AI cuts that to 6-8 hours of review and polish. You respond to more opportunities in less time, which directly increases your win rate.",
+    howToUseIt: [
+      "Mark an opportunity as Bidding in your Pipeline.",
+      "Go to the Proposals page.",
+      "Click Generate Draft next to the opportunity.",
+      "Wait 30-60 seconds while the AI writes.",
+      "Review the three tabs: Technical Approach, Past Performance, Executive Summary.",
+      "Copy the text or download as a document, then customize it with your specific details.",
+    ],
+    tips: "Use the Guidance field when regenerating to give specific instructions like \"focus more on our cybersecurity experience.\" The AI gets better at writing for your company as you build more past performance records.",
+  },
+  {
+    num: "07",
+    id: "past-performance-builder",
     title: "Past Performance Builder",
-    tier: "bd_pro",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The Past Performance Builder creates a library of every contract you have delivered. It tracks your work month by month and uses that data to generate Past Performance Questionnaire (PPQ) narratives — the formatted descriptions of your work that evaluators read when scoring your proposals.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Past performance is one of the most important evaluation factors in federal proposals. Evaluators want proof that you have done similar work before and done it well. Most small contractors scramble to write these narratives from memory when a proposal is due. With ContractsIntel, you log your work every month (5 minutes) and the AI writes your narratives on demand.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Records are created automatically.</strong> When you mark an opportunity as &quot;Won&quot; in your Pipeline, a past performance record is created. You can also create records manually for contracts you had before joining ContractsIntel.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Log your performance monthly.</strong> Each month you get an email reminder. Click through to log what you delivered: deliverables completed, milestones met, issues resolved, and any client feedback. This takes about 5 minutes.
-            </p>
-            <MockPastPerformance />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Generate PPQ narratives.</strong> When you need past performance text for a proposal, click <strong className="text-[#e8edf8]">&quot;Generate PPQ Narrative.&quot;</strong> The AI creates a formatted narrative from your logged data — ready to paste into your proposal.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Search by NAICS or agency.</strong> When writing a proposal, search your library to find the most relevant past performance. For example, if you are bidding on a VA IT contract, search for &quot;VA&quot; and &quot;541512&quot; to find your best matching records.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Log your performance every month without fail. The more data the AI has, the stronger and more specific your narratives will be. Three months of detailed logs produce much better narratives than one hasty entry.</li>
-            <li>Include specific numbers whenever possible: &quot;Resolved 247 helpdesk tickets with a 98% satisfaction rating&quot; is much stronger than &quot;provided IT support.&quot;</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide7(): GuideSection {
-  return {
-    id: "contracts",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "Stores records of every contract you've delivered, tracks monthly performance, and generates ready-to-use narratives for future proposals. Records are created automatically when you win a contract in the Pipeline.",
+    whyItMatters:
+      "Past performance is one of the highest-weighted evaluation factors in federal proposals. Most contractors scramble to write past performance narratives at proposal time. With ContractsIntel, you log monthly and the narratives write themselves.",
+    howToUseIt: [
+      "When you win a contract, a record is created automatically.",
+      "Each month, click Log This Month and enter what you delivered (5 minutes).",
+      "When you need past performance for a proposal, click Generate PPQ.",
+      "The AI creates formatted narratives from your logged data.",
+      "Copy and paste directly into your proposal.",
+    ],
+    tips: "Log your performance every month, even if it feels repetitive. The more data the AI has, the stronger your narratives. A 12-month log produces much better narratives than a 3-month log.",
+  },
+  {
+    num: "08",
+    id: "contract-delivery-dashboard",
     title: "Contract Delivery Dashboard",
-    tier: "bd_pro",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The Contract Delivery Dashboard tracks everything that happens after you win a contract. It monitors every deliverable deadline, monthly report, quarterly review, invoice, and option period (the government&apos;s right to extend your contract for additional years). It also tracks whether the government is paying you on time.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Winning a contract is only the beginning. A missed deliverable or late report can result in a poor CPARS rating, which makes it harder to win future contracts. And if the government is late paying you, you are legally entitled to interest under the Prompt Payment Act — but only if you track it and file a claim. For example, if you win a $500,000 VA contract, ContractsIntel automatically creates a delivery dashboard with monthly report deadlines for the next 12 months.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Win a contract.</strong> When you mark an opportunity as &quot;Won&quot; in the Pipeline, the delivery dashboard is created automatically with standard milestones.
-            </p>
-            <MockContractDashboard />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Add custom milestones.</strong> Click <strong className="text-[#e8edf8]">&quot;Add Milestone&quot;</strong> to create deadlines specific to your contract, like &quot;Submit Security Plan&quot; or &quot;Complete Phase 1 Testing.&quot;
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Track invoices.</strong> Enter each invoice with the amount and submission date. The system calculates the due date (30 days per the Prompt Payment Act) and alerts you if payment is late.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Flag late payments.</strong> If the government has not paid within 30 days, click <strong className="text-[#e8edf8]">&quot;Flag Late Payment.&quot;</strong> The system generates a formal Prompt Payment Act demand letter that you can send to the contracting officer.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Check this page weekly, not just when you get an alert. Staying ahead of deadlines prevents last-minute scrambles.</li>
-            <li>If a government payment is more than 15 days late, flag it right away. You are legally entitled to interest and the government takes these notices seriously.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide8(): GuideSection {
-  return {
-    id: "cpars",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "Tracks every deliverable, report, invoice, and option period for your active contracts. Sends alerts at 14, 7, 3, and 1 day before each deadline. Flags late government payments under the Prompt Payment Act.",
+    whyItMatters:
+      "One missed deliverable can end a contract relationship. One late invoice you didn't follow up on is money the government legally owes you. This dashboard makes sure nothing slips and nothing goes unpaid.",
+    howToUseIt: [
+      "Contracts appear automatically when you win in the Pipeline.",
+      "Review your milestone timeline each week.",
+      "Add custom milestones for deliverables specific to your contract.",
+      "When you submit an invoice, enter the amount and date -- the system tracks the 30-day payment window.",
+      "If the government is late paying, click Flag Late Payment to generate a Prompt Payment Act demand letter.",
+    ],
+    tips: "Check this page weekly, not just when you get an alert. If a payment is more than 15 days late, flag it -- you're legally entitled to interest.",
+  },
+  {
+    num: "09",
+    id: "state-local-monitoring",
+    title: "State & Local Monitoring",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "Monitors procurement portals across all 50 states plus local government opportunities. Matches state and local contracts to your NAICS codes just like the federal matching engine.",
+    whyItMatters:
+      "State and local contracts are often less competitive than federal ones. Many small contractors ignore this $500 billion market. Adding state and local to your pipeline diversifies your revenue.",
+    howToUseIt: [
+      "Your matched state and local opportunities appear in the same daily digest alongside federal ones.",
+      "They're tagged with the state/locality name so you can filter them.",
+      "Track and bid on them using the same Pipeline workflow.",
+    ],
+    tips: "Start with your home state -- you'll have a geographic advantage. State contracts often have faster award timelines than federal.",
+  },
+  {
+    num: "10",
+    id: "agency-relationship-mapping",
+    title: "Agency Relationship Mapping",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "Tracks contracting officers, program managers, and decision-makers at every agency you interact with. Builds a relationship map over time as you bid and win contracts.",
+    whyItMatters:
+      "Government contracting is relationship-driven. Knowing who the contracting officer is, what they've bought before, and how they evaluate proposals gives you a real advantage.",
+    howToUseIt: [
+      "Contact information is pulled automatically from SAM.gov opportunity data.",
+      "When you interact with agency personnel, add notes to their profile.",
+      "Before bidding, check if you've worked with anyone at that agency before.",
+      "Reference prior relationships in your proposals where appropriate.",
+    ],
+    tips: "The best time to build agency relationships is before there's an opportunity. Use this tool to identify agencies where you have connections.",
+  },
+  {
+    num: "11",
+    id: "weekly-pipeline-report",
+    title: "Weekly Pipeline Report",
+    maxGuideIndex: 11,
+    whatItDoes:
+      "Every Monday morning, you receive an email summarizing your pipeline: total value by stage, upcoming deadlines, win rate trends, and recommended actions.",
+    whyItMatters:
+      "It's easy to lose track of the big picture when you're focused on individual bids. The weekly report forces you to step back and see your entire pipeline at a glance.",
+    howToUseIt: [
+      "Check your email every Monday morning.",
+      "Review the pipeline summary -- are you tracking enough opportunities?",
+      "Check deadlines for the coming week.",
+      "Act on the recommended actions.",
+    ],
+    tips: "If your pipeline total value is less than 3x your annual revenue target, you need to track more opportunities.",
+  },
+  {
+    num: "12",
+    id: "cpars-monitor",
     title: "CPARS Monitor",
-    tier: "team",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            CPARS (Contractor Performance Assessment Reporting System) is the government&apos;s official system for rating your work. This tool tracks all your CPARS ratings in one place, shows trends over time, and generates professional responses when you receive a low rating.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            CPARS ratings follow your company for years. A single &quot;Marginal&quot; or &quot;Unsatisfactory&quot; rating can cost you future contracts because evaluators check your CPARS history when scoring proposals. On the other hand, &quot;Exceptional&quot; and &quot;Very Good&quot; ratings are powerful proof of your capabilities. Managing these ratings actively is critical to long-term success.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Enter your ratings.</strong> When you receive a CPARS evaluation from a contracting officer, enter each category rating: Quality, Schedule, Cost Control, Management, and Small Business Subcontracting.
-            </p>
-            <MockCpars />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: View trends.</strong> The system tracks your ratings over time so you can see if performance is improving or declining in any category.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Respond to low ratings.</strong> If any rating comes in below Satisfactory, click <strong className="text-[#e8edf8]">&quot;Generate Response.&quot;</strong> The AI writes a professional response citing evidence from your performance logs. You have 14 calendar days to respond.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Always respond to Marginal or Unsatisfactory ratings, even if you disagree. A well-written response stays in the permanent record and future evaluators will read it.</li>
-            <li>Reference your Exceptional ratings in proposals. They are your strongest proof of quality work.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide9(): GuideSection {
-  return {
-    id: "network",
+    maxGuideIndex: 16,
+    whatItDoes:
+      "Tracks your CPARS (Contractor Performance Assessment Reporting System) ratings -- the government's report card on your work. When you receive a rating below Satisfactory, the AI generates a formal response draft.",
+    whyItMatters:
+      "CPARS ratings directly affect your ability to win future contracts. A Marginal or Unsatisfactory rating can follow you for years. A well-written response stays in the record and can offset the damage.",
+    howToUseIt: [
+      "When you receive a CPARS evaluation, enter the ratings here.",
+      "Select the category (Quality, Schedule, Cost Control, etc.) and rating level.",
+      "If any rating is Marginal or Unsatisfactory, click Generate Response.",
+      "Review the AI draft, customize it, then submit through the official CPARS system.",
+    ],
+    tips: "Always respond to low ratings -- even Satisfactory ratings can benefit from a contractor response highlighting your best work. Reference your monthly performance logs as evidence.",
+  },
+  {
+    num: "13",
+    id: "subcontracting-network",
     title: "Subcontracting Network",
-    tier: "team",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            The Subcontracting Network matches you with large prime contractors (companies like Lockheed Martin, Booz Allen, or CBRE) who need certified small businesses as teaming partners on government bids. It works like a matchmaking service — primes post what they need and the system matches against your certifications and capabilities.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Large prime contractors are required by law to subcontract a percentage of their work to certified small businesses. This creates a massive market for companies like yours. But finding these opportunities normally requires networking, cold calls, and attending industry days. The Network brings these opportunities directly to you, matched to your specific certifications and NAICS codes.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Browse teaming opportunities.</strong> Open the Network page to see prime contractors looking for businesses with your certifications.
-            </p>
-            <MockNetwork />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Express interest.</strong> Click <strong className="text-[#e8edf8]">&quot;Express Interest&quot;</strong> on any match. The prime sees your company profile, certifications, and past performance — everything they need to decide.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Post your own needs.</strong> If you are acting as a prime contractor and need small business subcontractors, click <strong className="text-[#e8edf8]">&quot;Post Teaming Need&quot;</strong> to find matches.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>Respond within 24 hours. Primes often select from the first 5 to 10 responses they receive.</li>
-            <li>A strong past performance library makes you much more attractive as a teaming partner. Log your monthly performance to build it up.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide10(): GuideSection {
-  return {
-    id: "competitors",
+    maxGuideIndex: 16,
+    whatItDoes:
+      "Connects you with prime contractors looking for certified small businesses to join their teams on government bids. You get matched automatically based on your certifications and NAICS codes.",
+    whyItMatters:
+      "Large primes need certified subs to meet their small business subcontracting goals. This is inbound business development -- primes come to you instead of you cold-calling them. One teaming relationship can generate years of subcontract revenue.",
+    howToUseIt: [
+      "Browse teaming opportunities that match your certifications.",
+      "Check the match score -- higher means better fit.",
+      "Click Express Interest to notify the prime contractor.",
+      "The prime sees your profile and past performance.",
+      "If you're a prime looking for subs, post your own teaming need.",
+    ],
+    tips: "Respond quickly -- primes often select from the first 5-10 responses. A strong past performance library makes you much more attractive as a teaming partner.",
+  },
+  {
+    num: "14",
+    id: "competitor-intelligence",
     title: "Competitor Intelligence",
-    tier: "team",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Competitor Intelligence automatically builds profiles of the companies you compete against in government bids. It tracks your win/loss record against each competitor, identifies their patterns (which agencies they win at, what they focus on), and generates AI analysis to help you compete more effectively.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Knowing your competition is one of the biggest advantages in government contracting. If you know the incumbent tends to win on past performance, you can strengthen that section of your proposal. If you know a competitor always underbids, you can focus on technical quality instead. This data turns guesswork into strategy.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Track your wins and losses.</strong> Competitor profiles are built automatically when you record bid outcomes in the Pipeline. Always enter the winner&apos;s name when you lose a bid.
-            </p>
-            <MockCompetitors />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: View competitor profiles.</strong> Each profile shows the competitor&apos;s primary agencies, NAICS codes, and your win/loss record against them.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Read the AI analysis.</strong> Click <strong className="text-[#e8edf8]">&quot;View Analysis&quot;</strong> for AI-generated insights about competing against this company, including strategies for your next proposal.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 4: Add competitors manually.</strong> If you know a competitor from industry events or previous bids, click <strong className="text-[#e8edf8]">&quot;Add Competitor&quot;</strong> to start tracking them before your next encounter.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>The more bids you track (both wins and losses), the more useful the intelligence becomes. Even losses are valuable data.</li>
-            <li>Before writing a proposal, check if you have competed against the incumbent before. Your competitor profile might reveal their weaknesses.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
-
-function guide11(): GuideSection {
-  return {
-    id: "vehicle-alerts",
+    maxGuideIndex: 16,
+    whatItDoes:
+      "Automatically builds profiles of companies you compete against. Tracks your win/loss record against each competitor and identifies their patterns -- which agencies they win at, what NAICS codes they focus on, and whether they tend to win on price or technical merit.",
+    whyItMatters:
+      "Knowing your competition is half the battle. If you know a competitor wins on price at a specific agency, you can adjust your strategy. If you know they have weak past performance in a certain area, you can emphasize your strength there.",
+    howToUseIt: [
+      "Competitor profiles are built automatically when you record wins and losses in your Pipeline.",
+      "Enter the winner's name when you lose a bid.",
+      "View encounter history to see patterns.",
+      "Click Analyze for AI-generated competitive strategy recommendations.",
+    ],
+    tips: "The more bids you track -- wins AND losses -- the more useful this data becomes. Before writing a proposal, always check if you've competed against the incumbent before.",
+  },
+  {
+    num: "15",
+    id: "loss-analysis-debriefs",
+    title: "Loss Analysis & Debriefs",
+    maxGuideIndex: 16,
+    whatItDoes:
+      "When you lose a bid, the AI analyzes why and generates specific recommendations for next time. It looks at the opportunity details, your approach, the loss reason, and winner information to identify what to change.",
+    whyItMatters:
+      "Most contractors lose bids and move on without understanding why. The same mistakes repeat. Loss analysis turns every loss into a lesson that makes your next proposal stronger.",
+    howToUseIt: [
+      "When you move an opportunity to Lost in your Pipeline, enter the loss reason and winner name.",
+      "The AI automatically generates a loss analysis.",
+      "Review the \"Why you likely lost\" section.",
+      "Read the \"What to do differently\" recommendations.",
+      "Check the loss trends view to spot patterns across multiple bids.",
+    ],
+    tips: "Be honest when entering loss reasons -- \"price\" vs \"technical\" vs \"past performance\" helps the AI give better advice. If you lost 3 times at the same agency on price, the AI will tell you.",
+  },
+  {
+    num: "16",
+    id: "contract-vehicle-alerts",
     title: "Contract Vehicle Alerts",
-    tier: "team",
-    content: (
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">What it does</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Contract Vehicle Alerts monitors government-wide contract vehicles (like the GSA Schedule and GWACs) and notifies you when application windows open. A contract vehicle is like a pre-approved list — once you are on it, agencies can buy from you directly without a full competition. Getting on the right vehicle can multiply your revenue.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Why it matters</h4>
-          <p className="text-sm text-[#8b9ab5] leading-relaxed">
-            Contract vehicles account for over 40% of all federal procurement spending. If you are not on the right vehicles, you are invisible to a huge portion of the market. But vehicle on-ramp windows (when they accept new applications) are unpredictable and easy to miss. A missed on-ramp could mean waiting 2 to 5 years for the next chance. This tool makes sure you never miss one.
-          </p>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">How to use it</h4>
-          <div className="space-y-4">
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 1: Review vehicle alerts.</strong> When a vehicle on-ramp opens that matches your NAICS codes, you will see an alert on your dashboard and receive an email notification.
-            </p>
-            <MockVehicleAlerts />
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 2: Check your eligibility.</strong> Each alert shows whether your current certifications and NAICS codes qualify you for the vehicle.
-            </p>
-            <p className="text-sm text-[#8b9ab5] leading-relaxed">
-              <strong className="text-[#e8edf8]">Step 3: Begin your application.</strong> The alert links to the official application page and includes the deadline. Vehicle applications typically take 30 to 90 days to prepare, so start early.
-            </p>
-          </div>
-        </div>
-        <div>
-          <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">Tips</h4>
-          <ul className="space-y-2 text-sm text-[#8b9ab5]">
-            <li>The GSA Schedule is the most commonly used vehicle. If you do not have one yet, apply at the first opportunity — it opens doors to thousands of agencies.</li>
-            <li>GWACs (Government-Wide Acquisition Contracts) like Alliant 2 and VETS 2 are harder to get on but extremely valuable for IT companies.</li>
-          </ul>
-        </div>
-      </div>
-    ),
-  };
-}
+    maxGuideIndex: 16,
+    whatItDoes:
+      "Monitors major government contract vehicles like GSA MAS, OASIS+, CIO-SP4, and Alliant 3. When a vehicle opens for new vendors (called an \"on-ramp\"), you get alerted if your NAICS codes and certifications qualify.",
+    whyItMatters:
+      "Being on a contract vehicle gives you access to task orders worth billions that non-vehicle holders can't bid on. Missing an on-ramp means waiting years for the next one. These windows are rare and time-sensitive.",
+    howToUseIt: [
+      "Your eligible vehicles are shown automatically based on your NAICS codes.",
+      "You see the status of each vehicle (Open or Closed).",
+      "When an on-ramp opens, you get an email alert with the deadline and application link.",
+      "The system tracks which vehicles you're on and which you should apply for.",
+    ],
+    tips: "GSA MAS (Multiple Award Schedule) is the most common starting point -- it's almost always open for new vendors. Start there if you're not on any vehicle yet.",
+  },
+];
 
 // ─── Main Page Component ────────────────────────────────────────────────
 
 export default function GetStartedPage() {
   const { organization, user } = useDashboard();
   const supabase = createClient();
-  const discovery = isDiscovery(organization.plan);
-  const bdPro = isBdProOrHigher(organization.plan);
-  const team = isTeam(organization.plan);
+  const trialActive = isTrialActive(organization);
 
   const [checklist, setChecklist] = useState({
     account_created: true,
@@ -1036,6 +780,7 @@ export default function GetStartedPage() {
   ];
 
   // Add proposal item for BD Pro+
+  const bdPro = trialActive || organization.plan === "bd_pro" || organization.plan === "team";
   if (bdPro) {
     items.push({
       key: "first_proposal_generated",
@@ -1054,26 +799,16 @@ export default function GetStartedPage() {
   const progressPct = Math.round((completedCount / totalItems) * 100);
 
   // Build guides based on tier
-  const allGuides = [
-    guide1(),
-    guide2(),
-    guide3(),
-    guide4(),
-    guide5(),
-    guide6(),
-    guide7(),
-    guide8(),
-    guide9(),
-    guide10(),
-    guide11(),
-  ];
+  // During trial: all 16. After trial: Discovery 1-5, BD Pro 1-11, Team 1-16
+  const maxGuide = trialActive
+    ? 16
+    : organization.plan === "team"
+      ? 16
+      : organization.plan === "bd_pro"
+        ? 11
+        : 5;
 
-  const visibleGuides = allGuides.filter((g) => {
-    if (g.tier === "all") return true;
-    if (g.tier === "bd_pro") return bdPro;
-    if (g.tier === "team") return team;
-    return false;
-  });
+  const visibleGuides = ALL_GUIDES.slice(0, maxGuide);
 
   return (
     <div>
@@ -1185,54 +920,101 @@ export default function GetStartedPage() {
 
       {/* Product Guides */}
       <div className="space-y-4">
-        {visibleGuides.map((guide, index) => (
-          <div
-            key={guide.id}
-            className="border border-[#1e2535] bg-[#0d1018]"
-          >
-            <button
-              onClick={() =>
-                setExpandedGuide(
-                  expandedGuide === guide.id ? null : guide.id
-                )
-              }
-              className="w-full flex items-center justify-between p-5 text-left hover:bg-[#111520] transition-colors"
+        {visibleGuides.map((guide) => {
+          const isOpen = expandedGuide === guide.id;
+          const tierLabel =
+            guide.maxGuideIndex <= 5
+              ? null
+              : guide.maxGuideIndex <= 11
+                ? "BD Pro"
+                : "Team";
+          return (
+            <div
+              key={guide.id}
+              className="border border-[#1e2535] bg-[#0d1018]"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-[#4a5a75]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3 className="text-sm font-medium text-[#e8edf8]">
-                  {guide.title}
-                </h3>
-                {guide.tier !== "all" && (
-                  <span className="px-2 py-0.5 text-[10px] font-mono uppercase border border-[#2563eb]/30 text-[#3b82f6] bg-[#2563eb]/5">
-                    {guide.tier === "bd_pro" ? "BD Pro" : "Team"}
-                  </span>
-                )}
-              </div>
-              <svg
-                className={`w-4 h-4 text-[#4a5a75] transition-transform ${
-                  expandedGuide === guide.id ? "rotate-180" : ""
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
+              <button
+                onClick={() =>
+                  setExpandedGuide(isOpen ? null : guide.id)
+                }
+                className="w-full flex items-center justify-between p-5 text-left hover:bg-[#111520] transition-colors"
               >
-                <path
-                  strokeLinecap="square"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-            {expandedGuide === guide.id && (
-              <div className="px-5 pb-6 pt-2 border-t border-[#1e2535]">
-                {guide.content}
-              </div>
-            )}
-          </div>
-        ))}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-[#3b82f6]">
+                    {guide.num}
+                  </span>
+                  <h3 className="text-sm font-medium text-[#e8edf8]">
+                    {guide.title}
+                  </h3>
+                  {tierLabel && (
+                    <span className="px-2 py-0.5 text-[10px] font-mono uppercase border border-[#2563eb]/30 text-[#3b82f6] bg-[#2563eb]/5">
+                      {tierLabel}
+                    </span>
+                  )}
+                </div>
+                <svg
+                  className={`w-4 h-4 text-[#4a5a75] transition-transform ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="square"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              {isOpen && (
+                <div className="px-5 pb-6 pt-2 border-t border-[#1e2535]">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+                        What it does
+                      </h4>
+                      <p className="text-sm text-[#8b9ab5] leading-relaxed">
+                        {guide.whatItDoes}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+                        Why it matters
+                      </h4>
+                      <p className="text-sm text-[#8b9ab5] leading-relaxed">
+                        {guide.whyItMatters}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+                        How to use it
+                      </h4>
+                      <ol className="space-y-2">
+                        {guide.howToUseIt.map((step, i) => (
+                          <li key={i} className="flex gap-3 text-sm text-[#8b9ab5] leading-relaxed">
+                            <span className="text-[#3b82f6] font-mono shrink-0">
+                              {i + 1}.
+                            </span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-2">
+                        Tips
+                      </h4>
+                      <p className="text-sm text-[#8b9ab5] leading-relaxed">
+                        {guide.tips}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
