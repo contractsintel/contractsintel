@@ -70,24 +70,9 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Get-started redirect: only on first visit per session (not every click)
-    // Uses a cookie to prevent redirect loop when user clicks "Dashboard"
-    if (pathname === "/dashboard" && orgId && !request.cookies.get("ci_onboarded")) {
-      const { data: prefs } = await supabase
-        .from("user_preferences")
-        .select("default_page")
-        .eq("organization_id", orgId)
-        .single();
-
-      if (prefs?.default_page === "get-started") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/dashboard/get-started";
-        const response = NextResponse.redirect(url);
-        // Set cookie so we don't redirect again this session
-        response.cookies.set("ci_onboarded", "1", { maxAge: 60 * 60 * 24 }); // 24 hours
-        return response;
-      }
-    }
+    // Get-started redirect removed from middleware to prevent navigation issues.
+    // The auth callback handles first-login redirect to /dashboard/get-started.
+    // Users can freely click Dashboard in the sidebar to see the main dashboard.
   }
 
   return supabaseResponse;
