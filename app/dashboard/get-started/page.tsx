@@ -655,6 +655,7 @@ export default function GetStartedPage() {
   const [loading, setLoading] = useState(true);
   const [tourActive, setTourActive] = useState(false);
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ "Core Products": true });
 
   const loadChecklist = useCallback(async () => {
     // Check SAM connected
@@ -917,112 +918,89 @@ export default function GetStartedPage() {
         </button>
       </div>
 
-      {/* Quick Start Guide intro */}
+      {/* Quick Start Guide */}
       <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
-        <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
-          Quick Start Guide
-        </h2>
-        <p className="text-sm text-[#4b5563]">
-          Below: written guide for every product in your plan. Each section
-          explains what it does, why it matters, and exactly how to use it —
-          step by step.
-        </p>
+        <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">Quick Start Guide</h2>
+        <p className="text-sm text-[#4b5563]">Written guides for every product, grouped by tier. Each explains what it does, why it matters, and how to use it step by step.</p>
       </div>
 
-      {/* Product Guides */}
+      {/* Categorized Product Guides */}
       <div className="space-y-4">
-        {visibleGuides.map((guide) => {
-          const isOpen = expandedGuide === guide.id;
-          const tierLabel =
-            guide.maxGuideIndex <= 5
-              ? null
-              : guide.maxGuideIndex <= 11
-                ? "BD Pro"
-                : "Team";
+        {[
+          { label: "Core Products", badge: null, badgeColor: "", guides: visibleGuides.filter((g) => g.maxGuideIndex <= 5), defaultOpen: true },
+          { label: "Business Development Tools", badge: "BD PRO", badgeColor: "text-[#2563eb] border-[#2563eb]/30 bg-[#eff4ff]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 5 && g.maxGuideIndex <= 11), defaultOpen: false },
+          { label: "Enterprise & Intelligence", badge: "TEAM", badgeColor: "text-[#7c3aed] border-[#7c3aed]/30 bg-[#f5f3ff]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 11), defaultOpen: false },
+        ].filter((cat) => cat.guides.length > 0).map((category) => {
+          const catKey = category.label;
+          const isCatOpen = expandedCategories[catKey] ?? category.defaultOpen;
           return (
-            <div
-              key={guide.id}
-              className="border border-[#e5e7eb] bg-white"
-            >
+            <div key={catKey} className="border border-[#e5e7eb] rounded-lg overflow-hidden">
+              {/* Category header */}
               <button
-                onClick={() =>
-                  setExpandedGuide(isOpen ? null : guide.id)
-                }
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-[#f8f9fb] transition-colors"
+                onClick={() => setExpandedCategories((prev) => ({ ...prev, [catKey]: !isCatOpen }))}
+                className="w-full flex items-center justify-between px-5 py-4 bg-[#f1f5f9] hover:bg-[#e8ecf1] transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-[#3b82f6]">
-                    {guide.num}
-                  </span>
-                  <h3 className="text-sm font-medium text-[#111827]">
-                    {guide.title}
-                  </h3>
-                  {tierLabel && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono uppercase border border-[#2563eb]/30 text-[#3b82f6] bg-[#2563eb]/5">
-                      {tierLabel}
-                    </span>
+                  <h3 className="text-base font-bold text-[#111827]">{category.label}</h3>
+                  {category.badge && (
+                    <span className={`px-2 py-0.5 text-[10px] font-mono uppercase border rounded ${category.badgeColor}`}>{category.badge}</span>
                   )}
+                  <span className="text-xs text-[#9ca3af]">({category.guides.length})</span>
                 </div>
-                <svg
-                  className={`w-4 h-4 text-[#9ca3af] transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="square"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <svg className={`w-4 h-4 text-[#9ca3af] transition-transform duration-200 ${isCatOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
-              {isOpen && (
-                <div className="px-5 pb-6 pt-2 border-t border-[#e5e7eb]">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
-                        What it does
-                      </h4>
-                      <p className="text-sm text-[#4b5563] leading-relaxed">
-                        {guide.whatItDoes}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
-                        Why it matters
-                      </h4>
-                      <p className="text-sm text-[#4b5563] leading-relaxed">
-                        {guide.whyItMatters}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
-                        How to use it
-                      </h4>
-                      <ol className="space-y-2">
-                        {guide.howToUseIt.map((step, i) => (
-                          <li key={i} className="flex gap-3 text-sm text-[#4b5563] leading-relaxed">
-                            <span className="text-[#3b82f6] font-mono shrink-0">
-                              {i + 1}.
-                            </span>
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
-                        Tips
-                      </h4>
-                      <p className="text-sm text-[#4b5563] leading-relaxed">
-                        {guide.tips}
-                      </p>
-                    </div>
-                  </div>
+
+              {/* Category content */}
+              <div style={{ maxHeight: isCatOpen ? "5000px" : "0", overflow: "hidden", transition: "max-height 300ms ease" }}>
+                <div className="divide-y divide-[#e5e7eb]">
+                  {category.guides.map((guide) => {
+                    const isOpen = expandedGuide === guide.id;
+                    return (
+                      <div key={guide.id}>
+                        <button
+                          onClick={() => setExpandedGuide(isOpen ? null : guide.id)}
+                          className="w-full flex items-center justify-between px-5 py-3.5 pl-8 text-left hover:bg-[#f8f9fb] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-mono text-[#3b82f6] w-5">{guide.num}</span>
+                            <h4 className="text-sm font-medium text-[#111827]">{guide.title}</h4>
+                          </div>
+                          <svg className={`w-3.5 h-3.5 text-[#9ca3af] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {isOpen && (
+                          <div className="px-5 pl-16 pb-5 pt-1">
+                            <div className="space-y-5">
+                              <div>
+                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">What it does</h5>
+                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whatItDoes}</p>
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">Why it matters</h5>
+                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whyItMatters}</p>
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">How to use it</h5>
+                                <ol className="space-y-1.5">
+                                  {guide.howToUseIt.map((step, i) => (
+                                    <li key={i} className="flex gap-2 text-sm text-[#4b5563] leading-relaxed">
+                                      <span className="text-[#3b82f6] font-mono shrink-0">{i + 1}.</span>
+                                      <span>{step}</span>
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                              <div>
+                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">Tips</h5>
+                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.tips}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
