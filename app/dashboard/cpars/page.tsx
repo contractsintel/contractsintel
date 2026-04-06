@@ -227,13 +227,11 @@ export default function CparsPage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading ratings...</div>
       ) : ratings.length === 0 ? (
-        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
-          <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #fff1f2, #fff)", borderRadius: "16px", border: "1px solid #e11d4815"}}>
-              <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#e11d48"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-              <div className="text-[20px] font-bold text-[#0f172a] mb-2">Track your CPARS ratings</div>
-              <p className="text-sm text-[#4b5563] mb-6">When you receive a CPARS evaluation from a contracting officer, enter it here. If any rating is below Satisfactory, the AI generates a formal response draft.</p>
-              <a href="#" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#e11d48"}}>Add First Rating</a>
-          <p className="text-sm text-[#4b5563]">Add your first CPARS evaluation above.</p>
+        <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #fff1f2, #fff)", borderRadius: "16px", border: "1px solid rgba(225,29,72,0.08)"}}>
+          <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#e11d48"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+          <div className="text-[20px] font-bold text-[#0f172a] mb-2">Track your CPARS ratings</div>
+          <p className="text-sm text-[#4b5563] mb-6">When you receive a CPARS evaluation from a contracting officer, enter it here. If any rating is below Satisfactory, the AI generates a formal response draft.</p>
+          <a href="#" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#e11d48"}}>Add First Rating</a>
         </div>
       ) : (
         <div className="space-y-3">

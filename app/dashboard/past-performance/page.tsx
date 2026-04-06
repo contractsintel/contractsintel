@@ -131,15 +131,11 @@ export default function PastPerformancePage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading records...</div>
       ) : records.length === 0 ? (
-        <div className="border border-[#f0f1f3] bg-white p-12 text-center">
-          <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #fef2f2, #fff)", borderRadius: "16px", border: "1px solid #dc262615"}}>
-              <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#dc2626"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-              <div className="text-[20px] font-bold text-[#0f172a] mb-2">Your performance library starts here</div>
-              <p className="text-sm text-[#4b5563] mb-6">Win a contract in your Pipeline and a performance record is created automatically. Log monthly to build narratives that win future proposals.</p>
-              <a href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#dc2626"}}>Go to Pipeline</a>
-          <p className="text-sm text-[#4b5563]">
-            Past performance records will appear here as you win contracts.
-          </p>
+        <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #fef2f2, #fff)", borderRadius: "16px", border: "1px solid rgba(220,38,38,0.08)"}}>
+          <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#dc2626"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <div className="text-[20px] font-bold text-[#0f172a] mb-2">Your performance library starts here</div>
+          <p className="text-sm text-[#4b5563] mb-6">Win a contract in your Pipeline and a performance record is created automatically. Log monthly to build narratives that win future proposals.</p>
+          <a href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#dc2626"}}>Go to Pipeline</a>
         </div>
       ) : (
         <div className="space-y-4">
