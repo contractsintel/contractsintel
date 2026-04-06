@@ -129,6 +129,63 @@ export { STATE_PORTALS };
 // All states and territories to attempt scraping
 const ALL_STATES = STATE_PORTALS.map((p) => p.state);
 
+/**
+ * Extract all next-page URLs from HTML pagination controls.
+ * Works with common patterns: "Next" links, page=N params, numbered page links, etc.
+ */
+function followPagination(html: string, baseUrl: string): string[] {
+  const nextUrls: string[] = [];
+  const seen = new Set<string>();
+
+  // Pattern 1: <a> tags with "next", "Next", ">", ">>" text or aria-label="next"
+  const nextLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>(?:[^<]*(?:next|Next|NEXT|›|&gt;|&raquo;|>>)[^<]*)<\/a>/gi;
+  let m;
+  while ((m = nextLinkRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip invalid URLs */ }
+    }
+  }
+
+  // Pattern 1b: aria-label="next" or rel="next"
+  const ariaNextRegex = /<a[^>]+(?:aria-label="[^"]*next[^"]*"|rel="next")[^>]*href="([^"]*)"[^>]*>/gi;
+  while ((m = ariaNextRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  // Pattern 2: Numbered page links (page=2, page=3, p=2, start=20, offset=20, etc.)
+  const pageParamRegex = /<a[^>]+href="([^"]*(?:[?&](?:page|p|pg|start|offset|pageNumber|pagenumber)=[0-9]+)[^"]*)"/gi;
+  while ((m = pageParamRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  return nextUrls;
+}
+
+/**
+ * For ScrapingBee JS states, extract pagination URLs from rendered HTML.
+ * Returns page URLs found in pagination controls (page 2, 3, ... and Next).
+ */
+function extractScrapingBeePaginationUrls(html: string, baseUrl: string): string[] {
+  // Use followPagination as the base, which finds next links and numbered page links
+  return followPagination(html, baseUrl);
+}
+
 function extractTableRows(html: string): string[] {
   // Extract text content from <tr> elements
   const rows: string[] = [];
@@ -327,32 +384,160 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           }
         }
 
-        // Use platform-specific parser if available for this state
-        const platformParser = STATE_PARSERS[portal.state];
-        let platformResults: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
-        if (platformParser) {
-          platformResults = platformParser(html);
-          console.log(`[state-local] ${portal.name}: Platform parser found ${platformResults.length} results`);
+        // Collect all HTML pages (page 1 + pagination)
+        const allHtmlPages: string[] = [html];
+
+        // Follow pagination for non-JS states (free, direct fetch)
+        if (!JS_STATES.has(portal.state)) {
+          let currentHtml = html;
+          let currentUrl = portal.url;
+          let pageNum = 1;
+
+          while (true) {
+            const paginationUrls = followPagination(currentHtml, currentUrl);
+            if (paginationUrls.length === 0) break;
+
+            // For simplicity, just take the first pagination URL we find
+            const urlToFetch = paginationUrls[0];
+            if (!urlToFetch) break;
+
+            // Avoid re-fetching the same page
+            if (urlToFetch === currentUrl) break;
+
+            pageNum++;
+            console.log(`[state-local] ${portal.name}: Fetching page ${pageNum} (${urlToFetch})...`);
+
+            try {
+              const pageRes = await fetch(urlToFetch, {
+                method: "GET",
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  Accept: "text/html,application/xhtml+xml",
+                },
+                signal: AbortSignal.timeout(10000),
+                redirect: "follow",
+              });
+
+              if (!pageRes.ok) {
+                console.log(`[state-local] ${portal.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
+                break;
+              }
+
+              const pageHtml = await pageRes.text();
+              if (pageHtml.length < 200) {
+                console.log(`[state-local] ${portal.name}: Page ${pageNum} too small (${pageHtml.length} bytes), stopping pagination`);
+                break;
+              }
+
+              // Check if this page has any new content (avoid infinite loops on duplicate pages)
+              const newRows = extractTableRows(pageHtml);
+              const newLinks = extractLinks(pageHtml).filter(
+                (l) => /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.text) || /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.href)
+              );
+
+              if (newRows.length === 0 && newLinks.length === 0) {
+                console.log(`[state-local] ${portal.name}: Page ${pageNum} has no bid data, stopping pagination`);
+                break;
+              }
+
+              console.log(`[state-local] ${portal.name}: Page ${pageNum} has ${newRows.length} rows, ${newLinks.length} bid links`);
+              allHtmlPages.push(pageHtml);
+              currentHtml = pageHtml;
+              currentUrl = urlToFetch;
+            } catch (pageErr) {
+              console.log(`[state-local] ${portal.name}: Page ${pageNum} fetch error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+              break;
+            }
+          }
+
+          if (allHtmlPages.length > 1) {
+            console.log(`[state-local] ${portal.name}: Fetched ${allHtmlPages.length} total pages via free pagination`);
+          }
         }
 
-        // Try to find table rows with bid data
-        const tableRows = extractTableRows(html);
-        const bidLinks = extractLinks(html).filter(
-          (l) =>
-            /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.text) ||
-            /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.href)
-        );
+        // For JS states using ScrapingBee, only follow pagination if page 1 had results (budget-conscious)
+        if (JS_STATES.has(portal.state) && process.env.SCRAPINGBEE_KEY) {
+          const page1Parser = STATE_PARSERS[portal.state];
+          const page1Results = page1Parser ? page1Parser(html) : [];
+          const page1BidLinks = extractLinks(html).filter(
+            (l) => /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.text) || /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.href)
+          );
 
-        // FIX 5: Broader parsing - keyword table rows, td links, and bid-class elements
-        const bidTableRows = extractBidTableRows(html);
-        const tdLinks = extractTdLinks(html);
-        const bidElements = extractBidElements(html);
+          if (page1Results.length > 0 || page1BidLinks.length > 0) {
+            const paginationUrls = extractScrapingBeePaginationUrls(html, JS_STATE_URLS[portal.state] || portal.url);
+            if (paginationUrls.length > 0) {
+              console.log(`[state-local] ${portal.name}: Found ${paginationUrls.length} pagination URLs via ScrapingBee, following...`);
 
-        // FIX 4: Nevada ePro specific parsing
-        let nevadaBids: Array<{ title: string; href: string; refNumber: string }> = [];
+              for (let pi = 0; pi < paginationUrls.length; pi++) {
+                const pageUrl = paginationUrls[pi];
+                const pageNum = pi + 2;
+                console.log(`[state-local] ${portal.name}: ScrapingBee fetching page ${pageNum} (${pageUrl})...`);
+
+                try {
+                  const pageHtml = await fetchWithScrapingBee(pageUrl, 5000);
+                  if (pageHtml.length < 200) {
+                    console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} too small, stopping`);
+                    break;
+                  }
+                  console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} returned ${pageHtml.length} bytes`);
+                  allHtmlPages.push(pageHtml);
+
+                  // Check for further pagination from this page
+                  const morePaginationUrls = extractScrapingBeePaginationUrls(pageHtml, pageUrl);
+                  for (const moreUrl of morePaginationUrls) {
+                    if (!paginationUrls.includes(moreUrl)) {
+                      paginationUrls.push(moreUrl);
+                    }
+                  }
+                } catch (sbPageErr) {
+                  console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} failed: ${sbPageErr instanceof Error ? sbPageErr.message : String(sbPageErr)}`);
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Combine results from all pages
+        // Use platform-specific parser if available for this state
+        const platformParser = STATE_PARSERS[portal.state];
+        const platformResults: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
+        const tableRows: string[] = [];
+        const bidLinks: Array<{ text: string; href: string }> = [];
+        const bidTableRows: string[] = [];
+        const tdLinks: Array<{ text: string; href: string }> = [];
+        const bidElements: string[] = [];
+
+        for (const pageHtml of allHtmlPages) {
+          if (platformParser) {
+            const parsed = platformParser(pageHtml);
+            platformResults.push(...parsed);
+          }
+
+          tableRows.push(...extractTableRows(pageHtml));
+          bidLinks.push(
+            ...extractLinks(pageHtml).filter(
+              (l) =>
+                /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.text) ||
+                /bid|rfp|rfq|solicit|procurement|contract|itb|ifb/i.test(l.href)
+            )
+          );
+          bidTableRows.push(...extractBidTableRows(pageHtml));
+          tdLinks.push(...extractTdLinks(pageHtml));
+          bidElements.push(...extractBidElements(pageHtml));
+        }
+
+        if (platformResults.length > 0) {
+          console.log(`[state-local] ${portal.name}: Platform parser found ${platformResults.length} results across ${allHtmlPages.length} pages`);
+        }
+
+        // FIX 4: Nevada ePro specific parsing (across all pages)
+        const nevadaBids: Array<{ title: string; href: string; refNumber: string }> = [];
         if (portal.state === "NV") {
-          nevadaBids = extractNevadaEproBids(html);
-          console.log(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from HTML table`);
+          for (const pageHtml of allHtmlPages) {
+            nevadaBids.push(...extractNevadaEproBids(pageHtml));
+          }
+          console.log(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from ${allHtmlPages.length} pages`);
         }
 
         const hasPlatformResults = platformResults.length >= 1;
@@ -374,7 +559,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // Platform-specific parsed results
         if (hasPlatformResults) {
-          for (let i = 0; i < Math.min(platformResults.length, 100); i++) {
+          for (let i = 0; i < platformResults.length; i++) {
             const item = platformResults[i];
             const noticeId = `state-${portal.state}-platform-${i}-${Date.now()}`;
             const { error } = await supabase.from("opportunities").upsert(
@@ -397,7 +582,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // Nevada ePro specific bids
         if (hasNevadaBids) {
-          for (let i = 0; i < Math.min(nevadaBids.length, 100); i++) {
+          for (let i = 0; i < nevadaBids.length; i++) {
             const bid = nevadaBids[i];
             const noticeId = `state-NV-epro-${bid.refNumber || i}-${Date.now()}`;
             const fullUrl = bid.href
@@ -422,7 +607,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         if (hasTableData) {
           // Use table rows as opportunities
-          for (let i = 0; i < Math.min(tableRows.length, 50); i++) {
+          for (let i = 0; i < tableRows.length; i++) {
             const row = tableRows[i];
             const noticeId = `state-${portal.state}-table-${i}-${Date.now()}`;
             const { error } = await supabase.from("opportunities").upsert(
@@ -445,7 +630,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         }
 
         if (hasBidLinks) {
-          for (let i = 0; i < Math.min(bidLinks.length, 50); i++) {
+          for (let i = 0; i < bidLinks.length; i++) {
             const link = bidLinks[i];
             const noticeId = `state-${portal.state}-link-${i}-${Date.now()}`;
             const fullUrl = link.href.startsWith("http")
@@ -473,7 +658,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // FIX 5: Broader parsing - keyword-matching table rows
         if (hasBidTableRows) {
-          for (let i = 0; i < Math.min(bidTableRows.length, 50); i++) {
+          for (let i = 0; i < bidTableRows.length; i++) {
             const row = bidTableRows[i];
             const noticeId = `state-${portal.state}-bidrow-${i}-${Date.now()}`;
             const { error } = await supabase.from("opportunities").upsert(
@@ -494,7 +679,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // FIX 5: Links inside <td> elements pointing to bid detail pages
         if (hasTdLinks) {
-          for (let i = 0; i < Math.min(tdLinks.length, 50); i++) {
+          for (let i = 0; i < tdLinks.length; i++) {
             const link = tdLinks[i];
             const noticeId = `state-${portal.state}-tdlink-${i}-${Date.now()}`;
             const fullUrl = link.href.startsWith("http")
@@ -518,7 +703,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // FIX 5: Div/li elements with bid-related class names
         if (hasBidElements) {
-          for (let i = 0; i < Math.min(bidElements.length, 50); i++) {
+          for (let i = 0; i < bidElements.length; i++) {
             const elem = bidElements[i];
             const noticeId = `state-${portal.state}-bidel-${i}-${Date.now()}`;
             const { error } = await supabase.from("opportunities").upsert(
@@ -538,7 +723,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         }
 
         totalFound += stateOpps;
-        console.log(`[state-local] ${portal.name}: Found ${stateOpps} items (${tableRows.length} table rows, ${bidLinks.length} bid links, ${bidTableRows.length} kw rows, ${tdLinks.length} td links, ${bidElements.length} bid elements${nevadaBids.length ? `, ${nevadaBids.length} NV ePro bids` : ""})`);
+        console.log(`[state-local] ${portal.name}: Found ${stateOpps} items across ${allHtmlPages.length} pages (${tableRows.length} table rows, ${bidLinks.length} bid links, ${bidTableRows.length} kw rows, ${tdLinks.length} td links, ${bidElements.length} bid elements${nevadaBids.length ? `, ${nevadaBids.length} NV ePro bids` : ""})`);
         stateResults.push(`${portal.state}: ${stateOpps} items found`);
       } catch (stateErr) {
         const msg = stateErr instanceof Error ? stateErr.message : String(stateErr);

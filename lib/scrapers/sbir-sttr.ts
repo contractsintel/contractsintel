@@ -8,6 +8,53 @@ const JS_SBIR_SOURCES: Record<string, string> = {
   sbir_dod: "https://www.dodsbirsttr.mil/submissions/",
 };
 
+/**
+ * Extract all next-page URLs from HTML pagination controls.
+ */
+function followPagination(html: string, baseUrl: string): string[] {
+  const nextUrls: string[] = [];
+  const seen = new Set<string>();
+
+  // "Next" links
+  const nextLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>(?:[^<]*(?:next|Next|NEXT|›|&gt;|&raquo;|>>)[^<]*)<\/a>/gi;
+  let m;
+  while ((m = nextLinkRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  // aria-label="next" or rel="next"
+  const ariaNextRegex = /<a[^>]+(?:aria-label="[^"]*next[^"]*"|rel="next")[^>]*href="([^"]*)"[^>]*>/gi;
+  while ((m = ariaNextRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  // Numbered page param links
+  const pageParamRegex = /<a[^>]+href="([^"]*(?:[?&](?:page|p|pg|start|offset|pageNumber|pagenumber)=[0-9]+)[^"]*)"/gi;
+  while ((m = pageParamRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  return nextUrls;
+}
+
 const SBIR_SOURCES = [
   { id: "sbir_gov", name: "SBIR.gov", url: "https://www.sbir.gov/" },
   { id: "sbir_dod", name: "DoD SBIR", url: "https://www.dodsbirsttr.mil/submissions/" },
@@ -189,7 +236,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
           const sbUrl = JS_SBIR_SOURCES[source.id];
           console.log(`[sbir-sttr] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
+            html = await fetchWithScrapingBee(sbUrl, 5000);
             console.log(`[sbir-sttr] ${source.name}: ScrapingBee returned ${html.length} bytes`);
             // Re-parse rendered HTML for solicitation links
             const sbLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
@@ -230,8 +277,91 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         }
       }
 
+      // Follow pagination to get ALL pages of results
+      let totalPages = 1;
+      {
+        let currentHtml = html;
+        let currentUrl = source.url;
+
+        while (true) {
+          const paginationUrls = followPagination(currentHtml, currentUrl);
+          if (paginationUrls.length === 0) break;
+
+          const urlToFetch = paginationUrls[0];
+          if (!urlToFetch || urlToFetch === currentUrl) break;
+
+          totalPages++;
+          console.log(`[sbir-sttr] ${source.name}: Fetching page ${totalPages} (${urlToFetch})...`);
+
+          try {
+            const isJsSource = !!JS_SBIR_SOURCES[source.id];
+            let pageHtml: string;
+
+            if (isJsSource && process.env.SCRAPINGBEE_KEY) {
+              pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
+            } else {
+              const pageRes = await fetch(urlToFetch, {
+                method: "GET",
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  Accept: "text/html,application/xhtml+xml",
+                },
+                signal: AbortSignal.timeout(10000),
+                redirect: "follow",
+              });
+              if (!pageRes.ok) {
+                console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} returned HTTP ${pageRes.status}, stopping pagination`);
+                break;
+              }
+              pageHtml = await pageRes.text();
+            }
+
+            if (pageHtml.length < 200) {
+              console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} too small, stopping pagination`);
+              break;
+            }
+
+            // Extract solicitation links from this page
+            const pageLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+            let pageMatch;
+            let newLinksCount = 0;
+            while ((pageMatch = pageLinkRegex.exec(pageHtml)) !== null) {
+              const text = pageMatch[2].replace(/<[^>]+>/g, "").trim();
+              if (
+                text &&
+                text.length > 5 &&
+                text.length < 300 &&
+                /sbir|sttr|solicit|topic|fund|grant|award|proposal/i.test(text + " " + pageMatch[1])
+              ) {
+                const href = pageMatch[1].startsWith("http")
+                  ? pageMatch[1]
+                  : (() => { try { return new URL(pageMatch[1], source.url).toString(); } catch { return pageMatch[1]; } })();
+                solLinks.push({ text, href });
+                newLinksCount++;
+              }
+            }
+
+            if (newLinksCount === 0) {
+              console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} has no solicitation links, stopping pagination`);
+              break;
+            }
+
+            console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} found ${newLinksCount} solicitation links`);
+            currentHtml = pageHtml;
+            currentUrl = urlToFetch;
+          } catch (pageErr) {
+            console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+            break;
+          }
+        }
+
+        if (totalPages > 1) {
+          console.log(`[sbir-sttr] ${source.name}: Fetched ${totalPages} total pages`);
+        }
+      }
+
       let sourceOpps = 0;
-      for (let i = 0; i < Math.min(solLinks.length, 50); i++) {
+      for (let i = 0; i < solLinks.length; i++) {
         const link = solLinks[i];
         const noticeId = `${source.id}-link-${i}-${Date.now()}`;
         const { error } = await supabase.from("opportunities").upsert(
@@ -253,7 +383,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       }
 
       htmlFound += sourceOpps;
-      console.log(`[sbir-sttr] ${source.name}: Found ${sourceOpps} items`);
+      console.log(`[sbir-sttr] ${source.name}: Found ${sourceOpps} items across ${totalPages} pages`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);

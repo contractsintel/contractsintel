@@ -70,6 +70,53 @@ function extractTableRows(html: string): string[] {
   return rows;
 }
 
+/**
+ * Extract all next-page URLs from HTML pagination controls.
+ */
+function followPagination(html: string, baseUrl: string): string[] {
+  const nextUrls: string[] = [];
+  const seen = new Set<string>();
+
+  // "Next" links
+  const nextLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>(?:[^<]*(?:next|Next|NEXT|›|&gt;|&raquo;|>>)[^<]*)<\/a>/gi;
+  let m;
+  while ((m = nextLinkRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  // aria-label="next" or rel="next"
+  const ariaNextRegex = /<a[^>]+(?:aria-label="[^"]*next[^"]*"|rel="next")[^>]*href="([^"]*)"[^>]*>/gi;
+  while ((m = ariaNextRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  // Numbered page param links
+  const pageParamRegex = /<a[^>]+href="([^"]*(?:[?&](?:page|p|pg|start|offset|pageNumber|pagenumber)=[0-9]+)[^"]*)"/gi;
+  while ((m = pageParamRegex.exec(html)) !== null) {
+    const href = m[1];
+    if (href && !href.startsWith("javascript:") && !href.startsWith("#")) {
+      try {
+        const full = href.startsWith("http") ? href : new URL(href, baseUrl).toString();
+        if (!seen.has(full)) { seen.add(full); nextUrls.push(full); }
+      } catch { /* skip */ }
+    }
+  }
+
+  return nextUrls;
+}
+
 export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
@@ -144,6 +191,9 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         }
       }
 
+      // Collect all HTML pages (page 1 + pagination)
+      const allHtmlPages: string[] = [html];
+
       // Look for procurement related links and tables
       let procLinks = extractLinks(html, source.url).filter(
         (l) =>
@@ -161,6 +211,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
           try {
             html = await fetchWithScrapingBee(sbUrl, 5000);
             console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            allHtmlPages[0] = html; // replace page 1 with rendered version
             // Re-parse with ScrapingBee-rendered HTML
             procLinks = extractLinks(html, source.url).filter(
               (l) =>
@@ -191,9 +242,82 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         }
       }
 
+      // Follow pagination on page 1 HTML (free for direct-fetched sources)
+      {
+        let currentHtml = allHtmlPages[0];
+        let currentUrl = source.url;
+        let pageNum = 1;
+
+        while (true) {
+          const paginationUrls = followPagination(currentHtml, currentUrl);
+          if (paginationUrls.length === 0) break;
+
+          const urlToFetch = paginationUrls[0];
+          if (!urlToFetch || urlToFetch === currentUrl) break;
+
+          pageNum++;
+          console.log(`[federal-civilian] ${source.name}: Fetching page ${pageNum} (${urlToFetch})...`);
+
+          try {
+            const isJsSource = !!JS_FEDERAL_SOURCES[source.id];
+            let pageHtml: string;
+
+            if (isJsSource && process.env.SCRAPINGBEE_KEY) {
+              pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
+            } else {
+              const pageRes = await fetch(urlToFetch, {
+                method: "GET",
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                  Accept: "text/html,application/xhtml+xml",
+                },
+                signal: AbortSignal.timeout(10000),
+                redirect: "follow",
+              });
+              if (!pageRes.ok) {
+                console.log(`[federal-civilian] ${source.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
+                break;
+              }
+              pageHtml = await pageRes.text();
+            }
+
+            if (pageHtml.length < 200) {
+              console.log(`[federal-civilian] ${source.name}: Page ${pageNum} too small, stopping pagination`);
+              break;
+            }
+
+            const newProcLinks = extractLinks(pageHtml, source.url).filter(
+              (l) =>
+                /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
+                /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
+            );
+            const newTableRows = extractTableRows(pageHtml);
+
+            if (newProcLinks.length === 0 && newTableRows.length === 0) {
+              console.log(`[federal-civilian] ${source.name}: Page ${pageNum} has no procurement data, stopping pagination`);
+              break;
+            }
+
+            console.log(`[federal-civilian] ${source.name}: Page ${pageNum} has ${newProcLinks.length} links, ${newTableRows.length} rows`);
+            procLinks.push(...newProcLinks);
+            tableRows.push(...newTableRows);
+            allHtmlPages.push(pageHtml);
+            currentHtml = pageHtml;
+            currentUrl = urlToFetch;
+          } catch (pageErr) {
+            console.log(`[federal-civilian] ${source.name}: Page ${pageNum} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+            break;
+          }
+        }
+
+        if (allHtmlPages.length > 1) {
+          console.log(`[federal-civilian] ${source.name}: Fetched ${allHtmlPages.length} total pages`);
+        }
+      }
+
       let sourceOpps = 0;
 
-      for (let i = 0; i < Math.min(procLinks.length, 50); i++) {
+      for (let i = 0; i < procLinks.length; i++) {
         const link = procLinks[i];
         const noticeId = `fedciv-${source.id}-link-${i}-${Date.now()}`;
         const { error } = await supabase.from("opportunities").upsert(
@@ -214,7 +338,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         }
       }
 
-      for (let i = 0; i < Math.min(tableRows.length, 50); i++) {
+      for (let i = 0; i < tableRows.length; i++) {
         const row = tableRows[i];
         const noticeId = `fedciv-${source.id}-table-${i}-${Date.now()}`;
         const { error } = await supabase.from("opportunities").upsert(
@@ -236,7 +360,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       }
 
       totalFound += sourceOpps;
-      console.log(`[federal-civilian] ${source.name}: Found ${sourceOpps} items`);
+      console.log(`[federal-civilian] ${source.name}: Found ${sourceOpps} items across ${allHtmlPages.length} pages`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
