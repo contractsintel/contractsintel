@@ -285,6 +285,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: fullUrl,
                 description: bid.title,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );
@@ -305,6 +306,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: portal.url,
                 description: row,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );
@@ -331,6 +333,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: fullUrl,
                 description: link.text,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );
@@ -354,6 +357,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: portal.url,
                 description: row,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );
@@ -377,6 +381,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: fullUrl,
                 description: link.text,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );
@@ -397,6 +402,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 source: "state_local",
                 source_url: portal.url,
                 description: elem,
+                last_seen_at: new Date().toISOString(),
               },
               { onConflict: "notice_id" }
             );

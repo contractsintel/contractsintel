@@ -129,6 +129,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
           source_url: `https://www.usaspending.gov/award/${award["generated_internal_id"] || awardId}`,
           incumbent_name: incumbent ?? null,
           incumbent_value: amount ?? null,
+          last_seen_at: new Date().toISOString(),
         },
         { onConflict: "notice_id" }
       );

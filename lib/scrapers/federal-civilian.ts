@@ -149,6 +149,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             source: "federal_civilian",
             source_url: link.href,
             description: link.text,
+            last_seen_at: new Date().toISOString(),
           },
           { onConflict: "notice_id" }
         );
@@ -169,6 +170,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             source: "federal_civilian",
             source_url: source.url,
             description: row,
+            last_seen_at: new Date().toISOString(),
           },
           { onConflict: "notice_id" }
         );

@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
           source_url: `https://www.usaspending.gov/award/${a["generated_internal_id"] || awardId}`,
           incumbent_name: a["Recipient Name"] ?? null,
           incumbent_value: a["Award Amount"] ?? null,
+          last_seen_at: new Date().toISOString(),
         }, { onConflict: "notice_id" });
         if (!error) totalSaved++;
       }

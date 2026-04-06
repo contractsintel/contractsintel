@@ -122,6 +122,7 @@ export async function scrapeSamGov(supabase: any): Promise<ScraperResult> {
         sam_url: opp.uiLink ?? null,
         source: "sam_gov",
         source_url: opp.uiLink ?? null,
+        last_seen_at: new Date().toISOString(),
       },
       { onConflict: "notice_id" }
     );

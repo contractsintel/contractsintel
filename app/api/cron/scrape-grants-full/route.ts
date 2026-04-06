@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
           posted_date: parseDate(opp.openDate ?? opp.openDateStr),
           source: "grants_gov",
           source_url: `https://www.grants.gov/search-results-detail/${id}`,
+          last_seen_at: new Date().toISOString(),
         }, { onConflict: "notice_id" });
         if (!error) totalSaved++;
       }

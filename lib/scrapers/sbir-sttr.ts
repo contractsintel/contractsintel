@@ -67,6 +67,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
           description: description?.substring(0, 10000) ?? null,
           source: "sbir_sttr",
           source_url: sol.solicitation_url ?? sol.url ?? `https://www.sbir.gov/node/${solId}`,
+          last_seen_at: new Date().toISOString(),
         },
         { onConflict: "notice_id" }
       );
@@ -178,6 +179,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             source: "sbir_sttr",
             source_url: link.href,
             description: link.text,
+            last_seen_at: new Date().toISOString(),
           },
           { onConflict: "notice_id" }
         );

@@ -2,7 +2,7 @@
 
 import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { tierLabel } from "@/lib/feature-gate";
 import { HelpButton } from "../help-panel";
@@ -59,22 +59,39 @@ export default function SettingsPage() {
   // Scraper run data
   const [scraperRuns, setScraperRuns] = useState<any[]>([]);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
+  const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
 
   // Load scraper run data
-  useState(() => {
+  useEffect(() => {
     (async () => {
       try {
         const { data } = await supabase
           .from("scraper_runs")
           .select("*")
           .order("completed_at", { ascending: false })
-          .limit(50);
+          .limit(200);
         setScraperRuns(data ?? []);
       } catch {
         // scraper_runs table may not exist yet
       }
+
+      // Fetch opportunity counts per source
+      try {
+        const sources = ["sam_gov", "usaspending", "grants_gov", "state_local", "military_defense", "sbir_sttr", "forecasts", "federal_civilian", "fpds_feed"];
+        const counts: Record<string, number> = {};
+        for (const src of sources) {
+          const { count } = await supabase
+            .from("opportunities")
+            .select("id", { count: "exact", head: true })
+            .eq("source", src);
+          counts[src] = count ?? 0;
+        }
+        setSourceCounts(counts);
+      } catch {
+        // opportunities table may not exist yet
+      }
     })();
-  });
+  }, []);
 
   const toggleCert = (c: string) =>
     setCerts((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -354,39 +371,68 @@ export default function SettingsPage() {
         <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Data Sources</h2>
         {(() => {
           const lastRun = scraperRuns.length > 0 ? new Date(scraperRuns[0].completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "Not yet run";
+
           const sourceGroups = [
-            { label: "Federal Sources (25+)", key: "federal", sources: ["sam_gov", "usaspending", "grants_gov"], color: "#2563eb" },
-            { label: "State Sources (55)", key: "state", sources: ["state_local"], color: "#059669" },
-            { label: "Military Sources (14)", key: "military", sources: ["military_defense"], color: "#475569" },
-            { label: "SBIR/STTR Sources (7)", key: "sbir", sources: ["sbir_sttr"], color: "#7c3aed" },
-            { label: "Forecasts & Intel (5)", key: "forecasts", sources: ["forecasts"], color: "#d97706" },
-            { label: "Subcontracting (2)", key: "subcontracting", sources: ["subcontracting"], color: "#0d9488" },
+            { label: "Federal Sources (25+)", key: "federal", sources: ["sam_gov", "usaspending", "grants_gov", "federal_civilian"], color: "#2563eb", intervalHours: 2 },
+            { label: "State Sources (55)", key: "state", sources: ["state_local"], color: "#059669", intervalHours: 4 },
+            { label: "Military Sources (14)", key: "military", sources: ["military_defense"], color: "#475569", intervalHours: 6 },
+            { label: "SBIR/STTR Sources (7)", key: "sbir", sources: ["sbir_sttr"], color: "#7c3aed", intervalHours: 6 },
+            { label: "Forecasts & Intel (5)", key: "forecasts", sources: ["forecasts", "fpds_feed"], color: "#d97706", intervalHours: 12 },
+            { label: "Subcontracting (2)", key: "subcontracting", sources: ["subcontracting"], color: "#0d9488", intervalHours: 24 },
           ];
+
+          const minutesAgo = (dateStr: string) => {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            return Math.round(diff / 60000);
+          };
+
+          const formatAgo = (mins: number) => {
+            if (mins < 1) return "Just now";
+            if (mins < 60) return `${mins} min ago`;
+            if (mins < 1440) return `${Math.round(mins / 60)} hr ago`;
+            return `${Math.round(mins / 1440)} days ago`;
+          };
+
           return (
             <div className="space-y-3">
               <p className="text-xs text-[#9ca3af]">Last updated: {lastRun}</p>
               {sourceGroups.map((group) => {
-                const runs = scraperRuns.filter((r) => group.sources.includes(r.source));
+                const runs = scraperRuns.filter((r: any) => group.sources.includes(r.source));
                 const latestRun = runs[0];
                 const status = latestRun ? (latestRun.status === "success" ? "Active" : latestRun.status === "stub" ? "Pending Setup" : "Error") : "Not yet run";
                 const statusColor = latestRun?.status === "success" ? "#22c55e" : latestRun?.status === "stub" ? "#9ca3af" : latestRun ? "#ef4444" : "#9ca3af";
-                const oppCount = runs.reduce((s: number, r: any) => s + (r.opportunities_found || 0), 0);
+                const totalOpps = group.sources.reduce((s: number, src: string) => s + (sourceCounts[src] || 0), 0);
+                const lastScrapedMins = latestRun?.completed_at ? minutesAgo(latestRun.completed_at) : null;
+                const isStale = lastScrapedMins !== null && lastScrapedMins > group.intervalHours * 60 * 2;
+
                 return (
                   <button
                     key={group.key}
                     onClick={() => setExpandedSource(expandedSource === group.key ? null : group.key)}
-                    className="w-full flex items-center justify-between py-2 px-3 border border-[#f0f1f3] hover:border-[#e2e8f0] transition-colors text-left"
+                    className="w-full flex flex-col py-2 px-3 border border-[#f0f1f3] hover:border-[#e2e8f0] transition-colors text-left"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
-                      <span className="text-sm text-[#111827]">{group.label}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
-                        <span className="text-xs text-[#4b5563]">{status}</span>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
+                        <span className="text-sm text-[#111827]">{group.label}</span>
                       </div>
-                      <span className="text-xs font-mono text-[#9ca3af]">{oppCount} opportunities</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
+                          <span className="text-xs text-[#4b5563]">{status}</span>
+                        </div>
+                        <span className="text-xs font-mono text-[#9ca3af]">{totalOpps.toLocaleString()} opportunities</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 ml-5">
+                      <span className={`text-xs ${isStale ? "text-[#f59e0b] font-medium" : "text-[#9ca3af]"}`}>
+                        {lastScrapedMins !== null
+                          ? `Last scraped: ${formatAgo(lastScrapedMins)}${isStale ? " (overdue)" : ""}`
+                          : "Not yet run"}
+                      </span>
+                      <span className="text-xs text-[#9ca3af]">
+                        Runs every {group.intervalHours < 1 ? `${group.intervalHours * 60} min` : `${group.intervalHours} hr`}
+                      </span>
                     </div>
                   </button>
                 );

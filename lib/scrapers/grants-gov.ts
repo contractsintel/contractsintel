@@ -112,6 +112,7 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
           description: opp.description?.substring(0, 10000) ?? null,
           source: "grants_gov",
           source_url: `https://www.grants.gov/search-results-detail/${oppId}`,
+          last_seen_at: new Date().toISOString(),
         },
         { onConflict: "notice_id" }
       );

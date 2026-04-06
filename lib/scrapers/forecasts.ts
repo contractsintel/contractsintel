@@ -141,6 +141,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             source: "forecasts",
             source_url: link.href,
             description: link.text,
+            last_seen_at: new Date().toISOString(),
           },
           { onConflict: "notice_id" }
         );
@@ -161,6 +162,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             source: "forecasts",
             source_url: source.url,
             description: row,
+            last_seen_at: new Date().toISOString(),
           },
           { onConflict: "notice_id" }
         );
@@ -190,6 +192,93 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
     }
   }
 
+  // FPDS Atom Feed scraping
+  try {
+    console.log(`[forecasts] Fetching FPDS Atom feed...`);
+
+    const fpdsUrl = "https://www.fpds.gov/ezsearch/LATEST?s=FPDS&indexName=awardfull&q=&start=0&length=100";
+    const fpdsRes = await fetch(fpdsUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+        Accept: "application/atom+xml,application/xml,text/xml",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (fpdsRes.ok) {
+      const xml = await fpdsRes.text();
+
+      // Parse Atom <entry> elements
+      const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi;
+      let entryMatch;
+      let fpdsFound = 0;
+
+      while ((entryMatch = entryRegex.exec(xml)) !== null) {
+        const entry = entryMatch[1];
+
+        const getTag = (tag: string): string | null => {
+          const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
+          const m = re.exec(entry);
+          return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim() : null;
+        };
+
+        const getLinkHref = (): string | null => {
+          const linkRe = /<link[^>]+href="([^"]*)"[^>]*\/?>/i;
+          const m = linkRe.exec(entry);
+          return m ? m[1] : null;
+        };
+
+        const title = getTag("title") || "FPDS Contract Award";
+        const link = getLinkHref() || "https://www.fpds.gov";
+        const summary = getTag("summary") || getTag("content") || "";
+        const published = getTag("published") || getTag("updated") || null;
+
+        // Try to extract agency from the content/summary
+        const agencyMatch = /(?:agency|department)\s*[:=]\s*([^<\n;]+)/i.exec(summary);
+        const agency = agencyMatch ? agencyMatch[1].trim() : "Federal Agency (FPDS)";
+
+        // Try to extract dollar value
+        const valueMatch = /\$[\d,]+(?:\.\d{2})?/i.exec(summary);
+        const rawValue = valueMatch ? parseFloat(valueMatch[0].replace(/[$,]/g, "")) : null;
+
+        const noticeId = `fpds-feed-${Buffer.from(title + link).toString("base64").substring(0, 40)}`;
+
+        const { error } = await supabase.from("opportunities").upsert(
+          {
+            notice_id: noticeId,
+            title: `[FPDS] ${title.substring(0, 200)}`,
+            agency,
+            source: "fpds_feed",
+            source_url: link,
+            description: summary.substring(0, 10000) || title,
+            value_estimate: rawValue,
+            posted_date: published,
+            last_seen_at: new Date().toISOString(),
+          },
+          { onConflict: "notice_id" }
+        );
+
+        if (!error) {
+          fpdsFound++;
+          totalUpserted++;
+        }
+      }
+
+      totalFound += fpdsFound;
+      console.log(`[forecasts] FPDS Atom feed: Found ${fpdsFound} entries`);
+      sourceResults.push(`fpds_feed: ${fpdsFound} items`);
+    } else {
+      console.log(`[forecasts] FPDS Atom feed: HTTP ${fpdsRes.status}`);
+      sourceResults.push(`fpds_feed: BLOCKED (HTTP ${fpdsRes.status})`);
+    }
+  } catch (fpdsErr) {
+    const msg = fpdsErr instanceof Error ? fpdsErr.message : String(fpdsErr);
+    const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
+    console.log(`[forecasts] FPDS Atom feed: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+    sourceResults.push(`fpds_feed: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
+  }
+
   console.log(`[forecasts] Results: ${sourceResults.join(", ")}`);
 
   return {
@@ -198,7 +287,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
     opportunities_found: totalFound,
     matches_created: totalUpserted,
     error_message: totalFound === 0
-      ? `Attempted ${FORECAST_SOURCES.length} forecast sources. ${sourceResults.join("; ")}`
+      ? `Attempted ${FORECAST_SOURCES.length + 1} forecast sources (incl. FPDS feed). ${sourceResults.join("; ")}`
       : undefined,
     started_at: startedAt,
     completed_at: new Date().toISOString(),
