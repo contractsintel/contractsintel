@@ -98,33 +98,43 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [fadingOut, setFadingOut] = useState<string | null>(null);
 
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
   const updateStatus = async (matchId: string, status: string) => {
     if (status === "skipped") {
       setFadingOut(matchId);
       await new Promise((r) => setTimeout(r, 300));
     }
 
-    const { error } = await supabase
-      .from("opportunity_matches")
-      .update({
-        user_status: status,
-        pipeline_stage: status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null,
-      })
-      .eq("id", matchId)
-      .eq("organization_id", organization.id);
+    try {
+      const res = await fetch("/api/opportunities/update-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchId, status }),
+      });
+      const result = await res.json();
 
-    if (error) {
-      setToast("Error updating — try again");
-    } else {
+      if (!res.ok || !result.success) {
+        console.error("Update failed:", result);
+        setToast("Error — " + (result.error || "try again"));
+        setFadingOut(null);
+        return;
+      }
+
       const msgs: Record<string, string> = {
-        tracking: "Added to Pipeline — Monitoring",
-        bidding: "Added to Pipeline — Preparing Bid",
+        tracking: "✓ Tracking — added to Pipeline",
+        bidding: "✓ Preparing Bid — added to Pipeline",
         skipped: "Skipped",
       };
       setToast(msgs[status] || "Updated");
+    } catch (err) {
+      console.error("Network error:", err);
+      setToast("Network error — try again");
+      setFadingOut(null);
+      return;
     }
 
-    setTimeout(() => setToast(null), 2500);
+    setTimeout(() => setToast(null), 3000);
     setFadingOut(null);
     loadData();
   };
@@ -448,10 +458,8 @@ export default function DashboardPage() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-[16px] font-semibold text-[#0f172a] truncate">
-                              {opp.sam_url ? (
-                                <a href={opp.sam_url} target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">{opp.title}</a>
-                              ) : opp.title}
+                            <h3 className="text-[16px] font-semibold text-[#0f172a] truncate cursor-pointer hover:text-[#2563eb] transition-colors" onClick={() => setExpandedCard(expandedCard === match.id ? null : match.id)}>
+                              {opp.title}
                             </h3>
                             <span
                               className={`px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 ${recBadge(
@@ -547,6 +555,31 @@ export default function DashboardPage() {
                               )}
                             </div>
                           </div>
+
+                          {/* Expanded details */}
+                          {expandedCard === match.id && (
+                            <div className="mt-3 pt-3 border-t border-[#f0f1f3] space-y-2 text-sm animate-[fadeInUp_0.2s_ease]">
+                              {opp.description && <p className="text-[#4b5563] leading-relaxed">{opp.description.substring(0, 500)}{opp.description.length > 500 ? "..." : ""}</p>}
+                              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                                {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
+                                {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
+                                {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
+                                {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className="text-[#111827]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
+                                {opp.incumbent_name && <div><span className="text-[#9ca3af]">Incumbent:</span> <span className="text-[#111827]">{opp.incumbent_name}</span></div>}
+                                {opp.incumbent_value && <div><span className="text-[#9ca3af]">Prev. Value:</span> <span className="text-[#111827]">{formatCurrency(opp.incumbent_value)}</span></div>}
+                              </div>
+                              {match.recommendation_reasoning && (
+                                <div className="mt-2 p-3 bg-[#eff4ff] rounded-lg border-l-3 border-l-[#2563eb] text-xs text-[#1e40af]">
+                                  <strong>AI Recommendation:</strong> {match.recommendation_reasoning}
+                                </div>
+                              )}
+                              {opp.sam_url && (
+                                <a href={opp.sam_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#2563eb] hover:text-[#1d4ed8] font-medium mt-1">
+                                  View on SAM.gov →
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -643,8 +676,9 @@ export default function DashboardPage() {
 
       {/* Toast notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 px-5 py-3 bg-[#0f172a] text-white text-sm font-medium rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.15)] animate-[fadeInUp_0.3s_ease]">
-          {toast}
+        <div className={`fixed top-5 right-5 z-[100] px-5 py-3 bg-white text-sm font-medium rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] animate-[fadeInUp_0.3s_ease] border border-[#f0f1f3] flex items-center gap-3 ${toast.includes("Skip") ? "border-l-4 border-l-[#9ca3af]" : "border-l-4 border-l-[#059669]"}`}>
+          <span className="text-[#111827]">{toast}</span>
+          <button onClick={() => setToast(null)} className="text-[#9ca3af] hover:text-[#111827] text-lg leading-none">&times;</button>
         </div>
       )}
     </div>
