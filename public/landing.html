@@ -341,6 +341,10 @@ footer { border-top: 1px solid var(--border-light); padding: 40px 24px; display:
   .roi-calc{grid-template-columns:1fr}
   .roi-divider-col{border-right:none}
   nav .nav-links{display:none}
+  .nav-cta .nav-signin,.nav-cta .btn-secondary{display:none}
+  .nav-cta .btn-primary{padding:8px 16px;font-size:13px}
+  .hamburger{display:flex !important}
+  .hero{padding-top:100px}
   .hero h1{font-size:36px}
   .hero-stats{grid-template-columns:1fr 1fr}
   .hero-proof{flex-direction:column;align-items:center;gap:8px}
@@ -351,6 +355,92 @@ footer { border-top: 1px solid var(--border-light); padding: 40px 24px; display:
   .audit-inner{grid-template-columns:1fr}
   .cta-stats{grid-template-columns:1fr 1fr}
   footer{flex-direction:column;text-align:center}
+}
+
+/* Hamburger button */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #4b5563;
+  border-radius: 1px;
+}
+
+/* Mobile menu overlay */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  z-index: 200;
+  padding: 24px;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+.mobile-menu.open {
+  transform: translateX(0);
+}
+.mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+.mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #4b5563;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mobile-menu-nav {
+  display: flex;
+  flex-direction: column;
+}
+.mobile-menu-nav a {
+  display: block;
+  padding: 16px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #111827;
+  text-decoration: none;
+  border-bottom: 1px solid #f0f1f3;
+}
+.mobile-menu-nav a:hover {
+  color: var(--accent);
+}
+.mobile-menu-cta {
+  display: block;
+  margin-top: 24px;
+  padding: 14px 24px !important;
+  background: var(--accent);
+  color: #fff !important;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: none !important;
 }
 </style>
 </head>
@@ -368,11 +458,33 @@ footer { border-top: 1px solid var(--border-light); padding: 40px 24px; display:
     <li><a href="#pricing">Pricing</a></li>
   </ul>
   <div class="nav-cta">
-    <a href="/login" style="color:#4b5563;text-decoration:none;font-size:14px;font-weight:500;">Sign In</a>
+    <a href="/login" class="nav-signin" style="color:#4b5563;text-decoration:none;font-size:14px;font-weight:500;">Sign In</a>
     <a href="#pricing" class="btn-secondary">See Plans</a>
+    <button class="hamburger" onclick="document.getElementById('mobile-menu').classList.add('open')" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
     <a href="/signup" class="btn-primary">Start Free Trial →</a>
   </div>
 </nav>
+
+<!-- Mobile Menu Overlay -->
+<div id="mobile-menu" class="mobile-menu">
+  <div class="mobile-menu-header">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">CI</div>
+      <div class="nav-logo-text">ContractsIntel</div>
+    </a>
+    <button onclick="document.getElementById('mobile-menu').classList.remove('open')" class="mobile-menu-close" aria-label="Close">&times;</button>
+  </div>
+  <nav class="mobile-menu-nav">
+    <a href="/login" onclick="document.getElementById('mobile-menu').classList.remove('open')">Sign In</a>
+    <a href="#products" onclick="document.getElementById('mobile-menu').classList.remove('open')">Products</a>
+    <a href="#fullplatform" onclick="document.getElementById('mobile-menu').classList.remove('open')">Full Platform</a>
+    <a href="#how" onclick="document.getElementById('mobile-menu').classList.remove('open')">How It Works</a>
+    <a href="#pricing" onclick="document.getElementById('mobile-menu').classList.remove('open')">Pricing</a>
+    <a href="/signup" class="mobile-menu-cta">Start Free Trial →</a>
+  </nav>
+</div>
 
 <!-- HERO -->
 <section class="hero">
