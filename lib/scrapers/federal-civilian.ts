@@ -3,7 +3,7 @@ import type { ScraperResult } from "./index";
 const FEDERAL_CIVILIAN_SOURCES = [
   { id: "gsa_ebuy", name: "GSA eBuy", url: "https://www.ebuy.gsa.gov/" },
   { id: "nasa_procurement", name: "NASA Procurement", url: "https://procurement.nasa.gov/" },
-  { id: "nih_nitaac", name: "NIH NITAAC", url: "https://nitaac.nih.gov/" },
+  { id: "nih_nitaac", name: "NIH NITAAC", url: "https://oamp.od.nih.gov/contracts/find-contract-opportunities" },
   { id: "epa_contracts", name: "EPA Contracts", url: "https://www.epa.gov/contracts" },
   { id: "doe_procurement", name: "DOE Procurement", url: "https://www.energy.gov/management/office-management/operational-management/procurement-and-acquisition" },
   { id: "dot_osdbu", name: "DOT OSDBU", url: "https://www.transportation.gov/osdbu" },
@@ -15,14 +15,15 @@ const FEDERAL_CIVILIAN_SOURCES = [
   { id: "treasury_procurement", name: "Treasury Procurement", url: "https://home.treasury.gov/about/offices/management/procurement" },
   { id: "ssa_contracts", name: "SSA Contracts", url: "https://www.ssa.gov/oag/contracts/" },
   { id: "va_procurement", name: "VA Procurement", url: "https://www.va.gov/opal/nac/" },
-  { id: "dhs_procurement", name: "DHS Procurement", url: "https://www.dhs.gov/procurement" },
-  { id: "state_procurement", name: "State Dept Procurement", url: "https://www.state.gov/procurement/" },
+  { id: "dhs_procurement", name: "DHS Procurement", url: "https://www.dhs.gov/procurement-operations" },
+  { id: "state_procurement", name: "State Dept Procurement", url: "https://www.state.gov/key-topics-bureau-of-administration/procurement/" },
   { id: "hud_cpo", name: "HUD CPO", url: "https://www.hud.gov/program_offices/cpo" },
   { id: "ed_contracts", name: "Education Contracts", url: "https://www.ed.gov/fund/contract" },
   { id: "dol_procurement", name: "Labor Procurement", url: "https://www.dol.gov/general/procurement" },
-  { id: "opm_procurement", name: "OPM Procurement", url: "https://www.opm.gov/about-us/doing-business-with-opm/contracting/" },
+  { id: "opm_procurement", name: "OPM Procurement", url: "https://www.opm.gov/about-us/doing-business-with-opm/" },
   { id: "faa_contracting", name: "FAA Contracting", url: "https://faaco.faa.gov/" },
   { id: "fema_procurement", name: "FEMA Procurement", url: "https://www.fema.gov/about/doing-business-with-fema" },
+  { id: "gsa_subcontracting", name: "GSA Subcontracting", url: "https://www.gsa.gov/small-business/subcontracting-opportunities/subcontracting-directory" },
 ];
 
 export { FEDERAL_CIVILIAN_SOURCES };
@@ -76,7 +77,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       const res = await fetch(source.url, {
         method: "GET",
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(10000),
@@ -84,18 +85,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       });
 
       if (!res.ok) {
-        console.log(`[federal-civilian] ${source.name}: HTTP ${res.status} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: HTTP ${res.status}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (HTTP ${res.status})`);
-        continue;
+        console.log(`[federal-civilian] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";

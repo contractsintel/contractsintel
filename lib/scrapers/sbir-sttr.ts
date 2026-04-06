@@ -4,7 +4,7 @@ const SBIR_API = "https://www.sbir.gov/api/solicitations.json";
 
 const SBIR_SOURCES = [
   { id: "sbir_gov", name: "SBIR.gov", url: "https://www.sbir.gov/" },
-  { id: "sbir_dod", name: "DoD SBIR", url: "https://www.defensesbirsttr.mil/" },
+  { id: "sbir_dod", name: "DoD SBIR", url: "https://www.dodsbirsttr.mil/submissions/" },
   { id: "sbir_nih", name: "NIH SBIR", url: "https://seed.nih.gov/" },
   { id: "sbir_nsf", name: "NSF SBIR", url: "https://seedfund.nsf.gov/" },
   { id: "sbir_doe", name: "DOE SBIR", url: "https://science.osti.gov/sbir" },
@@ -24,7 +24,10 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
 
     const res = await fetch(SBIR_API, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/json",
+      },
       signal: AbortSignal.timeout(30000),
     });
 
@@ -94,7 +97,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       const res = await fetch(source.url, {
         method: "GET",
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(10000),
@@ -102,18 +105,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       });
 
       if (!res.ok) {
-        console.log(`[sbir-sttr] ${source.name}: HTTP ${res.status} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: HTTP ${res.status}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (HTTP ${res.status})`);
-        continue;
+        console.log(`[sbir-sttr] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";

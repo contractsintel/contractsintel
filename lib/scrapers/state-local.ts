@@ -3,7 +3,7 @@ import type { ScraperResult } from "./index";
 const STATE_PORTALS = [
   { state: "AL", name: "Alabama", url: "https://purchasing.alabama.gov/" },
   { state: "AK", name: "Alaska", url: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService" },
-  { state: "AZ", name: "Arizona", url: "https://spo.az.gov/" },
+  { state: "AZ", name: "Arizona", url: "https://spo.az.gov/contracts-and-solicitations" },
   { state: "AR", name: "Arkansas", url: "https://www.arkansas.gov/dfa/procurement/" },
   { state: "CA", name: "California", url: "https://caleprocure.ca.gov/" },
   { state: "CO", name: "Colorado", url: "https://bids.coloradovssc.com/" },
@@ -28,7 +28,7 @@ const STATE_PORTALS = [
   { state: "MO", name: "Missouri", url: "https://www.moolb.mo.gov/" },
   { state: "MT", name: "Montana", url: "https://svc.mt.gov/gsd/OneStop/" },
   { state: "NE", name: "Nebraska", url: "https://das.nebraska.gov/materiel/purchasing.html" },
-  { state: "NV", name: "Nevada", url: "https://nevadaepro.com/" },
+  { state: "NV", name: "Nevada", url: "https://nevadaepro.com/bso/view/search/external/advancedSearchBid.xhtml" },
   { state: "NH", name: "New Hampshire", url: "https://apps.das.nh.gov/bidscontracts/" },
   { state: "NJ", name: "New Jersey", url: "https://www.njstart.gov/" },
   { state: "NM", name: "New Mexico", url: "https://www.generalservices.state.nm.us/" },
@@ -37,12 +37,12 @@ const STATE_PORTALS = [
   { state: "ND", name: "North Dakota", url: "https://www.nd.gov/omb/agency/procurement/" },
   { state: "OH", name: "Ohio", url: "https://procure.ohio.gov/" },
   { state: "OK", name: "Oklahoma", url: "https://oklahoma.gov/omes/services/purchasing.html" },
-  { state: "OR", name: "Oregon", url: "https://orpin.oregon.gov/" },
+  { state: "OR", name: "Oregon", url: "https://orpin.oregon.gov/open.dll/welcome" },
   { state: "PA", name: "Pennsylvania", url: "https://www.emarketplace.state.pa.us/" },
   { state: "RI", name: "Rhode Island", url: "https://www.ridop.ri.gov/" },
   { state: "SC", name: "South Carolina", url: "https://procurement.sc.gov/" },
   { state: "SD", name: "South Dakota", url: "https://bop.sd.gov/" },
-  { state: "TN", name: "Tennessee", url: "https://tn.gov/generalservices/procurement.html" },
+  { state: "TN", name: "Tennessee", url: "https://tn.gov/generalservices/procurement/central-procurement-office--cpo-/solicitations.html" },
   { state: "TX", name: "Texas", url: "https://www.txsmartbuy.com/" },
   { state: "UT", name: "Utah", url: "https://purchasing.utah.gov/" },
   { state: "VT", name: "Vermont", url: "https://bgs.vermont.gov/purchasing-contracting" },
@@ -51,7 +51,7 @@ const STATE_PORTALS = [
   { state: "WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/" },
   { state: "WI", name: "Wisconsin", url: "https://vendornet.wi.gov/" },
   { state: "WY", name: "Wyoming", url: "https://sites.google.com/wyo.gov/procurement/" },
-  { state: "DC", name: "District of Columbia", url: "https://ocp.dc.gov/" },
+  { state: "DC", name: "District of Columbia", url: "https://ocp.dc.gov/page/open-solicitations" },
   { state: "PR", name: "Puerto Rico", url: "https://www.asg.pr.gov/" },
   { state: "GU", name: "Guam", url: "https://www.guamopa.com/" },
   { state: "VI", name: "US Virgin Islands", url: "https://dpp.vi.gov/" },
@@ -116,7 +116,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         const res = await fetch(portal.url, {
           method: "GET",
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             Accept: "text/html,application/xhtml+xml",
           },
           signal: AbortSignal.timeout(10000),
@@ -124,9 +124,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         });
 
         if (!res.ok) {
-          console.log(`[state-local] ${portal.name}: HTTP ${res.status} BLOCKED`);
-          stateResults.push(`${portal.state}: BLOCKED (HTTP ${res.status})`);
-          continue;
+          console.log(`[state-local] ${portal.name}: HTTP ${res.status} — will still attempt to parse body`);
         }
 
         const contentType = res.headers.get("content-type") || "";

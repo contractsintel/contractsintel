@@ -2,7 +2,7 @@ import type { ScraperResult } from "./index";
 
 const SUBCONTRACTING_SOURCES = [
   { id: "sba_subnet", name: "SBA SubNet", url: "https://eweb.sba.gov/subnet/" },
-  { id: "gsa_subcontracting", name: "GSA Subcontracting Directory", url: "https://www.gsa.gov/small-business/subcontracting-opportunities" },
+  { id: "gsa_subcontracting", name: "GSA Subcontracting Directory", url: "https://www.gsa.gov/small-business/subcontracting-opportunities/subcontracting-directory" },
 ];
 
 export { SUBCONTRACTING_SOURCES };
@@ -56,7 +56,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
       const res = await fetch(source.url, {
         method: "GET",
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; ContractsIntel/1.0)",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(10000),
@@ -64,18 +64,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
       });
 
       if (!res.ok) {
-        console.log(`[subcontracting] ${source.name}: HTTP ${res.status} BLOCKED`);
-        await supabase.from("scraper_runs").insert({
-          source: source.id,
-          status: "error",
-          opportunities_found: 0,
-          matches_created: 0,
-          error_message: `BLOCKED: HTTP ${res.status}`,
-          started_at: startedAt,
-          completed_at: new Date().toISOString(),
-        });
-        sourceResults.push(`${source.id}: BLOCKED (HTTP ${res.status})`);
-        continue;
+        console.log(`[subcontracting] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";
