@@ -106,12 +106,12 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
-        // Try ScrapingBee fallback for known JS SPA sources
-        if (JS_FEDERAL_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
-          const sbUrl = JS_FEDERAL_SOURCES[source.id];
+        // Try ScrapingBee fallback for ALL blocked sources (not just known JS SPAs)
+        if (process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
           console.log(`[federal-civilian] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
+            html = await fetchWithScrapingBee(sbUrl, 5000);
             console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
@@ -154,12 +154,12 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       const hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        // Try ScrapingBee fallback for known JS SPA sources that returned HTML but no data
-        if (JS_FEDERAL_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
-          const sbUrl = JS_FEDERAL_SOURCES[source.id];
+        // Try ScrapingBee fallback for ALL sources that returned HTML but no data
+        if (process.env.SCRAPINGBEE_KEY) {
+          const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
           console.log(`[federal-civilian] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
+            html = await fetchWithScrapingBee(sbUrl, 5000);
             console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
             // Re-parse with ScrapingBee-rendered HTML
             procLinks = extractLinks(html, source.url).filter(

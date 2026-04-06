@@ -62,7 +62,61 @@ export async function GET(request: NextRequest) {
       if (opps.length < PER_PAGE) break;
     } while (offset < hitCount);
 
-    return NextResponse.json({ success: true, hitCount, fetched: totalFetched, saved: totalSaved, pagesProcessed: Math.ceil(offset / PER_PAGE) });
+    // Per-agency queries to ensure coverage beyond the general query's first 984 results
+    const AGENCIES = ["DOD","HHS","DOE","NSF","NASA","EPA","USDA","DOJ","DOI","DOT","DHS","VA","HUD","ED","DOL","DOC","USDOT","DOS","IMLS","NEA","NEH","PAMS","MCC","ONDCP","AC"];
+    let agencySaved = 0;
+
+    for (const agencyCode of AGENCIES) {
+      try {
+        const agencyRes = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            keyword: "",
+            oppStatuses: "posted",
+            sortBy: "openDate|desc",
+            rows: 500,
+            offset: 0,
+            agencies: agencyCode,
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (!agencyRes.ok) {
+          console.log(`Grants.gov agency ${agencyCode} error: ${agencyRes.status}`);
+          continue;
+        }
+
+        const agencyData = await agencyRes.json();
+        const agencyOpps = agencyData.oppHits ?? [];
+        totalFetched += agencyOpps.length;
+
+        for (const opp of agencyOpps) {
+          const id = opp.id ?? opp.opportunityId;
+          if (!id) continue;
+          const { error } = await supabase.from("opportunities").upsert({
+            notice_id: `grants-gov-${id}`,
+            title: opp.title ?? opp.opportunityTitle ?? "Untitled Grant",
+            agency: opp.agency ?? opp.agencyCode ?? agencyCode,
+            solicitation_number: opp.number ?? opp.opportunityNumber ?? String(id),
+            response_deadline: parseDate(opp.closeDate ?? opp.closeDateStr),
+            posted_date: parseDate(opp.openDate ?? opp.openDateStr),
+            source: "grants_gov",
+            source_url: `https://www.grants.gov/search-results-detail/${id}`,
+            last_seen_at: new Date().toISOString(),
+          }, { onConflict: "notice_id" });
+          if (!error) { totalSaved++; agencySaved++; }
+        }
+
+        console.log(`Grants.gov agency ${agencyCode}: ${agencyOpps.length} opps fetched`);
+      } catch (agencyErr) {
+        console.log(`Grants.gov agency ${agencyCode} failed: ${agencyErr}`);
+      }
+    }
+
+    console.log(`Grants.gov per-agency queries saved ${agencySaved} additional records`);
+
+    return NextResponse.json({ success: true, hitCount, fetched: totalFetched, saved: totalSaved, pagesProcessed: Math.ceil(offset / PER_PAGE), agencySaved });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

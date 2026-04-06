@@ -1,8 +1,18 @@
 import type { ScraperResult } from "./index";
 import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+import {
+  parseJaggaer,
+  parseCaleProcure,
+  parseMyFloridaMarketplace,
+  parseTxSmartBuy,
+  parseGenericSPA,
+} from "./platform-parsers";
 
 // States whose procurement portals are JS SPAs requiring browser rendering
-const JS_STATES = new Set(["CA", "TX", "FL", "CO", "MD", "MI", "KY", "KS", "MO", "AK"]);
+const JS_STATES = new Set([
+  "CA", "TX", "FL", "CO", "MD", "MI", "KY", "KS", "MO", "AK",
+  "AZ", "NH", "DC", "TN", "AR", "NC", "LA", "MT", "PR", "SD", "WV", "HI",
+]);
 
 // JS SPA URLs that differ from the default portal URL
 const JS_STATE_URLS: Record<string, string> = {
@@ -16,6 +26,44 @@ const JS_STATE_URLS: Record<string, string> = {
   KS: "https://supplier.sok.ks.gov/psc/sokfssprd/SUPPLIER/ERP/h/?tab=SOK_EBID",
   MO: "https://www.moolb.mo.gov/MOSCEnterprise/solicitationSearch.html",
   AK: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService",
+  AZ: "https://spo.az.gov/contracts-and-solicitations",
+  NH: "https://apps.das.nh.gov/bidscontracts/",
+  DC: "https://ocp.dc.gov/page/solicitations",
+  TN: "https://tn.gov/generalservices/procurement/central-procurement-office--cpo-/solicitations.html",
+  AR: "https://www.arkansas.gov/dfa/procurement/",
+  NC: "https://www.ips.state.nc.us/",
+  LA: "https://wwwprd.doa.louisiana.gov/osp/lapac/pubmain.asp",
+  MT: "https://svc.mt.gov/gsd/OneStop/",
+  PR: "https://www.asg.pr.gov/",
+  SD: "https://bop.sd.gov/",
+  WV: "https://state.wv.gov/admin/purchase/",
+  HI: "https://hands.hawaii.gov/",
+};
+
+// Platform-specific parsers for JS SPA states
+const STATE_PARSERS: Record<string, (html: string) => any[]> = {
+  CA: (html) => parseCaleProcure(html),
+  TX: (html) => parseTxSmartBuy(html),
+  FL: (html) => parseMyFloridaMarketplace(html),
+  MD: (html) => parseJaggaer(html, "MD", "https://emaryland.buyspeed.com"),
+  MI: (html) => parseJaggaer(html, "MI", "https://sigma.michigan.gov"),
+  KY: (html) => parseJaggaer(html, "KY", "https://emars.ky.gov"),
+  AK: (html) => parseJaggaer(html, "AK", "https://iris-vss.state.ak.us"),
+  CO: (html) => parseJaggaer(html, "CO", "https://bids.coloradovssc.com"),
+  KS: (html) => parseGenericSPA(html, "https://supplier.sok.ks.gov"),
+  MO: (html) => parseGenericSPA(html, "https://www.moolb.mo.gov"),
+  AZ: (html) => parseGenericSPA(html, "https://spo.az.gov"),
+  NH: (html) => parseGenericSPA(html, "https://apps.das.nh.gov"),
+  DC: (html) => parseGenericSPA(html, "https://ocp.dc.gov"),
+  TN: (html) => parseGenericSPA(html, "https://tn.gov"),
+  AR: (html) => parseGenericSPA(html, "https://www.arkansas.gov"),
+  NC: (html) => parseGenericSPA(html, "https://www.ips.state.nc.us"),
+  LA: (html) => parseGenericSPA(html, "https://wwwprd.doa.louisiana.gov"),
+  MT: (html) => parseGenericSPA(html, "https://svc.mt.gov"),
+  PR: (html) => parseGenericSPA(html, "https://www.asg.pr.gov"),
+  SD: (html) => parseGenericSPA(html, "https://bop.sd.gov"),
+  WV: (html) => parseGenericSPA(html, "https://state.wv.gov"),
+  HI: (html) => parseGenericSPA(html, "https://hands.hawaii.gov"),
 };
 
 const STATE_PORTALS = [
@@ -264,7 +312,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
             const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
             console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying ScrapingBee for ${sbUrl}...`);
             try {
-              html = await fetchWithScrapingBee(sbUrl);
+              html = await fetchWithScrapingBee(sbUrl, 5000);
               console.log(`[state-local] ${portal.name}: ScrapingBee returned ${html.length} bytes`);
             } catch (sbErr) {
               const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
@@ -277,6 +325,14 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
             stateResults.push(`${portal.state}: BLOCKED (requires JavaScript)`);
             continue;
           }
+        }
+
+        // Use platform-specific parser if available for this state
+        const platformParser = STATE_PARSERS[portal.state];
+        let platformResults: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
+        if (platformParser) {
+          platformResults = platformParser(html);
+          console.log(`[state-local] ${portal.name}: Platform parser found ${platformResults.length} results`);
         }
 
         // Try to find table rows with bid data
@@ -299,6 +355,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           console.log(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from HTML table`);
         }
 
+        const hasPlatformResults = platformResults.length >= 1;
         const hasTableData = tableRows.length >= 3;
         const hasBidLinks = bidLinks.length >= 1;
         const hasBidTableRows = bidTableRows.length >= 1;
@@ -306,7 +363,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         const hasBidElements = bidElements.length >= 1;
         const hasNevadaBids = nevadaBids.length >= 1;
 
-        if (!hasTableData && !hasBidLinks && !hasBidTableRows && !hasTdLinks && !hasBidElements && !hasNevadaBids) {
+        if (!hasPlatformResults && !hasTableData && !hasBidLinks && !hasBidTableRows && !hasTdLinks && !hasBidElements && !hasNevadaBids) {
           console.log(`[state-local] ${portal.name}: No parseable bid data found BLOCKED`);
           stateResults.push(`${portal.state}: BLOCKED (no parseable bid data in HTML)`);
           continue;
@@ -314,6 +371,29 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // Extract opportunities from all sources
         let stateOpps = 0;
+
+        // Platform-specific parsed results
+        if (hasPlatformResults) {
+          for (let i = 0; i < Math.min(platformResults.length, 100); i++) {
+            const item = platformResults[i];
+            const noticeId = `state-${portal.state}-platform-${i}-${Date.now()}`;
+            const { error } = await supabase.from("opportunities").upsert(
+              {
+                notice_id: noticeId,
+                title: `[${portal.state}] ${item.title.substring(0, 200)}`,
+                agency: item.agency || `${portal.name} State Procurement`,
+                solicitation_number: item.solicitation_number || undefined,
+                response_deadline: item.deadline || undefined,
+                source: "state_local",
+                source_url: item.url,
+                description: item.title,
+                last_seen_at: new Date().toISOString(),
+              },
+              { onConflict: "notice_id" }
+            );
+            if (!error) { stateOpps++; totalUpserted++; }
+          }
+        }
 
         // Nevada ePro specific bids
         if (hasNevadaBids) {
