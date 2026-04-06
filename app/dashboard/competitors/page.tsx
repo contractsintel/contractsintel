@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
+import { InlineGuide } from "../inline-guide";
 
 export default function CompetitorsPage() {
   const { organization } = useDashboard();
@@ -109,6 +110,7 @@ export default function CompetitorsPage() {
           </button>
           <HelpButton page="competitors" />
         </div>
+      <InlineGuide page="competitors" />
       </div>
 
       {/* Add Form */}

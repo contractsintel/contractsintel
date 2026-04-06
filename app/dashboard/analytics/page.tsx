@@ -5,6 +5,7 @@ import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { InlineGuide } from "../inline-guide";
 
 interface AgencyStats {
   agency: string;
@@ -101,6 +102,7 @@ export default function AnalyticsPage() {
   if (!teamTier) {
     return (
       <div className="relative">
+      <InlineGuide page="analytics" />
         <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="border border-[#1e2535] bg-[#0d1018] p-8 max-w-md text-center">
             <svg className="w-12 h-12 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">

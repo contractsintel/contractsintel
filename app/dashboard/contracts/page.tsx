@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
+import { InlineGuide } from "../inline-guide";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -133,6 +134,7 @@ ${organization.name || "[Your Company Name]"}`;
         <h1 className="text-2xl font-serif text-[#e8edf8]">Contract Delivery</h1>
         <HelpButton page="contracts" />
       </div>
+      <InlineGuide page="contracts" />
       <TrialTierBanner page="contracts" />
       <div style={{display:'none'}}>
       </div>

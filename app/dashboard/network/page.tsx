@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
+import { InlineGuide } from "../inline-guide";
 
 type Tab = "opportunities" | "posted";
 
@@ -143,6 +144,7 @@ export default function NetworkPage() {
         <h1 className="text-2xl font-serif text-[#e8edf8]">Subcontracting Network</h1>
         <HelpButton page="network" />
       </div>
+      <InlineGuide page="network" />
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-[#1e2535] mb-6">

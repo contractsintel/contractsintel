@@ -4,6 +4,7 @@ import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import { HelpButton } from "../help-panel";
+import { InlineGuide } from "../inline-guide";
 
 const CATEGORIES = [
   { key: "sam", label: "SAM.gov Registration", icon: "S" },
@@ -79,6 +80,7 @@ export default function CompliancePage() {
         <h1 className="text-2xl font-serif text-[#e8edf8]">Compliance Monitor</h1>
         <HelpButton page="compliance" />
       </div>
+      <InlineGuide page="compliance" />
 
       {loading ? (
         <div className="text-center text-[#4a5a75] py-12">Loading compliance data...</div>

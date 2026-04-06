@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
+import { InlineGuide } from "../inline-guide";
 
 export default function PastPerformancePage() {
   const { organization } = useDashboard();
@@ -118,6 +119,7 @@ export default function PastPerformancePage() {
         <h1 className="text-2xl font-serif text-[#e8edf8]">Past Performance</h1>
         <HelpButton page="past-performance" />
       </div>
+      <InlineGuide page="past-performance" />
       <TrialTierBanner page="past-performance" />
       <div style={{display:'none'}}>
       </div>

@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
+import { InlineGuide } from "../inline-guide";
 
 const TABS = ["Technical Approach", "Past Performance", "Executive Summary"] as const;
 type Tab = (typeof TABS)[number];
@@ -116,6 +117,7 @@ export default function ProposalsPage() {
         <h1 className="text-2xl font-serif text-[#e8edf8]">AI Proposals</h1>
         <HelpButton page="proposals" />
       </div>
+      <InlineGuide page="proposals" />
       <TrialTierBanner page="proposals" />
       <div style={{display:'none'}}>
       </div>

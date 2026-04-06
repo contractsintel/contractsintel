@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "./help-panel";
 import { DemoBanner } from "./demo-banner";
+import { InlineGuide } from "./inline-guide";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -168,6 +169,7 @@ export default function DashboardPage() {
         </div>
         <HelpButton page="dashboard" />
       </div>
+      <InlineGuide page="dashboard" />
 
       {/* Demo Banner */}
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
