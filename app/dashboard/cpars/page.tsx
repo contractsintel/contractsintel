@@ -145,6 +145,7 @@ export default function CparsPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#e11d48"}} />
           <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">CPARS Monitor</h1>
+            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#e11d48"}} />
         </div>
         <HelpButton page="cpars" />
       </div>

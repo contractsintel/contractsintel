@@ -132,6 +132,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
         <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Analytics</h1>
+            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
       </div>
 
       {loading ? (
