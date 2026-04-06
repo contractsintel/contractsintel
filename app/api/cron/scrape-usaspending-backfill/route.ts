@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 300;
 
-const PAGES_PER_RUN = 50;
+const PAGES_PER_RUN = 100; // ~100 pages per 300s run
 const RESULTS_PER_PAGE = 25;
 
 export async function GET(request: NextRequest) {

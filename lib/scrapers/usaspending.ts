@@ -24,13 +24,13 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
 
     // Pull ALL contract awards from last 90 days, sorted by award amount descending
     // No NAICS filter -- we match by NAICS after storing
-    const MAX_RESULTS = 5000;
+    // No artificial cap — fetch until API is exhausted
     const PER_PAGE = 100;
     let page = 1;
     const allAwards: any[] = [];
     let hasNext = true;
 
-    while (hasNext && allAwards.length < MAX_RESULTS) {
+    while (hasNext) {
       const payload = {
         filters: {
           time_period: [

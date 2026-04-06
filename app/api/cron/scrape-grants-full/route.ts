@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
       offset += PER_PAGE;
       if (opps.length < PER_PAGE) break;
-    } while (offset < hitCount && offset < 5000);
+    } while (offset < hitCount);
 
     return NextResponse.json({ success: true, hitCount, fetched: totalFetched, saved: totalSaved, pagesProcessed: Math.ceil(offset / PER_PAGE) });
   } catch (err) {

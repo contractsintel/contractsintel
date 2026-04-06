@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
     
-    const MAX_PAGES = 100;
+    // No page cap — run until timeout or data exhausted
     let page = 1;
     let totalFetched = 0;
     let totalSaved = 0;
     let hasNext = true;
 
-    while (hasNext && page <= MAX_PAGES) {
+    while (hasNext) {
       const res = await fetch("https://api.usaspending.gov/api/v2/search/spending_by_award/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       page++;
     }
 
-    return NextResponse.json({ success: true, pages: page - 1, fetched: totalFetched, saved: totalSaved, hasNext, stoppedAt: page > MAX_PAGES ? "max_pages" : hasNext ? "timeout" : "complete" });
+    return NextResponse.json({ success: true, pages: page - 1, fetched: totalFetched, saved: totalSaved, hasNext, stoppedAt: hasNext ? "timeout" : "complete" });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
