@@ -129,7 +129,11 @@ export default function ProposalsPage() {
         <div className="text-center text-[#9ca3af] py-12">Loading opportunities...</div>
       ) : matches.length === 0 ? (
         <div className="border border-[#f0f1f3] bg-white p-12 text-center">
-          <div className="text-[#9ca3af] text-lg mb-2">No active bids</div>
+          <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #f5f3ff, #fff)", borderRadius: "16px", border: "1px solid #7c3aed15"}}>
+              <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#7c3aed"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <div className="text-[20px] font-bold text-[#0f172a] mb-2">AI proposals at your fingertips</div>
+              <p className="text-sm text-[#4b5563] mb-6">Mark any opportunity as &ldquo;Bidding&rdquo; in your Pipeline, then come here to generate an AI-powered first draft in 60 seconds.</p>
+              <a href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#7c3aed"}}>Go to Pipeline</a>
           <p className="text-sm text-[#4b5563]">
             Mark opportunities as &quot;Bidding&quot; from the{" "}
             <Link href="/dashboard" className="text-[#3b82f6]">dashboard</Link> to generate proposals.
