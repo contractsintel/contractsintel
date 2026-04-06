@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   const { data: profile } = await supabase
     .from("users")
     .select("*, organizations(*)")
-    .eq("id", authUser.id)
+    .eq("auth_id", authUser.id)
     .single();
 
   // Fallback: try profiles table if users table doesn't exist yet
