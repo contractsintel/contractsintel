@@ -173,25 +173,29 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
+      {/* Hero Greeting Card */}
+      <div className="relative overflow-hidden mb-8 p-8" style={{background: "linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #ecfdf5 100%)", borderRadius: "16px", border: "1px solid rgba(37,99,235,0.08)"}}>
+        {/* Decorative blurred circles */}
+        <div className="absolute -top-10 -right-10 w-[120px] h-[120px] rounded-full" style={{background: "rgba(37,99,235,0.06)", filter: "blur(40px)"}} />
+        <div className="absolute top-20 -right-5 w-[80px] h-[80px] rounded-full" style={{background: "rgba(124,58,237,0.05)", filter: "blur(30px)"}} />
+        <div className="absolute -bottom-8 right-20 w-[100px] h-[100px] rounded-full" style={{background: "rgba(5,150,105,0.04)", filter: "blur(35px)"}} />
+
+        <div className="relative flex items-center justify-between">
+          <div>
             <h1 className="font-['DM_Serif_Display'] text-[32px] font-bold tracking-[-0.02em] text-[#0f172a]">
               {greeting}, {displayName}
             </h1>
+            <p className="text-sm text-[#64748b] mt-2 font-['JetBrains_Mono']">{today}</p>
+            {!loading && (
+              <p className="text-[15px] text-[#475569] mt-2 font-medium">
+                {matches.length > 0
+                  ? `You have ${matches.length} new match${matches.length === 1 ? "" : "es"} today`
+                  : "Your first digest arrives tomorrow at 7am"}
+              </p>
+            )}
           </div>
-          <p className="text-sm text-[#94a3b8] mt-1 font-['JetBrains_Mono']">{today}</p>
-          {!loading && (
-            <p className="text-sm text-[#4b5563] mt-1">
-              {matches.length > 0
-                ? `You have ${matches.length} new match${matches.length === 1 ? "" : "es"} today`
-                : "Your first digest arrives tomorrow at 7am"}
-            </p>
-          )}
+          <HelpButton page="dashboard" />
         </div>
-        <HelpButton page="dashboard" />
       </div>
       <InlineGuide page="dashboard" />
 
