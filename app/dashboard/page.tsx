@@ -204,46 +204,20 @@ export default function DashboardPage() {
 
       {/* Stats Bar */}
       <div data-tour="stats-bar" className="grid grid-cols-4 gap-4 mb-6">
-        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#2563eb]">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#2563eb]">{matches.length}</div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <svg className="w-3.5 h-3.5 text-[#2563eb]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">New Matches</div>
+        {[
+          { value: matches.length, label: "New Matches", color: "#2563eb", gradient: "linear-gradient(135deg, #eff6ff, #fff)", icon: <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> },
+          { value: formatCurrency(totalValue), label: "Total Value", color: "#059669", gradient: "linear-gradient(135deg, #ecfdf5, #fff)", icon: <path strokeLinecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+          { value: urgentCount, label: "Urgent (<7d)", color: "#dc2626", gradient: "linear-gradient(135deg, #fef2f2, #fff)", icon: <path strokeLinecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+          { value: topScore, label: "Top Score", color: "#d97706", gradient: "linear-gradient(135deg, #fffbeb, #fff)", icon: <path strokeLinecap="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> },
+        ].map((stat) => (
+          <div key={stat.label} className="relative overflow-hidden min-h-[120px] p-6 border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 cursor-default" style={{background: stat.gradient, borderTop: `3px solid ${stat.color}`}}>
+            <div className="font-['DM_Serif_Display'] text-[44px] font-extrabold tracking-[-0.03em] leading-none" style={{color: stat.color}}>{stat.value}</div>
+            <div className="flex items-center gap-1.5 mt-3">
+              <svg className="w-3.5 h-3.5" style={{color: stat.color}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{stat.icon}</svg>
+              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">{stat.label}</div>
             </div>
           </div>
-        </div>
-        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#059669]">
-          <div className="absolute inset-0 bg-gradient-to-r from-green-50/50 to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#059669]">{formatCurrency(totalValue)}</div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <svg className="w-3.5 h-3.5 text-[#059669]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Total Value</div>
-            </div>
-          </div>
-        </div>
-        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#dc2626]">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-50/50 to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#dc2626]">{urgentCount}</div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <svg className="w-3.5 h-3.5 text-[#dc2626]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Urgent (&lt;7d)</div>
-            </div>
-          </div>
-        </div>
-        <div className="relative overflow-hidden bg-white p-5 min-h-[100px] border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] border-t-[3px] border-t-[#d97706]">
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-50/50 to-transparent pointer-events-none" />
-          <div className="relative">
-            <div className="font-['DM_Serif_Display'] text-[40px] font-extrabold tracking-[-0.03em] text-[#d97706]">{topScore}</div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <svg className="w-3.5 h-3.5 text-[#d97706]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">Top Score</div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Compliance Alert */}
