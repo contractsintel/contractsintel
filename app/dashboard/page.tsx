@@ -56,7 +56,7 @@ type FilterState = {
 };
 
 export default function DashboardPage() {
-  const { organization } = useDashboard();
+  const { organization, user } = useDashboard();
   const supabase = createClient();
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +166,10 @@ export default function DashboardPage() {
     day: "numeric",
   });
 
-  const displayName = ((organization.name || "there").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "));
+  // Use user's full name first, then org name, but never show an email address
+  const rawName = user.full_name || organization.name || "there";
+  const cleanName = rawName.includes("@") ? rawName.split("@")[0] : rawName;
+  const displayName = cleanName.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
   return (
     <div>

@@ -53,7 +53,11 @@ export default async function DashboardLayout({
   return (
     <DashboardProvider user={userProfile} organization={org}>
       <div className="min-h-screen bg-white">
-        <TopNav companyName={org.name} userEmail={authUser.email ?? ""} userName={userProfile.full_name} />
+        <TopNav
+          companyName={(org.name || "").includes("@") ? (org.name || "").split("@")[0].charAt(0).toUpperCase() + (org.name || "").split("@")[0].slice(1) : (org.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+          userEmail={authUser.email ?? ""}
+          userName={userProfile.full_name ? userProfile.full_name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : null}
+        />
         <div className="flex pt-16">
           <Sidebar plan={org.plan} />
           <main className="flex-1 ml-[220px] p-8">
