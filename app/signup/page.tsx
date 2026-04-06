@@ -49,18 +49,44 @@ export default function SignupPage() {
         .single();
 
       if (userRec?.organization_id) {
-        // Update org name if provided
-        if (companyName) {
+        const orgId = userRec.organization_id;
+
+        // Update org with name, UEI, and trial dates
+        await supabase
+          .from("organizations")
+          .update({
+            name: companyName || undefined,
+            uei: uei || null,
+            subscription_status: "trialing",
+            trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+          .eq("id", orgId);
+
+        // Ensure user_preferences has get-started as default
+        const { data: existingPrefs } = await supabase
+          .from("user_preferences")
+          .select("id")
+          .eq("organization_id", orgId)
+          .single();
+
+        if (existingPrefs) {
           await supabase
-            .from("organizations")
-            .update({ name: companyName, uei: uei || null })
-            .eq("id", userRec.organization_id);
+            .from("user_preferences")
+            .update({ default_page: "get-started", checklist_account_created: true })
+            .eq("organization_id", orgId);
+        } else {
+          await supabase.from("user_preferences").insert({
+            organization_id: orgId,
+            default_page: "get-started",
+            checklist_account_created: true,
+          });
         }
+
         // Seed demo data so dashboard isn't empty
-        await seedDemoData(supabase, userRec.organization_id);
+        await seedDemoData(supabase, orgId);
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/get-started");
     }
   };
 

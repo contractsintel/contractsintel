@@ -38,8 +38,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in + on dashboard (but not expired page) — check subscription
-  if (user && pathname.startsWith("/dashboard") && !pathname.startsWith("/expired")) {
+  // Logged in + on dashboard — run checks
+  if (user && pathname.startsWith("/dashboard")) {
     const { data: userRec } = await supabase
       .from("users")
       .select("organization_id, organizations(subscription_status, trial_ends_at)")
@@ -47,11 +47,12 @@ export async function updateSession(request: NextRequest) {
       .single();
 
     const org = (userRec as any)?.organizations;
+    const orgId = userRec?.organization_id;
 
     if (org) {
       const status = org.subscription_status;
 
-      // Trial expired
+      // Trial expired — redirect to /expired
       if (status === "trialing" && org.trial_ends_at) {
         const trialEnd = new Date(org.trial_ends_at);
         if (trialEnd < new Date()) {
@@ -65,6 +66,22 @@ export async function updateSession(request: NextRequest) {
       if (status === "cancelled") {
         const url = request.nextUrl.clone();
         url.pathname = "/expired";
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // Get-started redirect: if user is on /dashboard exactly (not a sub-page),
+    // check if they should be redirected to get-started
+    if (pathname === "/dashboard" && orgId) {
+      const { data: prefs } = await supabase
+        .from("user_preferences")
+        .select("default_page")
+        .eq("organization_id", orgId)
+        .single();
+
+      if (prefs?.default_page === "get-started") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard/get-started";
         return NextResponse.redirect(url);
       }
     }
