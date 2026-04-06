@@ -73,15 +73,23 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
       const deadline = opp.closeDate ?? opp.closeDateStr ?? null;
       const value = opp.estimatedTotalFunding ?? opp.awardCeiling ?? null;
 
+      // Parse dates from MM/DD/YYYY to YYYY-MM-DD
+      const parseDate = (d: string | null | undefined): string | null => {
+        if (!d) return null;
+        const parts = d.split("/");
+        if (parts.length === 3) return `${parts[2]}-${parts[0].padStart(2,"0")}-${parts[1].padStart(2,"0")}`;
+        return d;
+      };
+
       const { error } = await supabase.from("opportunities").upsert(
         {
           notice_id: noticeId,
           title,
           agency,
           solicitation_number: number,
-          estimated_value: value,
-          response_deadline: deadline,
-          posted_date: opp.openDateStr ?? opp.openDate ?? null,
+          value_estimate: value,
+          response_deadline: deadline ? parseDate(deadline) : null,
+          posted_date: parseDate(opp.openDate ?? opp.openDateStr) ?? null,
           description: opp.description?.substring(0, 10000) ?? null,
           source: "grants_gov",
           source_url: `https://www.grants.gov/search-results-detail/${oppId}`,

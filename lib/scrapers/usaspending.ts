@@ -135,7 +135,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
           agency: agency || "Unknown",
           solicitation_number: awardId,
           naics_code: naics ?? null,
-          estimated_value: amount ?? null,
+          value_estimate: amount ?? null,
           response_deadline: endDate ?? null,
           description: `${reasoning}\n\nOriginal Description: ${description?.substring(0, 5000) || "N/A"}`,
           source: "usaspending",
