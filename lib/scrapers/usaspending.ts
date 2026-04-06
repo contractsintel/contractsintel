@@ -63,11 +63,10 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
           {
             start_date: getToday(),
             end_date: getDateMonthsFromNow(6),
-            date_type: "date_signed",
           },
         ],
-        award_type_codes: ["A", "B", "C", "D"], // Contracts only
-        naics_codes: naicsList,
+        award_type_codes: ["A", "B", "C", "D"],
+        naics_codes: { require: naicsList },
       },
       fields: [
         "Award ID",
@@ -83,8 +82,8 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
       ],
       limit: 100,
       page: 1,
-      sort: "Period of Performance Current End Date",
-      order: "asc",
+      sort: "Award Amount",
+      order: "desc",
       subawards: false,
     };
 

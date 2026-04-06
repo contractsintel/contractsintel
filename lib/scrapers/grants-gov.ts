@@ -1,6 +1,6 @@
 import type { ScraperResult } from "./index";
 
-const GRANTS_GOV_API = "https://www.grants.gov/grantsws/rest/opportunities/search/";
+const GRANTS_GOV_API = "https://apply07.grants.gov/grantsws/rest/opportunities/search";
 
 interface GrantsGovOpportunity {
   id?: number;
@@ -58,19 +58,19 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
     }
 
     const data = await res.json();
-    const opportunities: GrantsGovOpportunity[] =
-      data.oppHits ?? data.opportunities ?? data.opportunitiesData ?? [];
+    const opportunities: GrantsGovOpportunity[] = data.oppHits ?? [];
 
     let upserted = 0;
 
     for (const opp of opportunities) {
-      const oppId = opp.opportunityId ?? opp.id;
+      const oppId = opp.id ?? opp.opportunityId;
       if (!oppId) continue;
 
       const noticeId = `grants-gov-${oppId}`;
-      const title = opp.opportunityTitle ?? "Untitled Grant";
+      const title = (opp as any).title ?? opp.opportunityTitle ?? "Untitled Grant";
       const agency = opp.agency ?? opp.agencyCode ?? "Unknown";
-      const deadline = opp.closeDateStr ?? opp.closeDate ?? null;
+      const number = (opp as any).number ?? opp.opportunityNumber ?? String(oppId);
+      const deadline = opp.closeDate ?? opp.closeDateStr ?? null;
       const value = opp.estimatedTotalFunding ?? opp.awardCeiling ?? null;
 
       const { error } = await supabase.from("opportunities").upsert(
@@ -78,7 +78,7 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
           notice_id: noticeId,
           title,
           agency,
-          solicitation_number: opp.opportunityNumber ?? String(oppId),
+          solicitation_number: number,
           estimated_value: value,
           response_deadline: deadline,
           posted_date: opp.openDateStr ?? opp.openDate ?? null,
