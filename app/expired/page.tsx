@@ -108,7 +108,7 @@ export default function ExpiredPage() {
             <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
             <span className="font-semibold text-[15px] text-[#111827]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
           </Link>
-          <h1 className="text-3xl font-bold tracking-[-0.02em] text-[#0f172a] mb-3">Your free trial has ended</h1>
+          <h1 className="font-['DM_Serif_Display'] text-3xl tracking-[-0.02em] text-[#0f172a] mb-3">Your free trial has ended</h1>
           <p className="text-[#4b5563] text-base max-w-lg mx-auto">
             To continue using ContractsIntel and keep receiving matched opportunities, choose a plan below.
           </p>
@@ -143,7 +143,7 @@ export default function ExpiredPage() {
           {PLANS.map((plan) => (
             <div
               key={plan.tier}
-              className={`border bg-white p-6 ${plan.popular ? "border-[#2563eb] ring-1 ring-[#2563eb]" : "border-[#e5e7eb]"}`}
+              className={`border bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${plan.popular ? "border-[#2563eb] ring-1 ring-[#2563eb]" : "border-[#e5e7eb]"}`}
             >
               {plan.popular && (
                 <div className="text-[10px] font-mono uppercase tracking-wider text-[#3b82f6] mb-2">Most Popular</div>
