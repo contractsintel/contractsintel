@@ -102,6 +102,12 @@ a[class*="text-[#2563eb]"] {
   transition: color 0.15s ease;
 }
 
+/* Toast fade-in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Shimmer animation for empty state preview */
 @keyframes shimmer {
   0%, 100% { opacity: 1; }

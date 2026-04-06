@@ -95,11 +95,37 @@ export default function DashboardPage() {
     loadData();
   }, [loadData]);
 
+  const [toast, setToast] = useState<string | null>(null);
+  const [fadingOut, setFadingOut] = useState<string | null>(null);
+
   const updateStatus = async (matchId: string, status: string) => {
-    await supabase
+    if (status === "skipped") {
+      setFadingOut(matchId);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+
+    const { error } = await supabase
       .from("opportunity_matches")
-      .update({ user_status: status, pipeline_stage: status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null })
-      .eq("id", matchId);
+      .update({
+        user_status: status,
+        pipeline_stage: status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null,
+      })
+      .eq("id", matchId)
+      .eq("organization_id", organization.id);
+
+    if (error) {
+      setToast("Error updating — try again");
+    } else {
+      const msgs: Record<string, string> = {
+        tracking: "Added to Pipeline — Monitoring",
+        bidding: "Added to Pipeline — Preparing Bid",
+        skipped: "Skipped",
+      };
+      setToast(msgs[status] || "Updated");
+    }
+
+    setTimeout(() => setToast(null), 2500);
+    setFadingOut(null);
     loadData();
   };
 
@@ -405,11 +431,12 @@ export default function DashboardPage() {
                     ? "text-[#f59e0b]"
                     : "text-[#4b5563]";
 
+                if (match.user_status === "skipped" && fadingOut !== match.id) return null;
                 return (
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className="border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200"
+                    className={`border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-300 ${fadingOut === match.id ? "opacity-0 scale-95" : ""}`}
                   >
                     <div className="p-5">
                       <div className="flex items-start gap-4">
@@ -422,7 +449,9 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="text-[16px] font-semibold text-[#0f172a] truncate">
-                              {opp.title}
+                              {opp.sam_url ? (
+                                <a href={opp.sam_url} target="_blank" rel="noopener noreferrer" className="hover:text-[#2563eb] transition-colors">{opp.title}</a>
+                              ) : opp.title}
                             </h3>
                             <span
                               className={`px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 ${recBadge(
@@ -480,24 +509,32 @@ export default function DashboardPage() {
                               </span>
                             </div>
                             <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-2">
-                              <button
-                                onClick={() => updateStatus(match.id, "tracking")}
-                                className="px-3 py-1 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#e2e8f0] hover:text-[#111827] rounded-lg transition-all duration-200"
-                              >
-                                Track
-                              </button>
-                              <button
-                                onClick={() => updateStatus(match.id, "bidding")}
-                                className="px-3 py-1 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all duration-200"
-                              >
-                                Bid
-                              </button>
-                              <button
-                                onClick={() => updateStatus(match.id, "skipped")}
-                                className="px-3 py-1 text-xs text-[#9ca3af] hover:text-[#4b5563] rounded-lg transition-all duration-200"
-                              >
-                                Skip
-                              </button>
+                              {match.user_status === "tracking" ? (
+                                <span className="px-3 py-1 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking ✓</span>
+                              ) : match.user_status === "bidding" ? (
+                                <span className="px-3 py-1 text-xs text-[#2563eb] bg-[#eff4ff] rounded-lg font-medium">Bidding ✓</span>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => updateStatus(match.id, "tracking")}
+                                    className="px-3 py-1.5 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#e2e8f0] hover:text-[#111827] rounded-lg transition-all duration-200"
+                                  >
+                                    Track
+                                  </button>
+                                  <button
+                                    onClick={() => updateStatus(match.id, "bidding")}
+                                    className="px-3 py-1.5 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all duration-200"
+                                  >
+                                    Bid
+                                  </button>
+                                  <button
+                                    onClick={() => updateStatus(match.id, "skipped")}
+                                    className="px-3 py-1.5 text-xs text-[#9ca3af] hover:text-[#4b5563] rounded-lg transition-all duration-200"
+                                  >
+                                    Skip
+                                  </button>
+                                </>
+                              )}
                               {opp.sam_url && (
                                 <a
                                   href={opp.sam_url}
@@ -603,6 +640,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 px-5 py-3 bg-[#0f172a] text-white text-sm font-medium rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.15)] animate-[fadeInUp_0.3s_ease]">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
