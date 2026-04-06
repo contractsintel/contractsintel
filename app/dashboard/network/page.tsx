@@ -6,13 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
+import { TrialTierBanner } from "../trial-banner";
 
 type Tab = "opportunities" | "posted";
 
 export default function NetworkPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan);
+  const teamTier = isTeam(organization.plan, organization);
 
   const [tab, setTab] = useState<Tab>("opportunities");
   const [opportunities, setOpportunities] = useState<any[]>([]);

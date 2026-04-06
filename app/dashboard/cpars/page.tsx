@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
+import { TrialTierBanner } from "../trial-banner";
 
 const RATING_CATEGORIES = ["Quality", "Schedule", "Cost Control", "Management", "Small Business"];
 const RATING_VALUES = ["Exceptional", "Very Good", "Satisfactory", "Marginal", "Unsatisfactory"];
@@ -35,7 +36,7 @@ function ratingBg(value: string): string {
 export default function CparsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan);
+  const teamTier = isTeam(organization.plan, organization);
 
   const [contracts, setContracts] = useState<any[]>([]);
   const [ratings, setRatings] = useState<any[]>([]);

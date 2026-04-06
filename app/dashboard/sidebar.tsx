@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isDiscovery, isTeam, tierLabel } from "@/lib/feature-gate";
+import { isDiscovery, isTeam, isTrialActive, tierLabel } from "@/lib/feature-gate";
+import { useDashboard } from "./context";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "home", locked: false, teamOnly: false, tourId: "" },
@@ -85,8 +86,10 @@ const ICONS: Record<string, JSX.Element> = {
 
 export function Sidebar({ plan }: { plan: string }) {
   const pathname = usePathname();
-  const locked = isDiscovery(plan);
-  const teamTier = isTeam(plan);
+  const { organization } = useDashboard();
+  const trial = isTrialActive(organization);
+  const locked = trial ? false : isDiscovery(plan);
+  const teamTier = trial ? true : isTeam(plan);
 
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-[220px] border-r border-[#1e2535] bg-[#080a0f] flex flex-col z-40">
@@ -134,9 +137,9 @@ export function Sidebar({ plan }: { plan: string }) {
       <div className="p-4 border-t border-[#1e2535]">
         <div className="flex items-center justify-between">
           <span className="text-xs font-mono uppercase tracking-wider text-[#4a5a75]">
-            {tierLabel(plan)}
+            {trial ? "Free Trial" : tierLabel(plan)}
           </span>
-          {plan !== "team" && (
+          {!trial && plan !== "team" && (
             <Link
               href="/dashboard/settings"
               className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"

@@ -6,11 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
+import { TrialTierBanner } from "../trial-banner";
 
 export default function CompetitorsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan);
+  const teamTier = isTeam(organization.plan, organization);
 
   const [competitors, setCompetitors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

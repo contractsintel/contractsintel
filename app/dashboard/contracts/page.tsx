@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { useDashboard } from "../context";
 import { isDiscovery } from "@/lib/feature-gate";
@@ -6,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
+import { TrialTierBanner } from "../trial-banner";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -15,7 +17,7 @@ function formatCurrency(n: number | null): string {
 export default function ContractsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const locked = isDiscovery(organization.plan);
+  const locked = isDiscovery(organization.plan, organization);
 
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +132,9 @@ ${organization.name || "[Your Company Name]"}`;
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-serif text-[#e8edf8]">Contract Delivery</h1>
         <HelpButton page="contracts" />
+      </div>
+      <TrialTierBanner page="contracts" />
+      <div style={{display:'none'}}>
       </div>
 
       {loading ? (

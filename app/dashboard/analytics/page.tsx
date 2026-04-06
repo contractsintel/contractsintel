@@ -19,7 +19,7 @@ interface AgencyStats {
 export default function AnalyticsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan);
+  const teamTier = isTeam(organization.plan, organization);
 
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
   const [lossAnalyses, setLossAnalyses] = useState<any[]>([]);

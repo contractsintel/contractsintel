@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const PLANS = [
@@ -29,9 +29,61 @@ const PLANS = [
   },
 ];
 
+const BD_PRO_FEATURES = [
+  { key: "proposals", label: "AI Proposal Drafts", table: "proposal_drafts" },
+  { key: "past_perf", label: "Past Performance Builder", table: "past_performance" },
+  { key: "contracts", label: "Contract Delivery", table: "contracts" },
+  { key: "compliance_full", label: "Full Compliance Monitor", table: "compliance_items" },
+];
+
+const TEAM_FEATURES_LIST = [
+  { key: "cpars", label: "CPARS Monitor", table: "cpars_ratings" },
+  { key: "network", label: "Subcontracting Network", table: "teaming_matches" },
+  { key: "competitors", label: "Competitor Intelligence", table: "competitors" },
+  { key: "analytics", label: "Agency Analytics", table: "agency_analytics" },
+  { key: "loss", label: "Loss Analysis", table: "loss_analyses" },
+];
+
 export default function ExpiredPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState<string | null>(null);
+  const [usage, setUsage] = useState<{ used: string[]; recommended: string } | null>(null);
+
+  useEffect(() => {
+    async function checkUsage() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userRec } = await supabase
+        .from("users")
+        .select("organization_id")
+        .eq("auth_id", user.id)
+        .single();
+
+      if (!userRec?.organization_id) return;
+      const orgId = userRec.organization_id;
+
+      const used: string[] = [];
+      let usedTeam = false;
+      let usedBdPro = false;
+
+      // Check BD Pro features
+      for (const f of BD_PRO_FEATURES) {
+        const { count } = await supabase.from(f.table).select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+        if (count && count > 0) { used.push(f.label); usedBdPro = true; }
+      }
+
+      // Check Team features
+      for (const f of TEAM_FEATURES_LIST) {
+        const { count } = await supabase.from(f.table).select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+        if (count && count > 0) { used.push(f.label); usedTeam = true; }
+      }
+
+      const recommended = usedTeam ? "Team" : usedBdPro ? "BD Pro" : "Discovery";
+      setUsage({ used, recommended });
+    }
+    checkUsage();
+  }, [supabase]);
 
   const handleSubscribe = async (tier: string) => {
     setLoading(tier);
@@ -61,6 +113,31 @@ export default function ExpiredPage() {
             To continue using ContractsIntel and keep receiving matched opportunities, choose a plan below.
           </p>
         </div>
+
+        {usage && usage.used.length > 0 && (
+          <div className="border border-[#1e2535] bg-[#0d1018] p-6 mb-8">
+            <div className="text-sm text-[#8b9ab5] mb-3">
+              During your trial, you used <strong className="text-[#e8edf8]">{usage.used.length + 4}</strong> of 16 products:
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {["Opportunity Intelligence", "Pipeline Tracker", "Compliance Alerts", "Calendar Sync"].map((f) => (
+                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#111520] border border-[#1e2535] text-[#8b9ab5]">{f}</span>
+              ))}
+              {usage.used.map((f) => (
+                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#111520] border border-[#2563eb]/30 text-[#3b82f6]">{f}</span>
+              ))}
+            </div>
+            <div className="text-sm">
+              Based on your usage, we recommend{" "}
+              <strong className={usage.recommended === "Team" ? "text-[#a78bfa]" : usage.recommended === "BD Pro" ? "text-[#3b82f6]" : "text-[#e8edf8]"}>
+                {usage.recommended}
+              </strong>
+              {usage.recommended === "Team" && " — you used Team-exclusive features like CPARS and competitor intelligence."}
+              {usage.recommended === "BD Pro" && " — you used BD Pro features like proposal drafts and past performance."}
+              {usage.recommended === "Discovery" && " — the essentials are all you need right now."}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-5 mb-10">
           {PLANS.map((plan) => (

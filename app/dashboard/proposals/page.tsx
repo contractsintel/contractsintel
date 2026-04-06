@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { useDashboard } from "../context";
 import { isDiscovery } from "@/lib/feature-gate";
@@ -6,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
+import { TrialTierBanner } from "../trial-banner";
 
 const TABS = ["Technical Approach", "Past Performance", "Executive Summary"] as const;
 type Tab = (typeof TABS)[number];
@@ -13,7 +15,7 @@ type Tab = (typeof TABS)[number];
 export default function ProposalsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const locked = isDiscovery(organization.plan);
+  const locked = isDiscovery(organization.plan, organization);
 
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,9 @@ export default function ProposalsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-serif text-[#e8edf8]">AI Proposals</h1>
         <HelpButton page="proposals" />
+      </div>
+      <TrialTierBanner page="proposals" />
+      <div style={{display:'none'}}>
       </div>
 
       {loading ? (
