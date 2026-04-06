@@ -365,7 +365,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
         // For JS SPA states, try ScrapingBee as fallback when direct fetch fails
         if (directFetchBlocked || (JS_STATES.has(portal.state) && html.length < 1000 && !/bid|solicit|rfp|rfq/i.test(html))) {
-          if (JS_STATES.has(portal.state) && process.env.SCRAPINGBEE_KEY) {
+          if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
             const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
             console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying ScrapingBee for ${sbUrl}...`);
             try {
@@ -456,7 +456,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         }
 
         // For JS states using ScrapingBee, only follow pagination if page 1 had results (budget-conscious)
-        if (JS_STATES.has(portal.state) && process.env.SCRAPINGBEE_KEY) {
+        if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
           const page1Parser = STATE_PARSERS[portal.state];
           const page1Results = page1Parser ? page1Parser(html) : [];
           const page1BidLinks = extractLinks(html).filter(

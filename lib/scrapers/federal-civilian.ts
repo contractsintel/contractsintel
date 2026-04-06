@@ -1,5 +1,5 @@
 import type { ScraperResult } from "./index";
-import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+import { fetchWithPuppeteer, logScrapingBeeUsage } from "./scrapingbee";
 
 // Sources that are JS SPAs requiring browser rendering
 const JS_FEDERAL_SOURCES: Record<string, string> = {
@@ -154,7 +154,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
         // Try ScrapingBee fallback for ALL blocked sources (not just known JS SPAs)
-        if (process.env.SCRAPINGBEE_KEY) {
+        if (true /* Puppeteer always available */) {
           const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
           console.log(`[federal-civilian] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -205,7 +205,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
       if (!hasData) {
         // Try ScrapingBee fallback for ALL sources that returned HTML but no data
-        if (process.env.SCRAPINGBEE_KEY) {
+        if (true /* Puppeteer always available */) {
           const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
           console.log(`[federal-civilian] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -262,7 +262,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             const isJsSource = !!JS_FEDERAL_SOURCES[source.id];
             let pageHtml: string;
 
-            if (isJsSource && process.env.SCRAPINGBEE_KEY) {
+            if (isJsSource && true /* Puppeteer always available */) {
               pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
             } else {
               const pageRes = await fetch(urlToFetch, {

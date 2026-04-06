@@ -73,7 +73,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
       if (!res.ok) {
         // Try ScrapingBee for JS SPA sources that returned non-200
-        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+        if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
           console.log(`[forecasts] ${source.name}: HTTP ${res.status}, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -161,7 +161,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
         // Try ScrapingBee fallback for known JS SPA sources
-        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+        if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
           console.log(`[forecasts] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -209,7 +209,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
       if (!hasData) {
         // Try ScrapingBee fallback for known JS SPA sources
-        if (JS_FORECAST_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+        if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
           console.log(`[forecasts] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
           try {

@@ -174,7 +174,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
         // Try ScrapingBee fallback for known JS SPA sources
-        if (JS_SBIR_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+        if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
           console.log(`[sbir-sttr] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -232,7 +232,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
 
       if (solLinks.length === 0) {
         // Try ScrapingBee fallback for known JS SPA sources with no parseable data
-        if (JS_SBIR_SOURCES[source.id] && process.env.SCRAPINGBEE_KEY) {
+        if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
           console.log(`[sbir-sttr] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
           try {
@@ -297,7 +297,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             const isJsSource = !!JS_SBIR_SOURCES[source.id];
             let pageHtml: string;
 
-            if (isJsSource && process.env.SCRAPINGBEE_KEY) {
+            if (isJsSource && true /* Puppeteer always available */) {
               pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
             } else {
               const pageRes = await fetch(urlToFetch, {
