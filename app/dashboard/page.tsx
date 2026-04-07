@@ -120,12 +120,12 @@ export default function DashboardPage() {
   const supabase = createClient();
   const router = useRouter();
 
-  // Redirect to onboarding if not complete
+  // Redirect to onboarding if not complete — use window.location for full reload
   useEffect(() => {
     if (organization.onboarding_complete === false) {
-      router.push("/dashboard/onboarding");
+      window.location.href = "/dashboard/onboarding";
     }
-  }, [organization.onboarding_complete, router]);
+  }, [organization.onboarding_complete]);
 
   const PAGE_SIZE = 20;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;

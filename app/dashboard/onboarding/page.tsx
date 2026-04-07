@@ -2,7 +2,7 @@
 
 import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const CHECK_SVG = (
@@ -21,21 +21,36 @@ export default function OnboardingPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
 
-  const [goal, setGoal] = useState(organization.onboarding_goal || "");
+  // Refetch org data on mount to get fresh values after wizard completion
+  const [freshOrg, setFreshOrg] = useState(organization);
+  useEffect(() => {
+    supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", organization.id)
+      .single()
+      .then(({ data }) => { if (data) setFreshOrg(data); });
+  }, [organization.id, supabase]);
+
+  const [goal, setGoal] = useState(freshOrg.onboarding_goal || organization.onboarding_goal || "");
+
+  // Update goal when freshOrg loads with a value
+  useEffect(() => {
+    if (freshOrg.onboarding_goal && !goal) setGoal(freshOrg.onboarding_goal);
+  }, [freshOrg.onboarding_goal, goal]);
 
   const step1Complete = !!goal;
-  const step2Complete = step1Complete && organization.setup_wizard_complete === true;
+  const step2Complete = step1Complete && freshOrg.setup_wizard_complete === true;
   const allComplete = step1Complete && step2Complete;
   const progress = allComplete ? 100 : step1Complete ? 33 : 0;
 
   const selectedGoal = GOALS[goal];
 
   console.log("ONBOARDING STATE:", JSON.stringify({
-    onboarding_goal: organization.onboarding_goal,
+    onboarding_goal: freshOrg.onboarding_goal,
+    setup_wizard_complete: freshOrg.setup_wizard_complete,
     goal_local: goal,
-    certifications: organization.certifications,
-    naics_codes: organization.naics_codes,
-    step1Complete, step2Complete, allComplete
+    step1Complete, step2Complete, allComplete,
   }));
 
   const selectGoal = async (key: string) => {
