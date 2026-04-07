@@ -255,14 +255,28 @@ export default function DashboardPage() {
     loadData();
   };
 
-  const getSourceLabel = (source: string | null) => {
+  const STATE_NAMES: Record<string, string> = {
+    al:"Alabama",ak:"Alaska",az:"Arizona",ar:"Arkansas",ca:"California",co:"Colorado",ct:"Connecticut",
+    de:"Delaware",dc:"Washington DC",fl:"Florida",ga:"Georgia",hi:"Hawaii",id:"Idaho",il:"Illinois",
+    in:"Indiana",ia:"Iowa",ks:"Kansas",ky:"Kentucky",la:"Louisiana",me:"Maine",md:"Maryland",
+    ma:"Massachusetts",mi:"Michigan",mn:"Minnesota",ms:"Mississippi",mo:"Missouri",mt:"Montana",
+    ne:"Nebraska",nv:"Nevada",nh:"New Hampshire",nj:"New Jersey",nm:"New Mexico",ny:"New York",
+    nc:"North Carolina",nd:"North Dakota",oh:"Ohio",ok:"Oklahoma",or:"Oregon",pa:"Pennsylvania",
+    ri:"Rhode Island",sc:"South Carolina",sd:"South Dakota",tn:"Tennessee",tx:"Texas",ut:"Utah",
+    vt:"Vermont",va:"Virginia",wa:"Washington",wv:"West Virginia",wi:"Wisconsin",wy:"Wyoming",
+    pr:"Puerto Rico",vi:"Virgin Islands",gu:"Guam",
+  };
+  const getSourceLabel = (source: string | null, agency?: string) => {
     if (!source) return "Government Website";
     const map: Record<string, string> = {
-      sam_gov: "SAM.gov", usaspending: "USASpending.gov", federal_civilian: "Federal Agency",
-      sbir_sttr: "SBIR.gov", grants_gov: "Grants.gov", subcontracting: "SubNet",
-      forecasts: "SAM.gov Forecasts", military_defense: "Military Procurement",
+      sam_gov: "SAM.gov", usaspending: "USASpending", federal_civilian: agency || "Federal Agency",
+      sbir_sttr: agency ? `${agency} SBIR` : "SBIR.gov", grants_gov: "Grants.gov",
+      subcontracting: "SBA SubNet", forecasts: "SAM.gov Forecasts", military_defense: agency || "Military Procurement",
     };
-    if (source.startsWith("state_")) return `${source.replace("state_", "").toUpperCase()} State Portal`;
+    if (source.startsWith("state_")) {
+      const code = source.replace("state_", "").toLowerCase();
+      return `${STATE_NAMES[code] || code.toUpperCase()} Procurement`;
+    }
     return map[source] || "Source Portal";
   };
 
@@ -810,7 +824,7 @@ export default function DashboardPage() {
                             {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className={`font-bold ${deadlineColor}`}>{new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})</span></div>}
                             {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
                             {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
-                            <div><span className="text-[#9ca3af]">Source:</span> <span className="text-[#111827]">{getSourceLabel(opp.source)}</span></div>
+                            <div><span className="text-[#9ca3af]">Source:</span> <span className="text-[#111827]">{getSourceLabel(opp.source, opp.agency)}</span></div>
                           </div>
 
                           {/* AI Recommendation */}
@@ -846,20 +860,55 @@ export default function DashboardPage() {
                             )}
                           </div>
 
-                          {/* View Original Contract button */}
-                          {(opp.sam_url || opp.source_url) ? (
-                            <a
-                              href={opp.sam_url || opp.source_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ci-btn"
-                              style={{ backgroundColor: opp.source === "sam_gov" ? "#2563eb" : opp.source?.startsWith("state_") ? "#059669" : opp.source === "grants_gov" ? "#d97706" : opp.source === "sbir_sttr" ? "#7c3aed" : "#2563eb" }}
-                            >
-                              View on {getSourceLabel(opp.source)} &rarr;
-                            </a>
-                          ) : (
-                            <p className="text-xs text-[#94a3b8] italic">Source link unavailable</p>
-                          )}
+                          {/* View Original Contract / Fallback Search */}
+                          {(() => {
+                            const url = opp.sam_url || opp.source_url;
+                            const isFileDownload = url && /\.(xlsx|csv|pdf|doc|docx|zip)$/i.test(url);
+                            const isValidUrl = url && !isFileDownload && url.startsWith("http");
+                            const srcLabel = getSourceLabel(opp.source, opp.agency);
+                            const searchTitle = cleanTitle(opp.title).substring(0, 80);
+                            const googleQuery = encodeURIComponent(`"${opp.solicitation_number || searchTitle}" ${opp.agency || ""} government contract`);
+
+                            if (isValidUrl) {
+                              return (
+                                <a href={url} target="_blank" rel="noopener noreferrer"
+                                  className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ci-btn"
+                                  style={{ backgroundColor: opp.source === "sam_gov" ? "#2563eb" : opp.source?.startsWith("state_") ? "#059669" : opp.source === "grants_gov" ? "#d97706" : "#475569" }}>
+                                  View on {srcLabel} &rarr;
+                                </a>
+                              );
+                            }
+                            // Fallback: search instructions
+                            return (
+                              <div className="border border-[#e2e8f0] rounded-lg p-3 space-y-2 bg-[#f8fafc]">
+                                <div className="ci-section-label">Find this contract</div>
+                                {opp.solicitation_number && (
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="text-[#64748b]">Solicitation:</span>
+                                    <span className="ci-mono text-[#0f172a] font-medium">{opp.solicitation_number}</span>
+                                    <button onClick={() => navigator.clipboard.writeText(opp.solicitation_number)} className="text-[10px] text-[#2563eb] hover:text-[#1d4ed8]">Copy</button>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-[#64748b]">Title:</span>
+                                  <span className="text-[#0f172a] truncate">{searchTitle}</span>
+                                  <button onClick={() => navigator.clipboard.writeText(searchTitle)} className="text-[10px] text-[#2563eb] hover:text-[#1d4ed8] shrink-0">Copy</button>
+                                </div>
+                                <div className="flex gap-2 pt-1">
+                                  <a href={`https://www.google.com/search?q=${googleQuery}`} target="_blank" rel="noopener noreferrer"
+                                    className="px-3 py-1.5 text-xs font-medium text-[#2563eb] border border-[#e2e8f0] rounded-lg hover:bg-[#eff6ff] ci-btn">
+                                    Search Google &rarr;
+                                  </a>
+                                  <button onClick={() => {
+                                    const details = `Title: ${searchTitle}\nAgency: ${opp.agency || "N/A"}\nSolicitation: ${opp.solicitation_number || "N/A"}\nValue: ${formatCurrency(getVal(opp))}\nDeadline: ${opp.response_deadline ? new Date(opp.response_deadline).toLocaleDateString() : "TBD"}`;
+                                    navigator.clipboard.writeText(details);
+                                  }} className="px-3 py-1.5 text-xs font-medium text-[#475569] border border-[#e2e8f0] rounded-lg hover:bg-[#f1f5f9] ci-btn">
+                                    Copy details
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Action buttons (only in expanded view) */}
                           <div className="flex items-center gap-2 pt-1">

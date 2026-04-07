@@ -352,6 +352,76 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Fix source URLs for SAM.gov, USASpending, Grants.gov
+app.post("/debug/fix-urls", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
+  const results = {};
+
+  // Fix SAM.gov: set source_url = https://sam.gov/opp/{notice_id}/view
+  let samFixed = 0, offset = 0;
+  while (true) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&or=(source_url.is.null,source_url.not.like.*sam.gov/opp*)&limit=500&offset=${offset}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const opps = await r.json();
+    if (!Array.isArray(opps) || !opps.length) break;
+    for (const o of opps) {
+      if (!o.notice_id) continue;
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${o.id}`, {
+        method: "PATCH", headers: hdrs,
+        body: JSON.stringify({ source_url: `https://sam.gov/opp/${o.notice_id}/view` }),
+      });
+      samFixed++;
+    }
+    offset += 500;
+    if (opps.length < 500) break;
+  }
+  results.sam_gov = samFixed;
+
+  // Fix Grants.gov: set source_url from notice_id
+  let grantsFixed = 0;
+  offset = 0;
+  while (true) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.grants_gov&or=(source_url.is.null,source_url.eq.)&limit=500&offset=${offset}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const opps = await r.json();
+    if (!Array.isArray(opps) || !opps.length) break;
+    for (const o of opps) {
+      if (!o.notice_id) continue;
+      const grantId = o.notice_id.replace("grants-gov-", "");
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${o.id}`, {
+        method: "PATCH", headers: hdrs,
+        body: JSON.stringify({ source_url: `https://www.grants.gov/search-results-detail/${grantId}` }),
+      });
+      grantsFixed++;
+    }
+    offset += 500;
+    if (opps.length < 500) break;
+  }
+  results.grants_gov = grantsFixed;
+
+  // Fix USASpending: set source_url from notice_id
+  let usaFixed = 0;
+  offset = 0;
+  while (true) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.usaspending&or=(source_url.is.null,source_url.eq.)&limit=500&offset=${offset}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const opps = await r.json();
+    if (!Array.isArray(opps) || !opps.length) break;
+    for (const o of opps) {
+      if (!o.notice_id) continue;
+      const awardId = o.notice_id.replace("usa-", "");
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${o.id}`, {
+        method: "PATCH", headers: hdrs,
+        body: JSON.stringify({ source_url: `https://www.usaspending.gov/award/${awardId}` }),
+      });
+      usaFixed++;
+    }
+    offset += 500;
+    if (opps.length < 500) break;
+  }
+  results.usaspending = usaFixed;
+
+  res.json({ success: true, fixed: results });
+});
+
 // Diagnostic: show org IDs, user IDs, and match counts
 app.get("/debug/orgs", async (req, res) => {
   if (!authCheck(req, res)) return;
