@@ -422,6 +422,70 @@ app.post("/debug/fix-urls", async (req, res) => {
   res.json({ success: true, fixed: results });
 });
 
+// Backfill SAM.gov detail data (contacts, NAICS, place of performance) for existing records
+app.post("/cron/sam-backfill", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  console.log("[backfill] SAM.gov detail backfill starting...");
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const patchHdrs = { ...hdrs, "Content-Type": "application/json", Prefer: "return=minimal" };
+  const SAM_DETAIL = "https://sam.gov/api/prod/opps/v2/opportunities/";
+  const SAM_HDR = { Accept: "application/json, text/plain, */*", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", Origin: "https://sam.gov" };
+
+  let updated = 0, errors = 0, offset = 0;
+
+  while (updated < 2000) {
+    // Get SAM.gov records missing contact_name (unfilled detail)
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&contact_name=is.null&limit=50&offset=${offset}`, { headers: hdrs });
+    const opps = await r.json();
+    if (!Array.isArray(opps) || !opps.length) break;
+
+    for (const opp of opps) {
+      try {
+        const detailRes = await fetch(`${SAM_DETAIL}${opp.notice_id}`, {
+          headers: { ...SAM_HDR, Referer: `https://sam.gov/opp/${opp.notice_id}/view` },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!detailRes.ok) { errors++; continue; }
+        const detail = await detailRes.json();
+        const d2 = detail.data2 || {};
+        const contacts = d2.pointOfContact || [];
+        const primary = contacts[0] || {};
+        const pop = d2.placeOfPerformance || {};
+        const popStr = [pop.city?.name, pop.state?.name || pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
+        const naics = d2.naics?.[0]?.code?.[0] || null;
+        const sol = d2.solicitation || {};
+        const descs = detail.description || [];
+        const fullDesc = descs.map((dd: any) => dd.body || "").join("\n");
+
+        const patch: Record<string, any> = {};
+        if (primary.fullName) patch.contact_name = primary.fullName;
+        if (primary.email) patch.contact_email = primary.email;
+        if (primary.phone) patch.contact_phone = primary.phone;
+        if (popStr) patch.place_of_performance = popStr;
+        if (naics) patch.naics_code = naics;
+        if (d2.classificationCode) patch.contract_type = d2.classificationCode;
+        if (sol.setAside && sol.setAside !== "NONE") patch.set_aside = sol.setAside;
+        if (fullDesc && fullDesc.length > 100) patch.full_description = fullDesc;
+        if (d2.solicitationNumber) patch.solicitation_number = d2.solicitationNumber;
+
+        if (Object.keys(patch).length > 0) {
+          patch.contact_name = patch.contact_name || "checked"; // mark as backfilled even if no contact
+          await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
+            method: "PATCH", headers: patchHdrs, body: JSON.stringify(patch),
+          });
+          updated++;
+        }
+        await new Promise(r => setTimeout(r, 200)); // rate limit
+      } catch (e) { errors++; }
+    }
+    offset += 50;
+    console.log(`[backfill] Progress: ${updated} updated, ${errors} errors, offset ${offset}`);
+  }
+
+  console.log(`[backfill] SAM.gov detail backfill complete: ${updated} updated, ${errors} errors`);
+  res.json({ success: true, updated, errors });
+});
+
 // Diagnostic: show org IDs, user IDs, and match counts
 app.get("/debug/orgs", async (req, res) => {
   if (!authCheck(req, res)) return;
@@ -1036,15 +1100,38 @@ app.post("/cron/scrape-html", async (req, res) => {
     const { id, name, url, source_type } = src;
     let context = null;
     try {
-      const result = await getPage();
-      context = result.context;
-      const page = result.page;
+      let html = "";
 
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-      await solveCaptchaIfPresent(page);
-      // Wait longer for JS-heavy SPAs
-      await new Promise((r) => setTimeout(r, 8000));
-      const html = await page.content();
+      // Strategy 1: Try direct fetch first (faster, works for server-rendered pages)
+      try {
+        const directRes = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (directRes.ok) {
+          const directHtml = await directRes.text();
+          // If direct HTML has substantial content (>5KB) and bid keywords, use it
+          if (directHtml.length > 5000 && bidKw.test(directHtml)) {
+            html = directHtml;
+            console.log(`[cron] ${name}: direct fetch OK (${directHtml.length} bytes)`);
+          }
+        }
+      } catch {}
+
+      // Strategy 2: Fall back to Patchright browser (for JS-heavy SPAs or blocked sites)
+      if (!html) {
+        const result = await getPage();
+        context = result.context;
+        const page = result.page;
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await solveCaptchaIfPresent(page);
+        await new Promise((r) => setTimeout(r, 8000));
+        html = await page.content();
+      }
 
       const records = [];
 
