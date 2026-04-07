@@ -24,21 +24,31 @@ export default function OnboardingPage() {
   const [goal, setGoal] = useState(organization.onboarding_goal || "");
 
   const step1Complete = !!goal;
-  const step2Complete = Array.isArray(organization.certifications) && organization.certifications.length > 0
+  const step2Complete = step1Complete
+    && Array.isArray(organization.certifications) && organization.certifications.length > 0
     && Array.isArray(organization.naics_codes) && organization.naics_codes.length > 0;
   const allComplete = step1Complete && step2Complete;
-  const progress = allComplete ? 100 : step2Complete ? 66 : step1Complete ? 33 : 0;
+  const progress = allComplete ? 100 : step1Complete ? 33 : 0;
 
   const selectedGoal = GOALS[goal];
 
-  console.log("ONBOARDING DEBUG:", { certifications: organization.certifications, naics_codes: organization.naics_codes, step2Complete });
+  console.log("ONBOARDING STATE:", JSON.stringify({
+    onboarding_goal: organization.onboarding_goal,
+    goal_local: goal,
+    certifications: organization.certifications,
+    naics_codes: organization.naics_codes,
+    step1Complete, step2Complete, allComplete
+  }));
 
   const selectGoal = async (key: string) => {
     setGoal(key);
     await supabase.from("organizations").update({ onboarding_goal: key }).eq("id", organization.id);
   };
 
-  const resetGoal = () => setGoal("");
+  const resetGoal = async () => {
+    setGoal("");
+    await supabase.from("organizations").update({ onboarding_goal: null }).eq("id", organization.id);
+  };
 
   const completeOnboarding = async () => {
     await supabase.from("organizations").update({ onboarding_complete: true }).eq("id", organization.id);
