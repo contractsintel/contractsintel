@@ -79,8 +79,8 @@ export default function CompliancePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#059669"}} />
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Compliance Monitor</h1>
-            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#059669"}} />
+          <h1 className="ci-page-title">Compliance Monitor</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#059669" }} />
         </div>
         <HelpButton page="compliance" />
       </div>

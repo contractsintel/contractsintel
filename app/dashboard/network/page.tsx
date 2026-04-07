@@ -129,7 +129,8 @@ export default function NetworkPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Subcontracting Network</h1>
+          <h1 className="ci-page-title">Subcontracting Network</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
           <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample network content...
           </div>
@@ -143,8 +144,8 @@ export default function NetworkPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Subcontracting Network</h1>
-            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#2563eb"}} />
+          <h1 className="ci-page-title">Subcontracting Network</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
         </div>
         <HelpButton page="network" />
       </div>

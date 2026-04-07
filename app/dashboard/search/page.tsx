@@ -4,6 +4,7 @@ import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { PageHeader } from "../page-header";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "";
@@ -133,12 +134,13 @@ export default function SearchPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0f172a]">Search All Contracts</h1>
-          <p className="text-sm text-[#64748b] mt-1">{total.toLocaleString()} opportunities in database</p>
-        </div>
-        <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8]">Back to Matches</Link>
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="Search All Contracts"
+          subtitle={`${total.toLocaleString()} opportunities in database`}
+          accentColor="#059669"
+        />
+        <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>
       </div>
 
       {/* Search bar */}

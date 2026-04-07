@@ -221,7 +221,8 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Pipeline</h1>
+          <h1 className="ci-page-title">Pipeline</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
             <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
         </div>
         <HelpButton page="pipeline" />

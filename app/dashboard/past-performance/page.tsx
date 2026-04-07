@@ -104,7 +104,8 @@ export default function PastPerformancePage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Past Performance</h1>
+          <h1 className="ci-page-title">Past Performance</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#dc2626" }} />
           <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample past performance content...
           </div>
@@ -118,8 +119,8 @@ export default function PastPerformancePage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#dc2626"}} />
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Past Performance</h1>
-            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#dc2626"}} />
+          <h1 className="ci-page-title">Past Performance</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#dc2626" }} />
         </div>
         <HelpButton page="past-performance" />
       </div>

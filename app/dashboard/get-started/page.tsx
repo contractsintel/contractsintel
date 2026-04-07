@@ -820,7 +820,8 @@ export default function GetStartedPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Get Started</h1>
+          <h1 className="ci-page-title">Get Started</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
           <p className="text-sm text-[#4b5563] mt-1">
             Welcome to ContractsIntel, {(organization.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}. Here is everything
             you need to get up and running.

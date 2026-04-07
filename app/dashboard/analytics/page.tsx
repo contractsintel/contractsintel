@@ -118,7 +118,8 @@ export default function AnalyticsPage() {
           </div>
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
-          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a] mb-6">Analytics</h1>
+          <h1 className="ci-page-title">Analytics</h1>
+          <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
           <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample analytics content...
           </div>
@@ -131,8 +132,8 @@ export default function AnalyticsPage() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
-        <h1 className="text-[28px] font-bold tracking-[-0.02em] text-[#0f172a]">Analytics</h1>
-            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
+        <h1 className="ci-page-title">Analytics</h1>
+        <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
       </div>
 
       {loading ? (
