@@ -263,6 +263,8 @@ export default function DashboardPage() {
     }
   };
 
+  const getVal = (opp: any) => opp?.estimated_value ?? opp?.value_estimate ?? 0;
+
   // Filter and sort
   const filtered = matches
     .filter((m) => {
@@ -317,8 +319,7 @@ export default function DashboardPage() {
     {} as Record<string, number>
   );
 
-  // Stats
-  const getVal = (opp: any) => opp?.estimated_value ?? opp?.value_estimate ?? 0;
+  // Stats (getVal defined above filter section)
   const totalValue = matches.reduce((s, m) => s + getVal(m.opportunities), 0);
   const urgentCount = matches.filter((m) => {
     const d = daysUntil(m.opportunities?.response_deadline);
