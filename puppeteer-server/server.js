@@ -438,7 +438,7 @@ app.listen(PORT, () => {
   // Built-in cron: auto-trigger scraping every 30 minutes
   if (SUPABASE_KEY) {
     const CRON_INTERVAL = 30 * 60 * 1000; // 30 minutes
-    const lastRun = { usaspending: 0, grants: 0, states: 0 };
+    const lastRun = { usaspending: 0, grants: 0, states: 0, federal: 0 };
     const HOUR = 3600000;
 
     async function cronCycle() {
@@ -473,16 +473,41 @@ app.listen(PORT, () => {
         if (now - lastRun.states > 2 * HOUR) {
           console.log("[cron] Triggering state portals...");
           const stateSources = [
-            { id: "state-AL", name: "Alabama", url: "https://purchasing.alabama.gov/", source_type: "state_local" },
-            { id: "state-CA", name: "California", url: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx", source_type: "state_local" },
-            { id: "state-CT", name: "Connecticut", url: "https://portal.ct.gov/DAS/Procurement/", source_type: "state_local" },
-            { id: "state-FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/search/bids", source_type: "state_local" },
-            { id: "state-IN", name: "Indiana", url: "https://www.in.gov/idoa/procurement/", source_type: "state_local" },
-            { id: "state-ME", name: "Maine", url: "https://www.maine.gov/purchases/", source_type: "state_local" },
-            { id: "state-NY", name: "New York", url: "https://ogs.ny.gov/procurement", source_type: "state_local" },
-            { id: "state-SC", name: "South Carolina", url: "https://procurement.sc.gov/", source_type: "state_local" },
-            { id: "state-TX", name: "Texas", url: "https://www.txsmartbuy.com/sp", source_type: "state_local" },
-            { id: "state-VA", name: "Virginia", url: "https://eva.virginia.gov/", source_type: "state_local" },
+            // JS SPA states (need Puppeteer rendering)
+            { id: "state-CA", name: "California", url: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx", source_type: "state_ca" },
+            { id: "state-TX", name: "Texas", url: "https://www.txsmartbuy.com/sp", source_type: "state_tx" },
+            { id: "state-FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/search/bids", source_type: "state_fl" },
+            { id: "state-CO", name: "Colorado", url: "https://bids.coloradovssc.com/", source_type: "state_co" },
+            { id: "state-MD", name: "Maryland", url: "https://emaryland.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml", source_type: "state_md" },
+            { id: "state-MI", name: "Michigan", url: "https://sigma.michigan.gov/webapp/PRDVSS2X1/AltSelfService", source_type: "state_mi" },
+            { id: "state-KY", name: "Kentucky", url: "https://emars.ky.gov/online/vss/AltSelfService", source_type: "state_ky" },
+            { id: "state-KS", name: "Kansas", url: "https://supplier.sok.ks.gov/psc/sokfssprd/SUPPLIER/ERP/h/?tab=SOK_EBID", source_type: "state_ks" },
+            { id: "state-MO", name: "Missouri", url: "https://www.moolb.mo.gov/MOSCEnterprise/solicitationSearch.html", source_type: "state_mo" },
+            { id: "state-AK", name: "Alaska", url: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService", source_type: "state_ak" },
+            { id: "state-AZ", name: "Arizona", url: "https://spo.az.gov/contracts-and-solicitations", source_type: "state_az" },
+            { id: "state-NH", name: "New Hampshire", url: "https://apps.das.nh.gov/bidscontracts/", source_type: "state_nh" },
+            { id: "state-DC", name: "DC", url: "https://ocp.dc.gov/page/solicitations", source_type: "state_dc" },
+            { id: "state-TN", name: "Tennessee", url: "https://tn.gov/generalservices/procurement/central-procurement-office--cpo-/solicitations.html", source_type: "state_tn" },
+            { id: "state-AR", name: "Arkansas", url: "https://www.arkansas.gov/dfa/procurement/", source_type: "state_ar" },
+            { id: "state-NC", name: "North Carolina", url: "https://www.ips.state.nc.us/", source_type: "state_nc" },
+            { id: "state-LA", name: "Louisiana", url: "https://wwwprd.doa.louisiana.gov/osp/lapac/pubmain.asp", source_type: "state_la" },
+            { id: "state-MT", name: "Montana", url: "https://svc.mt.gov/gsd/OneStop/", source_type: "state_mt" },
+            { id: "state-PR", name: "Puerto Rico", url: "https://www.asg.pr.gov/", source_type: "state_pr" },
+            { id: "state-SD", name: "South Dakota", url: "https://bop.sd.gov/", source_type: "state_sd" },
+            { id: "state-WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/", source_type: "state_wv" },
+            { id: "state-HI", name: "Hawaii", url: "https://hands.hawaii.gov/", source_type: "state_hi" },
+            // Non-JS states with low counts
+            { id: "state-AL", name: "Alabama", url: "https://purchasing.alabama.gov/", source_type: "state_al" },
+            { id: "state-NY", name: "New York", url: "https://ogs.ny.gov/procurement", source_type: "state_ny" },
+            { id: "state-PA", name: "Pennsylvania", url: "https://www.emarketplace.state.pa.us/", source_type: "state_pa" },
+            { id: "state-OH", name: "Ohio", url: "https://procure.ohio.gov/proc/index.asp", source_type: "state_oh" },
+            { id: "state-WI", name: "Wisconsin", url: "https://vendornet.state.wi.us/", source_type: "state_wi" },
+            { id: "state-WA", name: "Washington", url: "https://des.wa.gov/services/contracting-purchasing", source_type: "state_wa" },
+            { id: "state-OR", name: "Oregon", url: "https://orpin.oregon.gov/open.dll/welcome", source_type: "state_or" },
+            { id: "state-IN", name: "Indiana", url: "https://www.in.gov/idoa/procurement/", source_type: "state_in" },
+            { id: "state-SC", name: "South Carolina", url: "https://procurement.sc.gov/", source_type: "state_sc" },
+            { id: "state-VA", name: "Virginia", url: "https://eva.virginia.gov/", source_type: "state_va" },
+            { id: "state-NJ", name: "New Jersey", url: "https://www.njstart.gov/", source_type: "state_nj" },
           ];
           const r = await fetch(`http://localhost:${PORT}/cron/scrape-html`, {
             method: "POST",
@@ -493,6 +518,32 @@ app.listen(PORT, () => {
           const data = await r.json();
           console.log(`[cron] States result: ${data.total} saved`);
           lastRun.states = now;
+        }
+
+        // Every 2 hours: Federal civilian agencies via Puppeteer
+        if (now - lastRun.federal > 2 * HOUR) {
+          console.log("[cron] Triggering federal civilian agencies...");
+          const federalSources = [
+            { id: "faa_contracting", name: "FAA Contracting", url: "https://faaco.faa.gov/index.cfm/announcement/list", source_type: "federal_civilian" },
+            { id: "fema_procurement", name: "FEMA Procurement", url: "https://www.fema.gov/about/doing-business-with-fema", source_type: "federal_civilian" },
+            { id: "commerce_oam", name: "Commerce OAM", url: "https://www.commerce.gov/oam", source_type: "federal_civilian" },
+            { id: "usda_procurement", name: "USDA Procurement", url: "https://www.dm.usda.gov/procurement/", source_type: "federal_civilian" },
+            { id: "sba_subnet", name: "SBA SubNet", url: "https://eweb1.sba.gov/subnet/client/dsp_Landing.cfm", source_type: "federal_civilian" },
+            { id: "ssa_contracts", name: "SSA Contracts", url: "https://www.ssa.gov/oag/contracts/", source_type: "federal_civilian" },
+            { id: "dol_procurement", name: "Labor Procurement", url: "https://www.dol.gov/general/procurement", source_type: "federal_civilian" },
+            { id: "nih_nitaac", name: "NIH NITAAC", url: "https://nitaac.nih.gov/buy/opportunities", source_type: "federal_civilian" },
+            { id: "sbir_dod", name: "SBIR DoD", url: "https://www.dodsbirsttr.mil/submissions/", source_type: "federal_civilian" },
+            { id: "gsa_ebuy", name: "GSA eBuy", url: "https://www.ebuy.gsa.gov/ebuy/", source_type: "federal_civilian" },
+          ];
+          const r = await fetch(`http://localhost:${PORT}/cron/scrape-html`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${AUTH_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ sources: federalSources }),
+            signal: AbortSignal.timeout(600000),
+          });
+          const data = await r.json();
+          console.log(`[cron] Federal civilian result: ${data.total} saved`);
+          lastRun.federal = now;
         }
       } catch (e) {
         console.log(`[cron] Cycle error: ${e.message}`);

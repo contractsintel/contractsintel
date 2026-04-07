@@ -20,23 +20,78 @@ interface GrantsGovOpportunity {
   estimatedTotalFunding?: number;
 }
 
+// Parse dates from MM/DD/YYYY to YYYY-MM-DD
+function parseDate(d: string | null | undefined): string | null {
+  if (!d) return null;
+  const parts = d.split("/");
+  if (parts.length === 3) return `${parts[2]}-${parts[0].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+  return d;
+}
+
+// Build a date range string for the last N days in MM/DD/YYYY format
+function dateRangeLast(days: number): string {
+  const now = new Date();
+  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const fmt = (d: Date) =>
+    `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+  return `${fmt(past)}-${fmt(now)}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const AGENCIES = [
+  "DOD", "HHS", "DOE", "NSF", "NASA", "EPA", "USDA", "DOJ", "DOI", "DOT",
+  "DHS", "VA", "HUD", "ED", "DOL", "DOC", "USDOT", "DOS", "IMLS", "NEA",
+  "NEH", "PAMS", "MCC", "ONDCP", "AC",
+];
+
+async function upsertOpp(supabase: any, opp: GrantsGovOpportunity, fallbackAgency?: string): Promise<boolean> {
+  const oppId = opp.id ?? opp.opportunityId;
+  if (!oppId) return false;
+
+  const { error } = await supabase.from("opportunities").upsert(
+    {
+      notice_id: `grants-gov-${oppId}`,
+      title: (opp as any).title ?? opp.opportunityTitle ?? "Untitled Grant",
+      agency: opp.agency ?? opp.agencyCode ?? fallbackAgency ?? "Unknown",
+      solicitation_number: (opp as any).number ?? opp.opportunityNumber ?? String(oppId),
+      value_estimate: opp.estimatedTotalFunding ?? opp.awardCeiling ?? null,
+      response_deadline: parseDate(opp.closeDate ?? opp.closeDateStr),
+      posted_date: parseDate(opp.openDate ?? opp.openDateStr),
+      description: opp.description?.substring(0, 10000) ?? null,
+      source: "grants_gov",
+      source_url: `https://www.grants.gov/search-results-detail/${oppId}`,
+      last_seen_at: new Date().toISOString(),
+    },
+    { onConflict: "notice_id" }
+  );
+
+  return !error;
+}
+
 export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
-    const PER_PAGE = 500;
+    const PER_PAGE = 100;
     let offset = 0;
-    const allOpportunities: GrantsGovOpportunity[] = [];
+    let totalFetched = 0;
+    let totalSaved = 0;
     let hitCount = 0;
 
-    // Paginate through all results
+    const dateRange = dateRangeLast(180);
+
+    // ── Phase 1: Global query ──────────────────────────────────────────
     do {
       const payload = {
         keyword: "",
-        oppStatuses: "forecasted|posted",
+        oppStatuses: "posted",
         sortBy: "openDate|desc",
         rows: PER_PAGE,
         offset,
+        dateRange,
       };
 
       const res = await fetch(GRANTS_GOV_API, {
@@ -51,9 +106,9 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => "unknown");
-        console.log(`Grants.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
-        if (allOpportunities.length > 0) {
-          console.log(`[grants-gov] API error at offset ${offset}, proceeding with ${allOpportunities.length} results`);
+        console.log(`[grants-gov] Global query error at offset ${offset}: ${res.status} ${errorText.substring(0, 200)}`);
+        if (totalFetched > 0) {
+          console.log(`[grants-gov] Proceeding with ${totalFetched} results from global query`);
           break;
         }
         return {
@@ -70,61 +125,86 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
       const data = await res.json();
       const opportunities: GrantsGovOpportunity[] = data.oppHits ?? [];
       hitCount = data.hitCount ?? 0;
+      totalFetched += opportunities.length;
 
-      allOpportunities.push(...opportunities);
+      for (const opp of opportunities) {
+        if (await upsertOpp(supabase, opp)) totalSaved++;
+      }
+
+      console.log(`[grants-gov] Global: fetched ${opportunities.length} at offset ${offset} (total: ${totalFetched}/${hitCount})`);
+
       offset += PER_PAGE;
+      if (opportunities.length < PER_PAGE) break;
+    } while (offset < hitCount);
 
-      console.log(`[grants-gov] Fetched ${opportunities.length} at offset ${offset - PER_PAGE} (total: ${allOpportunities.length}/${hitCount})`);
+    console.log(`[grants-gov] Global query complete: ${totalFetched} fetched, ${totalSaved} saved`);
 
-      // Stop if we got fewer than requested (last page) or we have all hits
-    } while (allOpportunities.length < hitCount && offset < hitCount);
+    // ── Phase 2: Per-agency queries for broader coverage ───────────────
+    let agencySaved = 0;
+    let agencyFetched = 0;
 
-    let upserted = 0;
+    for (const agencyCode of AGENCIES) {
+      let agencyOffset = 0;
+      let agencyHitCount = 0;
+      let agencyPageNum = 0;
 
-    for (const opp of allOpportunities) {
-      const oppId = opp.id ?? opp.opportunityId;
-      if (!oppId) continue;
+      try {
+        do {
+          agencyPageNum++;
+          const agencyRes = await fetch(GRANTS_GOV_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              keyword: "",
+              oppStatuses: "posted",
+              sortBy: "openDate|desc",
+              rows: PER_PAGE,
+              offset: agencyOffset,
+              agencies: agencyCode,
+              dateRange,
+            }),
+            signal: AbortSignal.timeout(30000),
+          });
 
-      const noticeId = `grants-gov-${oppId}`;
-      const title = (opp as any).title ?? opp.opportunityTitle ?? "Untitled Grant";
-      const agency = opp.agency ?? opp.agencyCode ?? "Unknown";
-      const number = (opp as any).number ?? opp.opportunityNumber ?? String(oppId);
-      const deadline = opp.closeDate ?? opp.closeDateStr ?? null;
-      const value = opp.estimatedTotalFunding ?? opp.awardCeiling ?? null;
+          if (!agencyRes.ok) {
+            console.log(`[grants-gov] Agency ${agencyCode} error at offset ${agencyOffset}: ${agencyRes.status}`);
+            break;
+          }
 
-      // Parse dates from MM/DD/YYYY to YYYY-MM-DD
-      const parseDate = (d: string | null | undefined): string | null => {
-        if (!d) return null;
-        const parts = d.split("/");
-        if (parts.length === 3) return `${parts[2]}-${parts[0].padStart(2,"0")}-${parts[1].padStart(2,"0")}`;
-        return d;
-      };
+          const agencyData = await agencyRes.json();
+          const agencyOpps: GrantsGovOpportunity[] = agencyData.oppHits ?? [];
+          agencyHitCount = agencyData.hitCount ?? 0;
+          totalFetched += agencyOpps.length;
+          agencyFetched += agencyOpps.length;
 
-      const { error } = await supabase.from("opportunities").upsert(
-        {
-          notice_id: noticeId,
-          title,
-          agency,
-          solicitation_number: number,
-          value_estimate: value,
-          response_deadline: deadline ? parseDate(deadline) : null,
-          posted_date: parseDate(opp.openDate ?? opp.openDateStr) ?? null,
-          description: opp.description?.substring(0, 10000) ?? null,
-          source: "grants_gov",
-          source_url: `https://www.grants.gov/search-results-detail/${oppId}`,
-          last_seen_at: new Date().toISOString(),
-        },
-        { onConflict: "notice_id" }
-      );
+          for (const opp of agencyOpps) {
+            if (await upsertOpp(supabase, opp, agencyCode)) {
+              totalSaved++;
+              agencySaved++;
+            }
+          }
 
-      if (!error) upserted++;
+          console.log(`[grants-gov] Agency ${agencyCode} page ${agencyPageNum}: ${agencyOpps.length} opps (offset ${agencyOffset}, hitCount ${agencyHitCount})`);
+
+          agencyOffset += PER_PAGE;
+          if (agencyOpps.length < PER_PAGE) break;
+        } while (agencyOffset < agencyHitCount);
+      } catch (agencyErr) {
+        console.log(`[grants-gov] Agency ${agencyCode} failed at offset ${agencyOffset}: ${agencyErr}`);
+      }
+
+      // Rate-limit: 1 second pause between agencies
+      await sleep(1000);
     }
+
+    console.log(`[grants-gov] Per-agency queries complete: ${agencyFetched} fetched, ${agencySaved} saved`);
+    console.log(`[grants-gov] Total: ${totalFetched} fetched, ${totalSaved} saved`);
 
     return {
       source: "grants_gov",
       status: "success",
-      opportunities_found: allOpportunities.length,
-      matches_created: upserted,
+      opportunities_found: totalFetched,
+      matches_created: totalSaved,
       started_at: startedAt,
       completed_at: new Date().toISOString(),
     };

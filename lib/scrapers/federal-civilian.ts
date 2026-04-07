@@ -1,11 +1,20 @@
 import type { ScraperResult } from "./index";
-import { fetchWithPuppeteer, logScrapingBeeUsage } from "./scrapingbee";
+import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
+import { createHash } from "crypto";
 
 // Sources that are JS SPAs requiring browser rendering
 const JS_FEDERAL_SOURCES: Record<string, string> = {
   gsa_ebuy: "https://www.ebuy.gsa.gov/ebuy/",
   nih_nitaac: "https://nitaac.nih.gov/buy/opportunities",
+  faa_contracting: "https://faaco.faa.gov/index.cfm/announcement/list",
+  sba_subnet: "https://eweb1.sba.gov/subnet/client/dsp_Landing.cfm",
+  sbir_dod: "https://www.dodsbirsttr.mil/submissions/",
 };
+
+function stableId(source: string, text: string, href: string): string {
+  const hash = createHash("md5").update(`${source}|${text}|${href}`).digest("hex").substring(0, 12);
+  return `fedciv-${source}-${hash}`;
+}
 
 const FEDERAL_CIVILIAN_SOURCES = [
   { id: "gsa_ebuy", name: "GSA eBuy", url: "https://www.ebuy.gsa.gov/" },
@@ -134,7 +143,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
           "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
         },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(30000),
         redirect: "follow",
       });
 
@@ -153,40 +162,25 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
-        // Try ScrapingBee fallback for ALL blocked sources (not just known JS SPAs)
-        if (true /* Puppeteer always available */) {
-          const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
-          console.log(`[federal-civilian] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
-          try {
-            html = await fetchWithScrapingBee(sbUrl, 5000);
-            console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
-          } catch (sbErr) {
-            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[federal-civilian] ${source.name}: ScrapingBee failed: ${sbMsg}`);
-            await supabase.from("scraper_runs").insert({
-              source: source.id,
-              status: "error",
-              opportunities_found: 0,
-              matches_created: 0,
-              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
-              started_at: startedAt,
-              completed_at: new Date().toISOString(),
-            });
-            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
-            continue;
-          }
-        } else {
-          console.log(`[federal-civilian] ${source.name}: ${reason} BLOCKED`);
+        // Try Puppeteer fallback for ALL blocked sources
+        const pbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
+        console.log(`[federal-civilian] ${source.name}: ${reason}, trying Puppeteer for ${pbUrl}...`);
+        try {
+          html = await fetchWithPuppeteer(pbUrl, 10000);
+          console.log(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
+        } catch (pbErr) {
+          const pbMsg = pbErr instanceof Error ? pbErr.message : String(pbErr);
+          console.log(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
             opportunities_found: 0,
             matches_created: 0,
-            error_message: `BLOCKED: ${reason}`,
+            error_message: `BLOCKED: ${reason} + Puppeteer failed: ${pbMsg}`,
             started_at: startedAt,
             completed_at: new Date().toISOString(),
           });
-          sourceResults.push(`${source.id}: BLOCKED (${reason})`);
+          sourceResults.push(`${source.id}: BLOCKED (${reason} + Puppeteer failed)`);
           continue;
         }
       }
@@ -204,28 +198,28 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       const hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        // Try ScrapingBee fallback for ALL sources that returned HTML but no data
-        if (true /* Puppeteer always available */) {
-          const sbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
-          console.log(`[federal-civilian] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+        // Try Puppeteer fallback for ALL sources that returned HTML but no data
+        {
+          const pbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
+          console.log(`[federal-civilian] ${source.name}: No parseable data, trying Puppeteer for ${pbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl, 5000);
-            console.log(`[federal-civilian] ${source.name}: ScrapingBee returned ${html.length} bytes`);
-            allHtmlPages[0] = html; // replace page 1 with rendered version
-            // Re-parse with ScrapingBee-rendered HTML
+            html = await fetchWithPuppeteer(pbUrl, 10000);
+            console.log(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            allHtmlPages[0] = html;
+            // Re-parse with Puppeteer-rendered HTML
             procLinks = extractLinks(html, source.url).filter(
               (l) =>
                 /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
                 /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
             );
             tableRows = extractTableRows(html);
-          } catch (sbErr) {
-            const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[federal-civilian] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+          } catch (pbErr) {
+            const pbMsg = pbErr instanceof Error ? pbErr.message : String(pbErr);
+            console.log(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
           }
         }
 
-        // Re-check after potential ScrapingBee attempt
+        // Re-check after Puppeteer attempt
         if (procLinks.length < 1 && tableRows.length < 3) {
           console.log(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
           await supabase.from("scraper_runs").insert({
@@ -262,8 +256,8 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             const isJsSource = !!JS_FEDERAL_SOURCES[source.id];
             let pageHtml: string;
 
-            if (isJsSource && true /* Puppeteer always available */) {
-              pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
+            if (isJsSource) {
+              pageHtml = await fetchWithPuppeteer(urlToFetch, 10000);
             } else {
               const pageRes = await fetch(urlToFetch, {
                 method: "GET",
@@ -319,7 +313,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
       for (let i = 0; i < procLinks.length; i++) {
         const link = procLinks[i];
-        const noticeId = `fedciv-${source.id}-link-${i}-${Date.now()}`;
+        const noticeId = stableId(source.id, link.text.substring(0, 200), link.href);
         const { error } = await supabase.from("opportunities").upsert(
           {
             notice_id: noticeId,
@@ -340,7 +334,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
       for (let i = 0; i < tableRows.length; i++) {
         const row = tableRows[i];
-        const noticeId = `fedciv-${source.id}-table-${i}-${Date.now()}`;
+        const noticeId = stableId(source.id, row.substring(0, 200), source.url);
         const { error } = await supabase.from("opportunities").upsert(
           {
             notice_id: noticeId,
@@ -365,24 +359,62 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[federal-civilian] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
-      await supabase.from("scraper_runs").insert({
-        source: source.id,
-        status: "error",
-        opportunities_found: 0,
-        matches_created: 0,
-        error_message: `BLOCKED: ${isTimeout ? "timeout" : msg.substring(0, 100)}`,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
-      });
-      sourceResults.push(`${source.id}: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
+      console.log(`[federal-civilian] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}, retrying with Puppeteer...`);
+
+      // Retry the whole source through Puppeteer on timeout/fetch failure
+      try {
+        const pbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
+        const html = await fetchWithPuppeteer(pbUrl, 15000);
+        const procLinks = extractLinks(html, source.url).filter(
+          (l) => /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.text) ||
+                 /bid|rfp|rfq|solicit|procurement|contract|award|opportunity|forecast|acquisition/i.test(l.href)
+        );
+        const tableRows = extractTableRows(html);
+        let retryOpps = 0;
+
+        for (const link of procLinks) {
+          const noticeId = stableId(source.id, link.text.substring(0, 200), link.href);
+          const { error } = await supabase.from("opportunities").upsert({
+            notice_id: noticeId, title: `[${source.name}] ${link.text.substring(0, 200)}`,
+            agency: source.name, source: "federal_civilian", source_url: link.href,
+            description: link.text, last_seen_at: new Date().toISOString(),
+          }, { onConflict: "notice_id" });
+          if (!error) { retryOpps++; totalUpserted++; }
+        }
+        for (const row of tableRows) {
+          const noticeId = stableId(source.id, row.substring(0, 200), source.url);
+          const { error } = await supabase.from("opportunities").upsert({
+            notice_id: noticeId, title: `[${source.name}] ${row.substring(0, 200)}`,
+            agency: source.name, source: "federal_civilian", source_url: source.url,
+            description: row, last_seen_at: new Date().toISOString(),
+          }, { onConflict: "notice_id" });
+          if (!error) { retryOpps++; totalUpserted++; }
+        }
+
+        if (retryOpps > 0) {
+          totalFound += retryOpps;
+          console.log(`[federal-civilian] ${source.name}: Puppeteer retry found ${retryOpps} items`);
+          sourceResults.push(`${source.id}: ${retryOpps} items (Puppeteer retry)`);
+        } else {
+          console.log(`[federal-civilian] ${source.name}: Puppeteer retry returned no data`);
+          sourceResults.push(`${source.id}: BLOCKED (Puppeteer retry: no data)`);
+        }
+      } catch (retryErr) {
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        console.log(`[federal-civilian] ${source.name}: Puppeteer retry also failed: ${retryMsg}`);
+        await supabase.from("scraper_runs").insert({
+          source: source.id, status: "error", opportunities_found: 0, matches_created: 0,
+          error_message: `BLOCKED: ${isTimeout ? "timeout" : msg.substring(0, 50)} + Puppeteer: ${retryMsg.substring(0, 50)}`,
+          started_at: startedAt, completed_at: new Date().toISOString(),
+        });
+        sourceResults.push(`${source.id}: BLOCKED (${isTimeout ? "timeout" : "error"} + Puppeteer failed)`);
+      }
     }
   }
 
   console.log(`[federal-civilian] Results: ${sourceResults.join(", ")}`);
 
-  // Log ScrapingBee API usage for budget tracking
-  await logScrapingBeeUsage(supabase);
+  await logPuppeteerUsage(supabase);
 
   return {
     source: "federal_civilian",

@@ -1,5 +1,5 @@
 import type { ScraperResult } from "./index";
-import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 
 const SBIR_API = "https://www.sbir.gov/api/solicitations.json";
 
@@ -173,26 +173,26 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
-        // Try ScrapingBee fallback for known JS SPA sources
+        // Try Puppeteer fallback for known JS SPA sources
         if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
-          console.log(`[sbir-sttr] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
+          console.log(`[sbir-sttr] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
-            console.log(`[sbir-sttr] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            html = await fetchWithPuppeteer(sbUrl);
+            console.log(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[sbir-sttr] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            console.log(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
             await supabase.from("scraper_runs").insert({
               source: source.id,
               status: "error",
               opportunities_found: 0,
               matches_created: 0,
-              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
+              error_message: `BLOCKED: ${reason} + Puppeteer failed: ${sbMsg}`,
               started_at: startedAt,
               completed_at: new Date().toISOString(),
             });
-            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
+            sourceResults.push(`${source.id}: BLOCKED (${reason} + Puppeteer failed)`);
             continue;
           }
         } else {
@@ -231,13 +231,13 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       }
 
       if (solLinks.length === 0) {
-        // Try ScrapingBee fallback for known JS SPA sources with no parseable data
+        // Try Puppeteer fallback for known JS SPA sources with no parseable data
         if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
-          console.log(`[sbir-sttr] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+          console.log(`[sbir-sttr] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl, 5000);
-            console.log(`[sbir-sttr] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            html = await fetchWithPuppeteer(sbUrl, 5000);
+            console.log(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
             // Re-parse rendered HTML for solicitation links
             const sbLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
             let sbMatch;
@@ -257,7 +257,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             }
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[sbir-sttr] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            console.log(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
 
@@ -298,7 +298,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             let pageHtml: string;
 
             if (isJsSource && true /* Puppeteer always available */) {
-              pageHtml = await fetchWithScrapingBee(urlToFetch, 5000);
+              pageHtml = await fetchWithPuppeteer(urlToFetch, 5000);
             } else {
               const pageRes = await fetch(urlToFetch, {
                 method: "GET",
@@ -404,8 +404,8 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
 
   console.log(`[sbir-sttr] Agency sources: ${sourceResults.join(", ")}`);
 
-  // Log ScrapingBee API usage for budget tracking
-  await logScrapingBeeUsage(supabase);
+  // Log Puppeteer API usage for budget tracking
+  await logPuppeteerUsage(supabase);
 
   return {
     source: "sbir_sttr",

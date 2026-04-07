@@ -1,4 +1,4 @@
-// Puppeteer rendering server on Railway (ScrapingBee fully removed)
+// Puppeteer rendering server on Railway
 // Server: https://puppeteer-production-f147.up.railway.app
 
 const PUPPETEER_URL = process.env.PUPPETEER_SERVER_URL || "https://puppeteer-production-f147.up.railway.app";
@@ -26,10 +26,7 @@ export async function fetchWithPuppeteer(url: string, waitMs: number = 5000): Pr
   return data.html;
 }
 
-// Keep old name as alias for backwards compatibility during migration
-export const fetchWithScrapingBee = fetchWithPuppeteer;
-
-export async function logScrapingBeeUsage(supabase: any) {
+export async function logPuppeteerUsage(supabase: any) {
   if (_callCount > 0) {
     await supabase.from("scraper_runs").insert({
       source: "puppeteer_usage",

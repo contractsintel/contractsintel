@@ -1,5 +1,5 @@
 import type { ScraperResult } from "./index";
-import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 import {
   parseJaggaer,
   parseCaleProcure,
@@ -178,10 +178,10 @@ function followPagination(html: string, baseUrl: string): string[] {
 }
 
 /**
- * For ScrapingBee JS states, extract pagination URLs from rendered HTML.
+ * For Puppeteer JS states, extract pagination URLs from rendered HTML.
  * Returns page URLs found in pagination controls (page 2, 3, ... and Next).
  */
-function extractScrapingBeePaginationUrls(html: string, baseUrl: string): string[] {
+function extractPuppeteerPaginationUrls(html: string, baseUrl: string): string[] {
   // Use followPagination as the base, which finds next links and numbered page links
   return followPagination(html, baseUrl);
 }
@@ -363,18 +363,18 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           html.includes("JavaScript is required") ||
           html.includes("enable JavaScript");
 
-        // For JS SPA states, try ScrapingBee as fallback when direct fetch fails
+        // For JS SPA states, try Puppeteer as fallback when direct fetch fails
         if (directFetchBlocked || (JS_STATES.has(portal.state) && html.length < 1000 && !/bid|solicit|rfp|rfq/i.test(html))) {
           if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
             const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
-            console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying ScrapingBee for ${sbUrl}...`);
+            console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying Puppeteer for ${sbUrl}...`);
             try {
-              html = await fetchWithScrapingBee(sbUrl, 5000);
-              console.log(`[state-local] ${portal.name}: ScrapingBee returned ${html.length} bytes`);
+              html = await fetchWithPuppeteer(sbUrl, 5000);
+              console.log(`[state-local] ${portal.name}: Puppeteer returned ${html.length} bytes`);
             } catch (sbErr) {
               const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-              console.log(`[state-local] ${portal.name}: ScrapingBee failed: ${sbMsg}`);
-              stateResults.push(`${portal.state}: BLOCKED (ScrapingBee fallback failed)`);
+              console.log(`[state-local] ${portal.name}: Puppeteer failed: ${sbMsg}`);
+              stateResults.push(`${portal.state}: BLOCKED (Puppeteer fallback failed)`);
               continue;
             }
           } else if (directFetchBlocked) {
@@ -455,7 +455,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           }
         }
 
-        // For JS states using ScrapingBee, only follow pagination if page 1 had results (budget-conscious)
+        // For JS states using Puppeteer, only follow pagination if page 1 had results (budget-conscious)
         if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
           const page1Parser = STATE_PARSERS[portal.state];
           const page1Results = page1Parser ? page1Parser(html) : [];
@@ -464,33 +464,33 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           );
 
           if (page1Results.length > 0 || page1BidLinks.length > 0) {
-            const paginationUrls = extractScrapingBeePaginationUrls(html, JS_STATE_URLS[portal.state] || portal.url);
+            const paginationUrls = extractPuppeteerPaginationUrls(html, JS_STATE_URLS[portal.state] || portal.url);
             if (paginationUrls.length > 0) {
-              console.log(`[state-local] ${portal.name}: Found ${paginationUrls.length} pagination URLs via ScrapingBee, following...`);
+              console.log(`[state-local] ${portal.name}: Found ${paginationUrls.length} pagination URLs via Puppeteer, following...`);
 
               for (let pi = 0; pi < paginationUrls.length; pi++) {
                 const pageUrl = paginationUrls[pi];
                 const pageNum = pi + 2;
-                console.log(`[state-local] ${portal.name}: ScrapingBee fetching page ${pageNum} (${pageUrl})...`);
+                console.log(`[state-local] ${portal.name}: Puppeteer fetching page ${pageNum} (${pageUrl})...`);
 
                 try {
-                  const pageHtml = await fetchWithScrapingBee(pageUrl, 5000);
+                  const pageHtml = await fetchWithPuppeteer(pageUrl, 5000);
                   if (pageHtml.length < 200) {
-                    console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} too small, stopping`);
+                    console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} too small, stopping`);
                     break;
                   }
-                  console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} returned ${pageHtml.length} bytes`);
+                  console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} returned ${pageHtml.length} bytes`);
                   allHtmlPages.push(pageHtml);
 
                   // Check for further pagination from this page
-                  const morePaginationUrls = extractScrapingBeePaginationUrls(pageHtml, pageUrl);
+                  const morePaginationUrls = extractPuppeteerPaginationUrls(pageHtml, pageUrl);
                   for (const moreUrl of morePaginationUrls) {
                     if (!paginationUrls.includes(moreUrl)) {
                       paginationUrls.push(moreUrl);
                     }
                   }
                 } catch (sbPageErr) {
-                  console.log(`[state-local] ${portal.name}: ScrapingBee page ${pageNum} failed: ${sbPageErr instanceof Error ? sbPageErr.message : String(sbPageErr)}`);
+                  console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} failed: ${sbPageErr instanceof Error ? sbPageErr.message : String(sbPageErr)}`);
                   break;
                 }
               }
@@ -569,7 +569,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 agency: item.agency || `${portal.name} State Procurement`,
                 solicitation_number: item.solicitation_number || undefined,
                 response_deadline: item.deadline || undefined,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: item.url,
                 description: item.title,
                 last_seen_at: new Date().toISOString(),
@@ -594,7 +594,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 title: `[NV] ${bid.title.substring(0, 200)}`,
                 agency: "Nevada State Procurement",
                 solicitation_number: bid.refNumber || undefined,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: fullUrl,
                 description: bid.title,
                 last_seen_at: new Date().toISOString(),
@@ -615,7 +615,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 notice_id: noticeId,
                 title: `[${portal.state}] ${row.substring(0, 200)}`,
                 agency: `${portal.name} State Procurement`,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: portal.url,
                 description: row,
                 last_seen_at: new Date().toISOString(),
@@ -642,7 +642,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 notice_id: noticeId,
                 title: `[${portal.state}] ${link.text.substring(0, 200)}`,
                 agency: `${portal.name} State Procurement`,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: fullUrl,
                 description: link.text,
                 last_seen_at: new Date().toISOString(),
@@ -666,7 +666,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 notice_id: noticeId,
                 title: `[${portal.state}] ${row.substring(0, 200)}`,
                 agency: `${portal.name} State Procurement`,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: portal.url,
                 description: row,
                 last_seen_at: new Date().toISOString(),
@@ -690,7 +690,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 notice_id: noticeId,
                 title: `[${portal.state}] ${link.text.substring(0, 200)}`,
                 agency: `${portal.name} State Procurement`,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: fullUrl,
                 description: link.text,
                 last_seen_at: new Date().toISOString(),
@@ -711,7 +711,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                 notice_id: noticeId,
                 title: `[${portal.state}] ${elem.substring(0, 200)}`,
                 agency: `${portal.name} State Procurement`,
-                source: "state_local",
+                source: `state_${portal.state.toLowerCase()}`,
                 source_url: portal.url,
                 description: elem,
                 last_seen_at: new Date().toISOString(),
@@ -735,8 +735,8 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
 
     console.log(`[state-local] Results: ${stateResults.join(", ")}`);
 
-    // Log ScrapingBee API usage for budget tracking
-    await logScrapingBeeUsage(supabase);
+    // Log Puppeteer API usage for budget tracking
+    await logPuppeteerUsage(supabase);
 
     return {
       source: "state_local",

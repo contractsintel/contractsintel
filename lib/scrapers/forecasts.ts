@@ -1,5 +1,5 @@
 import type { ScraperResult } from "./index";
-import { fetchWithScrapingBee, logScrapingBeeUsage } from "./scrapingbee";
+import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 
 // Sources that are JS SPAs requiring browser rendering
 const JS_FORECAST_SOURCES: Record<string, string> = {
@@ -72,14 +72,14 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       });
 
       if (!res.ok) {
-        // Try ScrapingBee for JS SPA sources that returned non-200
+        // Try Puppeteer for JS SPA sources that returned non-200
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: HTTP ${res.status}, trying ScrapingBee for ${sbUrl}...`);
+          console.log(`[forecasts] ${source.name}: HTTP ${res.status}, trying Puppeteer for ${sbUrl}...`);
           try {
-            const sbHtml = await fetchWithScrapingBee(sbUrl);
-            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${sbHtml.length} bytes`);
-            // Parse ScrapingBee-rendered HTML below by continuing with sbHtml
+            const sbHtml = await fetchWithPuppeteer(sbUrl);
+            console.log(`[forecasts] ${source.name}: Puppeteer returned ${sbHtml.length} bytes`);
+            // Parse Puppeteer-rendered HTML below by continuing with sbHtml
             // We re-assign to use it in the rest of the loop
             const sbProcLinks = extractLinks(sbHtml, source.url).filter(
               (l) =>
@@ -124,15 +124,15 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             }
             totalFound += sourceOpps;
             if (sourceOpps > 0) {
-              console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items via ScrapingBee`);
-              sourceResults.push(`${source.id}: ${sourceOpps} items (ScrapingBee)`);
+              console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items via Puppeteer`);
+              sourceResults.push(`${source.id}: ${sourceOpps} items (Puppeteer)`);
             } else {
-              sourceResults.push(`${source.id}: BLOCKED (ScrapingBee returned no data)`);
+              sourceResults.push(`${source.id}: BLOCKED (Puppeteer returned no data)`);
             }
             continue;
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
         console.log(`[forecasts] ${source.name}: HTTP ${res.status} BLOCKED`);
@@ -160,26 +160,26 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
 
-        // Try ScrapingBee fallback for known JS SPA sources
+        // Try Puppeteer fallback for known JS SPA sources
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: ${reason}, trying ScrapingBee for ${sbUrl}...`);
+          console.log(`[forecasts] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
-            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            html = await fetchWithPuppeteer(sbUrl);
+            console.log(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
             await supabase.from("scraper_runs").insert({
               source: source.id,
               status: "error",
               opportunities_found: 0,
               matches_created: 0,
-              error_message: `BLOCKED: ${reason} + ScrapingBee failed: ${sbMsg}`,
+              error_message: `BLOCKED: ${reason} + Puppeteer failed: ${sbMsg}`,
               started_at: startedAt,
               completed_at: new Date().toISOString(),
             });
-            sourceResults.push(`${source.id}: BLOCKED (${reason} + ScrapingBee failed)`);
+            sourceResults.push(`${source.id}: BLOCKED (${reason} + Puppeteer failed)`);
             continue;
           }
         } else {
@@ -208,13 +208,13 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       let hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        // Try ScrapingBee fallback for known JS SPA sources
+        // Try Puppeteer fallback for known JS SPA sources
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: No parseable data, trying ScrapingBee for ${sbUrl}...`);
+          console.log(`[forecasts] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
           try {
-            html = await fetchWithScrapingBee(sbUrl);
-            console.log(`[forecasts] ${source.name}: ScrapingBee returned ${html.length} bytes`);
+            html = await fetchWithPuppeteer(sbUrl);
+            console.log(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
             procLinks = extractLinks(html, source.url).filter(
               (l) =>
                 /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
@@ -224,7 +224,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             hasData = procLinks.length >= 1 || tableRows.length >= 3;
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: ScrapingBee failed: ${sbMsg}`);
+            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
 
@@ -397,8 +397,8 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
   console.log(`[forecasts] Results: ${sourceResults.join(", ")}`);
 
-  // Log ScrapingBee API usage for budget tracking
-  await logScrapingBeeUsage(supabase);
+  // Log Puppeteer API usage for budget tracking
+  await logPuppeteerUsage(supabase);
 
   return {
     source: "forecasts",
