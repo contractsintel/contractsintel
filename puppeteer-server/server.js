@@ -910,16 +910,14 @@ app.post("/cron/grants", async (req, res) => {
 
 // Cron: SAM.gov (internal API via Patchright browser to bypass IP blocking)
 // Routes API calls through a real browser session with cookies + stealth headers
-app.post("/cron/sam", async (req, res) => {
-  if (!authCheck(req, res)) return;
-  try {
-  console.log("[cron] SAM.gov starting (stealth fetch, full 45K+ scrape)...");
+// SAM.gov scrape logic — called directly from rotation (no internal HTTP call)
+async function runSamScrape() {
+  console.log("[sam] Starting stealth fetch scrape...");
 
   const SAM_SEARCH = "https://sam.gov/api/prod/sgs/v1/search/";
-  const PAGE_SIZE = 25; // Smaller pages to look less bot-like
-  const MAX_PAGES = 399; // 25 * 399 = 9,975 (under 10K cap)
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 99;
 
-  // Build query batches: each must stay under 10K results
   const NAICS_2DIGIT = ["11","21","22","23","31","32","42","44","45","48","51","52","53","54","55","56","61","62","71","72","81"];
   const NAICS_33_3DIGIT = ["331","332","333","334","335","336","337","339"];
 
@@ -936,7 +934,6 @@ app.post("/cron/sam", async (req, res) => {
   }
   batches.push({ notice_type: "k", naics: null, label: "type=k,catchall" });
 
-  // Direct fetch with stealth headers + retry (diagnostic confirmed this works from Railway)
   async function samFetch(url, attempt = 0) {
     const ua = randomStealthUA();
     const hdrs = {
@@ -1023,9 +1020,8 @@ app.post("/cron/sam", async (req, res) => {
           notice_type: batch.notice_type,
         });
         if (batch.naics) params.set("naics", batch.naics);
-        const url = `${SAM_SEARCH}?${params}`;
 
-        const data = await samFetch(url);
+        const data = await samFetch(`${SAM_SEARCH}?${params}`);
 
         if (data.error) {
           consecutiveErrors++;
@@ -1047,8 +1043,7 @@ app.post("/cron/sam", async (req, res) => {
         saved += await upsertToSupabase(records);
         page++;
         if (items.length < PAGE_SIZE) break;
-        // Random delay 2-5 seconds between pages
-        await randomDelay(2000, 5000);
+        await randomDelay(500, 1500);
       } catch (e) {
         consecutiveErrors++;
         console.log(`[sam] ${batch.label} page ${page} error: ${e.message}`);
@@ -1070,12 +1065,19 @@ app.post("/cron/sam", async (req, res) => {
     if (result.saved > 0) {
       console.log(`[sam] ${result.label}: ${result.saved} saved (${result.total} in batch, ${result.pages} pages)`);
     }
-    // Random delay between batches (1-3 seconds)
-    await randomDelay(1000, 3000);
+    await randomDelay(500, 1500);
   }
 
-  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches`);
-  res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
+  console.log(`[sam] Complete: ${grandTotal} total saved from ${batches.length} batches`);
+  return grandTotal;
+}
+
+// HTTP endpoint for manual SAM.gov triggering
+app.post("/cron/sam", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  try {
+    const saved = await runSamScrape();
+    res.json({ source: "sam_gov", saved });
   } catch (e) {
     console.log(`[cron] SAM.gov fatal error: ${e.message}`);
     res.status(500).json({ source: "sam_gov", saved: 0, error: e.message });
@@ -1619,7 +1621,7 @@ app.get("/status", async (req, res) => {
     engine: "patchright",
     captcha: CAPSOLVER_KEY ? "capsolver-enabled" : "no-key",
     uptime: `${hours}h ${mins}m`,
-    cron_running: cronStats.running || true,
+    cron_running: cronStats.running,
     rotation_index: cronStats.rotationIndex,
     last_rotation: cronStats.lastRotationName,
     last_run_at: cronStats.lastRunAt,
@@ -1669,9 +1671,7 @@ async function runRotation(index) {
     switch (slot) {
       case 0: // SAM.gov
       case 11: { // SAM.gov 2nd check
-        const r = await fetch(`${base}/cron/sam`, { method: "POST", headers, signal: AbortSignal.timeout(1800000) });
-        const data = await r.json();
-        saved = data.saved || 0;
+        saved = await runSamScrape();
         break;
       }
       case 1: { // USASpending
@@ -1716,7 +1716,7 @@ async function runRotation(index) {
         saved = data.total || 0;
         break;
       }
-      case 8: { // Federal civilian
+      case 8: { // Federal civilian — call scrape-html internally to avoid localhost fetch issues
         const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: ALL_FEDERAL_SOURCES }), signal: AbortSignal.timeout(900000) });
         const data = await r.json();
         saved = data.total || 0;
