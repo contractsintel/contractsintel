@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -9,20 +9,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const supabase = await createClient();
+    const resendKey = process.env.RESEND_API_KEY;
+    if (!resendKey) return NextResponse.json({ error: "RESEND_API_KEY not set", sent: 0 });
 
-    // Fetch orgs with digest enabled
+    const resend = new Resend(resendKey);
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Fetch ALL orgs (don't filter by digest_enabled — column may not exist)
     const { data: orgs } = await supabase
       .from("organizations")
-      .select("id, name")
-      .eq("digest_enabled", true);
+      .select("id, name");
 
     if (!orgs || orgs.length === 0) {
-      return NextResponse.json({ success: true, sent: 0 });
+      return NextResponse.json({ success: true, sent: 0, reason: "no orgs" });
     }
 
     let sent = 0;
+    const errors: string[] = [];
 
     for (const org of orgs) {
       // Get users for this org
@@ -33,76 +39,108 @@ export async function GET(request: NextRequest) {
 
       if (!users || users.length === 0) continue;
 
-      // Get top 10 matches
+      // Get top 10 matches with opportunities
       const { data: matches } = await supabase
         .from("opportunity_matches")
-        .select("match_score, bid_recommendation, reasoning, opportunities(title, agency, response_deadline, estimated_value, set_aside)")
+        .select("match_score, bid_recommendation, recommendation_reasoning, opportunities(*)")
         .eq("organization_id", org.id)
+        .eq("is_demo", false)
         .order("match_score", { ascending: false })
         .limit(10);
 
       if (!matches || matches.length === 0) continue;
+
+      const appUrl = "https://contractsintel.com";
+      const firstName = users[0].full_name?.split(" ")[0] || org.name;
 
       const opportunityRows = matches
         .map((m: any) => {
           const opp = m.opportunities;
           if (!opp) return "";
           const deadline = opp.response_deadline
-            ? new Date(opp.response_deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            ? new Date(opp.response_deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })
             : "TBD";
-          const value = opp.estimated_value ? `$${Number(opp.estimated_value).toLocaleString()}` : "N/A";
+          const value = (opp.estimated_value || opp.value_estimate)
+            ? `$${Number(opp.estimated_value || opp.value_estimate).toLocaleString()}`
+            : "TBD";
+          const scoreColor = m.match_score >= 80 ? "#059669" : m.match_score >= 60 ? "#2563eb" : "#d97706";
+          const recColor = m.bid_recommendation === "bid" ? "#059669" : m.bid_recommendation === "monitor" ? "#d97706" : "#94a3b8";
+          const recLabel = m.bid_recommendation === "bid" ? "BID" : m.bid_recommendation === "monitor" ? "MONITOR" : "REVIEW";
+          const title = (opp.title || "Untitled").replace(/^\[[^\]]*\]\s*/, "").substring(0, 60);
+
           return `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #1e2535;color:#e8edf8;font-size:13px;">${opp.title}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #1e2535;color:#8b9ab5;font-size:13px;">${opp.agency}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #1e2535;color:#8b9ab5;font-size:13px;">${value}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #1e2535;color:#8b9ab5;font-size:13px;">${deadline}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #1e2535;color:#3b82f6;font-size:13px;">${m.match_score}%</td>
+            <td style="padding:12px 16px;border-bottom:1px solid #f1f5f9;">
+              <a href="${appUrl}/dashboard/opportunity/${opp.id}" style="color:#0f172a;text-decoration:none;font-weight:600;font-size:14px;">${title}</a>
+              <div style="color:#64748b;font-size:12px;margin-top:2px;">${opp.agency || "Unknown"}</div>
+            </td>
+            <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;text-align:center;">
+              <span style="color:${scoreColor};font-weight:700;font-size:16px;">${m.match_score}</span>
+            </td>
+            <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569;">${value}</td>
+            <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#475569;">${deadline}</td>
+            <td style="padding:12px 8px;border-bottom:1px solid #f1f5f9;">
+              <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;color:${recColor};background:${recColor}15;">${recLabel}</span>
+            </td>
           </tr>`;
         })
         .join("");
 
       const html = `
-        <div style="background:#080a0f;padding:32px;font-family:system-ui,-apple-system,sans-serif;">
-          <div style="max-width:640px;margin:0 auto;">
-            <h1 style="color:#e8edf8;font-size:20px;margin-bottom:4px;">Daily Opportunity Digest</h1>
-            <p style="color:#8b9ab5;font-size:14px;margin-bottom:24px;">${org.name} — Top ${matches.length} matches</p>
-            <table style="width:100%;border-collapse:collapse;background:#0d1018;border:1px solid #1e2535;">
-              <thead>
-                <tr style="background:#111520;">
-                  <th style="padding:8px 12px;text-align:left;color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Title</th>
-                  <th style="padding:8px 12px;text-align:left;color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Agency</th>
-                  <th style="padding:8px 12px;text-align:left;color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Value</th>
-                  <th style="padding:8px 12px;text-align:left;color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Deadline</th>
-                  <th style="padding:8px 12px;text-align:left;color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Match</th>
-                </tr>
-              </thead>
-              <tbody>${opportunityRows}</tbody>
-            </table>
-            <p style="color:#4a5a75;font-size:12px;margin-top:24px;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.contractsintel.com"}/dashboard" style="color:#3b82f6;text-decoration:none;">View in Dashboard</a>
-            </p>
-          </div>
-        </div>
-      `;
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;">
+  <div style="max-width:640px;margin:0 auto;padding:32px 16px;">
+    <div style="margin-bottom:24px;">
+      <span style="font-size:15px;font-weight:700;color:#2563eb;">ContractsIntel</span>
+    </div>
+    <div style="background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+      <div style="padding:24px 24px 16px;">
+        <h1 style="margin:0 0 4px;font-size:22px;font-weight:400;color:#0f172a;font-family:Georgia,serif;">Good morning, ${firstName}</h1>
+        <p style="margin:0;font-size:14px;color:#64748b;">Here are your top ${matches.length} contract matches today.</p>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="padding:8px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">Opportunity</th>
+            <th style="padding:8px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">Score</th>
+            <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">Value</th>
+            <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">Deadline</th>
+            <th style="padding:8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">Rec</th>
+          </tr>
+        </thead>
+        <tbody>${opportunityRows}</tbody>
+      </table>
+      <div style="padding:16px 24px 24px;text-align:center;">
+        <a href="${appUrl}/dashboard" style="display:inline-block;padding:10px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View All Matches</a>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:24px;">
+      ContractsIntel — Government contract intelligence<br>
+      <a href="${appUrl}/dashboard/settings" style="color:#94a3b8;">Manage email preferences</a>
+    </p>
+  </div>
+</body>
+</html>`;
 
       for (const u of users) {
         try {
           await resend.emails.send({
             from: "ContractsIntel <digest@contractsintel.com>",
             to: u.email,
-            subject: `Daily Digest: ${matches.length} opportunities for ${org.name}`,
+            subject: `${matches.length} contract matches for ${org.name}`,
             html,
           });
           sent++;
-        } catch (err) {
-          console.error(`Failed to send digest to ${u.email}:`, err);
+        } catch (err: any) {
+          errors.push(`${u.email}: ${err?.message || "unknown"}`);
         }
       }
     }
 
-    return NextResponse.json({ success: true, sent });
-  } catch (error) {
+    return NextResponse.json({ success: true, sent, errors: errors.length > 0 ? errors : undefined });
+  } catch (error: any) {
     console.error("Send digests error:", error);
-    return NextResponse.json({ error: "Failed to send digests" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Failed" }, { status: 500 });
   }
 }
