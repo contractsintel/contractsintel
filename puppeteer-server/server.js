@@ -361,8 +361,6 @@ async function upsertToSupabase(records) {
   for (let i = 0; i < records.length; i += 100) {
     const batch = records.slice(i, i + 100);
     try {
-      // Use ignore-duplicates: skip existing records entirely (90% less DB writes)
-      // New records are inserted, existing ones with same notice_id are skipped
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?on_conflict=notice_id`, {
         method: "POST",
         headers: {
@@ -373,9 +371,13 @@ async function upsertToSupabase(records) {
         },
         body: JSON.stringify(batch),
       });
-      if (resp.ok) total += batch.length;
-      else {
-        // Fallback: insert one by one
+      if (resp.ok) {
+        total += batch.length;
+      } else {
+        const errText = await resp.text().catch(() => "");
+        console.log(`[upsert] Batch error ${resp.status}: ${errText.substring(0, 200)}`);
+        // Fallback: try one-by-one to isolate bad records
+        let singleOk = 0, singleFail = 0;
         for (const rec of batch) {
           try {
             const r2 = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?on_conflict=notice_id`, {
@@ -388,12 +390,14 @@ async function upsertToSupabase(records) {
               },
               body: JSON.stringify([rec]),
             });
-            if (r2.ok) total++;
+            if (r2.ok) { total++; singleOk++; }
+            else { singleFail++; if (singleFail <= 3) { const e2 = await r2.text().catch(() => ""); console.log(`[upsert] Single fail: ${e2.substring(0, 150)}`); } }
           } catch {}
         }
+        if (singleFail > 0) console.log(`[upsert] Single insert: ${singleOk} ok, ${singleFail} failed`);
       }
     } catch (e) {
-      console.log(`Supabase upsert error: ${e.message}`);
+      console.log(`[upsert] Error: ${e.message}`);
     }
   }
   return total;
@@ -991,7 +995,7 @@ async function runSamScrape() {
       response_deadline: r.responseDate || null,
       posted_date: r.publishDate || null,
       description: desc ? desc.substring(0, 10000) : null,
-      full_description: desc || null,
+      full_description: desc ? desc.substring(0, 50000) : null,
       source: "sam_gov",
       source_url: `https://sam.gov/opp/${r._id}/view`,
       naics_code: naicsCode,
@@ -1058,13 +1062,13 @@ async function runSamScrape() {
   let grandTotal = 0;
   const batchResults = [];
 
-  for (const batch of batches) {
+  for (let bi = 0; bi < batches.length; bi++) {
+    const batch = batches[bi];
+    console.log(`[sam] Batch ${bi + 1}/${batches.length}: ${batch.label}`);
     const result = await scrapeBatch(batch);
     batchResults.push(result);
     grandTotal += result.saved;
-    if (result.saved > 0) {
-      console.log(`[sam] ${result.label}: ${result.saved} saved (${result.total} in batch, ${result.pages} pages)`);
-    }
+    console.log(`[sam] Batch ${bi + 1} done: ${result.saved} saved, ${result.pages} pages (total so far: ${grandTotal})`);
     await randomDelay(500, 1500);
   }
 
