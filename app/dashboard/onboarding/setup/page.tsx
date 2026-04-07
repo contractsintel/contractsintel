@@ -117,6 +117,7 @@ export default function OnboardingSetupPage() {
   const tab1Valid = companyName.trim().length >= 2;
   const tab2Valid = projectName.trim().length > 0 && description.trim().length >= 20 && selectedKeywords.length >= 2;
   const tab3Valid = certs.length > 0 && selectedNaics.length > 0;
+  if (activeTab === "preferences") console.log("TAB3 VALIDATION:", { certs, selectedNaics, tab3Valid });
 
   const saveOrganization = async () => {
     setTab1Attempted(true);
@@ -499,15 +500,23 @@ export default function OnboardingSetupPage() {
             {selectedNaics.length > 0 && <p className="text-[12px] text-[#059669] mt-2 font-medium">{selectedNaics.length} code{selectedNaics.length > 1 ? "s" : ""} selected</p>}
 
             <div className="mt-3">
-              <button onClick={() => setShowManualNaics(!showManualNaics)} className="text-[13px] text-[#4f46e5] hover:text-[#4338ca]">
-                + Add a NAICS code manually
+              <button onClick={() => { setShowManualNaics(!showManualNaics); setManualNaicsCode(""); }}
+                className="text-[13px] text-[#4f46e5] hover:text-[#4338ca]">
+                {showManualNaics ? "- Cancel manual entry" : "+ Add a NAICS code manually"}
               </button>
               {showManualNaics && (
                 <div className="flex items-center gap-2 mt-2">
                   <input type="text" placeholder="Enter 6-digit code" maxLength={6}
                     value={manualNaicsCode}
                     onChange={e => setManualNaicsCode(e.target.value.replace(/\D/g, ""))}
-                    className="w-[140px] px-3 py-2 text-[14px] border border-[#e5e7eb] rounded-lg font-mono focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10" />
+                    onKeyDown={e => {
+                      if (e.key === "Enter" && manualNaicsCode.length === 6) {
+                        if (!selectedNaics.includes(manualNaicsCode)) setSelectedNaics(prev => [...prev, manualNaicsCode]);
+                        setManualNaicsCode(""); setShowManualNaics(false);
+                      }
+                    }}
+                    className="w-[140px] px-3 py-2 text-[14px] border border-[#e5e7eb] rounded-lg font-mono focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10"
+                    autoFocus />
                   <button onClick={() => {
                     if (manualNaicsCode.length === 6 && !selectedNaics.includes(manualNaicsCode)) {
                       setSelectedNaics(prev => [...prev, manualNaicsCode]);
