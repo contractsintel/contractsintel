@@ -935,38 +935,39 @@ app.post("/cron/sam", async (req, res) => {
   }
   batches.push({ notice_type: "k", naics: null, label: "type=k,catchall" });
 
-  // Launch browser and visit sam.gov to establish session cookies
-  let browserContext = null;
-  let browserPage = null;
-  try {
-    const result = await getPage();
-    browserContext = result.context;
-    browserPage = result.page;
-    console.log("[sam] Loading sam.gov in browser to establish session...");
-    await browserPage.goto("https://sam.gov/search/", { waitUntil: "domcontentloaded", timeout: 30000 });
-    await new Promise(r => setTimeout(r, 3000));
-    console.log("[sam] Browser session established");
-  } catch (e) {
-    console.log(`[sam] Browser session failed: ${e.message}, falling back to direct fetch`);
+  // Strategy: Navigate browser directly to API URL, extract JSON from page body
+  // This uses Patchright's full anti-detect stack (TLS fingerprint, headers, etc.)
+
+  // Browser-navigated API fetch: loads API URL as a page, extracts JSON from body
+  async function browserNavigateFetch(url) {
+    let ctx = null;
+    try {
+      const result = await getPage();
+      ctx = result.context;
+      const pg = result.page;
+
+      // First visit sam.gov to establish cookies/session
+      await pg.goto("https://sam.gov/search/", { waitUntil: "domcontentloaded", timeout: 20000 });
+      await new Promise(r => setTimeout(r, 2000));
+      await solveCaptchaIfPresent(pg);
+
+      // Now navigate to the API URL — browser handles Cloudflare/WAF
+      const response = await pg.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+      if (!response || !response.ok()) {
+        return { error: true, status: response ? response.status() : 0 };
+      }
+      const text = await pg.evaluate(() => document.body?.innerText || document.body?.textContent || "");
+      if (!text || text.length < 10) return { error: true, status: "empty" };
+      return JSON.parse(text);
+    } catch (e) {
+      console.log(`[sam] browser navigate error: ${e.message}`);
+      return { error: true, status: e.message };
+    } finally {
+      if (ctx) await ctx.close().catch(() => {});
+    }
   }
 
-  // Fetch via browser page.evaluate (uses browser's cookies + TLS fingerprint)
-  async function browserFetch(url) {
-    if (!browserPage) throw new Error("no browser page");
-    return await browserPage.evaluate(async (fetchUrl) => {
-      const res = await fetch(fetchUrl, {
-        credentials: "include",
-        headers: {
-          Accept: "application/json, text/plain, */*",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-      });
-      if (!res.ok) return { error: true, status: res.status };
-      return await res.json();
-    }, url);
-  }
-
-  // Direct fetch fallback with stealth headers
+  // Direct fetch with stealth headers + retry
   async function directFetch(url, attempt = 0) {
     const ua = randomStealthUA();
     const headers = {
@@ -975,16 +976,27 @@ app.post("/cron/sam", async (req, res) => {
       Referer: "https://sam.gov/search/",
       Origin: "https://sam.gov",
     };
-    const apiRes = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
-    if (!apiRes.ok) {
-      if (attempt < 3) {
+    try {
+      const apiRes = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+      if (!apiRes.ok) {
+        if (attempt < 2) {
+          await exponentialBackoff(attempt);
+          return directFetch(url, attempt + 1);
+        }
+        return { error: true, status: apiRes.status };
+      }
+      return await apiRes.json();
+    } catch (e) {
+      if (attempt < 2) {
         await exponentialBackoff(attempt);
         return directFetch(url, attempt + 1);
       }
-      return { error: true, status: apiRes.status };
+      return { error: true, status: e.message };
     }
-    return await apiRes.json();
   }
+
+  // Test which method works on first call, then reuse for all subsequent calls
+  let useMethod = "unknown"; // "direct", "browser", or "none"
 
   function mapSamRecord(r) {
     const orgs = r.organizationHierarchy || [];
@@ -1045,12 +1057,26 @@ app.post("/cron/sam", async (req, res) => {
         if (batch.naics) params.set("naics", batch.naics);
         const url = `${SAM_SEARCH}?${params}`;
 
-        // Try browser fetch first, fall back to direct with stealth
+        // Try direct first (fast), fall back to browser navigation (slow but bypasses WAF)
         let data;
-        try {
-          data = await browserFetch(url);
-        } catch {
+        if (useMethod === "direct" || useMethod === "unknown") {
           data = await directFetch(url);
+          if (!data.error && useMethod === "unknown") {
+            useMethod = "direct";
+            console.log("[sam] Direct fetch working — using direct for all batches");
+          }
+        }
+        if ((!data || data.error) && useMethod !== "direct") {
+          if (useMethod === "unknown") console.log("[sam] Direct fetch failed, trying browser navigation...");
+          data = await browserNavigateFetch(url);
+          if (!data.error && useMethod === "unknown") {
+            useMethod = "browser";
+            console.log("[sam] Browser navigation working — using browser for all batches");
+          }
+        }
+        if (data.error && useMethod === "unknown") {
+          useMethod = "none";
+          console.log("[sam] Both methods failed — SAM.gov may be fully blocking Railway");
         }
 
         if (data.error) {
@@ -1090,6 +1116,11 @@ app.post("/cron/sam", async (req, res) => {
   const batchResults = [];
 
   for (const batch of batches) {
+    // Fast-fail if we already know neither method works
+    if (useMethod === "none") {
+      batchResults.push({ label: batch.label, saved: 0, total: 0, pages: 0 });
+      continue;
+    }
     const result = await scrapeBatch(batch);
     batchResults.push(result);
     grandTotal += result.saved;
@@ -1100,11 +1131,58 @@ app.post("/cron/sam", async (req, res) => {
     await randomDelay(1000, 3000);
   }
 
-  // Close browser context
-  if (browserContext) await browserContext.close().catch(() => {});
+  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches (method: ${useMethod})`);
+  res.json({ source: "sam_gov", saved: grandTotal, method: useMethod, batches: batchResults.filter(b => b.saved > 0) });
+});
 
-  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches`);
-  res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
+// Diagnostic: test SAM.gov connectivity from Railway
+app.get("/debug/sam-test", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  const results = {};
+  const testUrl = "https://sam.gov/api/prod/sgs/v1/search/?index=opp&q=&page=0&sort=-modifiedDate&size=5&mode=search&is_active=true&notice_type=p";
+
+  // Test 1: Direct fetch
+  try {
+    const ua = randomStealthUA();
+    const r = await fetch(testUrl, {
+      headers: { ...stealthHeaders(ua), Accept: "application/json, text/plain, */*", Referer: "https://sam.gov/search/", Origin: "https://sam.gov" },
+      signal: AbortSignal.timeout(15000),
+    });
+    results.direct = { status: r.status, ok: r.ok, size: (await r.text()).length };
+  } catch (e) {
+    results.direct = { error: e.message };
+  }
+
+  // Test 2: Browser navigation
+  let ctx = null;
+  try {
+    const result = await getPage();
+    ctx = result.context;
+    const pg = result.page;
+    // Load sam.gov first
+    await pg.goto("https://sam.gov/search/", { waitUntil: "domcontentloaded", timeout: 20000 });
+    const samTitle = await pg.title();
+    results.browser_sam_page = { title: samTitle, url: pg.url() };
+    await new Promise(r => setTimeout(r, 2000));
+    // Then try API
+    const apiResp = await pg.goto(testUrl, { waitUntil: "domcontentloaded", timeout: 20000 });
+    const body = await pg.evaluate(() => document.body?.innerText || "");
+    results.browser_api = { status: apiResp?.status(), size: body.length, preview: body.substring(0, 200) };
+  } catch (e) {
+    results.browser_api = { error: e.message };
+  } finally {
+    if (ctx) await ctx.close().catch(() => {});
+  }
+
+  // Test 3: Simple connectivity to sam.gov
+  try {
+    const r = await fetch("https://sam.gov/", { signal: AbortSignal.timeout(10000), headers: { "User-Agent": randomStealthUA() } });
+    results.sam_homepage = { status: r.status, ok: r.ok };
+  } catch (e) {
+    results.sam_homepage = { error: e.message };
+  }
+
+  res.json(results);
 });
 
 // Bulk match: create matches for ALL orgs against ALL opportunities (paginated)
