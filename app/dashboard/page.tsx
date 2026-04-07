@@ -47,14 +47,20 @@ function recBadge(rec: string) {
   return map[rec] ?? map.skip;
 }
 
-type SortOption = "score" | "deadline" | "value";
+type SortOption = "score" | "deadline" | "value" | "newest";
 type SourceFilter = "" | "federal" | "state" | "military" | "sbir" | "grants" | "subcontracting" | "recompetes";
+type UrgencyFilter = "" | "week" | "2weeks" | "month";
+type ValueFilter = "" | "under100k" | "100k-500k" | "500k-1m" | "over1m";
+type RecFilter = "" | "bid" | "monitor" | "skip";
 type FilterState = {
   setAside: string;
   agency: string;
   minScore: number;
   sort: SortOption;
   source: SourceFilter;
+  urgency: UrgencyFilter;
+  valueRange: ValueFilter;
+  recommendation: RecFilter;
 };
 
 function getSourceCategory(source: string | null | undefined, bidRec?: string): string {
@@ -102,6 +108,9 @@ export default function DashboardPage() {
     minScore: 0,
     sort: "score",
     source: "",
+    urgency: "",
+    valueRange: "",
+    recommendation: "",
   });
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
   const [seedingDemo, setSeedingDemo] = useState(false);
@@ -137,7 +146,7 @@ export default function DashboardPage() {
   // Reset pagination when filters change
   useEffect(() => {
     setMatchLimit(PAGE_SIZE);
-  }, [filters.source, filters.setAside, filters.agency, filters.minScore]);
+  }, [filters.source, filters.setAside, filters.agency, filters.minScore, filters.urgency, filters.valueRange, filters.recommendation]);
 
   const handleLoadMore = async () => {
     const newLimit = matchLimit + PAGE_SIZE;
@@ -213,11 +222,30 @@ export default function DashboardPage() {
         const cat = getSourceCategory(opp.source, m.bid_recommendation);
         if (cat !== filters.source) return false;
       }
+      // Urgency filter
+      if (filters.urgency) {
+        const d = daysUntil(opp.response_deadline);
+        if (d === null || d < 0) return false;
+        if (filters.urgency === "week" && d > 7) return false;
+        if (filters.urgency === "2weeks" && d > 14) return false;
+        if (filters.urgency === "month" && d > 30) return false;
+      }
+      // Value filter
+      if (filters.valueRange) {
+        const v = opp.estimated_value ?? 0;
+        if (filters.valueRange === "under100k" && v >= 100000) return false;
+        if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
+        if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
+        if (filters.valueRange === "over1m" && v < 1000000) return false;
+      }
+      // Recommendation filter
+      if (filters.recommendation && m.bid_recommendation !== filters.recommendation) return false;
       return true;
     })
     .sort((a, b) => {
       if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
       if (filters.sort === "value") return (b.opportunities?.estimated_value ?? 0) - (a.opportunities?.estimated_value ?? 0);
+      if (filters.sort === "newest") return new Date(b.opportunities?.posted_date ?? 0).getTime() - new Date(a.opportunities?.posted_date ?? 0).getTime();
       if (filters.sort === "deadline") {
         const da = daysUntil(a.opportunities?.response_deadline) ?? 999;
         const db = daysUntil(b.opportunities?.response_deadline) ?? 999;
@@ -225,6 +253,16 @@ export default function DashboardPage() {
       }
       return 0;
     });
+
+  // Recommendation counts
+  const recCounts = matches.reduce(
+    (acc, m) => {
+      const rec = m.bid_recommendation || "skip";
+      acc[rec] = (acc[rec] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   // Stats
   const totalValue = matches.reduce((s, m) => s + (m.opportunities?.estimated_value ?? 0), 0);
@@ -360,60 +398,137 @@ export default function DashboardPage() {
       <div className="flex gap-6">
         {/* Main Column */}
         <div className="flex-1 min-w-0">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <select
-              value={filters.source}
-              onChange={(e) => setFilters((f) => ({ ...f, source: e.target.value as SourceFilter }))}
-              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
-            >
-              <option value="">All Sources</option>
-              <option value="federal">Federal</option>
-              <option value="state">State & Local</option>
-              <option value="military">Military</option>
-              <option value="sbir">SBIR/STTR</option>
-              <option value="grants">Grants</option>
-              <option value="subcontracting">Subcontracting</option>
-              <option value="recompetes">Recompetes</option>
-            </select>
-            <select
-              value={filters.setAside}
-              onChange={(e) => setFilters((f) => ({ ...f, setAside: e.target.value }))}
-              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
-            >
-              <option value="">All Set-Asides</option>
-              {setAsides.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+          {/* Filter Bar */}
+          <div className="space-y-3 mb-5">
+            {/* Row 1: Source toggle pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-1">Source</span>
+              {([
+                { key: "", label: "All", count: matches.length },
+                { key: "federal", label: "Federal", count: sourceCounts.federal ?? 0 },
+                { key: "state", label: "State", count: sourceCounts.state ?? 0 },
+                { key: "grants", label: "Grants", count: sourceCounts.grants ?? 0 },
+                { key: "sbir", label: "SBIR", count: sourceCounts.sbir ?? 0 },
+                { key: "military", label: "Military", count: sourceCounts.military ?? 0 },
+                { key: "subcontracting", label: "SubK", count: sourceCounts.subcontracting ?? 0 },
+                { key: "recompetes", label: "Recompete", count: sourceCounts.recompetes ?? 0 },
+              ] as const).filter(s => s.key === "" || s.count > 0).map((s) => (
+                <button
+                  key={s.key}
+                  onClick={() => setFilters((f) => ({ ...f, source: s.key as SourceFilter }))}
+                  className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all duration-150 ${
+                    filters.source === s.key
+                      ? "bg-[#2563eb] text-white border-[#2563eb]"
+                      : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#2563eb] hover:text-[#2563eb]"
+                  }`}
+                >
+                  {s.label}{s.count > 0 ? ` (${s.count})` : ""}
+                </button>
               ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Filter agency..."
-              value={filters.agency}
-              onChange={(e) => setFilters((f) => ({ ...f, agency: e.target.value }))}
-              className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-2 w-40 focus:outline-none focus:border-[#2563eb]"
-            />
-            <select
-              value={filters.minScore}
-              onChange={(e) => setFilters((f) => ({ ...f, minScore: Number(e.target.value) }))}
-              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
-            >
-              <option value={0}>Min Score: Any</option>
-              <option value={50}>50+</option>
-              <option value={70}>70+</option>
-              <option value={85}>85+</option>
-            </select>
-            <select
-              value={filters.sort}
-              onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
-              className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
-            >
-              <option value="score">Sort: Score</option>
-              <option value="deadline">Sort: Deadline</option>
-              <option value="value">Sort: Value</option>
-            </select>
+            </div>
+
+            {/* Row 2: Urgency + Value + Recommendation pills */}
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Urgency */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Urgency</span>
+                {([
+                  { key: "", label: "All" },
+                  { key: "week", label: "This week" },
+                  { key: "2weeks", label: "2 weeks" },
+                  { key: "month", label: "This month" },
+                ] as const).map((u) => (
+                  <button
+                    key={u.key}
+                    onClick={() => setFilters((f) => ({ ...f, urgency: u.key as UrgencyFilter }))}
+                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
+                      filters.urgency === u.key
+                        ? "bg-[#dc2626] text-white border-[#dc2626]"
+                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#dc2626] hover:text-[#dc2626]"
+                    }`}
+                  >
+                    {u.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Value */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Value</span>
+                {([
+                  { key: "", label: "All" },
+                  { key: "under100k", label: "<$100K" },
+                  { key: "100k-500k", label: "$100K-$500K" },
+                  { key: "500k-1m", label: "$500K-$1M" },
+                  { key: "over1m", label: ">$1M" },
+                ] as const).map((v) => (
+                  <button
+                    key={v.key}
+                    onClick={() => setFilters((f) => ({ ...f, valueRange: v.key as ValueFilter }))}
+                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
+                      filters.valueRange === v.key
+                        ? "bg-[#059669] text-white border-[#059669]"
+                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#059669] hover:text-[#059669]"
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Recommendation */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Rec</span>
+                {([
+                  { key: "", label: "All" },
+                  { key: "bid", label: `Bid${recCounts.bid ? ` (${recCounts.bid})` : ""}`, color: "#22c55e" },
+                  { key: "monitor", label: `Monitor${recCounts.monitor ? ` (${recCounts.monitor})` : ""}`, color: "#f59e0b" },
+                  { key: "skip", label: `Skip${recCounts.skip ? ` (${recCounts.skip})` : ""}`, color: "#9ca3af" },
+                ] as const).map((r) => (
+                  <button
+                    key={r.key}
+                    onClick={() => setFilters((f) => ({ ...f, recommendation: r.key as RecFilter }))}
+                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
+                      filters.recommendation === r.key
+                        ? `text-white border-current`
+                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:text-[#111827]"
+                    }`}
+                    style={filters.recommendation === r.key && r.key ? { backgroundColor: r.color, borderColor: r.color } : undefined}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Row 3: Sort + Agency search */}
+            <div className="flex items-center gap-3">
+              <select
+                value={filters.sort}
+                onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
+                className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
+              >
+                <option value="score">Best match</option>
+                <option value="newest">Newest</option>
+                <option value="deadline">Deadline soonest</option>
+                <option value="value">Value highest</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Search agency..."
+                value={filters.agency}
+                onChange={(e) => setFilters((f) => ({ ...f, agency: e.target.value }))}
+                className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-1.5 w-48 rounded-lg focus:outline-none focus:border-[#2563eb]"
+              />
+              {(filters.source || filters.urgency || filters.valueRange || filters.recommendation || filters.agency || filters.minScore > 0) && (
+                <button
+                  onClick={() => setFilters({ setAside: "", agency: "", minScore: 0, sort: "score", source: "", urgency: "", valueRange: "", recommendation: "" })}
+                  className="text-[11px] text-[#dc2626] hover:text-[#991b1b] font-medium"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Opportunity Cards */}
@@ -548,142 +663,97 @@ export default function DashboardPage() {
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
                     className={`border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-300 ${fadingOut === match.id ? "opacity-0 scale-95" : ""}`}
                   >
-                    <div className="p-5">
-                      <div className="flex items-start gap-4">
+                    {/* Compact card: ~80px */}
+                    <div className="px-4 py-3 cursor-pointer" onClick={() => setExpandedCard(expandedCard === match.id ? null : match.id)}>
+                      <div className="flex items-center gap-3">
                         {/* Score */}
-                        <div className={`text-3xl font-bold font-mono ${scoreColor(match.match_score)} w-14 text-center shrink-0`}>
+                        <div className={`text-2xl font-bold font-mono ${scoreColor(match.match_score)} w-10 text-center shrink-0`}>
                           {match.match_score}
                         </div>
 
-                        {/* Content */}
+                        {/* Main content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-[16px] font-semibold text-[#0f172a] truncate cursor-pointer hover:text-[#2563eb] transition-colors" onClick={() => setExpandedCard(expandedCard === match.id ? null : match.id)}>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-[#0f172a] truncate">
                               {opp.title}
                             </h3>
-                            <span
-                              className={`px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 ${recBadge(
-                                match.bid_recommendation
-                              )}`}
-                            >
+                            <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>
                               {match.bid_recommendation}
                             </span>
                             {sourceBadge(opp.source, match.bid_recommendation)}
                           </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-[#64748b] truncate">{opp.agency}</span>
+                            {opp.solicitation_number && <span className="text-[11px] text-[#94a3b8] font-mono">{opp.solicitation_number}</span>}
+                            {match.recommendation_reasoning && <span className="text-[11px] text-[#94a3b8] truncate hidden md:inline">— {match.recommendation_reasoning}</span>}
+                          </div>
+                        </div>
 
-                          <div className="flex items-center gap-3 text-xs text-[#4b5563] mb-2">
-                            <span>{opp.agency}</span>
-                            {opp.solicitation_number && (
+                        {/* Right side: value + deadline + actions */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {opp.estimated_value ? (
+                            <span className="text-xs font-mono text-[#111827] font-medium">{formatCurrency(opp.estimated_value)}</span>
+                          ) : null}
+                          <span className={`text-xs font-mono ${deadlineColor} w-16 text-right`}>
+                            {deadlineLabel(opp.response_deadline)}
+                          </span>
+                          <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            {match.user_status === "tracking" ? (
+                              <span className="px-2 py-1 text-[10px] text-[#059669] bg-[#ecfdf5] rounded font-medium">Tracking</span>
+                            ) : match.user_status === "bidding" ? (
+                              <span className="px-2 py-1 text-[10px] text-[#2563eb] bg-[#eff4ff] rounded font-medium">Bidding</span>
+                            ) : (
                               <>
-                                <span className="text-[#e5e7eb]">|</span>
-                                <span className="font-mono">{opp.solicitation_number}</span>
+                                <button onClick={() => updateStatus(match.id, "tracking")} className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] hover:border-[#2563eb] hover:text-[#2563eb] rounded transition-all">Track</button>
+                                <button onClick={() => updateStatus(match.id, "bidding")} className="px-2 py-1 text-[10px] bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded transition-all">Bid</button>
+                                <button onClick={() => updateStatus(match.id, "skipped")} className="px-2 py-1 text-[10px] text-[#9ca3af] hover:text-[#4b5563] rounded transition-all">Skip</button>
                               </>
                             )}
                           </div>
-
-                          {/* Tags */}
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {opp.set_aside && (
-                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">
-                                {opp.set_aside}
-                              </span>
-                            )}
-                            {opp.naics_code && (
-                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">
-                                NAICS {opp.naics_code}
-                              </span>
-                            )}
-                            {opp.place_of_performance && (
-                              <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">
-                                {opp.place_of_performance}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* AI Reasoning */}
-                          {match.reasoning && (
-                            <p data-tour={match === filtered[0] ? "ai-recommendation" : undefined} className="text-xs text-[#9ca3af] mb-3 line-clamp-2">{match.reasoning}</p>
-                          )}
-
-                          {/* Bottom row: value, deadline, actions */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              {opp.estimated_value && (
-                                <span className="text-sm font-mono text-[#111827]">
-                                  {formatCurrency(opp.estimated_value)}
-                                </span>
-                              )}
-                              <span className={`text-xs font-mono ${deadlineColor}`}>
-                                {deadlineLabel(opp.response_deadline)}
-                              </span>
-                            </div>
-                            <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-2">
-                              {match.user_status === "tracking" ? (
-                                <span className="px-3 py-1 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking ✓</span>
-                              ) : match.user_status === "bidding" ? (
-                                <span className="px-3 py-1 text-xs text-[#2563eb] bg-[#eff4ff] rounded-lg font-medium">Bidding ✓</span>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => updateStatus(match.id, "tracking")}
-                                    className="px-3 py-1.5 text-xs border border-[#f0f1f3] text-[#4b5563] hover:border-[#e2e8f0] hover:text-[#111827] rounded-lg transition-all duration-200"
-                                  >
-                                    Track
-                                  </button>
-                                  <button
-                                    onClick={() => updateStatus(match.id, "bidding")}
-                                    className="px-3 py-1.5 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all duration-200"
-                                  >
-                                    Bid
-                                  </button>
-                                  <button
-                                    onClick={() => updateStatus(match.id, "skipped")}
-                                    className="px-3 py-1.5 text-xs text-[#9ca3af] hover:text-[#4b5563] rounded-lg transition-all duration-200"
-                                  >
-                                    Skip
-                                  </button>
-                                </>
-                              )}
-                              {opp.sam_url && (
-                                <a
-                                  href={opp.sam_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-3 py-1 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
-                                >
-                                  SAM.gov
-                                </a>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Expanded details */}
-                          {expandedCard === match.id && (
-                            <div className="mt-3 pt-3 border-t border-[#f0f1f3] space-y-2 text-sm animate-[fadeInUp_0.2s_ease]">
-                              {opp.description && <p className="text-[#4b5563] leading-relaxed">{opp.description.substring(0, 500)}{opp.description.length > 500 ? "..." : ""}</p>}
-                              <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                                {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
-                                {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
-                                {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
-                                {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className="text-[#111827]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
-                                {opp.incumbent_name && <div><span className="text-[#9ca3af]">Incumbent:</span> <span className="text-[#111827]">{opp.incumbent_name}</span></div>}
-                                {opp.incumbent_value && <div><span className="text-[#9ca3af]">Prev. Value:</span> <span className="text-[#111827]">{formatCurrency(opp.incumbent_value)}</span></div>}
-                              </div>
-                              {match.recommendation_reasoning && (
-                                <div className="mt-2 p-3 bg-[#eff4ff] rounded-lg border-l-3 border-l-[#2563eb] text-xs text-[#1e40af]">
-                                  <strong>AI Recommendation:</strong> {match.recommendation_reasoning}
-                                </div>
-                              )}
-                              {opp.sam_url && (
-                                <a href={opp.sam_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#2563eb] hover:text-[#1d4ed8] font-medium mt-1">
-                                  View on SAM.gov →
-                                </a>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
+
+                    {/* Expanded details */}
+                    {expandedCard === match.id && (
+                      <div className="px-4 pb-4 border-t border-[#f0f1f3] animate-[fadeInUp_0.2s_ease]">
+                        <div className="pt-3 space-y-3">
+                          {/* Tags */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {opp.set_aside && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.set_aside}</span>}
+                            {opp.naics_code && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">NAICS {opp.naics_code}</span>}
+                            {opp.place_of_performance && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.place_of_performance}</span>}
+                          </div>
+
+                          {opp.description && <p className="text-xs text-[#4b5563] leading-relaxed">{opp.description.substring(0, 500)}{opp.description.length > 500 ? "..." : ""}</p>}
+
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                            {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
+                            {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className="text-[#111827]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
+                            {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
+                            {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
+                          </div>
+
+                          {match.recommendation_reasoning && (
+                            <div className="p-3 bg-[#eff4ff] rounded-lg text-xs text-[#1e40af]">
+                              <strong>Recommendation:</strong> {match.recommendation_reasoning}
+                            </div>
+                          )}
+
+                          {/* View Original Listing button */}
+                          {(opp.sam_url || opp.source_url) && (
+                            <a
+                              href={opp.sam_url || opp.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-[#2563eb] bg-[#eff4ff] hover:bg-[#dbeafe] rounded-lg transition-colors"
+                            >
+                              View Original Listing →
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
