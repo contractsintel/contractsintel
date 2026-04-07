@@ -489,6 +489,57 @@ app.post("/cron/sam-backfill", async (req, res) => {
   res.json({ success: true, updated, errors });
 });
 
+// Clean expired opportunities: delete records with passed deadlines
+app.post("/cron/cleanup-expired", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  console.log("[cleanup] Starting expired opportunity cleanup...");
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
+  const now = new Date().toISOString();
+
+  // Delete expired opportunities (deadline passed more than 7 days ago — grace period)
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+  let deleted = 0, offset = 0;
+
+  while (true) {
+    // Get expired opportunity IDs
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&response_deadline=lt.${cutoff}&response_deadline=not.is.null&limit=500&offset=${offset}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    const opps = await r.json();
+    if (!Array.isArray(opps) || !opps.length) break;
+
+    const ids = opps.map(o => o.id);
+
+    // Delete matching records from opportunity_matches first (foreign key)
+    for (const id of ids) {
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?opportunity_id=eq.${id}`, {
+        method: "DELETE", headers: hdrs,
+      });
+    }
+
+    // Delete the expired opportunities
+    for (const id of ids) {
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${id}`, {
+        method: "DELETE", headers: hdrs,
+      });
+      deleted++;
+    }
+
+    offset += 500;
+    if (opps.length < 500) break;
+    console.log(`[cleanup] Deleted ${deleted} expired so far...`);
+  }
+
+  // Count remaining
+  const countR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&limit=1`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" },
+  });
+  const remaining = countR.headers.get("content-range")?.split("/")[1] || "?";
+
+  console.log(`[cleanup] Done: ${deleted} expired deleted, ${remaining} remaining`);
+  res.json({ success: true, deleted, remaining: parseInt(remaining) || remaining });
+});
+
 // Diagnostic: show org IDs, user IDs, and match counts
 app.get("/debug/orgs", async (req, res) => {
   if (!authCheck(req, res)) return;
@@ -634,9 +685,10 @@ app.post("/cron/usaspending", async (req, res) => {
   if (!authCheck(req, res)) return;
   console.log("[cron] USASpending starting...");
 
+  // Only scrape contracts EXPIRING in next 12 months (recompete opportunities)
   const now = new Date();
-  const start = new Date(now - 90 * 86400000).toISOString().split("T")[0];
-  const end = now.toISOString().split("T")[0];
+  const start = now.toISOString().split("T")[0]; // from today
+  const end = new Date(now.getTime() + 365 * 86400000).toISOString().split("T")[0]; // to 12 months out
   let page = 1, totalSaved = 0, hasNext = true;
 
   while (hasNext && page <= 500) {
