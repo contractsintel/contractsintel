@@ -179,14 +179,14 @@ function SidebarLink({
     <Link
       href={isLocked ? "#" : item.href}
       data-tour={item.tourId || undefined}
-      className={`group relative flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[14px] font-medium border-l-[3px] transition-all duration-150 ${
+      className={`group relative flex items-center gap-3 px-3 py-2 mx-2 rounded-md text-[14px] font-medium transition-all duration-150 ${
         isActive
-          ? "text-[#0f172a] font-semibold bg-[#f1f5f9] border-l-[#2563eb]"
-          : "text-[#475569] hover:text-[#0f172a] hover:bg-[#f1f5f9] border-transparent"
+          ? "text-[#2563eb] font-semibold bg-[#eff6ff]"
+          : "text-[#4b5563] hover:text-[#111827] hover:bg-[#f3f4f6]"
       } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={isLocked ? (e) => e.preventDefault() : undefined}
     >
-      <span className={`${isActive ? "text-[#2563eb]" : "text-[#94a3b8] group-hover:text-[#475569]"} transition-colors`}>
+      <span className={`${isActive ? "text-[#2563eb]" : "text-[#9ca3af] group-hover:text-[#4b5563]"} transition-colors`}>
         {ICONS[item.icon]}
       </span>
       <span>{item.label}</span>
@@ -250,7 +250,7 @@ export function Sidebar({ plan }: { plan: string }) {
   const setupTotal = 7;
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-[240px] border-r border-[#f0f1f3] ci-sidebar-bg flex flex-col z-40">
+    <aside className="fixed left-0 top-16 bottom-0 w-[240px] ci-sidebar-bg flex flex-col z-40">
       {/* Top nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
         {TOP_NAV.map((item) => (
@@ -266,7 +266,7 @@ export function Sidebar({ plan }: { plan: string }) {
         <div className="border-t border-[#f0f1f3] mx-4 my-2" />
         <button
           onClick={toggleMore}
-          className="w-full flex items-center justify-between px-5 py-2.5 text-[10px] font-['JetBrains_Mono'] uppercase tracking-[0.06em] text-[#94a3b8] hover:text-[#4b5563] transition-colors"
+          className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] hover:text-[#4b5563] transition-colors"
         >
           <span className="flex items-center gap-2">
             <span
@@ -306,7 +306,7 @@ export function Sidebar({ plan }: { plan: string }) {
 
         {/* Tier badge & upgrade */}
         <div className="flex items-center justify-between px-5 py-3">
-          <span className="text-xs font-mono uppercase tracking-wider text-[#9ca3af]">
+          <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-[#eff6ff] text-[#2563eb]">
             {trial ? "Free Trial" : tierLabel(plan)}
           </span>
           {!trial && plan !== "team" && (
