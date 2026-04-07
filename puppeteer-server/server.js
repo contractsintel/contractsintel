@@ -503,6 +503,91 @@ app.post("/cron/grants", async (req, res) => {
   res.json({ source: "grants_gov", saved: totalSaved, hitCount });
 });
 
+// Cron: SAM.gov (internal API — no API key needed)
+app.post("/cron/sam", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  console.log("[cron] SAM.gov starting (internal API)...");
+
+  const SAM_SEARCH = "https://sam.gov/api/prod/sgs/v1/search/";
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 500;
+  let page = 0, totalSaved = 0, totalElements = 0;
+
+  while (page < MAX_PAGES) {
+    try {
+      const params = new URLSearchParams({
+        index: "opp",
+        q: "",
+        page: String(page),
+        sort: "-modifiedDate",
+        size: String(PAGE_SIZE),
+        mode: "search",
+        is_active: "true",
+      });
+
+      const apiRes = await fetch(`${SAM_SEARCH}?${params}`, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!apiRes.ok) {
+        console.log(`[cron] SAM.gov page ${page} HTTP ${apiRes.status}`);
+        break;
+      }
+
+      const data = await apiRes.json();
+      const pageInfo = data.page || {};
+      totalElements = pageInfo.totalElements || 0;
+      const results = (data._embedded || {}).results || [];
+      if (!results.length) break;
+
+      const records = results.filter(r => r._id).map(r => {
+        const orgs = r.organizationHierarchy || [];
+        const dept = orgs.find(o => o.level === 1);
+        const subtier = orgs.find(o => o.level === 2);
+        const office = orgs.find(o => o.level === 3);
+        const agency = [dept?.name, subtier?.name, office?.name]
+          .filter(Boolean)
+          .filter((v, i, a) => a.indexOf(v) === i) // dedupe
+          .join(" / ");
+
+        const desc = (r.descriptions || []).map(d => d.content || "").join("\n").substring(0, 10000);
+        const typeVal = r.type ? `${r.type.value || ""} (${r.type.code || ""})` : null;
+
+        return {
+          notice_id: r._id,
+          title: (r.title || "Untitled").substring(0, 500),
+          agency: agency || "Unknown",
+          solicitation_number: r.solicitationNumber || null,
+          response_deadline: r.responseDate || null,
+          posted_date: r.publishDate || null,
+          description: desc || null,
+          source: "sam_gov",
+          source_url: `https://sam.gov/opp/${r._id}/view`,
+          last_seen_at: new Date().toISOString(),
+        };
+      });
+
+      const saved = await upsertToSupabase(records);
+      totalSaved += saved;
+      console.log(`[cron] SAM.gov page ${page}: ${saved} saved (total: ${totalSaved}/${totalElements})`);
+
+      page++;
+      if (results.length < PAGE_SIZE) break;
+      await new Promise(r => setTimeout(r, 500));
+    } catch (e) {
+      console.log(`[cron] SAM.gov page ${page} error: ${e.message}`);
+      break;
+    }
+  }
+
+  console.log(`[cron] SAM.gov done: ${totalSaved} saved from ${page} pages (${totalElements} total active)`);
+  res.json({ source: "sam_gov", saved: totalSaved, pages: page, totalActive: totalElements });
+});
+
 // Cron: Scrape HTML sources via Patchright + Capsolver
 app.post("/cron/scrape-html", async (req, res) => {
   if (!authCheck(req, res)) return;
@@ -593,6 +678,13 @@ app.post("/cron/scrape-all", async (req, res) => {
     });
     summary.grants_gov = await r.json();
   } catch (e) { summary.grants_gov = { error: e.message }; }
+
+  try {
+    const r = await fetch(`http://localhost:${PORT}/cron/sam`, {
+      method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+    });
+    summary.sam_gov = await r.json();
+  } catch (e) { summary.sam_gov = { error: e.message }; }
 
   console.log("[cron] Full scrape-all complete");
   res.json(summary);
@@ -694,7 +786,7 @@ app.listen(PORT, () => {
 
   if (SUPABASE_KEY) {
     const CRON_INTERVAL = 30 * 60 * 1000;
-    const lastRun = { usaspending: 0, grants: 0, states: 0, federal: 0 };
+    const lastRun = { usaspending: 0, grants: 0, sam: 0, states: 0, federal: 0 };
     const HOUR = 3600000;
 
     async function cronCycle() {
@@ -723,6 +815,18 @@ app.listen(PORT, () => {
           const data = await r.json();
           console.log(`[cron] Grants.gov result: ${JSON.stringify(data).substring(0, 200)}`);
           lastRun.grants = now;
+        }
+
+        // Every 1 hour: SAM.gov (internal API, no key needed)
+        if (now - lastRun.sam > 1 * HOUR) {
+          console.log("[cron] Triggering SAM.gov...");
+          const r = await fetch(`http://localhost:${PORT}/cron/sam`, {
+            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            signal: AbortSignal.timeout(1800000),
+          });
+          const data = await r.json();
+          console.log(`[cron] SAM.gov result: ${JSON.stringify(data).substring(0, 200)}`);
+          lastRun.sam = now;
         }
 
         // Every 2 hours: State portals via Patchright

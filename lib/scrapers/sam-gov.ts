@@ -1,141 +1,120 @@
 import type { ScraperResult } from "./index";
 
-const SAM_ENDPOINTS = [
-  "https://api.sam.gov/opportunities/v2/search",
-  "https://api.sam.gov/prod/opportunities/v2/search",
-];
+const SAM_INTERNAL_API = "https://sam.gov/api/prod/sgs/v1/search/";
+const SAM_PUBLIC_API = "https://api.sam.gov/opportunities/v2/search";
 
-interface SamOpportunity {
-  noticeId: string;
-  title: string;
+interface SamResult {
+  _id: string;
+  title?: string;
   solicitationNumber?: string;
-  department?: string;
-  subtier?: string;
-  office?: string;
-  postedDate?: string;
-  type?: string;
-  baseType?: string;
-  setAside?: string;
-  setAsideDescription?: string;
-  responseDeadLine?: string;
-  naicsCode?: string;
-  placeOfPerformance?: { city?: { name?: string }; state?: { code?: string } };
-  description?: string;
-  uiLink?: string;
-  award?: { amount?: number };
+  publishDate?: string;
+  responseDate?: string;
+  modifiedDate?: string;
+  isActive?: boolean;
+  type?: { code?: string; value?: string };
+  descriptions?: Array<{ content?: string }>;
+  organizationHierarchy?: Array<{ level: number; name: string }>;
 }
 
-function getToday(): string {
-  const d = new Date();
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+function getAgency(orgs: Array<{ level: number; name: string }>): string {
+  const parts = orgs
+    .sort((a, b) => a.level - b.level)
+    .map((o) => o.name)
+    .filter((v, i, a) => a.indexOf(v) === i);
+  return parts.join(" / ") || "Unknown";
 }
 
-function getDateDaysAgo(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-async function fetchFromSam(endpoint: string, apiKey: string): Promise<SamOpportunity[]> {
+async function fetchInternalApi(page: number, size: number): Promise<{ results: SamResult[]; totalElements: number }> {
   const params = new URLSearchParams({
-    api_key: apiKey,
-    postedFrom: getDateDaysAgo(7),
-    postedTo: getToday(),
-    limit: "1000",
-    offset: "0",
+    index: "opp",
+    q: "",
+    page: String(page),
+    sort: "-modifiedDate",
+    size: String(size),
+    mode: "search",
+    is_active: "true",
   });
 
-  const res = await fetch(`${endpoint}?${params.toString()}`, {
-    headers: { Accept: "application/json" },
+  const res = await fetch(`${SAM_INTERNAL_API}?${params}`, {
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    },
+    signal: AbortSignal.timeout(30000),
   });
 
-  if (!res.ok) {
-    throw new Error(`SAM API returned ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`SAM internal API returned ${res.status}`);
 
   const data = await res.json();
-  return data.opportunitiesData ?? data.opportunities ?? [];
+  return {
+    results: data._embedded?.results ?? [],
+    totalElements: data.page?.totalElements ?? 0,
+  };
 }
 
 export async function scrapeSamGov(supabase: any): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
-  const apiKey = process.env.SAM_API_KEY;
 
-  if (!apiKey) {
+  try {
+    const PAGE_SIZE = 100;
+    const MAX_PAGES = 500;
+    let totalSaved = 0;
+    let totalElements = 0;
+    let page = 0;
+
+    while (page < MAX_PAGES) {
+      const { results, totalElements: total } = await fetchInternalApi(page, PAGE_SIZE);
+      totalElements = total;
+      if (!results.length) break;
+
+      for (const r of results) {
+        if (!r._id) continue;
+
+        const orgs = r.organizationHierarchy ?? [];
+        const desc = (r.descriptions ?? []).map((d) => d.content ?? "").join("\n").substring(0, 10000);
+
+        const { error } = await supabase.from("opportunities").upsert(
+          {
+            notice_id: r._id,
+            title: (r.title ?? "Untitled").substring(0, 500),
+            agency: getAgency(orgs),
+            solicitation_number: r.solicitationNumber ?? null,
+            response_deadline: r.responseDate ?? null,
+            posted_date: r.publishDate ?? null,
+            description: desc || null,
+            source: "sam_gov",
+            source_url: `https://sam.gov/opp/${r._id}/view`,
+            last_seen_at: new Date().toISOString(),
+          },
+          { onConflict: "notice_id" }
+        );
+
+        if (!error) totalSaved++;
+      }
+
+      console.log(`[sam-gov] Page ${page}: ${results.length} results, ${totalSaved} saved (${totalElements} total active)`);
+      page++;
+      if (results.length < PAGE_SIZE) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    return {
+      source: "sam_gov",
+      status: "success",
+      opportunities_found: totalSaved,
+      matches_created: totalSaved,
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+    };
+  } catch (err) {
     return {
       source: "sam_gov",
       status: "error",
       opportunities_found: 0,
       matches_created: 0,
-      error_message: "SAM_API_KEY not configured",
+      error_message: err instanceof Error ? err.message : String(err),
       started_at: startedAt,
       completed_at: new Date().toISOString(),
     };
   }
-
-  let opportunities: SamOpportunity[] = [];
-  let lastError: Error | null = null;
-
-  for (const endpoint of SAM_ENDPOINTS) {
-    try {
-      opportunities = await fetchFromSam(endpoint, apiKey);
-      break;
-    } catch (err) {
-      lastError = err as Error;
-      continue;
-    }
-  }
-
-  if (opportunities.length === 0) {
-    console.log("SAM.gov API returned 0 opportunities:", lastError?.message);
-    return {
-      source: "sam_gov",
-      status: "success",
-      opportunities_found: 0,
-      matches_created: 0,
-      error_message: lastError?.message ?? "API returned 0 results",
-      started_at: startedAt,
-      completed_at: new Date().toISOString(),
-    };
-  }
-
-  let upserted = 0;
-
-  for (const opp of opportunities) {
-    const agency = [opp.department, opp.subtier, opp.office].filter(Boolean).join(" / ");
-    const pop = opp.placeOfPerformance;
-    const placeStr = pop ? [pop.city?.name, pop.state?.code].filter(Boolean).join(", ") : null;
-
-    const { error } = await supabase.from("opportunities").upsert(
-      {
-        notice_id: opp.noticeId,
-        title: opp.title ?? "Untitled",
-        agency: agency || "Unknown",
-        solicitation_number: opp.solicitationNumber ?? null,
-        set_aside: opp.setAsideDescription ?? opp.setAside ?? null,
-        naics_code: opp.naicsCode ?? null,
-        place_of_performance: placeStr,
-        estimated_value: opp.award?.amount ?? null,
-        response_deadline: opp.responseDeadLine ?? null,
-        posted_date: opp.postedDate ?? null,
-        description: opp.description?.substring(0, 10000) ?? null,
-        sam_url: opp.uiLink ?? null,
-        source: "sam_gov",
-        source_url: opp.uiLink ?? null,
-        last_seen_at: new Date().toISOString(),
-      },
-      { onConflict: "notice_id" }
-    );
-
-    if (!error) upserted++;
-  }
-
-  return {
-    source: "sam_gov",
-    status: "success",
-    opportunities_found: opportunities.length,
-    matches_created: upserted,
-    started_at: startedAt,
-    completed_at: new Date().toISOString(),
-  };
 }
