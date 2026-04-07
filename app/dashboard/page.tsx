@@ -11,8 +11,8 @@ import { seedDemoData } from "@/lib/demo-data";
 import { UnlockButton, ProfileBanner } from "./unlock-panel";
 
 function cleanTitle(s: string): string {
-  // Remove bracket prefixes like "[NE]", "[California]", "[Tennessee RFP]"
-  return decodeHtml(s.replace(/^\[[^\]]*\]\s*/, ""));
+  // Remove bracket prefixes and "Recompete: " prefix
+  return decodeHtml(s.replace(/^\[[^\]]*\]\s*/, "").replace(/^Recompete:\s*/i, ""));
 }
 
 function decodeHtml(s: string): string {
@@ -438,8 +438,6 @@ export default function DashboardPage() {
           <HelpButton page="dashboard" />
         </div>
       </div>
-      <InlineGuide page="dashboard" />
-
       {/* Profile Completion Banner */}
       <ProfileBanner />
 
@@ -487,131 +485,50 @@ export default function DashboardPage() {
       <div className="flex gap-6">
         {/* Main Column */}
         <div className="flex-1 min-w-0 w-full">
-          {/* Filter Bar */}
-          <div className="space-y-3 mb-4 sm:mb-5 overflow-x-auto">
-            {/* Row 1: Source toggle pills */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="ci-section-label mr-1">Contract Type</span>
-              {([
-                { key: "", label: "All Types", count: totalMatchCount },
-                { key: "federal", label: "Federal Solicitations", count: sourceCounts.federal ?? 0 },
-                { key: "recompetes", label: "Recompete Alerts", count: sourceCounts.recompetes ?? 0 },
-              ] as const).filter(s => s.key === "" || s.count > 0).map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setFilters((f) => ({ ...f, source: s.key as SourceFilter }))}
-                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md border transition-all duration-150 ${
-                    filters.source === s.key
-                      ? "bg-[#0f172a] text-white border-[#0f172a]"
-                      : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
-                  }`}
-                >
-                  {s.label}{s.count > 0 ? ` (${s.count >= 1000 ? `${(s.count/1000).toFixed(1)}K` : s.count})` : ""}
-                </button>
-              ))}
-            </div>
-
-            {/* Row 2: Urgency + Value + Recommendation pills */}
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Urgency */}
-              <div className="flex items-center gap-1.5">
-                <span className="ci-section-label mr-0.5">Urgency</span>
-                {([
-                  { key: "", label: "All" },
-                  { key: "week", label: "This week" },
-                  { key: "2weeks", label: "2 weeks" },
-                  { key: "month", label: "This month" },
-                ] as const).map((u) => (
-                  <button
-                    key={u.key}
-                    onClick={() => setFilters((f) => ({ ...f, urgency: u.key as UrgencyFilter }))}
-                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
-                      filters.urgency === u.key
-                        ? "bg-[#0f172a] text-white border-[#0f172a]"
-                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
-                    }`}
-                  >
-                    {u.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Value */}
-              <div className="flex items-center gap-1.5">
-                <span className="ci-section-label mr-0.5">Value</span>
-                {([
-                  { key: "", label: "All" },
-                  { key: "under100k", label: "<$100K" },
-                  { key: "100k-500k", label: "$100K-$500K" },
-                  { key: "500k-1m", label: "$500K-$1M" },
-                  { key: "over1m", label: ">$1M" },
-                ] as const).map((v) => (
-                  <button
-                    key={v.key}
-                    onClick={() => setFilters((f) => ({ ...f, valueRange: v.key as ValueFilter }))}
-                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
-                      filters.valueRange === v.key
-                        ? "bg-[#0f172a] text-white border-[#0f172a]"
-                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
-                    }`}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Recommendation */}
-              <div className="flex items-center gap-1.5">
-                <span className="ci-section-label mr-0.5">Rec</span>
-                {([
-                  { key: "", label: "All" },
-                  { key: "bid", label: `Bid${recCounts.bid ? ` (${recCounts.bid})` : ""}`, color: "#22c55e" },
-                  { key: "monitor", label: `Monitor${recCounts.monitor ? ` (${recCounts.monitor})` : ""}`, color: "#f59e0b" },
-                  { key: "skip", label: `Skip${recCounts.skip ? ` (${recCounts.skip})` : ""}`, color: "#9ca3af" },
-                ] as const).map((r) => (
-                  <button
-                    key={r.key}
-                    onClick={() => setFilters((f) => ({ ...f, recommendation: r.key as RecFilter }))}
-                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md border transition-all duration-150 ${
-                      filters.recommendation === r.key
-                        ? "bg-[#0f172a] text-white border-[#0f172a]"
-                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Row 3: Sort + Agency search */}
-            <div className="flex items-center gap-3">
-              <select
-                value={filters.sort}
-                onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as SortOption }))}
-                className="bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:border-[#2563eb] transition-all duration-200"
-              >
-                <option value="score">Best match</option>
-                <option value="newest">Newest</option>
-                <option value="deadline">Deadline soonest</option>
-                <option value="value">Value highest</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Search agency..."
-                value={filters.agency}
-                onChange={(e) => setFilters((f) => ({ ...f, agency: e.target.value }))}
-                className="bg-[#f8f9fb] border border-[#e5e7eb] text-[#4b5563] text-xs px-3 py-1.5 w-48 rounded-lg focus:outline-none focus:border-[#2563eb]"
-              />
-              {(filters.source || filters.urgency || filters.valueRange || filters.recommendation || filters.agency || filters.minScore > 0) && (
-                <button
-                  onClick={() => setFilters({ setAside: "", agency: "", minScore: 0, sort: "score", source: "", urgency: "", valueRange: "", recommendation: "" })}
-                  className="text-[11px] text-[#dc2626] hover:text-[#991b1b] font-medium"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
+          {/* Filter Bar — single row of compact dropdowns */}
+          <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <select value={filters.source}
+              onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              <option value="">All Types</option>
+              <option value="federal">Federal Solicitations</option>
+              <option value="recompetes">Recompete Alerts</option>
+            </select>
+            <select value={filters.urgency}
+              onChange={(e) => setFilters((f) => ({...f, urgency: e.target.value as UrgencyFilter}))}
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              <option value="">Any Deadline</option>
+              <option value="week">This Week</option>
+              <option value="2weeks">Next 2 Weeks</option>
+              <option value="month">This Month</option>
+            </select>
+            <select value={filters.valueRange}
+              onChange={(e) => setFilters((f) => ({...f, valueRange: e.target.value as ValueFilter}))}
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              <option value="">Any Value</option>
+              <option value="under100k">&lt;$100K</option>
+              <option value="100k-500k">$100K–$500K</option>
+              <option value="500k-1m">$500K–$1M</option>
+              <option value="over1m">&gt;$1M</option>
+            </select>
+            <select value={filters.sort}
+              onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              <option value="score">Best Match</option>
+              <option value="deadline">Deadline</option>
+              <option value="value">Value</option>
+              <option value="newest">Newest</option>
+            </select>
+            <input type="text" placeholder="Search agency..."
+              value={filters.agency}
+              onChange={(e) => setFilters((f) => ({...f, agency: e.target.value}))}
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] w-48 focus:outline-none focus:border-[#2563eb]" />
+            {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
+              <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
+                className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">
+                Clear
+              </button>
+            )}
           </div>
 
           {/* Opportunity Cards */}
