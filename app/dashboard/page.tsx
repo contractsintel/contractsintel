@@ -353,8 +353,6 @@ export default function DashboardPage() {
       if (!opp) return false;
       // Hide expired and paused contracts from main feed
       if (opp.status === "expired" || opp.status === "paused") return false;
-      // Only show SAM.gov and USASpending (other sources paused)
-      if (opp.source !== "sam_gov" && opp.source !== "usaspending") return false;
       if (filters.setAside && opp.set_aside !== filters.setAside) return false;
       if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
       if (m.match_score < filters.minScore) return false;
