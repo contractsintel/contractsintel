@@ -451,6 +451,55 @@ app.get("/debug/orgs", async (req, res) => {
 // RENDER ENDPOINTS
 // ============================================================
 
+// Document proxy: fetch government documents through Patchright to bypass 403s
+app.get("/proxy-document", async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: "url required" });
+
+  try {
+    // Try direct fetch first (faster)
+    const directRes = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept: "application/pdf,application/octet-stream,*/*",
+        Referer: new URL(url).origin + "/",
+      },
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (directRes.ok) {
+      const contentType = directRes.headers.get("content-type") || "application/octet-stream";
+      const contentDisp = directRes.headers.get("content-disposition");
+      res.setHeader("Content-Type", contentType);
+      if (contentDisp) res.setHeader("Content-Disposition", contentDisp);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      const buffer = Buffer.from(await directRes.arrayBuffer());
+      return res.send(buffer);
+    }
+
+    // Fallback: use Patchright browser to fetch
+    const result = await getPage();
+    const page = result.page;
+    const context = result.context;
+    try {
+      const response = await page.goto(url, { waitUntil: "load", timeout: 30000 });
+      if (response) {
+        const body = await response.body();
+        const contentType = response.headers()["content-type"] || "application/octet-stream";
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        res.send(body);
+      } else {
+        res.status(502).json({ error: "Failed to load document" });
+      }
+    } finally {
+      await context.close().catch(() => {});
+    }
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 app.get("/render", async (req, res) => {
   if (!authCheck(req, res)) return;
 

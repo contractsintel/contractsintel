@@ -188,12 +188,25 @@ export default function OpportunityDetailPage() {
             <div className="ci-card p-6">
               <h2 className="ci-section-label mb-4">Documents & Attachments</h2>
               <div className="space-y-2">
-                {attachments.map((a: any, i: number) => (
-                  <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[13px] text-[#2563eb] hover:text-[#1d4ed8] p-2 rounded-lg hover:bg-[#f8fafc]">
-                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    {a.name || "Document"}
-                  </a>
-                ))}
+                {attachments.map((a: any, i: number) => {
+                  const isPdf = (a.url || "").toLowerCase().endsWith(".pdf") || (a.name || "").toLowerCase().endsWith(".pdf");
+                  const proxyUrl = `https://puppeteer-production-f147.up.railway.app/proxy-document?url=${encodeURIComponent(a.url)}`;
+                  return (
+                    <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-[#f1f5f9] hover:bg-[#f8fafc]">
+                      <div className="flex items-center gap-2 text-[13px] min-w-0">
+                        <svg className="w-4 h-4 shrink-0 text-[#94a3b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        <span className="text-[#0f172a] truncate">{a.name || "Document"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isPdf && (
+                          <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">View</a>
+                        )}
+                        <a href={proxyUrl} target="_blank" rel="noopener noreferrer" download className="text-[11px] text-[#475569] hover:text-[#0f172a] font-medium">Download</a>
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[#94a3b8] hover:text-[#475569]">Source</a>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
