@@ -313,8 +313,10 @@ export default function DashboardPage() {
     .filter((m) => {
       const opp = m.opportunities;
       if (!opp) return false;
-      // Hide expired contracts from main feed
-      if (opp.status === "expired") return false;
+      // Hide expired and paused contracts from main feed
+      if (opp.status === "expired" || opp.status === "paused") return false;
+      // Only show SAM.gov and USASpending (other sources paused)
+      if (opp.source !== "sam_gov" && opp.source !== "usaspending") return false;
       if (filters.setAside && opp.set_aside !== filters.setAside) return false;
       if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
       if (m.match_score < filters.minScore) return false;
@@ -489,12 +491,7 @@ export default function DashboardPage() {
               <span className="ci-section-label mr-1">Contract Type</span>
               {([
                 { key: "", label: "All Types", count: totalMatchCount },
-                { key: "federal", label: "Federal Contracts", count: sourceCounts.federal ?? 0 },
-                { key: "state", label: "State & Local", count: sourceCounts.state ?? 0 },
-                { key: "grants", label: "Grants", count: sourceCounts.grants ?? 0 },
-                { key: "sbir", label: "SBIR/STTR", count: sourceCounts.sbir ?? 0 },
-                { key: "military", label: "Military/Defense", count: sourceCounts.military ?? 0 },
-                { key: "subcontracting", label: "Subcontracting", count: sourceCounts.subcontracting ?? 0 },
+                { key: "federal", label: "Federal Solicitations", count: sourceCounts.federal ?? 0 },
                 { key: "recompetes", label: "Recompete Alerts", count: sourceCounts.recompetes ?? 0 },
               ] as const).filter(s => s.key === "" || s.count > 0).map((s) => (
                 <button

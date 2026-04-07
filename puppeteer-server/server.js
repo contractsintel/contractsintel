@@ -1723,19 +1723,22 @@ app.get("/status", async (req, res) => {
 // 5-MINUTE ROTATION CRON
 // ============================================================
 
+// SIMPLIFIED: Only SAM.gov + USASpending. Other sources paused.
+// Freed capacity used for verification + detail enrichment.
 const ROTATION_NAMES = [
   "SAM.gov",
   "USASpending",
-  "Grants.gov",
-  "States Batch 1 (AL-FL)",
-  "States Batch 2 (GA-MA)",
-  "States Batch 3 (MI-NJ)",
-  "States Batch 4 (NM-SC)",
-  "States Batch 5 (SD-WY+territories)",
-  "Federal Civilian",
-  "SBIR/STTR + Military",
-  "Forecasts + Subcontracting",
-  "SAM.gov (2nd check)",
+  "SAM.gov Verify",
+  "SAM.gov (2nd scrape)",
+  // "Grants.gov",              // PAUSED
+  // "States Batch 1 (AL-FL)",  // PAUSED
+  // "States Batch 2 (GA-MA)",  // PAUSED
+  // "States Batch 3 (MI-NJ)",  // PAUSED
+  // "States Batch 4 (NM-SC)",  // PAUSED
+  // "States Batch 5 (SD-WY)",  // PAUSED
+  // "Federal Civilian",        // PAUSED
+  // "SBIR/STTR + Military",    // PAUSED
+  // "Forecasts + Subcontracting", // PAUSED
 ];
 
 async function runRotation(index) {
@@ -1753,8 +1756,8 @@ async function runRotation(index) {
     const base = `http://localhost:${PORT}`;
 
     switch (slot) {
-      case 0: // SAM.gov
-      case 11: { // SAM.gov 2nd check
+      case 0: // SAM.gov scrape
+      case 3: { // SAM.gov 2nd scrape
         saved = await runSamScrape();
         break;
       }
@@ -1764,85 +1767,17 @@ async function runRotation(index) {
         saved = data.saved || 0;
         break;
       }
-      case 2: { // Grants.gov
-        const r = await fetch(`${base}/cron/grants`, { method: "POST", headers, signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.saved || 0;
-        break;
-      }
-      case 3: { // States batch 1
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_1 }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 4: { // States batch 2
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_2 }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 5: { // States batch 3
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_3 }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 6: { // States batch 4
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_4 }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 7: { // States batch 5
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_5 }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 8: { // Federal civilian — call scrape-html internally to avoid localhost fetch issues
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: ALL_FEDERAL_SOURCES }), signal: AbortSignal.timeout(900000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 9: { // SBIR + Military (scrape via Patchright)
-        const sbirSources = [
-          { id: "sbir_gov", name: "SBIR.gov", url: "https://www.sbir.gov/sbirsearch/topic/current", source_type: "sbir_sttr" },
-          { id: "dodsbir", name: "DoD SBIR", url: "https://www.dodsbirsttr.mil/submissions/", source_type: "sbir_sttr" },
-          { id: "nih_sbir", name: "NIH SBIR", url: "https://seed.nih.gov/sbir-sttr-funding-opportunities", source_type: "sbir_sttr" },
-          { id: "nsf_sbir", name: "NSF SBIR", url: "https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=505362", source_type: "sbir_sttr" },
-          { id: "doe_sbir", name: "DOE SBIR", url: "https://science.osti.gov/sbir", source_type: "sbir_sttr" },
-          { id: "army_mil", name: "Army Procurement", url: "https://www.army.mil/asaalt/", source_type: "military_defense" },
-          { id: "navy_mil", name: "Navy Procurement", url: "https://www.neco.navy.mil/", source_type: "military_defense" },
-        ];
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: sbirSources }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
-        break;
-      }
-      case 10: { // Forecasts + Subcontracting
-        const miscSources = [
-          { id: "sam_forecasts", name: "SAM Forecasts", url: "https://sam.gov/search/?index=opp&is_active=true&sort=-modifiedDate&opp_type=forecasts", source_type: "forecasts" },
-          { id: "gsa_subk", name: "GSA Subcontracting", url: "https://www.gsa.gov/small-business/subcontracting-opportunities/subcontracting-directory", source_type: "subcontracting" },
-          { id: "sba_subk", name: "SBA Subcontracting", url: "https://www.sba.gov/federal-contracting/contracting-assistance-programs/subcontracting-network-subnet", source_type: "subcontracting" },
-        ];
-        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: miscSources }), signal: AbortSignal.timeout(600000) });
-        const data = await r.json();
-        saved = data.total || 0;
+      case 2: { // SAM.gov Verify — dedicated verification slot
+        // No scraping, just verify 200 existing SAM contracts
         break;
       }
     }
 
     trackRecords(saved);
 
-    // Verify existing contracts from this source after scraping new ones
-    const verifySource = {
-      0: "sam_gov", 1: "usaspending", 2: "grants_gov",
-      3: "state_local", 4: "state_local", 5: "state_local", 6: "state_local", 7: "state_local",
-      8: "federal_civilian", 9: "sbir_sttr", 10: "subcontracting", 11: "sam_gov",
-    }[slot];
-    const verifyBatch = slot === 0 || slot === 11 ? 100 : slot >= 3 && slot <= 7 ? 30 : 50;
+    // Verify existing SAM.gov contracts every rotation (using freed capacity)
+    const verifySource = slot === 1 ? "usaspending" : "sam_gov";
+    const verifyBatch = 200; // larger batches since we only have 2 sources
     try {
       const vr = await verifyExistingContracts(verifySource, verifyBatch);
       cronStats.rotationResults[name] = { saved, verified: vr.verified, expired_verified: vr.expired, at: new Date().toISOString() };

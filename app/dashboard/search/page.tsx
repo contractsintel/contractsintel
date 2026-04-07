@@ -53,7 +53,9 @@ export default function SearchPage() {
     let q = supabase
       .from("opportunities")
       .select("*", { count: "exact" })
-      .neq("status", "expired");
+      .neq("status", "expired")
+      .neq("status", "paused")
+      .in("source", ["sam_gov", "usaspending"]);
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
@@ -164,13 +166,8 @@ export default function SearchPage() {
           className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="">All Sources</option>
-          <option value="sam_gov">SAM.gov</option>
-          <option value="usaspending">USASpending</option>
-          <option value="state_local">State & Local</option>
-          <option value="federal_civilian">Federal Civilian</option>
-          <option value="sbir_sttr">SBIR/STTR</option>
-          <option value="grants_gov">Grants.gov</option>
-          <option value="military_defense">Military</option>
+          <option value="sam_gov">Federal Solicitations (SAM.gov)</option>
+          <option value="usaspending">Recompete Alerts (USASpending)</option>
         </select>
         <select
           value={sort}
