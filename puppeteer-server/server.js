@@ -1147,45 +1147,71 @@ app.get("/debug/sam-test", async (req, res) => {
   res.json(results);
 });
 
-// Re-score all existing matches with the real scoring algorithm
+// Re-score existing matches — runs as background process, returns immediately
+let rescoreRunning = false;
+let rescoreProgress = { total: 0, done: 0, started: null };
+
 app.post("/cron/rescore-matches", async (req, res) => {
   if (!authCheck(req, res)) return;
-  console.log("[rescore] Starting match re-scoring...");
-  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  if (rescoreRunning) return res.json({ status: "already_running", progress: rescoreProgress });
 
-  // Get all orgs with their scoring data
-  const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications,address&limit=100`, { headers: hdrs });
-  const orgs = await orgR.json();
-  if (!Array.isArray(orgs) || !orgs.length) return res.json({ error: "no orgs" });
+  rescoreRunning = true;
+  rescoreProgress = { total: 0, done: 0, started: new Date().toISOString() };
+  res.json({ status: "started", message: "Re-scoring running in background. Check /debug/rescore-status for progress." });
 
-  let totalRescored = 0;
+  // Run in background (don't await)
+  (async () => {
+    try {
+      console.log("[rescore] Starting background re-scoring...");
+      const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
 
-  for (const org of orgs) {
-    let offset = 0;
-    while (offset < 100000) {
-      // Get batch of matches with opportunity data
-      const matchR = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?organization_id=eq.${org.id}&is_demo=eq.false&select=id,opportunity_id,opportunities(id,title,source,agency,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,place_of_performance,posted_date,response_deadline,incumbent_name,status)&limit=200&offset=${offset}`, { headers: hdrs });
-      const matches = await matchR.json();
-      if (!Array.isArray(matches) || !matches.length) break;
+      const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications,address&limit=100`, { headers: hdrs });
+      const orgs = await orgR.json();
+      if (!Array.isArray(orgs) || !orgs.length) { rescoreRunning = false; return; }
 
-      for (const m of matches) {
-        const opp = m.opportunities;
-        if (!opp) continue;
-        const { score, recommendation, reasoning } = calculateMatchScore(opp, org);
-        await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?id=eq.${m.id}`, {
-          method: "PATCH",
-          headers: { ...hdrs, "Content-Type": "application/json", Prefer: "return=minimal" },
-          body: JSON.stringify({ match_score: score, bid_recommendation: recommendation, recommendation_reasoning: reasoning }),
-        });
-        totalRescored++;
+      for (const org of orgs) {
+        let offset = 0;
+        while (offset < 200000) {
+          const matchR = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?organization_id=eq.${org.id}&is_demo=eq.false&select=id,opportunity_id,opportunities(id,title,source,agency,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,place_of_performance,posted_date,response_deadline,incumbent_name,status)&limit=500&offset=${offset}`, { headers: hdrs });
+          const matches = await matchR.json();
+          if (!Array.isArray(matches) || !matches.length) break;
+
+          // Batch update — build all scores first, then update in bulk
+          const updates = [];
+          for (const m of matches) {
+            const opp = m.opportunities;
+            if (!opp) continue;
+            const { score, recommendation, reasoning } = calculateMatchScore(opp, org);
+            updates.push({ id: m.id, match_score: score, bid_recommendation: recommendation, recommendation_reasoning: reasoning });
+          }
+
+          // Update in parallel batches of 50
+          for (let i = 0; i < updates.length; i += 50) {
+            const batch = updates.slice(i, i + 50);
+            await Promise.all(batch.map(u =>
+              fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?id=eq.${u.id}`, {
+                method: "PATCH",
+                headers: { ...hdrs, "Content-Type": "application/json", Prefer: "return=minimal" },
+                body: JSON.stringify({ match_score: u.match_score, bid_recommendation: u.bid_recommendation, recommendation_reasoning: u.recommendation_reasoning }),
+              })
+            ));
+            rescoreProgress.done += batch.length;
+          }
+
+          offset += 500;
+          if (offset % 2000 === 0) console.log(`[rescore] Progress: ${rescoreProgress.done} re-scored`);
+        }
       }
-      offset += 200;
-      console.log(`[rescore] Org ${org.name || org.id}: ${offset} processed (${totalRescored} total)`);
+      console.log(`[rescore] Complete: ${rescoreProgress.done} matches re-scored`);
+    } catch (e) {
+      console.log(`[rescore] Error: ${e.message}`);
     }
-  }
+    rescoreRunning = false;
+  })();
+});
 
-  console.log(`[rescore] Complete: ${totalRescored} matches re-scored`);
-  res.json({ success: true, rescored: totalRescored });
+app.get("/debug/rescore-status", (req, res) => {
+  res.json({ running: rescoreRunning, ...rescoreProgress });
 });
 
 
