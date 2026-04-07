@@ -642,9 +642,12 @@ app.post("/cron/match-bulk", async (req, res) => {
       const MAX = 50000;
 
       while (orgTotal < MAX) {
-        const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency,estimated_value,set_aside,response_deadline&order=created_at.desc&limit=${BATCH}&offset=${offset}`, { headers: hdrs });
+        const oppUrl = `${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency,estimated_value,set_aside,response_deadline&order=created_at.desc&limit=${BATCH}&offset=${offset}`;
+        const oppR = await fetch(oppUrl, { headers: hdrs });
+        if (!oppR.ok) { console.log(`[match-bulk] Opp query failed: ${oppR.status}`); break; }
         const opps = await oppR.json();
-        if (!Array.isArray(opps) || !opps.length) break;
+        if (!Array.isArray(opps)) { console.log(`[match-bulk] Opps not array: ${typeof opps} ${JSON.stringify(opps).substring(0, 100)}`); break; }
+        if (!opps.length) { console.log(`[match-bulk] No opps at offset ${offset}`); break; }
 
         const matches = opps.map(o => {
           let score = 30;
@@ -667,9 +670,15 @@ app.post("/cron/match-bulk", async (req, res) => {
         // Insert in sub-batches of 200
         for (let i = 0; i < matches.length; i += 200) {
           const batch = matches.slice(i, i + 200);
-          await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+          const ir = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
             method: "POST", headers: postHdrs, body: JSON.stringify(batch),
           });
+          if (!ir.ok) {
+            const errBody = await ir.text();
+            console.log(`[match-bulk] Insert error ${ir.status}: ${errBody.substring(0, 200)}`);
+            results[org.name || org.id] = `error: ${ir.status}`;
+            return res.json({ success: false, error: `Insert failed: ${ir.status}`, detail: errBody.substring(0, 300), total_so_far: grandTotal + orgTotal });
+          }
         }
 
         orgTotal += matches.length;
