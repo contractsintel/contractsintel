@@ -90,7 +90,11 @@ function sourceBadge(source: string | null | undefined, bidRec?: string) {
 export default function DashboardPage() {
   const { organization, user } = useDashboard();
   const supabase = createClient();
+  const PAGE_SIZE = 20;
   const [matches, setMatches] = useState<any[]>([]);
+  const [totalMatchCount, setTotalMatchCount] = useState(0);
+  const [matchLimit, setMatchLimit] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     setAside: "",
@@ -102,15 +106,17 @@ export default function DashboardPage() {
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
   const [seedingDemo, setSeedingDemo] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (limit?: number) => {
+    const effectiveLimit = limit ?? matchLimit;
     setLoading(true);
-    const { data } = await supabase
+    const { data, count } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("*, opportunities(*)", { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
-      .limit(50);
+      .range(0, effectiveLimit - 1);
     setMatches(data ?? []);
+    setTotalMatchCount(count ?? 0);
 
     const { data: compliance } = await supabase
       .from("compliance_items")
@@ -122,11 +128,24 @@ export default function DashboardPage() {
     setComplianceAlerts(compliance ?? []);
 
     setLoading(false);
-  }, [organization.id, supabase]);
+  }, [organization.id, supabase, matchLimit]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setMatchLimit(PAGE_SIZE);
+  }, [filters.source, filters.setAside, filters.agency, filters.minScore]);
+
+  const handleLoadMore = async () => {
+    const newLimit = matchLimit + PAGE_SIZE;
+    setMatchLimit(newLimit);
+    setLoadingMore(true);
+    await loadData(newLimit);
+    setLoadingMore(false);
+  };
 
   const [toast, setToast] = useState<string | null>(null);
   const [fadingOut, setFadingOut] = useState<string | null>(null);
@@ -505,6 +524,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Match count */}
+              <div className="flex items-center justify-between px-1">
+                <span className="font-['JetBrains_Mono'] text-[11px] text-[#94a3b8]">
+                  Showing {Math.min(matches.length, filtered.length)} of {totalMatchCount} matches
+                </span>
+              </div>
               {filtered.map((match) => {
                 const opp = match.opportunities;
                 if (!opp) return null;
@@ -662,6 +687,18 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
+              {/* Load More button */}
+              {matches.length < totalMatchCount && (
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="px-6 py-2.5 text-sm font-medium border border-[#f0f1f3] text-[#4b5563] bg-white hover:border-[#e2e8f0] hover:text-[#111827] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading..." : `Load more (${totalMatchCount - matches.length} remaining)`}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
