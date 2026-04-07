@@ -1146,12 +1146,12 @@ async function runBulkMatching() {
 // Broad matching: for orgs without NAICS, match recent high-value opportunities
 async function runBroadMatching(allOrgs, headers) {
   let totalMatched = 0;
-  // Get recent opportunities (last 7 days, sorted by value/recency)
-  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&created_at=gte.${weekAgo}&order=created_at.desc&limit=1000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  // Get 1000 most recent opportunities for broad matching
+  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&order=created_at.desc&limit=1000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   const recentOpps = await oppRes.json();
-  if (!Array.isArray(recentOpps) || !recentOpps.length) { console.log("[match] No recent opportunities to match"); return 0; }
-  console.log(`[match] Broad matching: ${recentOpps.length} recent opps against ${allOrgs.length} orgs`);
+  console.log(`[match] Broad: opp query status ${oppRes.status}, isArray: ${Array.isArray(recentOpps)}, count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
+  if (!Array.isArray(recentOpps) || !recentOpps.length) { console.log("[match] No opportunities to match"); return 0; }
+  console.log(`[match] Broad matching: ${recentOpps.length} opps against ${allOrgs.length} orgs`);
 
   for (const org of allOrgs) {
     // Get existing matches
