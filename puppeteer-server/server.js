@@ -238,7 +238,7 @@ function extractLinks(html, baseUrl) {
   let m;
   while ((m = re.exec(html)) !== null) {
     const text = m[2].replace(/<[^>]+>/g, "").trim();
-    if (text && text.length > 5 && text.length < 300) {
+    if (text && text.length > 5 && text.length < 500) {
       let href = m[1];
       if (!href.startsWith("http")) {
         try { href = new URL(href, baseUrl).toString(); } catch { continue; }
@@ -255,7 +255,7 @@ function extractTableRows(html) {
   let trM;
   while ((trM = trRe.exec(html)) !== null) {
     const cells = [];
-    const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    const tdRe = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
     let tdM;
     while ((tdM = tdRe.exec(trM[1])) !== null) {
       const text = tdM[1].replace(/<[^>]+>/g, "").trim();
@@ -264,6 +264,31 @@ function extractTableRows(html) {
     if (cells.length >= 2) rows.push(cells.join(" | "));
   }
   return rows;
+}
+
+// Extract content from div/li cards (common in modern state portals)
+function extractCards(html) {
+  const items = [];
+  // Match common card patterns: div.card, li items, article elements
+  const cardPatterns = [
+    /<(?:div|article|li)[^>]*class="[^"]*(?:card|listing|item|result|opportunity|solicitation|bid-row)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|article|li)>/gi,
+    /<(?:div|section)[^>]*(?:data-(?:bid|opp|solicitation|id))[^>]*>([\s\S]*?)<\/(?:div|section)>/gi,
+  ];
+  for (const pattern of cardPatterns) {
+    let m;
+    while ((m = pattern.exec(html)) !== null) {
+      const text = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (text.length > 20 && text.length < 2000) items.push(text);
+    }
+  }
+  // Also extract <h3>/<h4> headings near bid content
+  const headingRe = /<h[34][^>]*>([\s\S]*?)<\/h[34]>/gi;
+  let hm;
+  while ((hm = headingRe.exec(html)) !== null) {
+    const text = hm[1].replace(/<[^>]+>/g, "").trim();
+    if (text.length > 10 && text.length < 300) items.push(text);
+  }
+  return items;
 }
 
 function makeNoticeId(prefix, ...parts) {
@@ -771,7 +796,8 @@ app.post("/cron/scrape-html", async (req, res) => {
   }
 
   const results = [];
-  const bidKw = /bid|rfp|rfq|solicit|procurement|contract|award|opportunity/i;
+  const bidKw = /bid|rfp|rfq|rfi|solicit|procurement|contract|award|opportunity|itb|ifb|notice|proposal|quotation|tender|requisition/i;
+  const skipKw = /login|sign.?in|register|password|cookie|privacy|terms|footer|header|nav|menu|javascript|css|\.js|\.css|\.png|\.jpg/i;
 
   for (const src of sources) {
     const { id, name, url, source_type } = src;
@@ -783,16 +809,20 @@ app.post("/cron/scrape-html", async (req, res) => {
 
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       await solveCaptchaIfPresent(page);
-      await new Promise((r) => setTimeout(r, 5000));
+      // Wait longer for JS-heavy SPAs
+      await new Promise((r) => setTimeout(r, 8000));
       const html = await page.content();
 
       const records = [];
+
+      // 1. Extract links — broader keyword matching, skip navigation/login links
       const links = extractLinks(html, url);
       for (const link of links) {
-        if (bidKw.test(link.text) || bidKw.test(link.href)) {
+        if (skipKw.test(link.href) || skipKw.test(link.text)) continue;
+        if (bidKw.test(link.text) || bidKw.test(link.href) || link.text.length > 30) {
           records.push({
             notice_id: makeNoticeId(id, link.text, link.href),
-            title: `[${name}] ${link.text.substring(0, 200)}`,
+            title: `[${name}] ${link.text.substring(0, 300)}`,
             agency: name,
             source: source_type || "state_local",
             source_url: link.href,
@@ -802,14 +832,30 @@ app.post("/cron/scrape-html", async (req, res) => {
         }
       }
 
+      // 2. Extract table rows
       for (const row of extractTableRows(html)) {
+        if (skipKw.test(row)) continue;
         records.push({
           notice_id: makeNoticeId(id, row),
-          title: `[${name}] ${row.substring(0, 200)}`,
+          title: `[${name}] ${row.substring(0, 300)}`,
           agency: name,
           source: source_type || "state_local",
           source_url: url,
           description: row.substring(0, 2000),
+          last_seen_at: new Date().toISOString(),
+        });
+      }
+
+      // 3. Extract div/card content (for modern portals)
+      for (const card of extractCards(html)) {
+        if (skipKw.test(card)) continue;
+        records.push({
+          notice_id: makeNoticeId(id, card),
+          title: `[${name}] ${card.substring(0, 300)}`,
+          agency: name,
+          source: source_type || "state_local",
+          source_url: url,
+          description: card.substring(0, 2000),
           last_seen_at: new Date().toISOString(),
         });
       }
@@ -829,6 +875,49 @@ app.post("/cron/scrape-html", async (req, res) => {
   }
 
   res.json({ results, total: results.reduce((s, r) => s + r.saved, 0) });
+});
+
+// Diagnostic: render a URL and return what was extracted (for debugging state portals)
+app.post("/debug/render", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  const { url, name } = req.body;
+  if (!url) return res.status(400).json({ error: "url required" });
+  let context = null;
+  try {
+    const result = await getPage();
+    context = result.context;
+    const page = result.page;
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await solveCaptchaIfPresent(page);
+    await new Promise((r) => setTimeout(r, 8000));
+    const html = await page.content();
+    const title = await page.title();
+    const finalUrl = page.url();
+
+    const links = extractLinks(html, url);
+    const bidKw2 = /bid|rfp|rfq|rfi|solicit|procurement|contract|award|opportunity|itb|ifb|notice|proposal/i;
+    const bidLinks = links.filter(l => bidKw2.test(l.text) || bidKw2.test(l.href));
+    const tableRows = extractTableRows(html);
+    const cards = extractCards(html);
+
+    res.json({
+      rendered_url: finalUrl,
+      page_title: title,
+      html_length: html.length,
+      total_links: links.length,
+      bid_links: bidLinks.length,
+      bid_link_samples: bidLinks.slice(0, 5).map(l => ({ text: l.text.substring(0, 100), href: l.href.substring(0, 150) })),
+      table_rows: tableRows.length,
+      table_row_samples: tableRows.slice(0, 3).map(r => r.substring(0, 200)),
+      card_items: cards.length,
+      card_samples: cards.slice(0, 3).map(c => c.substring(0, 200)),
+      text_preview: html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").substring(0, 1000),
+    });
+  } catch (e) {
+    res.json({ error: e.message, url });
+  } finally {
+    if (context) await context.close().catch(() => {});
+  }
 });
 
 // Cron: Run all scrapers (master endpoint)
@@ -868,28 +957,28 @@ app.post("/cron/scrape-all", async (req, res) => {
 // ============================================================
 
 const ALL_STATE_SOURCES = [
-  { id: "state-CA", name: "California", url: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx", source_type: "state_ca" },
+  { id: "state-CA", name: "California", url: "https://caleprocure.ca.gov/pages/public-search.aspx", source_type: "state_ca" },
   { id: "state-TX", name: "Texas", url: "https://www.txsmartbuy.gov/esbd", source_type: "state_tx" },
   { id: "state-FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/search/bids", source_type: "state_fl" },
   { id: "state-CO", name: "Colorado", url: "https://bids.coloradovssc.com/", source_type: "state_co" },
   { id: "state-MD", name: "Maryland", url: "https://emaryland.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml", source_type: "state_md" },
   { id: "state-MI", name: "Michigan", url: "https://sigma.michigan.gov/webapp/PRDVSS2X1/AltSelfService", source_type: "state_mi" },
   { id: "state-KY", name: "Kentucky", url: "https://vss.ky.gov", source_type: "state_ky" },
-  { id: "state-KS", name: "Kansas", url: "https://supplier.sok.ks.gov/psc/sokfssprd/SUPPLIER/ERP/h/?tab=SOK_EBID", source_type: "state_ks" },
+  { id: "state-KS", name: "Kansas", url: "https://admin.ks.gov/offices/procurement-and-contracts/bid-solicitations", source_type: "state_ks" },
   { id: "state-MO", name: "Missouri", url: "https://www.moolb.mo.gov/MOSCEnterprise/solicitationSearch.html", source_type: "state_mo" },
   { id: "state-AK", name: "Alaska", url: "https://aws.state.ak.us/OnlinePublicNotices/", source_type: "state_ak" },
-  { id: "state-AZ", name: "Arizona", url: "https://spo.az.gov/contracts-and-solicitations", source_type: "state_az" },
+  { id: "state-AZ", name: "Arizona", url: "https://app.az.gov/page/opportunity-listing", source_type: "state_az" },
   { id: "state-NH", name: "New Hampshire", url: "https://apps.das.nh.gov/bidscontracts/", source_type: "state_nh" },
   { id: "state-DC", name: "DC", url: "https://ocp.dc.gov/page/solicitations", source_type: "state_dc" },
   { id: "state-TN", name: "Tennessee RFP", url: "https://www.tn.gov/generalservices/procurement/central-procurement-office--cpo-/supplier-information/request-for-proposals--rfp--opportunities1.html", source_type: "state_tn" },
   { id: "state-TN2", name: "Tennessee ITB", url: "https://www.tn.gov/generalservices/procurement/central-procurement-office--cpo-/supplier-information/invitations-to-bid--itb-.html", source_type: "state_tn" },
   { id: "state-AR", name: "Arkansas", url: "https://www.arkansas.gov/tss/procurement/bids/index.php", source_type: "state_ar" },
-  { id: "state-NC", name: "North Carolina", url: "https://www.ips.state.nc.us/", source_type: "state_nc" },
+  { id: "state-NC", name: "North Carolina", url: "https://ncadmin.nc.gov/businesses/procurement", source_type: "state_nc" },
   { id: "state-LA", name: "Louisiana", url: "https://wwwcfprd.doa.louisiana.gov/osp/lapac/srchopen.cfm?deptno=all&catno=all&dateStart=&dateEnd=&compareDate=O&keywords=&keywordsCheck=all", source_type: "state_la" },
   { id: "state-MT", name: "Montana", url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfMontana", source_type: "state_mt" },
   { id: "state-PR", name: "Puerto Rico", url: "https://asg.pr.gov/subastas", source_type: "state_pr" },
-  { id: "state-SD", name: "South Dakota", url: "https://bop.sd.gov/", source_type: "state_sd" },
-  { id: "state-WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/", source_type: "state_wv" },
+  { id: "state-SD", name: "South Dakota", url: "https://bop.sd.gov/vendr/openbids.aspx", source_type: "state_sd" },
+  { id: "state-WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/Pages/default.aspx", source_type: "state_wv" },
   { id: "state-HI", name: "Hawaii", url: "https://hands.hawaii.gov/", source_type: "state_hi" },
   { id: "state-AL", name: "Alabama", url: "https://purchasing.alabama.gov/", source_type: "state_al" },
   { id: "state-NY", name: "New York", url: "https://ogs.ny.gov/procurement/bid-opportunities", source_type: "state_ny" },
