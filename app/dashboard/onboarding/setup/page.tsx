@@ -287,6 +287,12 @@ export default function OnboardingSetupPage() {
             }`}>
             {saving ? "Saving..." : "Save and Continue →"}
           </button>
+
+          <div className="mt-8 p-4 bg-[#eef2ff] border border-[#c7d2fe] rounded-xl">
+            <p className="text-[13px] text-[#4338ca] leading-relaxed">
+              <strong>What happens next:</strong> We&apos;ll use your profile to scan SAM.gov for active contract opportunities and USASpending.gov for expiring contracts you can compete for. Your first matched contracts will appear on your dashboard.
+            </p>
+          </div>
         </div>
       )}
 
