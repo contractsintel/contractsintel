@@ -621,41 +621,69 @@ app.post("/cron/sam", async (req, res) => {
   res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
 });
 
-// Simple test: create matches directly
-app.post("/cron/match-test", async (req, res) => {
+// Bulk match: create matches for ALL orgs against ALL opportunities (paginated)
+app.post("/cron/match-bulk", async (req, res) => {
   if (!authCheck(req, res)) return;
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const postHdrs = { ...hdrs, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" };
   try {
-    // Get first org
-    const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    // Get all orgs
+    const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name&limit=100`, { headers: hdrs });
     const orgs = await orgR.json();
     if (!Array.isArray(orgs) || !orgs.length) return res.json({ error: "no orgs" });
 
-    // Get 100 opps
-    const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=100`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-    const opps = await oppR.json();
-    if (!Array.isArray(opps) || !opps.length) return res.json({ error: "no opps", oppStatus: oppR.status });
+    let grandTotal = 0;
+    const results = {};
 
-    // Build matches
-    const matches = opps.map(o => ({
-      organization_id: orgs[0].id,
-      opportunity_id: o.id,
-      match_score: o.source === "sam_gov" ? 55 : 40,
-      bid_recommendation: "monitor",
-      recommendation_reasoning: `${o.source}: ${o.agency || "Unknown"}`,
-      user_status: "new",
-      is_demo: false,
-    }));
+    for (const org of orgs) {
+      let orgTotal = 0;
+      let offset = 0;
+      const BATCH = 500;
+      const MAX = 50000;
 
-    // Insert
-    const insertR = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
-      method: "POST",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
-      body: JSON.stringify(matches),
-    });
+      while (orgTotal < MAX) {
+        const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency,estimated_value,set_aside,response_deadline&order=created_at.desc&limit=${BATCH}&offset=${offset}`, { headers: hdrs });
+        const opps = await oppR.json();
+        if (!Array.isArray(opps) || !opps.length) break;
 
-    const insertOk = insertR.ok;
-    const insertBody = insertOk ? "ok" : await insertR.text();
-    res.json({ org: orgs[0].name, opps: opps.length, matches: matches.length, insert_ok: insertOk, insert_status: insertR.status, insert_body: insertBody.substring(0, 300) });
+        const matches = opps.map(o => {
+          let score = 30;
+          if (o.source === "sam_gov") score += 15;
+          else if (["federal_civilian", "usaspending"].includes(o.source)) score += 10;
+          else if (o.source?.startsWith("state_")) score += 5;
+          if (o.estimated_value > 0) score += 10;
+          if (o.set_aside) score += 5;
+          return {
+            organization_id: org.id,
+            opportunity_id: o.id,
+            match_score: Math.min(score, 100),
+            bid_recommendation: score >= 50 ? "monitor" : "skip",
+            recommendation_reasoning: `${o.source || "federal"}: ${o.agency || "Unknown"}`,
+            user_status: "new",
+            is_demo: false,
+          };
+        });
+
+        // Insert in sub-batches of 200
+        for (let i = 0; i < matches.length; i += 200) {
+          const batch = matches.slice(i, i + 200);
+          await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+            method: "POST", headers: postHdrs, body: JSON.stringify(batch),
+          });
+        }
+
+        orgTotal += matches.length;
+        offset += BATCH;
+        if (opps.length < BATCH) break;
+        await new Promise(r => setTimeout(r, 100)); // small delay
+      }
+
+      results[org.name || org.id] = orgTotal;
+      grandTotal += orgTotal;
+      console.log(`[match-bulk] ${org.name}: ${orgTotal} matches`);
+    }
+
+    res.json({ success: true, total_matches: grandTotal, by_org: results });
   } catch (e) {
     res.json({ error: e.message });
   }
