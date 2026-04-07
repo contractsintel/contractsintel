@@ -127,7 +127,7 @@ export default function DashboardPage() {
     }
   }, [organization.onboarding_complete]);
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
   const [matches, setMatches] = useState<any[]>([]);
   const [totalMatchCount, setTotalMatchCount] = useState(0);
@@ -715,7 +715,7 @@ export default function DashboardPage() {
               {/* Match count */}
               <div className="flex items-center justify-between px-1 mb-2">
                 <span className="text-[12px] text-[#9ca3af]">
-                  {filtered.length} of {totalMatchCount.toLocaleString()}
+                  Showing {filtered.length} of {totalMatchCount.toLocaleString()} matches
                 </span>
               </div>
               <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
