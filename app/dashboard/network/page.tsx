@@ -130,8 +130,7 @@ export default function NetworkPage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Subcontracting Network</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample network content...
           </div>
         </div>
@@ -145,8 +144,7 @@ export default function NetworkPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#2563eb"}} />
           <h1 className="ci-page-title">Subcontracting Network</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
-        </div>
+</div>
         <HelpButton page="network" />
       </div>
       <InlineGuide page="network" />
@@ -249,11 +247,11 @@ export default function NetworkPage() {
         <div>
           {/* Post Form */}
           <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
-            <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-4">Post Teaming Opportunity</h2>
+            <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-4">Post Teaming Opportunity</h2>
             <form onSubmit={handlePost} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Title</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Title</label>
                   <input
                     type="text"
                     value={form.title}
@@ -263,7 +261,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Agency</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Agency</label>
                   <input
                     type="text"
                     value={form.agency}
@@ -272,7 +270,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Estimated Value</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Estimated Value</label>
                   <input
                     type="number"
                     value={form.estimated_value}
@@ -281,7 +279,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Geography</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Geography</label>
                   <input
                     type="text"
                     value={form.geography}
@@ -290,7 +288,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Required Certs (comma-sep)</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Required Certs (comma-sep)</label>
                   <input
                     type="text"
                     value={form.required_certs}
@@ -300,7 +298,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">NAICS Codes (comma-sep)</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">NAICS Codes (comma-sep)</label>
                   <input
                     type="text"
                     value={form.naics_codes}
@@ -310,7 +308,7 @@ export default function NetworkPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Deadline</label>
+                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Deadline</label>
                   <input
                     type="date"
                     value={form.deadline}
@@ -320,7 +318,7 @@ export default function NetworkPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Description</label>
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}

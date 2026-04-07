@@ -103,8 +103,7 @@ export default function ProposalsPage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">AI Proposals</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#7c3aed" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample proposal content would appear here...
           </div>
         </div>
@@ -118,8 +117,7 @@ export default function ProposalsPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
           <h1 className="ci-page-title">AI Proposals</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#7c3aed" }} />
-        </div>
+</div>
         <HelpButton page="proposals" />
       </div>
       <InlineGuide page="proposals" />
@@ -140,7 +138,7 @@ export default function ProposalsPage() {
         <div className="grid grid-cols-3 gap-6">
           {/* Opportunity List */}
           <div className="col-span-1 space-y-2">
-            <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">Active Bids</h2>
+            <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-3">Active Bids</h2>
             {matches.map((m) => (
               <button
                 key={m.id}

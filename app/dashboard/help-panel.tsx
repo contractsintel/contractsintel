@@ -255,7 +255,7 @@ export function HelpPanel({
         <div className="p-5 space-y-6">
           {/* What is this page? */}
           <div>
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
               What is this page?
             </h3>
             <p className="text-sm text-[#4b5563] leading-relaxed">
@@ -266,7 +266,7 @@ export function HelpPanel({
           {/* Quick actions */}
           {content.quickActions.length > 0 && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
                 Quick actions
               </h3>
               <ul className="space-y-1.5">
@@ -288,7 +288,7 @@ export function HelpPanel({
           {/* How it works */}
           {content.howItWorks && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
                 How it works
               </h3>
               <p className="text-sm text-[#4b5563] leading-relaxed">
@@ -300,7 +300,7 @@ export function HelpPanel({
           {/* Tips */}
           {content.tips.length > 0 && (
             <div>
-              <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
                 Tips
               </h3>
               <ul className="space-y-2">
@@ -321,7 +321,7 @@ export function HelpPanel({
 
           {/* Need help? */}
           <div className="border-t border-[#f0f1f3] pt-5">
-            <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
               Need help?
             </h3>
             <p className="text-sm text-[#4b5563]">

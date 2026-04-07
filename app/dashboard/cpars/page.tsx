@@ -131,8 +131,7 @@ export default function CparsPage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">CPARS Monitor</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#e11d48" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample CPARS content...
           </div>
         </div>
@@ -146,19 +145,18 @@ export default function CparsPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#e11d48"}} />
           <h1 className="ci-page-title">CPARS Monitor</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#e11d48" }} />
-        </div>
+</div>
         <HelpButton page="cpars" />
       </div>
       <InlineGuide page="cpars" />
 
       {/* Add Rating Form */}
       <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
-        <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-4">Add CPARS Rating</h2>
+        <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-4">Add CPARS Rating</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Contract</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Contract</label>
               <select
                 value={form.contract_id}
                 onChange={(e) => setForm((f) => ({ ...f, contract_id: e.target.value }))}
@@ -171,7 +169,7 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Category</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
@@ -183,7 +181,7 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Rating</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Rating</label>
               <select
                 value={form.rating}
                 onChange={(e) => setForm((f) => ({ ...f, rating: e.target.value }))}
@@ -195,7 +193,7 @@ export default function CparsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Evaluation Date</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Evaluation Date</label>
               <input
                 type="date"
                 value={form.evaluation_date}
@@ -205,7 +203,7 @@ export default function CparsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Narrative</label>
+            <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Narrative</label>
             <textarea
               value={form.narrative}
               onChange={(e) => setForm((f) => ({ ...f, narrative: e.target.value }))}
@@ -243,17 +241,17 @@ export default function CparsPage() {
                   <h3 className="text-sm text-[#111827] font-medium">
                     {r.contracts?.title ?? "Unknown Contract"}
                   </h3>
-                  <p className="text-xs text-[#9ca3af] font-mono mt-0.5">
+                  <p className="text-xs text-[#9ca3af] font-medium mt-0.5">
                     {r.contracts?.contract_number} — {r.category}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   {r.evaluation_date && (
-                    <span className="text-xs font-mono text-[#9ca3af]">
+                    <span className="text-xs font-medium text-[#9ca3af]">
                       {new Date(r.evaluation_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   )}
-                  <span className={`px-2 py-0.5 text-[10px] font-mono uppercase ${ratingColor(r.rating)} ${ratingBg(r.rating)}`}>
+                  <span className={`px-2 py-0.5 text-[10px] font-medium uppercase ${ratingColor(r.rating)} ${ratingBg(r.rating)}`}>
                     {r.rating}
                   </span>
                 </div>

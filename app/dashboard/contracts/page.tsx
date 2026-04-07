@@ -120,8 +120,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Contracts</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#0891b2" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample contracts content...
           </div>
         </div>
@@ -135,8 +134,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#0891b2"}} />
           <h1 className="ci-page-title">Contract Delivery</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#0891b2" }} />
-        </div>
+</div>
         <HelpButton page="contracts" />
       </div>
       <InlineGuide page="contracts" />
@@ -187,7 +185,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               {/* Milestones */}
               {contract.milestones && contract.milestones.length > 0 && (
                 <div className="p-5 border-b border-[#e5e7eb]">
-                  <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                     Milestones
                   </h4>
                   <div className="space-y-2">
@@ -211,7 +209,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               {/* Option Periods */}
               {contract.option_periods && contract.option_periods.length > 0 && (
                 <div className="p-5 border-b border-[#e5e7eb]">
-                  <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                     Option Periods
                   </h4>
                   <div className="space-y-2">
@@ -235,12 +233,12 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               {/* Invoices */}
               {contract.invoices && contract.invoices.length > 0 && (
                 <div className="p-5">
-                  <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                     Invoices
                   </h4>
                   <table className="w-full">
                     <thead>
-                      <tr className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">
+                      <tr className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">
                         <th className="text-left pb-2">Invoice #</th>
                         <th className="text-right pb-2">Amount</th>
                         <th className="text-right pb-2">Submitted</th>
@@ -299,7 +297,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
             <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Add Milestone</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Title
                 </label>
                 <input
@@ -310,7 +308,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                 />
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Due Date
                 </label>
                 <input

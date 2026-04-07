@@ -105,8 +105,7 @@ export default function PastPerformancePage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Past Performance</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#dc2626" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample past performance content...
           </div>
         </div>
@@ -120,8 +119,7 @@ export default function PastPerformancePage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#dc2626"}} />
           <h1 className="ci-page-title">Past Performance</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#dc2626" }} />
-        </div>
+</div>
         <HelpButton page="past-performance" />
       </div>
       <InlineGuide page="past-performance" />
@@ -187,7 +185,7 @@ export default function PastPerformancePage() {
               {/* Monthly Logs */}
               {record.monthly_logs && record.monthly_logs.length > 0 && (
                 <div className="border-t border-[#e5e7eb] pt-3 mt-3">
-                  <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-2">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-2">
                     Monthly Logs ({record.monthly_logs.length})
                   </h4>
                   <div className="space-y-1">
@@ -207,7 +205,7 @@ export default function PastPerformancePage() {
               {ppqRecordId === record.id && ppqNarrative && (
                 <div className="border-t border-[#e5e7eb] pt-3 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">
+                    <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">
                       PPQ Narrative
                     </h4>
                     <button

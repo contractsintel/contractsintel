@@ -12,8 +12,7 @@ export function PageHeader({
   return (
     <div className="mb-6">
       <h1 className="ci-page-title">{title}</h1>
-      <div className="ci-accent-line" style={{ backgroundColor: accentColor }} />
-      {subtitle && <p className="text-sm text-[#64748b]">{subtitle}</p>}
+{subtitle && <p className="text-sm text-[#64748b]">{subtitle}</p>}
     </div>
   );
 }

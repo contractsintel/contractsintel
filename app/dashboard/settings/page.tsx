@@ -149,35 +149,34 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#6b7280"}} />
           <h1 className="ci-page-title">Settings</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#6b7280" }} />
-        </div>
+</div>
         <HelpButton page="settings" />
       </div>
 
       {/* Company Profile */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#2563eb] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Company Profile</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-5">Company Profile</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Company Name</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Company Name</label>
             <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
               className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">UEI</label>
+              <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">UEI</label>
               <input type="text" value={uei} onChange={(e) => setUei(e.target.value)}
                 placeholder="e.g. J7M9HPTGJ1S8"
                 className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
             </div>
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">CAGE Code</label>
+              <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">CAGE Code</label>
               <input type="text" value={cageCode} onChange={(e) => setCageCode(e.target.value)}
                 className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Certifications</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-medium uppercase tracking-wide">Certifications</label>
             <div className="flex flex-wrap gap-2">
               {CERTIFICATIONS.map((c) => {
                 const colors = CERT_COLORS[c] ?? { bg: "bg-[#f1f5f9]", text: "text-[#94a3b8]", border: "border-[#e5e7eb]" };
@@ -193,13 +192,13 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">NAICS Codes (comma-separated)</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">NAICS Codes (comma-separated)</label>
             <input type="text" value={naicsCodes} onChange={(e) => setNaicsCodes(e.target.value)}
               placeholder="541511, 541512, 541330"
               className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Address</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Address</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
               className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
@@ -217,11 +216,11 @@ export default function SettingsPage() {
       </section>
 
       {/* Opportunity Preferences */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#d97706] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Opportunity Preferences</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-5">Opportunity Preferences</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Geography</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-medium uppercase tracking-wide">Geography</label>
             <div className="flex flex-wrap gap-2">
               {GEO_OPTIONS.map((g) => (
                 <button key={g} type="button" onClick={() => toggleGeo(g)}
@@ -234,7 +233,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-2 font-mono uppercase tracking-wider">Contract Size</label>
+            <label className="block text-xs text-[#4b5563] mb-2 font-medium uppercase tracking-wide">Contract Size</label>
             <div className="flex flex-wrap gap-2">
               {SIZE_OPTIONS.map((s) => (
                 <button key={s} type="button" onClick={() => toggleSize(s)}
@@ -247,13 +246,13 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Preferred Agencies (comma-separated)</label>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Preferred Agencies (comma-separated)</label>
             <input type="text" value={agencies} onChange={(e) => setAgencies(e.target.value)}
               placeholder="DoD, VA, GSA, DHS..."
               className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]" />
           </div>
           <div>
-            <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">
               Minimum Match Score: {minScore}
             </label>
             <input type="range" min={0} max={100} step={5} value={minScore}
@@ -264,8 +263,8 @@ export default function SettingsPage() {
       </section>
 
       {/* Subscription */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#059669] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Subscription</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">Subscription</h2>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-[#111827]">
@@ -289,8 +288,8 @@ export default function SettingsPage() {
       </section>
 
       {/* Notifications */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#7c3aed] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Notifications</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-5">Notifications</h2>
         <div className="space-y-3">
           {[
             { label: "Daily Digest", desc: "Morning email with new matches", value: digestEnabled, set: setDigestEnabled },
@@ -315,10 +314,10 @@ export default function SettingsPage() {
       </section>
 
       {/* CMMC Status */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#dc2626] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">CMMC Status</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">CMMC Status</h2>
         <div>
-          <label className="block text-xs text-[#4b5563] mb-1.5 font-mono uppercase tracking-wider">Target Level</label>
+          <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Target Level</label>
           <select value={cmmcLevel} onChange={(e) => setCmmcLevel(e.target.value)}
             className="bg-white border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
             <option value="1">Level 1 — Basic Cyber Hygiene</option>
@@ -329,8 +328,8 @@ export default function SettingsPage() {
       </section>
 
       {/* Google Calendar */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#0891b2] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Google Calendar</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">Google Calendar</h2>
         {calendarConnected ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -367,8 +366,8 @@ export default function SettingsPage() {
       </section>
 
       {/* Data Sources */}
-      <section className="border border-[#f0f1f3] border-l-[3px] border-l-[#f59e0b] bg-white p-6 mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-5">Data Sources</h2>
+      <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-5">Data Sources</h2>
         {(() => {
           const lastRun = scraperRuns.length > 0 ? new Date(scraperRuns[0].completed_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "Not yet run";
 
@@ -444,7 +443,7 @@ export default function SettingsPage() {
 
       {/* Onboarding */}
       <section className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
-        <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Onboarding</h2>
+        <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">Onboarding</h2>
         <div className="flex items-center gap-3">
           <button
             onClick={() => {

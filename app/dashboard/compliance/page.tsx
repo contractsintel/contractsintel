@@ -80,8 +80,7 @@ export default function CompliancePage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#059669"}} />
           <h1 className="ci-page-title">Compliance Monitor</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#059669" }} />
-        </div>
+</div>
         <HelpButton page="compliance" />
       </div>
       <InlineGuide page="compliance" />
@@ -97,7 +96,7 @@ export default function CompliancePage() {
                 <div className={`text-5xl font-bold font-mono ${healthColor}`}>
                   {items.length > 0 ? healthScore : "--"}
                 </div>
-                <div className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mt-1">
+                <div className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mt-1">
                   Health Score
                 </div>
               </div>
@@ -121,7 +120,7 @@ export default function CompliancePage() {
           </div>
 
           {/* Category Breakdown */}
-          <div className="grid grid-cols-4 gap-px bg-[#e5e7eb] border border-[#f0f1f3] mb-6">
+          <div className="grid grid-cols-4 gap-3 mb-6">
             {grouped.map((cat) => {
               const pct = cat.total > 0 ? Math.round((cat.complete / cat.total) * 100) : 0;
               const catColor =
@@ -148,7 +147,7 @@ export default function CompliancePage() {
           {/* Upcoming Deadlines */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+              <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                 Upcoming Deadlines
               </h2>
               {upcoming.length === 0 ? (
@@ -190,7 +189,7 @@ export default function CompliancePage() {
             <div className="space-y-6">
               {/* FAR Change Alerts */}
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+                <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                   FAR Change Alerts
                 </h2>
                 <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
@@ -203,7 +202,7 @@ export default function CompliancePage() {
 
               {/* CMMC Tracker */}
               <div>
-                <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-3">
+                <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                   CMMC Readiness
                 </h2>
                 <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">

@@ -222,21 +222,20 @@ export default function PipelinePage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
           <h1 className="ci-page-title">Pipeline</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
-            <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
+<div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
         </div>
         <HelpButton page="pipeline" />
       </div>
       <InlineGuide page="pipeline" />
 
       {/* Summary Bar */}
-      <div className="grid grid-cols-5 gap-px bg-[#e5e7eb] border border-[#f0f1f3] mb-6">
+      <div className="flex gap-2 mb-6">
         {STAGES.map((s) => {
           const items = grouped[s.key] ?? [];
           const total = items.reduce((sum: number, m: any) => sum + (m.opportunities?.estimated_value ?? 0), 0);
           return (
             <div key={s.key} className="bg-white p-4">
-              <div className="text-xs font-mono uppercase tracking-wider mb-1" style={{ color: s.color }}>
+              <div className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: s.color }}>
                 {s.label}
               </div>
               <div className="text-lg font-bold text-[#111827] font-mono">{items.length}</div>
@@ -253,7 +252,7 @@ export default function PipelinePage() {
           {STAGES.map((stage) => (
             <div key={stage.key} className="min-h-[400px]">
               <div
-                className={`text-xs font-mono uppercase tracking-wider mb-3 px-2 py-1.5 ${stage.bg} ${stage.text}`}
+                className={`text-xs font-medium uppercase tracking-wide mb-3 px-2 py-1.5 ${stage.bg} ${stage.text}`}
               >
                 {stage.label} ({(grouped[stage.key] ?? []).length})
               </div>
@@ -306,7 +305,7 @@ export default function PipelinePage() {
             <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Award Details</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Award Amount
                 </label>
                 <input
@@ -318,7 +317,7 @@ export default function PipelinePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Contract Number
                 </label>
                 <input
@@ -355,7 +354,7 @@ export default function PipelinePage() {
             <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Loss Details</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Reason
                 </label>
                 <select
@@ -371,7 +370,7 @@ export default function PipelinePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
                   Notes
                 </label>
                 <textarea

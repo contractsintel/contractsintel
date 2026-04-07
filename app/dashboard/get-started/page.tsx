@@ -821,8 +821,7 @@ export default function GetStartedPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="ci-page-title">Get Started</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#2563eb" }} />
-          <p className="text-sm text-[#4b5563] mt-1">
+<p className="text-sm text-[#4b5563] mt-1">
             Welcome to ContractsIntel, {(organization.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}. Here is everything
             you need to get up and running.
           </p>
@@ -921,7 +920,7 @@ export default function GetStartedPage() {
 
       {/* Quick Start Guide */}
       <div className="border border-[#f0f1f3] bg-white p-6 mb-6">
-        <h2 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-2">Quick Start Guide</h2>
+        <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">Quick Start Guide</h2>
         <p className="text-sm text-[#4b5563]">Written guides for every product, grouped by tier. Each explains what it does, why it matters, and how to use it step by step.</p>
       </div>
 
@@ -972,15 +971,15 @@ export default function GetStartedPage() {
                           <div className="px-5 pl-16 pb-5 pt-1">
                             <div className="space-y-5">
                               <div>
-                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">What it does</h5>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">What it does</h5>
                                 <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whatItDoes}</p>
                               </div>
                               <div>
-                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">Why it matters</h5>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">Why it matters</h5>
                                 <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whyItMatters}</p>
                               </div>
                               <div>
-                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">How to use it</h5>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">How to use it</h5>
                                 <ol className="space-y-1.5">
                                   {guide.howToUseIt.map((step, i) => (
                                     <li key={i} className="flex gap-2 text-sm text-[#4b5563] leading-relaxed">
@@ -991,7 +990,7 @@ export default function GetStartedPage() {
                                 </ol>
                               </div>
                               <div>
-                                <h5 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-1.5">Tips</h5>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">Tips</h5>
                                 <p className="text-sm text-[#4b5563] leading-relaxed">{guide.tips}</p>
                               </div>
                             </div>

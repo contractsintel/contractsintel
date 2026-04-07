@@ -75,7 +75,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
+        <div className="grid grid-cols-2 gap-[1px] bg-[#e5e7eb] rounded-xl overflow-hidden mb-6">
           {[
             ["Notice ID", contract.notice_id],
             ["Type", raw.baseType || raw.type || "N/A"],
@@ -87,7 +87,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             ["Solicitation #", raw.solicitationNumber || "N/A"],
           ].map(([label, value]) => (
             <div key={label as string} className="bg-white p-4">
-              <div className="text-[10px] text-[#9ca3af] font-mono uppercase tracking-wider mb-1">{label}</div>
+              <div className="text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide mb-1">{label}</div>
               <div className="text-sm text-[#111827]">{value}</div>
             </div>
           ))}
@@ -96,7 +96,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         {/* Contacts */}
         {contacts.length > 0 && (
           <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
-            <h2 className="text-xs text-[#9ca3af] font-mono uppercase tracking-wider mb-4">Point of Contact</h2>
+            <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">Point of Contact</h2>
             <div className="space-y-3">
               {contacts.map((c: any, i: number) => (
                 <div key={i} className="flex items-center gap-4 text-sm">

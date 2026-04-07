@@ -119,8 +119,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Analytics</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample analytics content...
           </div>
         </div>
@@ -133,8 +132,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
         <h1 className="ci-page-title">Analytics</h1>
-        <div className="ci-accent-line" style={{ backgroundColor: "#d97706" }} />
-      </div>
+</div>
 
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading analytics...</div>
@@ -143,7 +141,7 @@ export default function AnalyticsPage() {
           {/* Agency Heat Map Table */}
           <div className="border border-[#f0f1f3] bg-white mb-6">
             <div className="p-5 border-b border-[#e5e7eb]">
-              <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">Agency Heat Map</h2>
+              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">Agency Heat Map</h2>
             </div>
             {agencyStats.length === 0 ? (
               <div className="p-12 text-center text-[#9ca3af] text-sm">
@@ -152,7 +150,7 @@ export default function AnalyticsPage() {
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] border-b border-[#e5e7eb]">
+                  <tr className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] border-b border-[#e5e7eb]">
                     <th className="text-left p-3 pl-5">Agency</th>
                     <th className="text-right p-3">Opps</th>
                     <th className="text-right p-3">Bids</th>
@@ -186,15 +184,15 @@ export default function AnalyticsPage() {
           {/* Loss Analysis Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Total Losses Analyzed</div>
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Total Losses Analyzed</div>
               <div className="text-2xl font-mono text-[#111827]">{totalLosses}</div>
             </div>
             <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Most Common Reason</div>
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Most Common Reason</div>
               <div className="text-sm text-[#111827] mt-1">{mostCommonReason}</div>
             </div>
             <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-1">Lowest Win Rate Agency</div>
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Lowest Win Rate Agency</div>
               <div className="text-sm text-[#111827] mt-1">
                 {lowestWinRate[0] ? `${lowestWinRate[0].agency} (${lowestWinRate[0].win_rate.toFixed(0)}%)` : "N/A"}
               </div>
@@ -204,7 +202,7 @@ export default function AnalyticsPage() {
           {/* Loss Analyses */}
           <div className="border border-[#f0f1f3] bg-white">
             <div className="p-5 border-b border-[#e5e7eb]">
-              <h2 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af]">Loss Analysis Insights</h2>
+              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">Loss Analysis Insights</h2>
             </div>
             {lossAnalyses.length === 0 ? (
               <div className="p-12 text-center text-[#9ca3af] text-sm">

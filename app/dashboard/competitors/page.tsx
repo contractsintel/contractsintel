@@ -89,8 +89,7 @@ export default function CompetitorsPage() {
         </div>
         <div className="filter blur-sm opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Competitor Intelligence</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#7c3aed" }} />
-          <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
+<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample competitor content...
           </div>
         </div>
@@ -104,8 +103,7 @@ export default function CompetitorsPage() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#7c3aed"}} />
           <h1 className="ci-page-title">Competitor Intelligence</h1>
-          <div className="ci-accent-line" style={{ backgroundColor: "#7c3aed" }} />
-        </div>
+</div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowForm(!showForm)}
@@ -124,7 +122,7 @@ export default function CompetitorsPage() {
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Company Name</label>
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Company Name</label>
                 <input
                   type="text"
                   value={form.name}
@@ -134,7 +132,7 @@ export default function CompetitorsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">UEI (optional)</label>
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">UEI (optional)</label>
                 <input
                   type="text"
                   value={form.uei}
@@ -144,7 +142,7 @@ export default function CompetitorsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-[#4b5563] mb-1 font-mono uppercase tracking-wider">Notes</label>
+              <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Notes</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -216,7 +214,7 @@ export default function CompetitorsPage() {
                 {/* Encounters */}
                 {encounters.length > 0 && (
                   <div className="p-5">
-                    <h4 className="text-[10px] font-mono uppercase tracking-wider text-[#9ca3af] mb-3">Encounters</h4>
+                    <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">Encounters</h4>
                     <div className="space-y-2">
                       {encounters.slice(0, 5).map((enc: any) => (
                         <div key={enc.id} className="flex items-center justify-between">

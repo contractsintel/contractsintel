@@ -416,21 +416,19 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Hero Greeting */}
-      <div className="mb-8 py-7 px-8 rounded-2xl border border-[#e2e8f0]" style={{background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)"}}>
+      {/* Hero Greeting — slim topbar, no background */}
+      <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="ci-serif text-[28px] tracking-[-0.02em] text-[#0f172a]">
+            <h1 className="text-[22px] font-medium text-[#111827] tracking-[-0.01em]"
+                style={{fontFamily: "'DM Sans', sans-serif"}}>
               {greeting}, {displayName}
             </h1>
-            <p className="ci-mono text-[12px] text-[#94a3b8] mt-1">{today}</p>
-            {!loading && (
-              <p className="text-[14px] text-[#475569] mt-1.5">
-                {totalMatchCount > 0
-                  ? `${totalMatchCount.toLocaleString()} matched opportunities`
-                  : "Your first digest arrives tomorrow at 7am"}
-              </p>
-            )}
+            <p className="text-[13px] text-[#6b7280] mt-0.5">
+              {today} · {totalMatchCount > 0
+                ? `${totalMatchCount.toLocaleString()} opportunities matched`
+                : "Your first digest arrives tomorrow at 7am"}
+            </p>
           </div>
           <HelpButton page="dashboard" />
         </div>
@@ -443,34 +441,22 @@ export default function DashboardPage() {
       {/* Demo Banner */}
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
-      {/* Stats Bar */}
-      <div data-tour="stats-bar" className="grid grid-cols-4 gap-3 mb-6">
+      {/* Stats Bar — KPI Row */}
+      <div data-tour="stats-bar" className="grid grid-cols-4 gap-4 mb-8">
         {[
-          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", tint: "rgba(37,99,235,0.03)" },
-          { value: formatCurrency(totalValue), label: "Total Value", tint: "rgba(5,150,105,0.03)" },
-          { value: String(urgentCount), label: "Due < 7 days", tint: "rgba(220,38,38,0.03)" },
-          { value: String(topScore), label: "Top Score", tint: "rgba(124,58,237,0.03)" },
+          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", urgent: false },
+          { value: formatCurrency(totalValue), label: "Total Value", urgent: false },
+          { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
+          { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
-          <div key={stat.label} className="ci-card p-5 cursor-default" style={{ background: stat.tint }}>
-            <div className="ci-stat-number">{stat.value}</div>
+          <div key={stat.label} className={`p-5 bg-white border border-[#e5e7eb] rounded-xl ${stat.urgent ? "border-l-[3px] border-l-[#dc2626]" : ""}`}>
+            <div className="ci-stat-number text-[28px]">{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Source Breakdown */}
-      {!loading && matches.length > 0 && (
-        <div className="mb-4 px-1">
-          <div className="flex items-center gap-3 font-['JetBrains_Mono'] text-[11px] text-[#94a3b8]">
-            {sourceCounts.federal ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#2563eb]" />{sourceCounts.federal} federal</span> : null}
-            {sourceCounts.state ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#059669]" />{sourceCounts.state} state</span> : null}
-            {sourceCounts.military ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#475569]" />{sourceCounts.military} military</span> : null}
-            {sourceCounts.sbir ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#7c3aed]" />{sourceCounts.sbir} SBIR</span> : null}
-            {sourceCounts.grants ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#d97706]" />{sourceCounts.grants} grants</span> : null}
-            {sourceCounts.recompetes ? <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-[#dc2626]" />{sourceCounts.recompetes} recompetes</span> : null}
-          </div>
-        </div>
-      )}
+      {/* Source Breakdown — removed per design v2 (duplicates filter dropdown) */}
 
       {/* Compliance Alert */}
       {complianceAlerts.length > 0 && (
@@ -630,8 +616,17 @@ export default function DashboardPage() {
 
           {/* Opportunity Cards */}
           {loading ? (
-            <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              Loading matches...
+            <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#f3f4f6]">
+                  <div className="w-12 h-12 rounded-full bg-[#f3f4f6] animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/5 bg-[#f3f4f6] rounded animate-pulse" />
+                    <div className="h-3 w-2/5 bg-[#f3f4f6] rounded animate-pulse" />
+                  </div>
+                  <div className="h-4 w-16 bg-[#f3f4f6] rounded animate-pulse" />
+                </div>
+              ))}
             </div>
           ) : filtered.length === 0 && totalMatchCount === 0 ? (
             /* ── Empty state welcome card — only when truly no matches ── */
@@ -676,7 +671,7 @@ export default function DashboardPage() {
 
               {/* "While you wait" action cards */}
               <div className="mb-2">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-[#9ca3af] mb-4 text-center">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-4 text-center">
                   While you wait
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1085,21 +1080,15 @@ export default function DashboardPage() {
       {/* Toast notification */}
       {toast && (
         <div
-          className="fixed top-5 right-5 z-[100] max-w-[360px] bg-white rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-[#f0f1f3] overflow-hidden"
-          style={{ animation: "slideInRight 0.3s ease", borderLeft: `4px solid ${toast.color}` }}
+          className="fixed bottom-6 right-6 z-[100] px-5 py-3 bg-[#111827] text-white rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-[13px] font-medium flex items-center gap-3"
+          style={{ animation: "fadeInUp 0.2s ease" }}
         >
-          <div className="px-4 py-3 flex items-start gap-3">
-            <div className="flex-1">
-              <span className="text-sm font-medium text-[#111827]">{toast.message}</span>
-              {toast.link && (
-                <a href={toast.link} className="block text-xs text-[#2563eb] hover:text-[#1d4ed8] mt-0.5">{toast.linkText || "View"} &rarr;</a>
-              )}
-            </div>
-            <button onClick={() => setToast(null)} className="text-[#9ca3af] hover:text-[#111827] text-lg leading-none shrink-0">&times;</button>
-          </div>
-          <div className="h-0.5 bg-[#f1f5f9]">
-            <div className="h-full" style={{ backgroundColor: toast.color, animation: "shrinkBar 4s linear forwards" }} />
-          </div>
+          <span style={{ color: toast.color }}>●</span>
+          <span>{toast.message}</span>
+          {toast.link && (
+            <a href={toast.link} className="text-[#93c5fd] underline ml-1">{toast.linkText || "View"}</a>
+          )}
+          <button onClick={() => setToast(null)} className="text-[#6b7280] hover:text-white ml-2">&times;</button>
         </div>
       )}
 
