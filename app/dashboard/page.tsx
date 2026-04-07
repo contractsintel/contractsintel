@@ -89,18 +89,18 @@ function getSourceCategory(source: string | null | undefined, bidRec?: string): 
 
 function sourceBadge(source: string | null | undefined, bidRec?: string) {
   const cat = getSourceCategory(source, bidRec);
-  const badges: Record<string, { bg: string; text: string; label: string }> = {
-    federal: { bg: "bg-[#eff4ff]", text: "text-[#2563eb]", label: "Federal" },
-    state: { bg: "bg-[#ecfdf5]", text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "") : "State" },
-    military: { bg: "bg-[#f1f5f9]", text: "text-[#475569]", label: "Military" },
-    sbir: { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", label: "SBIR" },
-    grants: { bg: "bg-[#fffbeb]", text: "text-[#d97706]", label: "Grant" },
-    subcontracting: { bg: "bg-[#f0fdfa]", text: "text-[#0d9488]", label: "SubK" },
-    recompetes: { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", label: "Recompete" },
+  const badges: Record<string, { text: string; label: string }> = {
+    federal: { text: "text-[#2563eb]", label: "Federal" },
+    state: { text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "").toUpperCase() : "State" },
+    military: { text: "text-[#475569]", label: "Military" },
+    sbir: { text: "text-[#7c3aed]", label: "SBIR" },
+    grants: { text: "text-[#d97706]", label: "Grant" },
+    subcontracting: { text: "text-[#0d9488]", label: "SubK" },
+    recompetes: { text: "text-[#dc2626]", label: "Recompete" },
   };
   const b = badges[cat] ?? badges.federal;
   return (
-    <span className={`inline-block px-2 py-0.5 text-[10px] font-mono uppercase rounded-full ${b.bg} ${b.text}`}>
+    <span className={`inline-block px-1.5 py-0.5 text-[10px] ci-mono uppercase rounded bg-[#f1f5f9] ${b.text}`}>
       {b.label}
     </span>
   );
@@ -370,25 +370,18 @@ export default function DashboardPage() {
 
   return (
     <div>
-      {/* Hero Greeting Card */}
-      <div className="relative overflow-hidden mb-8 p-8" style={{background: "linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #ecfdf5 100%)", borderRadius: "16px", border: "1px solid rgba(37,99,235,0.08)"}}>
-        {/* Decorative blurred circles */}
-        <div className="absolute -top-10 -right-10 w-[120px] h-[120px] rounded-full" style={{background: "rgba(37,99,235,0.06)", filter: "blur(40px)"}} />
-        <div className="absolute top-20 -right-5 w-[80px] h-[80px] rounded-full" style={{background: "rgba(124,58,237,0.05)", filter: "blur(30px)"}} />
-        <div className="absolute -bottom-8 right-20 w-[100px] h-[100px] rounded-full" style={{background: "rgba(5,150,105,0.04)", filter: "blur(35px)"}} />
-
-        <div className="relative flex items-center justify-between">
+      {/* Hero Greeting */}
+      <div className="mb-8 py-7 px-8 rounded-2xl border border-[#e2e8f0]" style={{background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)"}}>
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-['DM_Serif_Display'] text-[32px] font-bold tracking-[-0.02em] text-[#0f172a]">
+            <h1 className="ci-serif text-[28px] tracking-[-0.02em] text-[#0f172a]">
               {greeting}, {displayName}
             </h1>
-            <p className="text-sm text-[#64748b] mt-2 font-['JetBrains_Mono']">{today}</p>
+            <p className="ci-mono text-[12px] text-[#94a3b8] mt-1">{today}</p>
             {!loading && (
-              <p className="text-[15px] text-[#475569] mt-2 font-medium">
+              <p className="text-[14px] text-[#475569] mt-1.5">
                 {totalMatchCount > 0
-                  ? `You have ${totalMatchCount.toLocaleString()} matched opportunities`
-                  : matches.length > 0
-                  ? `You have ${matches.length} match${matches.length === 1 ? "" : "es"}`
+                  ? `${totalMatchCount.toLocaleString()} matched opportunities`
                   : "Your first digest arrives tomorrow at 7am"}
               </p>
             )}
@@ -405,19 +398,16 @@ export default function DashboardPage() {
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar */}
-      <div data-tour="stats-bar" className="grid grid-cols-4 gap-4 mb-6">
+      <div data-tour="stats-bar" className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { value: matches.length, label: "New Matches", color: "#2563eb", gradient: "linear-gradient(135deg, #eff6ff, #fff)", icon: <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> },
-          { value: formatCurrency(totalValue), label: "Total Value", color: "#059669", gradient: "linear-gradient(135deg, #ecfdf5, #fff)", icon: <path strokeLinecap="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-          { value: urgentCount, label: "Urgent (<7d)", color: "#dc2626", gradient: "linear-gradient(135deg, #fef2f2, #fff)", icon: <path strokeLinecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /> },
-          { value: topScore, label: "Top Score", color: "#d97706", gradient: "linear-gradient(135deg, #fffbeb, #fff)", icon: <path strokeLinecap="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /> },
+          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : matches.length, label: "Matches" },
+          { value: formatCurrency(totalValue), label: "Total Value" },
+          { value: urgentCount, label: "Due < 7 days" },
+          { value: topScore, label: "Top Score" },
         ].map((stat) => (
-          <div key={stat.label} className="relative overflow-hidden min-h-[120px] p-6 border border-[#f0f1f3] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-200 cursor-default" style={{background: stat.gradient, borderTop: `3px solid ${stat.color}`}}>
-            <div className="font-['DM_Serif_Display'] text-[44px] font-extrabold tracking-[-0.03em] leading-none" style={{color: stat.color}}>{stat.value}</div>
-            <div className="flex items-center gap-1.5 mt-3">
-              <svg className="w-3.5 h-3.5" style={{color: stat.color}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>{stat.icon}</svg>
-              <div className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-[0.08em] text-[#94a3b8]">{stat.label}</div>
-            </div>
+          <div key={stat.label} className="ci-card p-5 cursor-default">
+            <div className="ci-stat-number">{stat.value}</div>
+            <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
       </div>
@@ -478,10 +468,10 @@ export default function DashboardPage() {
                 <button
                   key={s.key}
                   onClick={() => setFilters((f) => ({ ...f, source: s.key as SourceFilter }))}
-                  className={`px-2.5 py-1 text-[11px] font-medium rounded-full border transition-all duration-150 ${
+                  className={`px-3 py-1.5 text-[12px] font-medium rounded-md border transition-all duration-150 ${
                     filters.source === s.key
-                      ? "bg-[#2563eb] text-white border-[#2563eb]"
-                      : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#2563eb] hover:text-[#2563eb]"
+                      ? "bg-[#0f172a] text-white border-[#0f172a]"
+                      : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
                   }`}
                 >
                   {s.label}{s.count > 0 ? ` (${s.count})` : ""}
@@ -505,8 +495,8 @@ export default function DashboardPage() {
                     onClick={() => setFilters((f) => ({ ...f, urgency: u.key as UrgencyFilter }))}
                     className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
                       filters.urgency === u.key
-                        ? "bg-[#dc2626] text-white border-[#dc2626]"
-                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#dc2626] hover:text-[#dc2626]"
+                        ? "bg-[#0f172a] text-white border-[#0f172a]"
+                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
                   >
                     {u.label}
@@ -529,8 +519,8 @@ export default function DashboardPage() {
                     onClick={() => setFilters((f) => ({ ...f, valueRange: v.key as ValueFilter }))}
                     className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
                       filters.valueRange === v.key
-                        ? "bg-[#059669] text-white border-[#059669]"
-                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#059669] hover:text-[#059669]"
+                        ? "bg-[#0f172a] text-white border-[#0f172a]"
+                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
                   >
                     {v.label}
@@ -550,12 +540,11 @@ export default function DashboardPage() {
                   <button
                     key={r.key}
                     onClick={() => setFilters((f) => ({ ...f, recommendation: r.key as RecFilter }))}
-                    className={`px-2 py-0.5 text-[11px] rounded-full border transition-all duration-150 ${
+                    className={`px-3 py-1.5 text-[12px] font-medium rounded-md border transition-all duration-150 ${
                       filters.recommendation === r.key
-                        ? `text-white border-current`
-                        : "bg-white text-[#4b5563] border-[#e5e7eb] hover:text-[#111827]"
+                        ? "bg-[#0f172a] text-white border-[#0f172a]"
+                        : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
                     }`}
-                    style={filters.recommendation === r.key && r.key ? { backgroundColor: r.color, borderColor: r.color } : undefined}
                   >
                     {r.label}
                   </button>
@@ -727,7 +716,7 @@ export default function DashboardPage() {
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className={`border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#cbd5e1] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] cursor-pointer transition-all duration-300 ${isArchiving ? "opacity-30 scale-75 translate-x-[200px]" : ""}`}
+                    className={`ci-card cursor-pointer ${isArchiving ? "opacity-30 scale-75 translate-x-[200px]" : ""}`}
                     onClick={() => setExpandedCard(isExpanded ? null : match.id)}
                   >
                     {/* Collapsed card header */}
@@ -878,8 +867,8 @@ export default function DashboardPage() {
         {/* Right Sidebar */}
         <div className="w-[300px] shrink-0 hidden lg:block space-y-4">
           {/* Pipeline Summary */}
-          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
+          <div className="ci-card p-5">
+            <h3 className="ci-section-label mb-3">
               Pipeline Summary
             </h3>
             {[
@@ -903,8 +892,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Compliance Score */}
-          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
+          <div className="ci-card p-5">
+            <h3 className="ci-section-label mb-3">
               Compliance Health
             </h3>
             <div className="text-3xl font-bold font-mono text-[#22c55e] mb-2">--</div>
@@ -920,8 +909,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Upcoming Deadlines */}
-          <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <h3 className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-[0.06em] text-[#94a3b8] mb-3">
+          <div className="ci-card p-5">
+            <h3 className="ci-section-label mb-3">
               Upcoming Deadlines
             </h3>
             {matches

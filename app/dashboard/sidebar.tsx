@@ -179,17 +179,14 @@ function SidebarLink({
     <Link
       href={isLocked ? "#" : item.href}
       data-tour={item.tourId || undefined}
-      className={`group relative flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm border-l-[3px] ${
+      className={`group relative flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-[14px] font-medium border-l-[3px] transition-all duration-150 ${
         isActive
-          ? "text-[#111827]"
-          : "text-[#4b5563] hover:text-[#111827] border-transparent"
+          ? "text-[#0f172a] font-semibold bg-[#f1f5f9] border-l-[#2563eb]"
+          : "text-[#475569] hover:text-[#0f172a] hover:bg-[#f1f5f9] border-transparent"
       } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-      style={isActive ? { borderColor: item.color, backgroundColor: item.lightBg, transition: 'all 0.15s ease' } : { transition: 'all 0.15s ease' }}
-      onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = item.lightBg + "80"; } }}
-      onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.backgroundColor = ""; } }}
       onClick={isLocked ? (e) => e.preventDefault() : undefined}
     >
-      <span style={isActive ? { color: item.color, opacity: 1 } : { color: item.color, opacity: 0.7 }} className="group-hover:opacity-100">
+      <span className={`${isActive ? "text-[#2563eb]" : "text-[#94a3b8] group-hover:text-[#475569]"} transition-colors`}>
         {ICONS[item.icon]}
       </span>
       <span>{item.label}</span>
