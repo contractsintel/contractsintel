@@ -313,6 +313,8 @@ export default function DashboardPage() {
     .filter((m) => {
       const opp = m.opportunities;
       if (!opp) return false;
+      // Hide expired contracts from main feed
+      if (opp.status === "expired") return false;
       if (filters.setAside && opp.set_aside !== filters.setAside) return false;
       if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
       if (m.match_score < filters.minScore) return false;

@@ -52,7 +52,8 @@ export default function SearchPage() {
 
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" });
+      .select("*", { count: "exact" })
+      .neq("status", "expired");
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);

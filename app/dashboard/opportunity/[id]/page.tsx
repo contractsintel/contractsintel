@@ -59,6 +59,7 @@ export default function OpportunityDetailPage() {
           .select("id, title, agency, source, response_deadline")
           .eq("naics_code", oppData.naics_code)
           .neq("id", oppId)
+          .neq("status", "expired")
           .order("created_at", { ascending: false })
           .limit(5);
         setRelated(rel ?? []);
@@ -101,6 +102,21 @@ export default function OpportunityDetailPage() {
   const val = opp.estimated_value ?? opp.value_estimate ?? 0;
   const attachments = (() => { try { return JSON.parse(opp.attachments || "[]"); } catch { return []; } })();
 
+  const sourceLabel: Record<string, string> = {
+    sam_gov: "SAM.gov", usaspending: "USASpending", grants_gov: "Grants.gov",
+    federal_civilian: "Federal Civilian", sbir_sttr: "SBIR/STTR", military_defense: "Military/Defense",
+    subcontracting: "Subcontracting", forecasts: "Forecasts",
+  };
+  const sourceName = sourceLabel[opp.source] || (opp.source?.startsWith("state_") ? opp.source.replace("state_", "").toUpperCase() : opp.source || "Unknown");
+  const sourceSearchUrls: Record<string, string> = {
+    sam_gov: "https://sam.gov/search/?index=opp",
+    usaspending: "https://www.usaspending.gov/search",
+    grants_gov: "https://www.grants.gov/search-grants",
+  };
+  const hasValidUrl = opp.sam_url || (opp.source_url && !opp.source_url.includes("undefined"));
+  const isExpired = opp.status === "expired" || (days !== null && days < 0);
+  const isRecompete = opp.source === "usaspending";
+
   return (
     <div className="max-w-4xl">
       {/* Back link */}
@@ -116,7 +132,13 @@ export default function OpportunityDetailPage() {
           )}
           <div className="flex-1 min-w-0">
             <h1 className="ci-serif text-[24px] tracking-[-0.01em] text-[#0f172a] mb-1">{cleanTitle(opp.title)}</h1>
-            <p className="text-[14px] text-[#475569] mb-3">{opp.agency}</p>
+            <p className="text-[14px] text-[#475569] mb-1">{opp.agency}</p>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#f1f5f9] text-[#475569]">{sourceName}</span>
+              {isExpired && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#fef2f2] text-[#dc2626]">Expired</span>}
+              {isRecompete && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#fefce8] text-[#a16207]">Recompete Alert</span>}
+              {opp.set_aside_type && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#ecfdf5] text-[#059669]">{opp.set_aside_type}</span>}
+            </div>
             <div className="flex items-center gap-2">
               {match?.user_status === "tracking" ? (
                 <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
@@ -148,40 +170,43 @@ export default function OpportunityDetailPage() {
           <div className="ci-card p-6">
             <h2 className="ci-section-label mb-4">Key Details</h2>
             <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
-              {opp.solicitation_number && <div><span className="text-[#94a3b8]">Solicitation</span><div className="ci-mono text-[#0f172a] font-medium mt-0.5">{opp.solicitation_number}</div></div>}
-              {val > 0 && <div><span className="text-[#94a3b8]">Value</span><div className="text-[#0f172a] font-semibold mt-0.5">{formatCurrency(val)}</div></div>}
-              {opp.set_aside && <div><span className="text-[#94a3b8]">Set-Aside</span><div className="text-[#0f172a] mt-0.5">{opp.set_aside_description || opp.set_aside}</div></div>}
-              {opp.naics_code && <div><span className="text-[#94a3b8]">NAICS Code</span><div className="ci-mono text-[#0f172a] mt-0.5">{opp.naics_code}{opp.naics_description ? ` — ${opp.naics_description}` : ""}</div></div>}
-              {opp.response_deadline && <div><span className="text-[#94a3b8]">Response Deadline</span><div className={`font-medium mt-0.5 ${deadlineColor}`}>{new Date(opp.response_deadline).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}{days !== null ? ` (${days}d left)` : ""}</div></div>}
-              {opp.place_of_performance && <div><span className="text-[#94a3b8]">Place of Performance</span><div className="text-[#0f172a] mt-0.5">{opp.place_of_performance}</div></div>}
+              <div><span className="text-[#94a3b8]">Solicitation</span><div className="ci-mono text-[#0f172a] font-medium mt-0.5">{opp.solicitation_number || <span className="text-[#94a3b8] italic font-normal">Not specified</span>}</div></div>
+              <div><span className="text-[#94a3b8]">Value</span><div className="text-[#0f172a] font-semibold mt-0.5">{formatCurrency(val)}</div></div>
+              <div><span className="text-[#94a3b8]">Set-Aside</span><div className="text-[#0f172a] mt-0.5">{opp.set_aside_description || opp.set_aside_type || <span className="text-[#94a3b8] italic">Full & Open</span>}</div></div>
+              <div><span className="text-[#94a3b8]">NAICS Code</span><div className="ci-mono text-[#0f172a] mt-0.5">{opp.naics_code ? `${opp.naics_code}${opp.naics_description ? ` — ${opp.naics_description}` : ""}` : <span className="text-[#94a3b8] italic font-normal">Not specified</span>}</div></div>
+              <div><span className="text-[#94a3b8]">Response Deadline</span><div className={`font-medium mt-0.5 ${opp.response_deadline ? deadlineColor : "text-[#94a3b8]"}`}>{opp.response_deadline ? `${new Date(opp.response_deadline).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}${days !== null ? ` (${days > 0 ? days + "d left" : "passed"})` : ""}` : <span className="italic font-normal">Check solicitation</span>}</div></div>
+              <div><span className="text-[#94a3b8]">Location</span><div className="text-[#0f172a] mt-0.5">{opp.place_of_performance || <span className="text-[#94a3b8] italic">Not specified</span>}</div></div>
               {opp.contract_type && <div><span className="text-[#94a3b8]">Contract Type</span><div className="text-[#0f172a] mt-0.5">{opp.contract_type}</div></div>}
               {opp.period_of_performance && <div><span className="text-[#94a3b8]">Period of Performance</span><div className="text-[#0f172a] mt-0.5">{opp.period_of_performance}</div></div>}
-              {opp.posted_date && <div><span className="text-[#94a3b8]">Posted</span><div className="text-[#0f172a] mt-0.5">{new Date(opp.posted_date).toLocaleDateString()}</div></div>}
+              <div><span className="text-[#94a3b8]">Posted</span><div className="text-[#0f172a] mt-0.5">{opp.posted_date ? new Date(opp.posted_date).toLocaleDateString() : <span className="text-[#94a3b8] italic">Unknown</span>}</div></div>
+              <div><span className="text-[#94a3b8]">Source</span><div className="text-[#0f172a] mt-0.5">{sourceName}</div></div>
               {opp.incumbent_name && <div><span className="text-[#94a3b8]">Incumbent</span><div className="text-[#0f172a] mt-0.5">{opp.incumbent_name}</div></div>}
             </div>
           </div>
 
           {/* Full Description */}
-          {(opp.full_description || opp.description) && (
-            <div className="ci-card p-6">
-              <h2 className="ci-section-label mb-4">Description</h2>
-              <div className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto">
-                {opp.full_description || opp.description}
-              </div>
-            </div>
-          )}
+          <div className="ci-card p-6">
+            <h2 className="ci-section-label mb-4">Description</h2>
+            {(opp.full_description || opp.description) ? (
+              <div className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: (opp.full_description || opp.description).replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "") }} />
+            ) : (
+              <p className="text-[13px] text-[#94a3b8] italic">No description available. Check the solicitation documents or the original listing for details.</p>
+            )}
+          </div>
 
           {/* Contact Information */}
-          {(opp.contact_name || opp.contact_email) && (
-            <div className="ci-card p-6">
-              <h2 className="ci-section-label mb-4">Contact Information</h2>
+          <div className="ci-card p-6">
+            <h2 className="ci-section-label mb-4">Contact Information</h2>
+            {(opp.contact_name || opp.contact_email || opp.contact_phone) ? (
               <div className="text-[13px] space-y-1">
                 {opp.contact_name && <div className="text-[#0f172a] font-medium">{opp.contact_name}</div>}
                 {opp.contact_email && <a href={`mailto:${opp.contact_email}`} className="text-[#2563eb] hover:text-[#1d4ed8] block">{opp.contact_email}</a>}
                 {opp.contact_phone && <a href={`tel:${opp.contact_phone}`} className="text-[#2563eb] hover:text-[#1d4ed8] block">{opp.contact_phone}</a>}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-[13px] text-[#94a3b8] italic">Contact information not available. Check the solicitation documents for contracting officer details.</p>
+            )}
+          </div>
 
           {/* Attachments */}
           {attachments.length > 0 && (
@@ -212,12 +237,58 @@ export default function OpportunityDetailPage() {
           )}
 
           {/* Response Instructions */}
-          {opp.response_instructions && (
-            <div className="ci-card p-6">
-              <h2 className="ci-section-label mb-4">Response Instructions</h2>
+          <div className="ci-card p-6">
+            <h2 className="ci-section-label mb-4">Response Instructions</h2>
+            {opp.response_instructions ? (
               <div className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap">{opp.response_instructions}</div>
+            ) : (
+              <p className="text-[13px] text-[#94a3b8] italic">Check the solicitation documents above for submission instructions, or contact the contracting officer.</p>
+            )}
+          </div>
+
+          {/* Incumbent Info (for recompetes) */}
+          {(opp.incumbent_name || isRecompete) && (
+            <div className="ci-card p-6">
+              <h2 className="ci-section-label mb-4">Incumbent Information</h2>
+              {opp.incumbent_name ? (
+                <div className="text-[13px] space-y-1">
+                  <div className="text-[#0f172a] font-medium">{opp.incumbent_name}</div>
+                  {opp.incumbent_value && <div className="text-[#475569]">Previous award: {formatCurrency(opp.incumbent_value)}</div>}
+                </div>
+              ) : (
+                <p className="text-[13px] text-[#94a3b8] italic">Incumbent information not available. Check USASpending.gov for contract history.</p>
+              )}
             </div>
           )}
+
+          {/* Find This Contract fallback (when no valid direct URL) */}
+          {!hasValidUrl && (
+            <div className="ci-card p-6 border-l-4 border-l-[#d97706]">
+              <h2 className="ci-section-label mb-4">Find This Contract</h2>
+              <div className="text-[13px] text-[#475569] space-y-3">
+                {opp.solicitation_number && (
+                  <div><span className="text-[#94a3b8]">Solicitation #:</span> <span className="ci-mono font-medium text-[#0f172a] select-all">{opp.solicitation_number}</span></div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {sourceSearchUrls[opp.source] && (
+                    <a href={sourceSearchUrls[opp.source]} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-xs border border-[#e2e8f0] text-[#475569] hover:border-[#2563eb] hover:text-[#2563eb] rounded-lg">Search on {sourceName}</a>
+                  )}
+                  <a href={`https://www.google.com/search?q=${encodeURIComponent((opp.solicitation_number || "") + " " + cleanTitle(opp.title))}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-xs border border-[#e2e8f0] text-[#475569] hover:border-[#2563eb] hover:text-[#2563eb] rounded-lg">Search Google</a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div className="ci-card p-6">
+            <h2 className="ci-section-label mb-4">Timeline</h2>
+            <div className="text-[13px] space-y-2">
+              {opp.posted_date && <div className="flex justify-between"><span className="text-[#94a3b8]">Posted</span><span className="text-[#0f172a]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
+              {opp.created_at && <div className="flex justify-between"><span className="text-[#94a3b8]">Scraped</span><span className="text-[#0f172a]">{new Date(opp.created_at).toLocaleDateString()}</span></div>}
+              {opp.response_deadline && <div className="flex justify-between"><span className={`${deadlineColor} font-medium`}>Deadline</span><span className={`font-medium ${deadlineColor}`}>{new Date(opp.response_deadline).toLocaleDateString()}{days !== null ? ` (${days > 0 ? days + "d left" : "passed"})` : ""}</span></div>}
+              {!opp.posted_date && !opp.response_deadline && <p className="text-[#94a3b8] italic">No date information available.</p>}
+            </div>
+          </div>
         </div>
 
         {/* Right sidebar */}
