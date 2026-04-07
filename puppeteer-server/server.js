@@ -1049,15 +1049,21 @@ async function runRotation(index) {
 async function runBulkMatching() {
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
 
-  // Get all organizations with NAICS codes
-  const orgRes = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications&naics_codes=not.is.null`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  const orgs = await orgRes.json();
-  if (!Array.isArray(orgs) || !orgs.length) return 0;
+  // Get ALL organizations (filter NAICS client-side since empty array vs null varies)
+  const orgRes = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  const allOrgs = await orgRes.json();
+  if (!Array.isArray(allOrgs)) { console.log("[match] Failed to fetch orgs:", JSON.stringify(allOrgs).substring(0, 200)); return 0; }
+  const orgs = allOrgs.filter(o => o.naics_codes && Array.isArray(o.naics_codes) && o.naics_codes.length > 0);
+  console.log(`[match] ${allOrgs.length} total orgs, ${orgs.length} with NAICS codes`);
+  if (!orgs.length) {
+    // If no orgs have NAICS, match ALL orgs against ALL new opportunities with a base score
+    console.log("[match] No orgs with NAICS — running broad matching for all orgs");
+    return await runBroadMatching(allOrgs, headers);
+  }
 
   let totalMatched = 0;
 
   for (const org of orgs) {
-    if (!org.naics_codes?.length) continue;
 
     // Get existing matched opportunity IDs
     const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&is_demo=eq.false`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
@@ -1118,6 +1124,59 @@ async function runBulkMatching() {
       }
       totalMatched += matches.length;
     }
+  }
+  return totalMatched;
+}
+
+// Broad matching: for orgs without NAICS, match recent high-value opportunities
+async function runBroadMatching(allOrgs, headers) {
+  let totalMatched = 0;
+  // Get recent opportunities (last 7 days, sorted by value/recency)
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&created_at=gte.${weekAgo}&order=created_at.desc&limit=1000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  const recentOpps = await oppRes.json();
+  if (!Array.isArray(recentOpps) || !recentOpps.length) { console.log("[match] No recent opportunities to match"); return 0; }
+  console.log(`[match] Broad matching: ${recentOpps.length} recent opps against ${allOrgs.length} orgs`);
+
+  for (const org of allOrgs) {
+    // Get existing matches
+    const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&is_demo=eq.false`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const existing = await existRes.json();
+    const existingIds = new Set((existing || []).map(m => m.opportunity_id));
+
+    const newOpps = recentOpps.filter(o => !existingIds.has(o.id));
+    if (!newOpps.length) continue;
+
+    // Score broadly: federal sources get higher base, SAM.gov highest
+    const matches = newOpps.map(opp => {
+      let score = 30; // base score for recent opportunity
+      if (opp.source === "sam_gov") score += 15;
+      else if (["federal_civilian", "usaspending"].includes(opp.source)) score += 10;
+      if (opp.estimated_value > 0) score += 10;
+      if (opp.set_aside) score += 5;
+      score = Math.min(score, 100);
+      return {
+        organization_id: org.id,
+        opportunity_id: opp.id,
+        match_score: score,
+        bid_recommendation: score >= 50 ? "monitor" : "skip",
+        recommendation_reasoning: `Recent ${opp.source || "federal"} opportunity. ${opp.agency || ""}`.trim(),
+        user_status: "new",
+        is_demo: false,
+      };
+    }).filter(m => m.match_score >= 30);
+
+    // Upsert
+    for (let i = 0; i < matches.length; i += 200) {
+      const batch = matches.slice(i, i + 200);
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+        method: "POST",
+        headers: { ...headers, Prefer: "resolution=merge-duplicates" },
+        body: JSON.stringify(batch),
+      });
+    }
+    totalMatched += matches.length;
+    if (matches.length > 0) console.log(`[match] Broad: ${matches.length} matches for ${org.name || org.id}`);
   }
   return totalMatched;
 }
