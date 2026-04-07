@@ -632,9 +632,16 @@ app.post("/cron/match", async (req, res) => {
     const orgCount = Array.isArray(debugOrgs) ? debugOrgs.length : 0;
     const sampleOrg = orgCount > 0 ? { id: debugOrgs[0].id, name: debugOrgs[0].name, naics: debugOrgs[0].naics_codes } : null;
 
+    // Also check opportunity count
+    const oppDebugRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&order=created_at.desc&limit=3`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" } });
+    const oppDebugCount = oppDebugRes.headers.get("content-range")?.split("/")[1] || "?";
+    // Check existing match count
+    const matchDebugRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" } });
+    const matchDebugCount = matchDebugRes.headers.get("content-range")?.split("/")[1] || "?";
+
     const matched = await runBulkMatching();
     console.log(`[cron] Manual matching complete: ${matched} matches created`);
-    res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY } });
+    res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY, total_opportunities: oppDebugCount, total_existing_matches: matchDebugCount } });
   } catch (e) {
     console.log(`[cron] Manual matching error: ${e.message}`);
     res.status(500).json({ error: e.message });
