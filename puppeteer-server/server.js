@@ -621,6 +621,20 @@ app.post("/cron/sam", async (req, res) => {
   res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
 });
 
+// Cron: Run bulk matching manually
+app.post("/cron/match", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  console.log("[cron] Manual bulk matching triggered...");
+  try {
+    const matched = await runBulkMatching();
+    console.log(`[cron] Manual matching complete: ${matched} matches created`);
+    res.json({ success: true, matches_created: matched });
+  } catch (e) {
+    console.log(`[cron] Manual matching error: ${e.message}`);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Cron: Scrape HTML sources via Patchright + Capsolver
 app.post("/cron/scrape-html", async (req, res) => {
   if (!authCheck(req, res)) return;
@@ -1013,12 +1027,99 @@ async function runRotation(index) {
     trackRecords(saved);
     cronStats.rotationResults[name] = { saved, at: new Date().toISOString() };
     console.log(`[cron] Rotation ${index} (${name}): ${saved} records saved`);
+
+    // Run matching after scrape if new records were added
+    if (saved > 0) {
+      try {
+        const matched = await runBulkMatching();
+        if (matched > 0) console.log(`[cron] Matching: ${matched} new matches created`);
+      } catch (e) {
+        console.log(`[cron] Matching error: ${e.message}`);
+      }
+    }
   } catch (e) {
     console.log(`[cron] Rotation ${index} (${name}) error: ${e.message}`);
     cronStats.rotationResults[name] = { error: e.message, at: new Date().toISOString() };
   }
 
   cronStats.running = false;
+}
+
+// Bulk NAICS-based matching: matches orgs against unmatched opportunities
+async function runBulkMatching() {
+  const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
+
+  // Get all organizations with NAICS codes
+  const orgRes = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications&naics_codes=not.is.null`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  const orgs = await orgRes.json();
+  if (!Array.isArray(orgs) || !orgs.length) return 0;
+
+  let totalMatched = 0;
+
+  for (const org of orgs) {
+    if (!org.naics_codes?.length) continue;
+
+    // Get existing matched opportunity IDs
+    const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&is_demo=eq.false`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const existing = await existRes.json();
+    const existingIds = new Set((existing || []).map(m => m.opportunity_id));
+
+    // Find opportunities matching any of the org's NAICS codes
+    for (const naics of org.naics_codes) {
+      // Exact match
+      const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&naics_code=eq.${naics}&limit=500`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      const opps = await oppRes.json();
+
+      // 4-digit prefix match
+      const prefix = naics.substring(0, 4);
+      const prefixRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&naics_code=like.${prefix}*&naics_code=neq.${naics}&limit=500`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      const prefixOpps = await prefixRes.json();
+
+      const allOpps = [...(Array.isArray(opps) ? opps : []), ...(Array.isArray(prefixOpps) ? prefixOpps : [])];
+      const newOpps = allOpps.filter(o => !existingIds.has(o.id));
+      if (!newOpps.length) continue;
+
+      const matches = newOpps.map(opp => {
+        let score = 0;
+        const isExact = opp.naics_code === naics;
+        score += isExact ? 50 : 30;
+
+        // Set-aside bonus
+        if (opp.set_aside && org.certifications?.length) {
+          const sa = (opp.set_aside || "").toLowerCase();
+          if (org.certifications.some(c => sa.includes(c.toLowerCase().substring(0, 4)))) score += 20;
+        }
+        if (opp.estimated_value > 0) score += 5;
+        if (opp.source === "sam_gov") score += 5;
+
+        score = Math.min(score, 100);
+        const rec = score >= 70 ? "bid" : score >= 40 ? "monitor" : "skip";
+
+        return {
+          organization_id: org.id,
+          opportunity_id: opp.id,
+          match_score: score,
+          bid_recommendation: rec,
+          recommendation_reasoning: `${isExact ? "Exact" : "Sector"} NAICS ${opp.naics_code} match. ${opp.agency || ""}`.trim(),
+          user_status: "new",
+          is_demo: false,
+        };
+      }).filter(m => m.match_score >= 20);
+
+      // Upsert in batches of 200
+      for (let i = 0; i < matches.length; i += 200) {
+        const batch = matches.slice(i, i + 200);
+        await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+          method: "POST",
+          headers: { ...headers, Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify(batch),
+        });
+        for (const m of batch) existingIds.add(m.opportunity_id);
+      }
+      totalMatched += matches.length;
+    }
+  }
+  return totalMatched;
 }
 
 app.listen(PORT, () => {
