@@ -489,55 +489,50 @@ app.post("/cron/sam-backfill", async (req, res) => {
   res.json({ success: true, updated, errors });
 });
 
-// Clean expired opportunities: delete records with passed deadlines
+// Clean expired opportunities: bulk delete using Supabase range filter
 app.post("/cron/cleanup-expired", async (req, res) => {
   if (!authCheck(req, res)) return;
   console.log("[cleanup] Starting expired opportunity cleanup...");
   const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
-  const now = new Date().toISOString();
 
-  // Delete expired opportunities (deadline passed more than 7 days ago — grace period)
+  // 7-day grace period
   const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
-  let deleted = 0, offset = 0;
 
-  while (true) {
-    // Get expired opportunity IDs
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&response_deadline=lt.${cutoff}&response_deadline=not.is.null&limit=500&offset=${offset}`, {
+  // Step 1: Count expired
+  const countR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&response_deadline=lt.${cutoff}&response_deadline=not.is.null&limit=1`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" },
+  });
+  const expiredCount = parseInt(countR.headers.get("content-range")?.split("/")[1] || "0");
+  console.log(`[cleanup] Found ${expiredCount} expired opportunities`);
+
+  // Step 2: Bulk delete matches for expired opps (batch of 200 IDs at a time)
+  let matchesDeleted = 0, oppsDeleted = 0;
+
+  while (oppsDeleted < 1000) { // cap at 1000 per run to stay within timeout
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&response_deadline=lt.${cutoff}&response_deadline=not.is.null&limit=100`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
-    const opps = await r.json();
-    if (!Array.isArray(opps) || !opps.length) break;
+    const batch = await r.json();
+    if (!Array.isArray(batch) || !batch.length) break;
 
-    const ids = opps.map(o => o.id);
-
-    // Delete matching records from opportunity_matches first (foreign key)
-    for (const id of ids) {
-      await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?opportunity_id=eq.${id}`, {
-        method: "DELETE", headers: hdrs,
-      });
+    for (const opp of batch) {
+      // Delete matches
+      const mr = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?opportunity_id=eq.${opp.id}`, { method: "DELETE", headers: hdrs });
+      // Delete opportunity
+      const or = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, { method: "DELETE", headers: hdrs });
+      if (or.ok) oppsDeleted++;
     }
-
-    // Delete the expired opportunities
-    for (const id of ids) {
-      await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${id}`, {
-        method: "DELETE", headers: hdrs,
-      });
-      deleted++;
-    }
-
-    offset += 500;
-    if (opps.length < 500) break;
-    console.log(`[cleanup] Deleted ${deleted} expired so far...`);
+    console.log(`[cleanup] Progress: ${oppsDeleted} deleted`);
   }
 
   // Count remaining
-  const countR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&limit=1`, {
+  const finalR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&limit=1`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" },
   });
-  const remaining = countR.headers.get("content-range")?.split("/")[1] || "?";
+  const remaining = parseInt(finalR.headers.get("content-range")?.split("/")[1] || "0");
 
-  console.log(`[cleanup] Done: ${deleted} expired deleted, ${remaining} remaining`);
-  res.json({ success: true, deleted, remaining: parseInt(remaining) || remaining });
+  console.log(`[cleanup] Done: ${oppsDeleted} deleted, ${remaining} remaining`);
+  res.json({ success: true, expired_found: expiredCount, deleted: oppsDeleted, remaining });
 });
 
 // Diagnostic: show org IDs, user IDs, and match counts
