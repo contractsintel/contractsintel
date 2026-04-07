@@ -508,7 +508,7 @@ app.post("/cron/cleanup-expired", async (req, res) => {
   // Step 2: Bulk delete matches for expired opps (batch of 200 IDs at a time)
   let matchesDeleted = 0, oppsDeleted = 0;
 
-  while (oppsDeleted < 1000) { // cap at 1000 per run to stay within timeout
+  while (oppsDeleted < 200) { // cap at 200 per run to stay within Railway timeout
     const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&response_deadline=lt.${cutoff}&response_deadline=not.is.null&limit=100`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     });
