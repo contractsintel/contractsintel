@@ -304,18 +304,21 @@ async function upsertToSupabase(records) {
   for (let i = 0; i < records.length; i += 100) {
     const batch = records.slice(i, i + 100);
     try {
+      // Use ignore-duplicates: skip existing records entirely (90% less DB writes)
+      // New records are inserted, existing ones with same notice_id are skipped
       const resp = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?on_conflict=notice_id`, {
         method: "POST",
         headers: {
           apikey: SUPABASE_KEY,
           Authorization: `Bearer ${SUPABASE_KEY}`,
           "Content-Type": "application/json",
-          Prefer: "resolution=merge-duplicates",
+          Prefer: "resolution=ignore-duplicates,return=minimal",
         },
         body: JSON.stringify(batch),
       });
       if (resp.ok) total += batch.length;
       else {
+        // Fallback: insert one by one
         for (const rec of batch) {
           try {
             const r2 = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?on_conflict=notice_id`, {
@@ -324,7 +327,7 @@ async function upsertToSupabase(records) {
                 apikey: SUPABASE_KEY,
                 Authorization: `Bearer ${SUPABASE_KEY}`,
                 "Content-Type": "application/json",
-                Prefer: "resolution=merge-duplicates",
+                Prefer: "resolution=ignore-duplicates,return=minimal",
               },
               body: JSON.stringify([rec]),
             });
@@ -1565,8 +1568,8 @@ async function runRotation(index) {
     cronStats.rotationResults[name] = { saved, at: new Date().toISOString() };
     console.log(`[cron] Rotation ${index} (${name}): ${saved} records saved`);
 
-    // Run matching after scrape if new records were added
-    if (saved > 0) {
+    // Run matching after scrape — only for every 6th rotation (once per 30 min, not every 5 min)
+    if (saved > 0 && index % 6 === 0) {
       try {
         const matched = await runQuickMatch();
         if (matched > 0) console.log(`[cron] Matching: ${matched} new matches created`);
@@ -1754,7 +1757,7 @@ async function runQuickMatch() {
   const orgs = await orgR.json();
   if (!Array.isArray(orgs) || !orgs.length) return 0;
 
-  const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=500`, { headers: hdrs });
+  const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=100`, { headers: hdrs });
   const opps = await oppR.json();
   if (!Array.isArray(opps) || !opps.length) return 0;
 

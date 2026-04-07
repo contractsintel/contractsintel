@@ -149,12 +149,12 @@ export default function DashboardPage() {
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
 
-    // Load source counts from a small sample (lightweight query)
+    // Load source counts from a small sample (lightweight query — 100 rows)
     const { data: sourceSample } = await supabase
       .from("opportunity_matches")
       .select("opportunities(source)")
       .eq("organization_id", organization.id)
-      .limit(500);
+      .limit(100);
     if (sourceSample) {
       const counts: Record<string, number> = {};
       const sampleSize = sourceSample.length;
