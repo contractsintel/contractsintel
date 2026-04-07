@@ -296,18 +296,32 @@ export default function OpportunityDetailPage() {
           {/* AI Analysis */}
           {match && (
             <div className="ci-card p-5">
-              <h2 className="ci-section-label mb-3">AI Analysis</h2>
-              <div className="text-[13px] text-[#475569] leading-relaxed">
-                <p className="mb-2">
-                  {match.bid_recommendation === "bid"
-                    ? "Strong match to your profile. This opportunity aligns with your NAICS codes and certifications."
-                    : match.bid_recommendation === "monitor"
-                    ? "Worth monitoring. This opportunity may be relevant as more details become available."
-                    : "Review this opportunity to determine if it fits your capabilities."}
-                </p>
+              <h2 className="ci-section-label mb-3">Match Analysis</h2>
+              <div className="text-[13px] leading-relaxed">
+                <div className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-3 ${
+                  match.match_score >= 80 ? "bg-[#ecfdf5] text-[#059669]" :
+                  match.match_score >= 70 ? "bg-[#eff6ff] text-[#2563eb]" :
+                  match.match_score >= 60 ? "bg-[#fffbeb] text-[#d97706]" :
+                  "bg-[#f1f5f9] text-[#64748b]"
+                }`}>
+                  {match.match_score >= 80 ? "Strong Match" :
+                   match.match_score >= 70 ? "Good Potential" :
+                   match.match_score >= 60 ? "Partial Match" : "Weak Match"} — {match.match_score}/100
+                </div>
                 {match.recommendation_reasoning && (
-                  <p className="text-[12px] text-[#94a3b8]">{match.recommendation_reasoning}</p>
+                  <p className="text-[#475569] mb-3">{match.recommendation_reasoning}</p>
                 )}
+                <div className={`text-xs font-medium px-2 py-1 rounded ${
+                  match.bid_recommendation === "bid" ? "bg-[#ecfdf5] text-[#059669]" :
+                  match.bid_recommendation === "monitor" ? "bg-[#eff6ff] text-[#2563eb]" :
+                  match.bid_recommendation === "recompete" ? "bg-[#fefce8] text-[#a16207]" :
+                  "bg-[#f1f5f9] text-[#64748b]"
+                }`}>
+                  {match.bid_recommendation === "bid" ? "Recommended: Bid" :
+                   match.bid_recommendation === "monitor" ? "Recommended: Monitor" :
+                   match.bid_recommendation === "recompete" ? "Recompete Alert" :
+                   "Low Priority"}
+                </div>
               </div>
             </div>
           )}
@@ -345,6 +359,21 @@ export default function OpportunityDetailPage() {
                     <div className="text-[11px] text-[#94a3b8]">{r.agency}</div>
                   </Link>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Verification status */}
+          {opp.last_verified_at && (
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1.5 text-[11px] text-[#94a3b8]">
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  (Date.now() - new Date(opp.last_verified_at).getTime()) < 3 * 86400000 ? "bg-[#22c55e]" : "bg-[#f59e0b]"
+                }`} />
+                Verified active {(() => {
+                  const h = Math.floor((Date.now() - new Date(opp.last_verified_at).getTime()) / 3600000);
+                  return h < 1 ? "just now" : h < 24 ? `${h}h ago` : `${Math.floor(h/24)}d ago`;
+                })()}
               </div>
             </div>
           )}
