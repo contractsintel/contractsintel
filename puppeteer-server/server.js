@@ -1153,10 +1153,16 @@ async function runBulkMatching() {
 // Broad matching: for orgs without NAICS, match recent high-value opportunities
 async function runBroadMatching(allOrgs, headers) {
   let totalMatched = 0;
-  // Get 1000 most recent opportunities for broad matching
-  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&order=created_at.desc&limit=1000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  const recentOpps = await oppRes.json();
-  console.log(`[match] Broad: opp query status ${oppRes.status}, isArray: ${Array.isArray(recentOpps)}, count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
+  // Get 2000 most recent opportunities from SAM.gov for broad matching (largest source, most relevant)
+  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&source=eq.sam_gov&order=created_at.desc&limit=2000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  let recentOpps = await oppRes.json();
+  console.log(`[match] Broad: SAM.gov opp query status ${oppRes.status}, count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
+  if (!Array.isArray(recentOpps) || !recentOpps.length) {
+    // Fallback to any source
+    const fbRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&order=created_at.desc&limit=2000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    recentOpps = await fbRes.json();
+    console.log(`[match] Broad fallback: any source count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
+  }
   if (!Array.isArray(recentOpps) || !recentOpps.length) { console.log("[match] No opportunities to match"); return 0; }
   console.log(`[match] Broad matching: ${recentOpps.length} opps against ${allOrgs.length} orgs`);
 
