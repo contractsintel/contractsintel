@@ -771,6 +771,7 @@ app.post("/cron/usaspending", async (req, res) => {
         source: "usaspending",
         source_url: `https://www.usaspending.gov/award/${a.generated_internal_id || a["Award ID"]}`,
         incumbent_name: a["Recipient Name"] || null,
+        status: "active",
         last_seen_at: new Date().toISOString(),
       }));
 
@@ -842,6 +843,7 @@ app.post("/cron/grants", async (req, res) => {
             description: (o.description || "").substring(0, 10000) || null,
             source: "grants_gov",
             source_url: `https://www.grants.gov/search-results-detail/${id}`,
+            status: "active",
             last_seen_at: new Date().toISOString(),
           };
         });
@@ -886,6 +888,7 @@ app.post("/cron/grants", async (req, res) => {
             description: (o.description || "").substring(0, 10000) || null,
             source: "grants_gov",
             source_url: `https://www.grants.gov/search-results-detail/${id}`,
+            status: "active",
             last_seen_at: new Date().toISOString(),
           };
         });
@@ -1006,6 +1009,7 @@ async function runSamScrape() {
       contract_type: typeVal,
       attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
       incumbent_name: r.incumbentName || null,
+      status: "active",
       last_seen_at: new Date().toISOString(),
     };
   }
@@ -1040,8 +1044,16 @@ async function runSamScrape() {
         const items = (data._embedded || {}).results || [];
         if (!items.length) break;
 
-        const records = items.filter(r => r._id).map(mapSamRecord);
-        saved += await upsertToSupabase(records);
+        const now = new Date().toISOString();
+        const records = items
+          .filter(r => r._id)
+          .map(mapSamRecord)
+          .filter(r => {
+            // Only keep active records: deadline must be future or null
+            if (r.response_deadline && r.response_deadline < now) return false;
+            return true;
+          });
+        if (records.length > 0) saved += await upsertToSupabase(records);
         page++;
         if (items.length < PAGE_SIZE) break;
         await randomDelay(500, 1500);
@@ -1339,6 +1351,7 @@ app.post("/cron/scrape-html", async (req, res) => {
             source: source_type || "state_local",
             source_url: link.href,
             description: link.text,
+            status: "active",
             last_seen_at: new Date().toISOString(),
           });
         }
@@ -1354,6 +1367,7 @@ app.post("/cron/scrape-html", async (req, res) => {
           source: source_type || "state_local",
           source_url: url,
           description: row.substring(0, 2000),
+          status: "active",
           last_seen_at: new Date().toISOString(),
         });
       }
@@ -1368,6 +1382,7 @@ app.post("/cron/scrape-html", async (req, res) => {
           source: source_type || "state_local",
           source_url: url,
           description: card.substring(0, 2000),
+          status: "active",
           last_seen_at: new Date().toISOString(),
         });
       }
@@ -1762,6 +1777,21 @@ async function runRotation(index) {
         if (matched > 0) console.log(`[cron] Matching: ${matched} new matches created`);
       } catch (e) {
         console.log(`[cron] Matching error: ${e.message}`);
+      }
+    }
+
+    // Run expired cleanup every 12th rotation (once per hour)
+    if (index % 12 === 6) {
+      try {
+        const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?response_deadline=lt.${cutoff}&response_deadline=not.is.null&status=neq.expired&limit=1000`, {
+          method: "PATCH",
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+          body: JSON.stringify({ status: "expired" }),
+        });
+        if (r.ok) console.log(`[cron] Auto-expired cleanup ran`);
+      } catch (e) {
+        console.log(`[cron] Expired cleanup error: ${e.message}`);
       }
     }
   } catch (e) {
