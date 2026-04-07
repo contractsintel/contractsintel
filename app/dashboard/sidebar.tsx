@@ -249,10 +249,29 @@ export function Sidebar({ plan }: { plan: string }) {
   const setupCompleted = 2;
   const setupTotal = 7;
 
+  const onboardingIncomplete = organization.onboarding_complete === false;
+
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-[240px] ci-sidebar-bg flex flex-col z-40">
       {/* Top nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
+        {/* Onboarding link — shown only when onboarding is incomplete */}
+        {onboardingIncomplete && (
+          <Link href="/dashboard/onboarding"
+            className={`group relative flex items-center gap-3 px-3 py-2 mx-2 rounded-md text-[14px] font-medium transition-all ${
+              pathname.startsWith("/dashboard/onboarding")
+                ? "text-[#2563eb] font-semibold bg-[#eff6ff]"
+                : "text-[#4b5563] hover:text-[#111827] hover:bg-[#f3f4f6]"
+            }`}>
+            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            Onboarding
+          </Link>
+        )}
+
+        {/* Regular nav items — grayed out during onboarding */}
+        <div className={onboardingIncomplete ? "opacity-40 pointer-events-none" : ""}>
         {TOP_NAV.map((item) => (
           <SidebarLink
             key={item.href}
@@ -297,6 +316,7 @@ export function Sidebar({ plan }: { plan: string }) {
             />
           ))}
         </div>
+        </div> {/* end onboarding gray wrapper */}
       </nav>
 
       {/* Bottom section */}
