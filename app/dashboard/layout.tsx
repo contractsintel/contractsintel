@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { DashboardProvider } from "./context";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
@@ -51,12 +50,8 @@ export default async function DashboardLayout({
     created_at: profile?.created_at ?? new Date().toISOString(),
   };
 
-  // Onboarding redirect: new users go to /dashboard/onboarding
-  const headersList = await headers();
-  const pathname = headersList.get("x-next-pathname") || headersList.get("x-invoke-path") || "";
-  if (org.onboarding_complete === false && !pathname.startsWith("/dashboard/onboarding")) {
-    redirect("/dashboard/onboarding");
-  }
+  // Onboarding redirect removed from server layout — causes redirect loops.
+  // Instead, the redirect is handled client-side in the dashboard page itself.
 
   return (
     <DashboardProvider user={userProfile} organization={org}>

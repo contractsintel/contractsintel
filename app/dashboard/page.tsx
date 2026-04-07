@@ -3,6 +3,7 @@
 import { useDashboard } from "./context";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HelpButton } from "./help-panel";
 import { DemoBanner } from "./demo-banner";
@@ -117,6 +118,15 @@ function sourceBadge(source: string | null | undefined, bidRec?: string) {
 export default function DashboardPage() {
   const { organization, user } = useDashboard();
   const supabase = createClient();
+  const router = useRouter();
+
+  // Redirect to onboarding if not complete
+  useEffect(() => {
+    if (organization.onboarding_complete === false) {
+      router.push("/dashboard/onboarding");
+    }
+  }, [organization.onboarding_complete, router]);
+
   const PAGE_SIZE = 20;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
   const [matches, setMatches] = useState<any[]>([]);
