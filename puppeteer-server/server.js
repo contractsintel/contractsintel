@@ -621,6 +621,46 @@ app.post("/cron/sam", async (req, res) => {
   res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
 });
 
+// Simple test: create matches directly
+app.post("/cron/match-test", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  try {
+    // Get first org
+    const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const orgs = await orgR.json();
+    if (!Array.isArray(orgs) || !orgs.length) return res.json({ error: "no orgs" });
+
+    // Get 100 opps
+    const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=100`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const opps = await oppR.json();
+    if (!Array.isArray(opps) || !opps.length) return res.json({ error: "no opps", oppStatus: oppR.status });
+
+    // Build matches
+    const matches = opps.map(o => ({
+      organization_id: orgs[0].id,
+      opportunity_id: o.id,
+      match_score: o.source === "sam_gov" ? 55 : 40,
+      bid_recommendation: "monitor",
+      recommendation_reasoning: `${o.source}: ${o.agency || "Unknown"}`,
+      user_status: "new",
+      is_demo: false,
+    }));
+
+    // Insert
+    const insertR = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
+      body: JSON.stringify(matches),
+    });
+
+    const insertOk = insertR.ok;
+    const insertBody = insertOk ? "ok" : await insertR.text();
+    res.json({ org: orgs[0].name, opps: opps.length, matches: matches.length, insert_ok: insertOk, insert_status: insertR.status, insert_body: insertBody.substring(0, 300) });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // Cron: Run bulk matching manually
 app.post("/cron/match", async (req, res) => {
   if (!authCheck(req, res)) return;
