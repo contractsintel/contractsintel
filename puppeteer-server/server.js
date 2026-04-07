@@ -1767,7 +1767,20 @@ async function runRotation(index) {
     }
 
     trackRecords(saved);
-    cronStats.rotationResults[name] = { saved, at: new Date().toISOString() };
+
+    // Verify existing contracts from this source after scraping new ones
+    const verifySource = {
+      0: "sam_gov", 1: "usaspending", 2: "grants_gov",
+      3: "state_local", 4: "state_local", 5: "state_local", 6: "state_local", 7: "state_local",
+      8: "federal_civilian", 9: "sbir_sttr", 10: "subcontracting", 11: "sam_gov",
+    }[slot];
+    const verifyBatch = slot === 0 || slot === 11 ? 100 : slot >= 3 && slot <= 7 ? 30 : 50;
+    try {
+      const vr = await verifyExistingContracts(verifySource, verifyBatch);
+      cronStats.rotationResults[name] = { saved, verified: vr.verified, expired_verified: vr.expired, at: new Date().toISOString() };
+    } catch (e) {
+      cronStats.rotationResults[name] = { saved, at: new Date().toISOString() };
+    }
     console.log(`[cron] Rotation ${index} (${name}): ${saved} records saved`);
 
     // Run matching after scrape — only for every 6th rotation (once per 30 min, not every 5 min)
@@ -1800,6 +1813,81 @@ async function runRotation(index) {
   }
 
   cronStats.running = false;
+}
+
+// ============================================================
+// CONTRACT VERIFICATION — Re-verify existing contracts are still active
+// ============================================================
+
+async function verifyExistingContracts(source, batchSize = 50) {
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
+
+  // Get oldest-verified contracts for this source (use last_seen_at as proxy if last_verified_at doesn't exist)
+  let toVerify = [];
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?source=eq.${source}&status=eq.active&order=last_seen_at.asc.nullsfirst&limit=${batchSize}&select=id,notice_id,solicitation_number,source_url,response_deadline,last_seen_at`, {
+      headers: hdrs,
+    });
+    if (r.ok) toVerify = await r.json();
+  } catch (e) {
+    console.log(`[verify] ${source}: fetch error: ${e.message}`);
+    return { verified: 0, expired: 0 };
+  }
+
+  if (!toVerify.length) return { verified: 0, expired: 0 };
+
+  let verified = 0, expired = 0;
+  const now = new Date().toISOString();
+
+  for (const opp of toVerify) {
+    try {
+      let isActive = true;
+
+      // Check 1: Has the deadline passed?
+      if (opp.response_deadline && opp.response_deadline < now) {
+        isActive = false;
+      }
+
+      // Check 2: For SAM.gov, verify against the API
+      if (isActive && source === "sam_gov" && opp.notice_id) {
+        try {
+          const ua = randomStealthUA();
+          const apiR = await fetch(`https://sam.gov/api/prod/sgs/v1/search/?index=opp&q=${opp.notice_id}&is_active=true&size=1`, {
+            headers: { ...stealthHeaders(ua), Accept: "application/json, text/plain, */*", Referer: "https://sam.gov/search/", Origin: "https://sam.gov" },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (apiR.ok) {
+            const data = await apiR.json();
+            const found = ((data._embedded || {}).results || []).some(r => r._id === opp.notice_id);
+            if (!found) isActive = false;
+          }
+          await randomDelay(1000, 2000);
+        } catch {} // API error — keep as active, don't penalize
+      }
+
+      // Update the record
+      if (isActive) {
+        await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
+          method: "PATCH",
+          headers: { ...hdrs, Prefer: "return=minimal" },
+          body: JSON.stringify({ last_seen_at: now }),
+        });
+        verified++;
+      } else {
+        await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
+          method: "PATCH",
+          headers: { ...hdrs, Prefer: "return=minimal" },
+          body: JSON.stringify({ status: "expired", last_seen_at: now }),
+        });
+        expired++;
+      }
+    } catch {}
+  }
+
+  if (verified + expired > 0) {
+    console.log(`[verify] ${source}: ${verified} active, ${expired} expired (batch of ${toVerify.length})`);
+  }
+  return { verified, expired };
 }
 
 // Bulk NAICS-based matching: matches orgs against unmatched opportunities
