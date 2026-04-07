@@ -237,7 +237,10 @@ export default function DashboardPage() {
       if (status === "tracking") {
         showToast("Tracking — Added to Pipeline", "#059669", "/dashboard/pipeline", "View in Pipeline");
       } else if (status === "bidding") {
-        showToast("Preparing Bid — Added to Pipeline", "#2563eb", "/dashboard/pipeline", "View in Pipeline");
+        // Find the opportunity_id for the proposals link
+        const m = matches.find((x: any) => x.id === matchId);
+        const oppId = m?.opportunity_id || "";
+        showToast("Preparing Bid — Added to Pipeline", "#2563eb", `/dashboard/proposals?opportunity_id=${oppId}`, "Generate AI Proposal →");
       } else if (status === "skipped") {
         showToast("Archived — Moved to Archived Contracts", "#94a3b8");
       }

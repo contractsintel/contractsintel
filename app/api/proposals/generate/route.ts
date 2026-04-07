@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     }
 
     const orgId = userRecord.organization_id;
-    const { match_id } = await request.json();
+    const body = await request.json();
+    const { match_id } = body;
 
     // Fetch the match — scoped to user's org
     const { data: match } = await supabase
@@ -61,24 +62,30 @@ Use specific, quantifiable language. Reference past performance where relevant.
 The company details: ${JSON.stringify(org)}
 Past performance records: ${JSON.stringify(pastPerf ?? [])}`;
 
+    const custom_instructions = body.custom_instructions || "";
+
     const userPrompt = `Generate a proposal draft for this opportunity:
 
 Title: ${opp?.title}
 Agency: ${opp?.agency}
 Solicitation: ${opp?.solicitation_number ?? "N/A"}
-Description: ${opp?.description ?? "No description available"}
-Set-Aside: ${opp?.set_aside_type ?? "None"}
-NAICS: ${opp?.naics_code ?? "N/A"}
-Estimated Value: ${opp?.value_estimate ? `$${opp.value_estimate.toLocaleString()}` : "N/A"}
+Full Description: ${(opp?.full_description || opp?.description || "No description available").substring(0, 4000)}
+Set-Aside: ${opp?.set_aside_type ?? "None"}${opp?.set_aside_description ? ` — ${opp.set_aside_description}` : ""}
+NAICS: ${opp?.naics_code ?? "N/A"}${opp?.naics_description ? ` — ${opp.naics_description}` : ""}
+Estimated Value: ${opp?.value_estimate || opp?.estimated_value ? `$${(opp.value_estimate || opp.estimated_value).toLocaleString()}` : "N/A"}
+Place of Performance: ${opp?.place_of_performance ?? "N/A"}
+Contract Type: ${opp?.contract_type ?? "N/A"}
+${custom_instructions ? `\nAdditional instructions from the user: ${custom_instructions}` : ""}
 
-Generate three sections in this exact JSON format:
+Generate four sections in this exact JSON format:
 {
-  "Technical Approach": "...",
-  "Past Performance": "...",
-  "Executive Summary": "..."
+  "Executive Summary": "150-250 words summarizing why this company is the best fit",
+  "Technical Approach": "300-500 words detailing how the work will be performed",
+  "Past Performance": "150-250 words referencing relevant prior contracts",
+  "Management Plan": "150-250 words covering project management, staffing, quality control"
 }
 
-Each section should be 3-5 paragraphs, professional, and specifically tailored to this opportunity.`;
+Each section must be specifically tailored to THIS opportunity and THIS company. Use concrete details from the description. Do not use generic filler.`;
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
