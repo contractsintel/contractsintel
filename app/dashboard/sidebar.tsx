@@ -118,7 +118,7 @@ const MORE_NAV: NavItem[] = [
 /* ── Setup progress ring ───────────────────────────────────────────────── */
 
 function SetupProgressRing({ completed, total }: { completed: number; total: number }) {
-  const size = 36;
+  const size = 44;
   const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -129,16 +129,22 @@ function SetupProgressRing({ completed, total }: { completed: number; total: num
   return (
     <Link
       href="/dashboard/get-started"
-      className="flex items-center gap-2.5 px-5 py-2 hover:bg-[#f0f1f3] transition-colors rounded-lg mx-2"
+      className="flex items-center gap-3 px-5 py-2.5 hover:bg-[#f0f1f3] transition-colors rounded-lg mx-2"
     >
-      <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <div className="relative shrink-0" style={{ width: size, height: size, filter: "drop-shadow(0 0 6px rgba(37,99,235,0.2))" }}>
         <svg width={size} height={size} className="-rotate-90">
+          <defs>
+            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#2563eb" />
+              <stop offset="100%" stopColor="#059669" />
+            </linearGradient>
+          </defs>
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#e5e7eb"
+            stroke="#f1f5f9"
             strokeWidth={strokeWidth}
           />
           <circle
@@ -146,16 +152,17 @@ function SetupProgressRing({ completed, total }: { completed: number; total: num
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#059669"
+            stroke="url(#progressGradient)"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
+            style={{ transition: "stroke-dashoffset 0.6s ease" }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[9px] font-['JetBrains_Mono'] text-[#4b5563]">{pctText}%</span>
+        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold font-['JetBrains_Mono'] text-[#0f172a]">{pctText}%</span>
       </div>
-      <span className="text-xs text-[#4b5563]">Setup: {completed}/{total}</span>
+      <span className="text-xs text-[#4b5563] font-medium">Setup: {completed}/{total}</span>
     </Link>
   );
 }
@@ -251,7 +258,7 @@ export function Sidebar({ plan }: { plan: string }) {
   const setupTotal = 7;
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-[240px] border-r border-[#f0f1f3] bg-[#fafbfc] flex flex-col z-40">
+    <aside className="fixed left-0 top-16 bottom-0 w-[240px] border-r border-[#f0f1f3] ci-sidebar-bg flex flex-col z-40">
       {/* Top nav */}
       <nav className="flex-1 py-4 overflow-y-auto">
         {TOP_NAV.map((item) => (
