@@ -1000,7 +1000,7 @@ async function runSamScrape() {
       source_url: `https://sam.gov/opp/${r._id}/view`,
       naics_code: naicsCode,
       naics_description: naicsDesc,
-      set_aside: setAside,
+      set_aside_type: setAside,
       set_aside_description: setAside,
       place_of_performance: popStr || null,
       contact_name: primaryContact.fullName || primaryContact.name || null,
