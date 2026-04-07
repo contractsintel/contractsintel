@@ -487,6 +487,11 @@ app.post("/cron/grants", async (req, res) => {
 
   const GRANTS_URL = "https://apply07.grants.gov/grantsws/rest/opportunities/search";
   const parseDate = (d) => { if (!d) return null; const p = d.split("/"); return p.length === 3 ? `${p[2]}-${p[0].padStart(2,"0")}-${p[1].padStart(2,"0")}` : d; };
+  // Date range: last 365 days
+  const now = new Date();
+  const yearAgo = new Date(now.getTime() - 365 * 86400000);
+  const fmt = (d) => `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
+  const dateRange = `${fmt(yearAgo)}-${fmt(now)}`;
 
   let grandTotal = 0;
   const results = {};
@@ -499,7 +504,7 @@ app.post("/cron/grants", async (req, res) => {
         const apiRes = await fetch(GRANTS_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy, rows: 500, offset }),
+          body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy, rows: 500, offset, dateRange }),
           signal: AbortSignal.timeout(30000),
         });
         const data = await apiRes.json();
@@ -542,7 +547,7 @@ app.post("/cron/grants", async (req, res) => {
         const apiRes = await fetch(GRANTS_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ keyword: "", oppStatuses: "posted", agency, sortBy: "openDate|desc", rows: 500, offset }),
+          body: JSON.stringify({ keyword: "", oppStatuses: "posted", agency, sortBy: "openDate|desc", rows: 500, offset, dateRange }),
           signal: AbortSignal.timeout(30000),
         });
         const data = await apiRes.json();
