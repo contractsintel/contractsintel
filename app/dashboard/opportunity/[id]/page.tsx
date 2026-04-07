@@ -35,6 +35,7 @@ export default function OpportunityDetailPage() {
   const [noteText, setNoteText] = useState("");
   const [editingNote, setEditingNote] = useState(false);
   const [toast, setToast] = useState("");
+  const [expandDesc, setExpandDesc] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -188,7 +189,19 @@ export default function OpportunityDetailPage() {
           <div className="ci-card p-6">
             <h2 className="ci-section-label mb-4">Description</h2>
             {(opp.full_description || opp.description) ? (
-              <div className="text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap max-h-[600px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: (opp.full_description || opp.description).replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "") }} />
+              <>
+                <div className={`text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap relative ${!expandDesc ? "max-h-[180px] overflow-hidden" : ""}`}
+                     dangerouslySetInnerHTML={{ __html: (opp.full_description || opp.description).replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "") }} />
+                {!expandDesc && (opp.full_description || opp.description || "").length > 400 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+                )}
+                {(opp.full_description || opp.description || "").length > 400 && (
+                  <button onClick={() => setExpandDesc(!expandDesc)}
+                    className="mt-2 text-[13px] font-medium text-[#2563eb] hover:text-[#1d4ed8]">
+                    {expandDesc ? "Show less" : "Show full description"}
+                  </button>
+                )}
+              </>
             ) : (
               <p className="text-[13px] text-[#94a3b8] italic">No description available. Check the solicitation documents or the original listing for details.</p>
             )}
@@ -295,7 +308,7 @@ export default function OpportunityDetailPage() {
         <div className="space-y-6">
           {/* AI Analysis */}
           {match && (
-            <div className="ci-card p-5">
+            <div className="p-5 rounded-xl border border-[#bfdbfe]" style={{background: "linear-gradient(135deg, #eff6ff, #f5f3ff)"}}>
               <h2 className="ci-section-label mb-3">Match Analysis</h2>
               <div className="text-[13px] leading-relaxed">
                 <div className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-3 ${

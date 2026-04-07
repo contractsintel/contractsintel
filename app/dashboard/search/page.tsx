@@ -145,9 +145,9 @@ export default function SearchPage() {
       </div>
 
       {/* Search bar */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-6">
         <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -155,13 +155,13 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by title, agency, or solicitation number..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm border border-[#e5e7eb] rounded-xl bg-white focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/20"
+            className="w-full h-12 pl-11 pr-4 text-[15px] border-2 border-[#e5e7eb] rounded-xl bg-white focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
           />
         </div>
         <select
           value={source}
           onChange={(e) => setSource(e.target.value as SourceFilter)}
-          className="bg-white border border-[#e5e7eb] text-[#4b5563] text-sm px-3 py-2.5 rounded-xl focus:outline-none focus:border-[#2563eb]"
+          className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="">All Sources</option>
           <option value="sam_gov">SAM.gov</option>
@@ -175,7 +175,7 @@ export default function SearchPage() {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
-          className="bg-white border border-[#e5e7eb] text-[#4b5563] text-sm px-3 py-2.5 rounded-xl focus:outline-none focus:border-[#2563eb]"
+          className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="newest">Newest</option>
           <option value="deadline">Deadline soonest</option>
@@ -185,15 +185,28 @@ export default function SearchPage() {
 
       {/* Results */}
       {loading && results.length === 0 ? (
-        <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af] rounded-xl">
-          Searching...
+        <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#f3f4f6]">
+              <div className="w-12 h-12 rounded-full bg-[#f3f4f6] animate-pulse" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/5 bg-[#f3f4f6] rounded animate-pulse" />
+                <div className="h-3 w-2/5 bg-[#f3f4f6] rounded animate-pulse" />
+              </div>
+              <div className="h-4 w-16 bg-[#f3f4f6] rounded animate-pulse" />
+            </div>
+          ))}
         </div>
       ) : results.length === 0 ? (
-        <div className="border border-[#f0f1f3] bg-white p-12 text-center rounded-xl">
-          <p className="text-[#9ca3af]">No opportunities found. Try a different search.</p>
+        <div className="max-w-[400px] mx-auto text-center p-8">
+          <div className="w-10 h-10 mx-auto mb-3 text-[#9ca3af]">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+          <h3 className="text-[16px] font-semibold text-[#111827] mb-2">No opportunities found</h3>
+          <p className="text-[14px] text-[#6b7280]">Try a different search term or adjust your filters.</p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
           <div className="text-[11px] font-mono text-[#94a3b8] px-1 mb-2">
             Showing {results.length} of {total.toLocaleString()} results
           </div>

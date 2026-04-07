@@ -831,31 +831,16 @@ export default function GetStartedPage() {
 
       {/* Progress Ring + Step Cards */}
       <div className="mb-6">
-        {/* Circular progress ring */}
-        <div className="flex flex-col items-center mb-6">
-          <svg width={64} height={64} className="-rotate-90">
-            <circle
-              cx={32}
-              cy={32}
-              r={28}
-              fill="none"
-              stroke="#e5e7eb"
-              strokeWidth={4}
-            />
-            <circle
-              cx={32}
-              cy={32}
-              r={28}
-              fill="none"
-              stroke="#059669"
-              strokeWidth={4}
-              strokeDasharray={2 * Math.PI * 28}
-              strokeDashoffset={2 * Math.PI * 28 * (1 - progressPct / 100)}
-              strokeLinecap="round"
-            />
-          </svg>
-          <span className="text-lg font-semibold text-[#111827] -mt-10 mb-6">{progressPct}%</span>
-          <span className="text-sm text-[#4b5563]">{completedCount} of {totalItems} complete</span>
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[#111827]">{completedCount} of {totalItems} complete</span>
+            <span className="text-sm text-[#6b7280]">{progressPct}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-[#f3f4f6]">
+            <div className="h-full rounded-full bg-gradient-to-r from-[#2563eb] to-[#7c3aed] transition-all duration-500"
+                 style={{ width: `${progressPct}%` }} />
+          </div>
         </div>
 
         {/* Step cards */}

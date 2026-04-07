@@ -641,9 +641,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Sample opportunity mockup */}
-              <div className="ci-shimmer border border-[#f0f1f3] bg-[#f8f9fb] rounded-lg p-5 max-w-xl mx-auto mb-8">
-                <div className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-wider mb-3">
-                  Sample opportunity preview
+              <div className="border border-dashed border-[#e5e7eb] bg-[#f9fafb] rounded-lg p-5 max-w-xl mx-auto mb-8">
+                <div className="text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide mb-3">
+                  Example
                 </div>
                 <div className="flex items-start gap-4">
                   <div className="text-3xl font-bold font-mono text-[#22c55e] w-14 text-center shrink-0">
@@ -674,7 +674,7 @@ export default function DashboardPage() {
                 <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-4 text-center">
                   While you wait
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 max-w-md mx-auto gap-3">
                   {/* Card 1: Complete profile */}
                   <Link
                     href="/dashboard/settings"
@@ -734,13 +734,14 @@ export default function DashboardPage() {
               <p className="text-[#9ca3af]">No matches for current filters. Try adjusting your filters above.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div>
               {/* Match count */}
-              <div className="flex items-center justify-between px-1">
-                <span className="ci-mono text-[10px] text-[#94a3b8]">
+              <div className="flex items-center justify-between px-1 mb-2">
+                <span className="text-[12px] text-[#9ca3af]">
                   {filtered.length} of {totalMatchCount.toLocaleString()}
                 </span>
               </div>
+              <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
               {filtered.map((match) => {
                 const opp = match.opportunities;
                 if (!opp) return null;
@@ -757,93 +758,143 @@ export default function DashboardPage() {
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className={`ci-card cursor-pointer ${isArchiving ? "opacity-30 scale-75 translate-x-[200px]" : ""}`}
-                    style={{ borderLeft: match.bid_recommendation === "bid" ? "3px solid #059669" : match.bid_recommendation === "recompete_alert" ? "3px solid #dc2626" : undefined }}
-                    onClick={() => setExpandedCard(isExpanded ? null : match.id)}
+                    className={`${isArchiving ? "opacity-30 translate-x-[200px] transition-all duration-400" : ""}`}
                   >
-                    {/* Collapsed card header */}
-                    <div className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`ci-score-ring ${match.match_score >= 90 ? "border-[#059669] text-[#059669]" : match.match_score >= 80 ? "border-[#2563eb] text-[#2563eb]" : match.match_score >= 70 ? "border-[#d97706] text-[#d97706]" : "border-[#94a3b8] text-[#94a3b8]"}`}>
-                          {match.match_score}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-[15px] font-semibold text-[#0f172a] truncate">{cleanTitle(opp.title)}</h3>
-                            <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>{match.bid_recommendation}</span>
-                            {sourceBadge(opp.source, match.bid_recommendation)}
-                            {match.user_notes && <span className="text-[11px] shrink-0" title="Has notes">&#128221;</span>}
-                          </div>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[12px] text-[#64748b] ci-mono">
-                            <span className="truncate max-w-[200px]" style={{fontFamily: "'DM Sans', sans-serif"}}>{opp.agency}</span>
-                            <span className="text-[#e2e8f0]">&middot;</span>
-                            <span>{getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "TBD"}</span>
-                            <span className="text-[#e2e8f0]">&middot;</span>
-                            <span className={deadlineColor}>{deadlineLabel(opp.response_deadline) || "TBD"}</span>
-                            {opp.place_of_performance && <><span className="text-[#e2e8f0]">&middot;</span><span>{opp.place_of_performance}</span></>}
-                          </div>
-                          {/* One-line AI guidance */}
-                          {!isExpanded && (
-                            <p className={`text-[11px] mt-0.5 ${match.bid_recommendation === "bid" ? "text-[#059669]" : match.bid_recommendation === "recompete_alert" ? "text-[#dc2626]" : "text-[#94a3b8]"}`}>
-                              {match.bid_recommendation === "bid" ? "Strong match — consider bidding" : match.bid_recommendation === "recompete_alert" ? "Recompete alert — incumbent contract expiring" : match.bid_recommendation === "monitor" ? "Worth monitoring" : "Review opportunity"}
-                            </p>
-                          )}
-                        </div>
-                        {/* Status badge (collapsed only) */}
-                        {!isExpanded && match.user_status === "tracking" && (
-                          <span className="px-2 py-1 text-[10px] text-[#059669] bg-[#ecfdf5] rounded font-medium shrink-0">Tracking</span>
-                        )}
-                        {!isExpanded && match.user_status === "bidding" && (
-                          <span className="px-2 py-1 text-[10px] text-[#2563eb] bg-[#eff4ff] rounded font-medium shrink-0">Bidding</span>
-                        )}
-                        <svg className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
+                    {/* Compact list row */}
+                    <div
+                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#f3f4f6] cursor-pointer
+                                  transition-colors hover:bg-[#f9fafb] group
+                                  ${match.bid_recommendation === "bid" ? "border-l-[3px] border-l-[#059669]" :
+                                    match.bid_recommendation === "recompete_alert" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
+                      onClick={() => setExpandedCard(isExpanded ? null : match.id)}
+                    >
+                      {/* Score ring */}
+                      <div className={`ci-score-ring ${
+                        match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
+                        match.match_score >= 70 ? "border-[#2563eb] text-[#2563eb]" :
+                        match.match_score >= 60 ? "border-[#d97706] text-[#d97706]" :
+                        "border-[#9ca3af] text-[#9ca3af]"}`}>
+                        {match.match_score}
                       </div>
+
+                      {/* Title + Agency */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[14px] font-semibold text-[#111827] truncate">{cleanTitle(opp.title)}</h3>
+                        <p className="text-[12px] text-[#6b7280] mt-0.5 truncate">{opp.agency}</p>
+                      </div>
+
+                      {/* Value */}
+                      <span className="text-[13px] font-semibold text-[#111827] font-mono w-[72px] text-right shrink-0">
+                        {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "TBD"}
+                      </span>
+
+                      {/* Deadline */}
+                      <span className={`text-[12px] font-mono w-[52px] text-right shrink-0 ${deadlineColor}`}>
+                        {deadlineLabel(opp.response_deadline) || "TBD"}
+                      </span>
+
+                      {/* Recommendation badge */}
+                      <span className={`px-2 py-1 text-[10px] font-semibold uppercase rounded shrink-0 ${recBadge(match.bid_recommendation)}`}>
+                        {match.bid_recommendation}
+                      </span>
+
+                      {/* Quick actions — visible on hover */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors"
+                          title="Track">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
+                          className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-colors"
+                          title="Start Bid">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </button>
+                      </div>
+
+                      {/* Chevron */}
+                      <svg className={`w-4 h-4 text-[#9ca3af] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
 
-                    {/* Expanded details */}
+                    {/* Expanded section */}
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-[#f0f1f3] animate-[fadeInUp_0.2s_ease]" onClick={(e) => e.stopPropagation()}>
-                        <div className="pt-3 space-y-3">
+                      <div className="px-5 py-5 pl-[76px] border-b border-[#e5e7eb] bg-[#fafbfc]"
+                           onClick={(e) => e.stopPropagation()}
+                           style={{animation: "fadeInUp 0.15s ease"}}>
+
                           {/* Tags */}
-                          <div className="flex flex-wrap gap-1.5">
-                            {opp.set_aside && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.set_aside}</span>}
-                            {opp.naics_code && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">NAICS {opp.naics_code}</span>}
-                            {opp.place_of_performance && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.place_of_performance}</span>}
+                          <div className="flex flex-wrap gap-1.5 mb-4">
+                            {opp.set_aside && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.set_aside}</span>}
+                            {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb] font-mono">NAICS {opp.naics_code}</span>}
+                            {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.place_of_performance}</span>}
+                            {sourceBadge(opp.source, match.bid_recommendation)}
                           </div>
 
                           {/* Description */}
                           {opp.description && (
-                            <div className="max-h-[200px] overflow-y-auto text-xs text-[#4b5563] leading-relaxed pr-2">
-                              {decodeHtml(opp.description.substring(0, 2000))}
-                            </div>
+                            <p className="text-[13px] text-[#4b5563] leading-relaxed mb-4 line-clamp-3">
+                              {decodeHtml(opp.description.substring(0, 500))}
+                            </p>
                           )}
 
                           {/* Details grid */}
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
-                            {opp.solicitation_number && <div><span className="text-[#9ca3af]">Solicitation:</span> <span className="text-[#111827] font-mono">{opp.solicitation_number}</span></div>}
-                            {getVal(opp) > 0 && <div><span className="text-[#9ca3af]">Value:</span> <span className="text-[#111827] font-bold">{formatCurrency(getVal(opp))}</span></div>}
-                            {opp.set_aside && <div><span className="text-[#9ca3af]">Set-Aside:</span> <span className="text-[#111827]">{opp.set_aside}</span></div>}
-                            {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
-                            {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className={`font-bold ${deadlineColor}`}>{new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})</span></div>}
-                            {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
-                            {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
-                            <div><span className="text-[#9ca3af]">Source:</span> <span className="text-[#111827]">{getSourceLabel(opp.source, opp.agency)}</span></div>
+                          <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-4">
+                            {opp.solicitation_number && (
+                              <div>
+                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Solicitation</div>
+                                <div className="text-[13px] text-[#111827] font-mono">{opp.solicitation_number}</div>
+                              </div>
+                            )}
+                            {getVal(opp) > 0 && (
+                              <div>
+                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Estimated Value</div>
+                                <div className="text-[13px] text-[#111827] font-semibold">{formatCurrency(getVal(opp))}</div>
+                              </div>
+                            )}
+                            {opp.response_deadline && (
+                              <div>
+                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Response Deadline</div>
+                                <div className={`text-[13px] font-semibold ${deadlineColor}`}>
+                                  {new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})
+                                </div>
+                              </div>
+                            )}
+                            {opp.place_of_performance && (
+                              <div>
+                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Location</div>
+                                <div className="text-[13px] text-[#111827]">{opp.place_of_performance}</div>
+                              </div>
+                            )}
+                            {opp.posted_date && (
+                              <div>
+                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Posted</div>
+                                <div className="text-[13px] text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</div>
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Source</div>
+                              <div className="text-[13px] text-[#111827]">{getSourceLabel(opp.source, opp.agency)}</div>
+                            </div>
                           </div>
 
                           {/* AI Recommendation */}
-                          <div className="p-3 bg-[#eff4ff] rounded-lg text-xs text-[#1e40af]">
-                            <strong>Recommended action:</strong> {getRecText(match.bid_recommendation)}
+                          <div className="p-4 bg-[#eff6ff] border border-[#bfdbfe] rounded-lg mb-4">
+                            <div className="text-[11px] font-semibold text-[#1d4ed8] uppercase tracking-wide mb-1">AI Recommendation</div>
+                            <p className="text-[13px] text-[#1e40af] leading-relaxed">{match.recommendation_reasoning || getRecText(match.bid_recommendation)}</p>
                           </div>
 
                           {/* Notes */}
-                          <div className="border-t border-[#f0f1f3] pt-3">
+                          <div className="mb-4">
                             {editingNote === match.id ? (
                               <div className="space-y-2">
                                 <textarea
                                   value={noteText}
                                   onChange={(e) => setNoteText(e.target.value)}
                                   rows={3}
-                                  className="w-full px-3 py-2 text-xs border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] resize-none"
+                                  className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                                   placeholder="Add your notes about this contract..."
                                   autoFocus
                                 />
@@ -913,31 +964,43 @@ export default function DashboardPage() {
                             );
                           })()}
 
-                          {/* Full details link */}
-                          <Link href={`/dashboard/opportunity/${opp.id}`} className="block text-center text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] py-2">
-                            View Full Details &rarr;
-                          </Link>
-
-                          {/* Action buttons (only in expanded view) */}
-                          <div className="flex items-center gap-2 pt-1">
-                            {match.user_status === "tracking" ? (
-                              <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
-                            ) : match.user_status === "bidding" ? (
-                              <span className="px-3 py-1.5 text-xs text-[#2563eb] bg-[#eff4ff] rounded-lg font-medium">Bidding</span>
-                            ) : (
-                              <>
-                                <button onClick={() => updateStatus(match.id, "tracking")} className="px-4 py-1.5 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] rounded-lg transition-all ci-btn">Track</button>
-                                <button onClick={() => updateStatus(match.id, "bidding")} className="px-4 py-1.5 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all ci-btn">Bid</button>
-                                <button onClick={() => updateStatus(match.id, "skipped")} className="px-4 py-1.5 text-xs text-[#94a3b8] hover:text-[#4b5563] hover:bg-[#f1f5f9] rounded-lg transition-all">Skip</button>
-                              </>
-                            )}
+                          {/* Links and actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Link href={`/dashboard/opportunity/${opp.id}`}
+                                className="text-[13px] font-medium text-[#2563eb] hover:text-[#1d4ed8]">
+                                Full Details →
+                              </Link>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {match.user_status === "tracking" ? (
+                                <span className="px-3 py-1.5 text-[12px] text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
+                              ) : match.user_status === "bidding" ? (
+                                <span className="px-3 py-1.5 text-[12px] text-[#2563eb] bg-[#eff6ff] rounded-lg font-medium">Bidding</span>
+                              ) : (
+                                <>
+                                  <button onClick={() => updateStatus(match.id, "tracking")}
+                                    className="px-4 py-2 text-[13px] font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
+                                    Track
+                                  </button>
+                                  <button onClick={() => updateStatus(match.id, "bidding")}
+                                    className="px-4 py-2 text-[13px] font-medium bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-all">
+                                    Start Bid
+                                  </button>
+                                  <button onClick={() => updateStatus(match.id, "skipped")}
+                                    className="px-4 py-2 text-[13px] text-[#9ca3af] hover:text-[#6b7280] transition-colors">
+                                    Archive
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
                       </div>
                     )}
                   </div>
                 );
               })}
+              </div>
               {/* Load More button */}
               {matches.length < totalMatchCount && (
                 <div className="flex justify-center pt-4">
@@ -955,7 +1018,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-[300px] shrink-0 hidden lg:block space-y-4">
+        <div className="w-[260px] shrink-0 hidden lg:block space-y-4">
           {/* Pipeline Summary */}
           <div className="ci-card p-5">
             <h3 className="ci-section-label mb-3">
