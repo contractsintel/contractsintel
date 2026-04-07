@@ -162,37 +162,59 @@ export default function OnboardingSetupPage() {
   };
 
   const [matching, setMatching] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const saveAndExit = async () => {
     setTab3Attempted(true);
     if (!tab3Valid) return;
-    setSaving(true);
-    const minVal = minValue ? parseInt(minValue) : 0;
-    const maxValNum = maxValue ? parseInt(maxValue) : 0;
-    await supabase.from("organizations").update({
-      certifications: certs,
-      naics_codes: selectedNaics,
-      keywords: selectedKeywords,
-      serves_nationwide: serviceArea === "nationwide",
-      service_states: selectedStates,
-      min_contract_value: minVal,
-      max_contract_value: maxValNum,
-      setup_wizard_complete: true,
-    }).eq("id", organization.id);
-    setSaving(false);
-
-    // Trigger matching engine
     setMatching(true);
-    showBanner("Profile saved! Scanning opportunities...");
+    setSubmitError("");
+
+    // Safety timeout: redirect after 12 seconds no matter what
+    const redirectTimeout = setTimeout(() => {
+      window.location.href = "/dashboard/onboarding";
+    }, 12000);
+
     try {
-      await fetch("/api/matching/run", {
+      // Step 1: Save profile data
+      const minVal = minValue ? parseInt(minValue) : 0;
+      const maxValNum = maxValue ? parseInt(maxValue) : 0;
+      const { error: saveError } = await supabase.from("organizations").update({
+        certifications: certs,
+        naics_codes: selectedNaics,
+        keywords: selectedKeywords,
+        serves_nationwide: serviceArea === "nationwide",
+        service_states: selectedStates,
+        min_contract_value: minVal,
+        max_contract_value: maxValNum,
+        setup_wizard_complete: true,
+      }).eq("id", organization.id);
+
+      if (saveError) {
+        console.error("Save error:", saveError);
+        setSubmitError("Failed to save profile. Please try again.");
+        setMatching(false);
+        clearTimeout(redirectTimeout);
+        return;
+      }
+
+      // Step 2: Fire matching (don't await — let it run in background)
+      fetch("/api/matching/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId: organization.id }),
-      });
-    } catch {}
-    setMatching(false);
-    router.push("/dashboard/onboarding");
+      }).catch(err => console.error("Matching API error:", err));
+
+      // Step 3: Redirect immediately after save (don't wait for matching)
+      clearTimeout(redirectTimeout);
+      window.location.href = "/dashboard/onboarding";
+
+    } catch (err) {
+      console.error("Submit error:", err);
+      setSubmitError("Something went wrong. Please try again.");
+      setMatching(false);
+      clearTimeout(redirectTimeout);
+    }
   };
 
   const filteredStates = US_STATES.filter(s =>
@@ -582,13 +604,20 @@ export default function OnboardingSetupPage() {
           {tab3Attempted && certs.length === 0 && <p className="text-[13px] text-[#dc2626]">Select at least one certification</p>}
           {tab3Attempted && selectedNaics.length === 0 && <p className="text-[13px] text-[#dc2626]">Select at least one NAICS code</p>}
 
-          <button onClick={saveAndExit} disabled={saving || matching}
+          {submitError && <p className="text-[13px] text-[#dc2626] mt-3">{submitError}</p>}
+
+          <button onClick={saveAndExit} disabled={matching}
             className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all ${
-              tab3Valid
-                ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
-                : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
+              matching ? "bg-[#4f46e5] text-white opacity-80" :
+              tab3Valid ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer" :
+              "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
             }`}>
-            {matching ? "Scanning 45,000+ opportunities..." : saving ? "Saving..." : "Save and Exit"}
+            {matching ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving profile & scanning opportunities...
+              </span>
+            ) : "Save and Exit"}
           </button>
         </div>
       )}
