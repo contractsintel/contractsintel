@@ -134,7 +134,7 @@ export default function DashboardPage() {
     setLoading(true);
     const { data, count, error } = await supabase
       .from("opportunity_matches")
-      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, is_demo, created_at, opportunities(id, title, agency, solicitation_number, set_aside, naics_code, place_of_performance, estimated_value, value_estimate, response_deadline, posted_date, description, sam_url, source, source_url, notice_id)", { count: "exact" })
+      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, user_notes, notes_updated_at, is_demo, created_at, opportunities(id, title, agency, solicitation_number, set_aside, naics_code, place_of_performance, estimated_value, value_estimate, response_deadline, posted_date, description, sam_url, source, source_url, notice_id)", { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, effectiveLimit - 1);
@@ -171,15 +171,24 @@ export default function DashboardPage() {
     setLoadingMore(false);
   };
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; color: string; link?: string; linkText?: string } | null>(null);
   const [fadingOut, setFadingOut] = useState<string | null>(null);
-
+  const [archiveAnim, setArchiveAnim] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [archivedOpen, setArchivedOpen] = useState(false);
+
+  const showToast = (message: string, color: string, link?: string, linkText?: string) => {
+    setToast({ message, color, link, linkText });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const updateStatus = async (matchId: string, status: string) => {
     if (status === "skipped") {
-      setFadingOut(matchId);
-      await new Promise((r) => setTimeout(r, 300));
+      setArchiveAnim(matchId);
+      await new Promise((r) => setTimeout(r, 400));
+      setArchiveAnim(null);
     }
 
     try {
@@ -191,28 +200,57 @@ export default function DashboardPage() {
       const result = await res.json();
 
       if (!res.ok || !result.success) {
-        console.error("Update failed:", result);
-        setToast("Error — " + (result.error || "try again"));
+        showToast("Error — " + (result.error || "try again"), "#dc2626");
         setFadingOut(null);
         return;
       }
 
-      const msgs: Record<string, string> = {
-        tracking: "✓ Tracking — added to Pipeline",
-        bidding: "✓ Preparing Bid — added to Pipeline",
-        skipped: "Skipped",
-      };
-      setToast(msgs[status] || "Updated");
+      if (status === "tracking") {
+        showToast("Tracking — Added to Pipeline", "#059669", "/dashboard/pipeline", "View in Pipeline");
+      } else if (status === "bidding") {
+        showToast("Preparing Bid — Added to Pipeline", "#2563eb", "/dashboard/pipeline", "View in Pipeline");
+      } else if (status === "skipped") {
+        showToast("Archived — Moved to Archived Contracts", "#94a3b8");
+      }
     } catch (err) {
-      console.error("Network error:", err);
-      setToast("Network error — try again");
+      showToast("Network error — try again", "#dc2626");
       setFadingOut(null);
       return;
     }
 
-    setTimeout(() => setToast(null), 3000);
     setFadingOut(null);
     loadData();
+  };
+
+  const saveNote = async (matchId: string) => {
+    await fetch("/api/opportunities/update-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId, notes: noteText }),
+    });
+    setEditingNote(null);
+    loadData();
+  };
+
+  const getSourceLabel = (source: string | null) => {
+    if (!source) return "Government Website";
+    const map: Record<string, string> = {
+      sam_gov: "SAM.gov", usaspending: "USASpending.gov", federal_civilian: "Federal Agency",
+      sbir_sttr: "SBIR.gov", grants_gov: "Grants.gov", subcontracting: "SubNet",
+      forecasts: "SAM.gov Forecasts", military_defense: "Military Procurement",
+    };
+    if (source.startsWith("state_")) return `${source.replace("state_", "").toUpperCase()} State Portal`;
+    return map[source] || "Source Portal";
+  };
+
+  const getRecText = (rec: string) => {
+    const texts: Record<string, string> = {
+      bid: "Bid — Strong match to your profile. Review the solicitation details and prepare a bid.",
+      monitor: "Monitor — Worth tracking for future developments and deadline updates.",
+      skip: "Low Priority — May not be a strong fit for your current capabilities.",
+      recompete_alert: "Recompete Alert — This contract is expiring and will be re-competed.",
+    };
+    return texts[rec] || "Review this opportunity for potential match.";
   };
 
   const handleSeedDemo = async () => {
@@ -671,73 +709,54 @@ export default function DashboardPage() {
                 if (!opp) return null;
                 const days = daysUntil(opp.response_deadline);
                 const deadlineColor =
-                  days !== null && days <= 3
-                    ? "text-[#ef4444]"
-                    : days !== null && days <= 7
-                    ? "text-[#f59e0b]"
+                  days !== null && days <= 3 ? "text-[#ef4444]"
+                    : days !== null && days <= 7 ? "text-[#f59e0b]"
                     : "text-[#4b5563]";
+                const isExpanded = expandedCard === match.id;
+                const isArchiving = archiveAnim === match.id;
 
-                if (match.user_status === "skipped" && fadingOut !== match.id) return null;
+                if (match.user_status === "skipped" && !isArchiving) return null;
                 return (
                   <div
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
-                    className={`border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-300 ${fadingOut === match.id ? "opacity-0 scale-95" : ""}`}
+                    className={`border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#cbd5e1] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] cursor-pointer transition-all duration-300 ${isArchiving ? "opacity-30 scale-75 translate-x-[200px]" : ""}`}
+                    onClick={() => setExpandedCard(isExpanded ? null : match.id)}
                   >
-                    {/* Compact card: ~80px */}
-                    <div className="px-4 py-3 cursor-pointer" onClick={() => setExpandedCard(expandedCard === match.id ? null : match.id)}>
+                    {/* Collapsed card header */}
+                    <div className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {/* Score */}
-                        <div className={`text-2xl font-bold font-mono ${scoreColor(match.match_score)} w-10 text-center shrink-0`}>
+                        <div className={`ci-score-ring shrink-0 border-2 ${match.match_score >= 80 ? "border-[#22c55e] text-[#22c55e]" : match.match_score >= 60 ? "border-[#f59e0b] text-[#f59e0b]" : "border-[#9ca3af] text-[#9ca3af]"}`}>
                           {match.match_score}
                         </div>
-
-                        {/* Main content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-semibold text-[#0f172a] truncate">
-                              {decodeHtml(opp.title)}
-                            </h3>
-                            <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>
-                              {match.bid_recommendation}
-                            </span>
+                            <h3 className="text-sm font-semibold text-[#0f172a] truncate">{decodeHtml(opp.title)}</h3>
+                            <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>{match.bid_recommendation}</span>
                             {sourceBadge(opp.source, match.bid_recommendation)}
+                            {match.user_notes && <span className="text-[11px] shrink-0" title="Has notes">&#128221;</span>}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] text-[#64748b] truncate">{opp.agency}</span>
-                            {opp.solicitation_number && <span className="text-[11px] text-[#94a3b8] font-mono">{opp.solicitation_number}</span>}
-                            {match.recommendation_reasoning && <span className="text-[11px] text-[#94a3b8] truncate hidden md:inline">— {match.recommendation_reasoning}</span>}
-                          </div>
-                        </div>
-
-                        {/* Right side: value + deadline + actions */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          {getVal(opp) ? (
-                            <span className="text-xs font-mono text-[#111827] font-medium">{formatCurrency(getVal(opp))}</span>
-                          ) : null}
-                          <span className={`text-xs font-mono ${deadlineColor} w-16 text-right`}>
-                            {deadlineLabel(opp.response_deadline)}
-                          </span>
-                          <div data-tour={match === filtered[0] ? "action-buttons" : undefined} className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            {match.user_status === "tracking" ? (
-                              <span className="px-2 py-1 text-[10px] text-[#059669] bg-[#ecfdf5] rounded font-medium">Tracking</span>
-                            ) : match.user_status === "bidding" ? (
-                              <span className="px-2 py-1 text-[10px] text-[#2563eb] bg-[#eff4ff] rounded font-medium">Bidding</span>
-                            ) : (
-                              <>
-                                <button onClick={() => updateStatus(match.id, "tracking")} className="px-2 py-1 text-[10px] border border-[#e5e7eb] text-[#4b5563] hover:border-[#2563eb] hover:text-[#2563eb] rounded transition-all">Track</button>
-                                <button onClick={() => updateStatus(match.id, "bidding")} className="px-2 py-1 text-[10px] bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded transition-all">Bid</button>
-                                <button onClick={() => updateStatus(match.id, "skipped")} className="px-2 py-1 text-[10px] text-[#9ca3af] hover:text-[#4b5563] rounded transition-all">Skip</button>
-                              </>
-                            )}
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#64748b]">
+                            <span className="truncate">{opp.agency}</span>
+                            {getVal(opp) > 0 && <><span className="text-[#e5e7eb]">|</span><span className="font-mono">{formatCurrency(getVal(opp))}</span></>}
+                            {opp.set_aside && <><span className="text-[#e5e7eb]">|</span><span>{opp.set_aside}</span></>}
+                            <span className={`font-mono ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
                           </div>
                         </div>
+                        {/* Status badge (collapsed only) */}
+                        {!isExpanded && match.user_status === "tracking" && (
+                          <span className="px-2 py-1 text-[10px] text-[#059669] bg-[#ecfdf5] rounded font-medium shrink-0">Tracking</span>
+                        )}
+                        {!isExpanded && match.user_status === "bidding" && (
+                          <span className="px-2 py-1 text-[10px] text-[#2563eb] bg-[#eff4ff] rounded font-medium shrink-0">Bidding</span>
+                        )}
+                        <svg className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
                       </div>
                     </div>
 
                     {/* Expanded details */}
-                    {expandedCard === match.id && (
-                      <div className="px-4 pb-4 border-t border-[#f0f1f3] animate-[fadeInUp_0.2s_ease]">
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-[#f0f1f3] animate-[fadeInUp_0.2s_ease]" onClick={(e) => e.stopPropagation()}>
                         <div className="pt-3 space-y-3">
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5">
@@ -746,32 +765,87 @@ export default function DashboardPage() {
                             {opp.place_of_performance && <span className="rounded-full px-2.5 py-0.5 text-[11px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.place_of_performance}</span>}
                           </div>
 
-                          {opp.description && <p className="text-xs text-[#4b5563] leading-relaxed">{opp.description.substring(0, 500)}{opp.description.length > 500 ? "..." : ""}</p>}
-
-                          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                            {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
-                            {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className="text-[#111827]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
-                            {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
-                            {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
-                          </div>
-
-                          {match.recommendation_reasoning && (
-                            <div className="p-3 bg-[#eff4ff] rounded-lg text-xs text-[#1e40af]">
-                              <strong>Recommendation:</strong> {match.recommendation_reasoning}
+                          {/* Description */}
+                          {opp.description && (
+                            <div className="max-h-[200px] overflow-y-auto text-xs text-[#4b5563] leading-relaxed pr-2">
+                              {decodeHtml(opp.description.substring(0, 2000))}
                             </div>
                           )}
 
-                          {/* View Original Listing button */}
-                          {(opp.sam_url || opp.source_url) && (
+                          {/* Details grid */}
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                            {opp.solicitation_number && <div><span className="text-[#9ca3af]">Solicitation:</span> <span className="text-[#111827] font-mono">{opp.solicitation_number}</span></div>}
+                            {getVal(opp) > 0 && <div><span className="text-[#9ca3af]">Value:</span> <span className="text-[#111827] font-bold">{formatCurrency(getVal(opp))}</span></div>}
+                            {opp.set_aside && <div><span className="text-[#9ca3af]">Set-Aside:</span> <span className="text-[#111827]">{opp.set_aside}</span></div>}
+                            {opp.naics_code && <div><span className="text-[#9ca3af]">NAICS:</span> <span className="text-[#111827] font-mono">{opp.naics_code}</span></div>}
+                            {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className={`font-bold ${deadlineColor}`}>{new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})</span></div>}
+                            {opp.place_of_performance && <div><span className="text-[#9ca3af]">Location:</span> <span className="text-[#111827]">{opp.place_of_performance}</span></div>}
+                            {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
+                            <div><span className="text-[#9ca3af]">Source:</span> <span className="text-[#111827]">{getSourceLabel(opp.source)}</span></div>
+                          </div>
+
+                          {/* AI Recommendation */}
+                          <div className="p-3 bg-[#eff4ff] rounded-lg text-xs text-[#1e40af]">
+                            <strong>Recommended action:</strong> {getRecText(match.bid_recommendation)}
+                          </div>
+
+                          {/* Notes */}
+                          <div className="border-t border-[#f0f1f3] pt-3">
+                            {editingNote === match.id ? (
+                              <div className="space-y-2">
+                                <textarea
+                                  value={noteText}
+                                  onChange={(e) => setNoteText(e.target.value)}
+                                  rows={3}
+                                  className="w-full px-3 py-2 text-xs border border-[#e2e8f0] rounded-lg focus:outline-none focus:border-[#2563eb] resize-none"
+                                  placeholder="Add your notes about this contract..."
+                                  autoFocus
+                                />
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => saveNote(match.id)} className="px-3 py-1 text-xs bg-[#2563eb] text-white rounded-lg hover:bg-[#3b82f6]">Save Note</button>
+                                  <button onClick={() => setEditingNote(null)} className="text-xs text-[#94a3b8] hover:text-[#4b5563]">Cancel</button>
+                                </div>
+                              </div>
+                            ) : match.user_notes ? (
+                              <div>
+                                <p className="text-xs text-[#4b5563] mb-1">{match.user_notes}</p>
+                                {match.notes_updated_at && <span className="text-[10px] text-[#94a3b8]">Note added {new Date(match.notes_updated_at).toLocaleDateString()}</span>}
+                                <button onClick={() => { setEditingNote(match.id); setNoteText(match.user_notes || ""); }} className="ml-2 text-[10px] text-[#2563eb] hover:text-[#1d4ed8]">Edit</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => { setEditingNote(match.id); setNoteText(""); }} className="text-xs text-[#94a3b8] hover:text-[#4b5563] italic">Add a note...</button>
+                            )}
+                          </div>
+
+                          {/* View Original Contract button */}
+                          {(opp.sam_url || opp.source_url) ? (
                             <a
                               href={opp.sam_url || opp.source_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-[#2563eb] bg-[#eff4ff] hover:bg-[#dbeafe] rounded-lg transition-colors"
+                              className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ci-btn"
+                              style={{ backgroundColor: opp.source === "sam_gov" ? "#2563eb" : opp.source?.startsWith("state_") ? "#059669" : opp.source === "grants_gov" ? "#d97706" : opp.source === "sbir_sttr" ? "#7c3aed" : "#2563eb" }}
                             >
-                              View Original Listing →
+                              View on {getSourceLabel(opp.source)} &rarr;
                             </a>
+                          ) : (
+                            <p className="text-xs text-[#94a3b8] italic">Source link unavailable</p>
                           )}
+
+                          {/* Action buttons (only in expanded view) */}
+                          <div className="flex items-center gap-2 pt-1">
+                            {match.user_status === "tracking" ? (
+                              <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
+                            ) : match.user_status === "bidding" ? (
+                              <span className="px-3 py-1.5 text-xs text-[#2563eb] bg-[#eff4ff] rounded-lg font-medium">Bidding</span>
+                            ) : (
+                              <>
+                                <button onClick={() => updateStatus(match.id, "tracking")} className="px-4 py-1.5 text-xs border border-[#e5e7eb] text-[#4b5563] hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] rounded-lg transition-all ci-btn">Track</button>
+                                <button onClick={() => updateStatus(match.id, "bidding")} className="px-4 py-1.5 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] rounded-lg transition-all ci-btn">Bid</button>
+                                <button onClick={() => updateStatus(match.id, "skipped")} className="px-4 py-1.5 text-xs text-[#94a3b8] hover:text-[#4b5563] hover:bg-[#f1f5f9] rounded-lg transition-all">Skip</button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -875,14 +949,66 @@ export default function DashboardPage() {
               <p className="text-xs text-[#9ca3af]">No upcoming deadlines</p>
             )}
           </div>
+
+          {/* Archived Contracts */}
+          {(() => {
+            const archived = matches.filter((m) => m.user_status === "skipped");
+            if (!archived.length) return null;
+            return (
+              <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <button
+                  onClick={() => setArchivedOpen(!archivedOpen)}
+                  className="w-full flex items-center justify-between"
+                >
+                  <h3 className="ci-section-label">
+                    Archived Contracts
+                  </h3>
+                  <span className="text-[10px] font-mono bg-[#f1f5f9] text-[#64748b] px-1.5 py-0.5 rounded-full">
+                    {archived.length}
+                  </span>
+                </button>
+                {archivedOpen && (
+                  <div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto">
+                    {archived.slice(0, 20).map((m) => (
+                      <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-[#f8f9fb] last:border-0 group">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs text-[#4b5563] truncate block">{decodeHtml(m.opportunities?.title || "")}</span>
+                          <span className="text-[10px] text-[#94a3b8]">{m.opportunities?.agency}</span>
+                        </div>
+                        <button
+                          onClick={() => updateStatus(m.id, "new")}
+                          className="text-[10px] text-[#2563eb] hover:text-[#1d4ed8] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2"
+                        >
+                          Restore
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
       {/* Toast notification */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-[100] px-5 py-3 bg-white text-sm font-medium rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] animate-[fadeInUp_0.3s_ease] border border-[#f0f1f3] flex items-center gap-3 ${toast.includes("Skip") ? "border-l-4 border-l-[#9ca3af]" : "border-l-4 border-l-[#059669]"}`}>
-          <span className="text-[#111827]">{toast}</span>
-          <button onClick={() => setToast(null)} className="text-[#9ca3af] hover:text-[#111827] text-lg leading-none">&times;</button>
+        <div
+          className="fixed top-5 right-5 z-[100] max-w-[360px] bg-white rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-[#f0f1f3] overflow-hidden"
+          style={{ animation: "slideInRight 0.3s ease", borderLeft: `4px solid ${toast.color}` }}
+        >
+          <div className="px-4 py-3 flex items-start gap-3">
+            <div className="flex-1">
+              <span className="text-sm font-medium text-[#111827]">{toast.message}</span>
+              {toast.link && (
+                <a href={toast.link} className="block text-xs text-[#2563eb] hover:text-[#1d4ed8] mt-0.5">{toast.linkText || "View"} &rarr;</a>
+              )}
+            </div>
+            <button onClick={() => setToast(null)} className="text-[#9ca3af] hover:text-[#111827] text-lg leading-none shrink-0">&times;</button>
+          </div>
+          <div className="h-0.5 bg-[#f1f5f9]">
+            <div className="h-full" style={{ backgroundColor: toast.color, animation: "shrinkBar 4s linear forwards" }} />
+          </div>
         </div>
       )}
 
