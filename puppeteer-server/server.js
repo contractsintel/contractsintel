@@ -1150,63 +1150,74 @@ async function runBulkMatching() {
   return totalMatched;
 }
 
-// Broad matching: for orgs without NAICS, match recent high-value opportunities
+// Broad matching: for orgs without NAICS, match ALL unmatched opportunities
+// Skip the dedup check — just create matches for random samples of unmatched opps using upsert
 async function runBroadMatching(allOrgs, headers) {
   let totalMatched = 0;
-  // Get 2000 most recent opportunities from SAM.gov for broad matching (largest source, most relevant)
-  const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&source=eq.sam_gov&order=created_at.desc&limit=2000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  let recentOpps = await oppRes.json();
-  console.log(`[match] Broad: SAM.gov opp query status ${oppRes.status}, count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
-  if (!Array.isArray(recentOpps) || !recentOpps.length) {
-    // Fallback to any source
-    const fbRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&order=created_at.desc&limit=2000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-    recentOpps = await fbRes.json();
-    console.log(`[match] Broad fallback: any source count: ${Array.isArray(recentOpps) ? recentOpps.length : 'N/A'}`);
-  }
-  if (!Array.isArray(recentOpps) || !recentOpps.length) { console.log("[match] No opportunities to match"); return 0; }
-  console.log(`[match] Broad matching: ${recentOpps.length} opps against ${allOrgs.length} orgs`);
+  const MAX_PER_ORG = 5000; // max new matches per org per run
+  const BATCH_SIZE = 1000;
 
   for (const org of allOrgs) {
-    // Get existing matches
-    // Get ALL existing match IDs (both demo and real) to avoid duplicates — use large limit
-    const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&limit=50000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-    const existing = await existRes.json();
-    const existingIds = new Set(Array.isArray(existing) ? existing.map(m => m.opportunity_id) : []);
+    // Get count of existing matches for this org
+    const countRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=id&organization_id=eq.${org.id}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" } });
+    const existCount = parseInt(countRes.headers.get("content-range")?.split("/")[1] || "0");
 
-    const newOpps = recentOpps.filter(o => !existingIds.has(o.id));
-    console.log(`[match] Broad: org ${org.name || org.id}: ${existingIds.size} existing matches, ${newOpps.length} new opps out of ${recentOpps.length}`);
-    if (!newOpps.length) continue;
+    let orgMatched = 0;
+    let offset = existCount; // Start AFTER the already-matched opportunities (they're ordered by created_at desc, same as opps)
 
-    // Score broadly: federal sources get higher base, SAM.gov highest
-    const matches = newOpps.map(opp => {
-      let score = 30; // base score for recent opportunity
-      if (opp.source === "sam_gov") score += 15;
-      else if (["federal_civilian", "usaspending"].includes(opp.source)) score += 10;
-      if (opp.estimated_value > 0) score += 10;
-      if (opp.set_aside) score += 5;
-      score = Math.min(score, 100);
-      return {
-        organization_id: org.id,
-        opportunity_id: opp.id,
-        match_score: score,
-        bid_recommendation: score >= 50 ? "monitor" : "skip",
-        recommendation_reasoning: `Recent ${opp.source || "federal"} opportunity. ${opp.agency || ""}`.trim(),
-        user_status: "new",
-        is_demo: false,
-      };
-    }).filter(m => m.match_score >= 30);
+    console.log(`[match] Broad: org ${org.name || org.id}: ${existCount} existing matches, starting from offset ${offset}`);
 
-    // Upsert
-    for (let i = 0; i < matches.length; i += 200) {
-      const batch = matches.slice(i, i + 200);
-      await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
-        method: "POST",
-        headers: { ...headers, Prefer: "resolution=merge-duplicates" },
-        body: JSON.stringify(batch),
-      });
+    while (orgMatched < MAX_PER_ORG) {
+      // Get a batch of opportunities, offsetting past already-matched ones
+      const oppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,naics_code,set_aside,estimated_value,source,response_deadline&order=created_at.desc&limit=${BATCH_SIZE}&offset=${offset}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      const opps = await oppRes.json();
+      if (!Array.isArray(opps) || !opps.length) break;
+
+      // Score each opp
+      const matches = opps.map(opp => {
+        let score = 30;
+        if (opp.source === "sam_gov") score += 15;
+        else if (["federal_civilian", "usaspending"].includes(opp.source)) score += 10;
+        else if (opp.source?.startsWith("state_")) score += 5;
+        if (opp.estimated_value > 0) score += 10;
+        if (opp.set_aside) score += 5;
+        score = Math.min(score, 100);
+        return {
+          organization_id: org.id,
+          opportunity_id: opp.id,
+          match_score: score,
+          bid_recommendation: score >= 50 ? "monitor" : "skip",
+          recommendation_reasoning: `${opp.source || "federal"} opportunity: ${opp.agency || "Unknown agency"}`,
+          user_status: "new",
+          is_demo: false,
+        };
+      }).filter(m => m.match_score >= 30);
+
+      if (!matches.length) break;
+
+      // Upsert — database handles dedup via on_conflict
+      for (let i = 0; i < matches.length; i += 200) {
+        const batch = matches.slice(i, i + 200);
+        const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches`, {
+          method: "POST",
+          headers: { ...headers, Prefer: "resolution=ignore-duplicates,return=minimal" },
+          body: JSON.stringify(batch),
+        });
+        if (!upsertRes.ok) {
+          const err = await upsertRes.text();
+          console.log(`[match] Upsert error: ${upsertRes.status} ${err.substring(0, 200)}`);
+          break;
+        }
+      }
+
+      orgMatched += matches.length;
+      offset += BATCH_SIZE;
+
+      if (opps.length < BATCH_SIZE) break; // no more opps
     }
-    totalMatched += matches.length;
-    if (matches.length > 0) console.log(`[match] Broad: ${matches.length} matches for ${org.name || org.id}`);
+
+    totalMatched += orgMatched;
+    if (orgMatched > 0) console.log(`[match] Broad: ${orgMatched} matches for ${org.name || org.id}`);
   }
   return totalMatched;
 }
