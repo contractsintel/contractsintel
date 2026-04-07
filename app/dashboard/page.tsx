@@ -10,6 +10,11 @@ import { InlineGuide } from "./inline-guide";
 import { seedDemoData } from "@/lib/demo-data";
 import { UnlockButton, ProfileBanner } from "./unlock-panel";
 
+function cleanTitle(s: string): string {
+  // Remove bracket prefixes like "[NE]", "[California]", "[Tennessee RFP]"
+  return decodeHtml(s.replace(/^\[[^\]]*\]\s*/, ""));
+}
+
 function decodeHtml(s: string): string {
   if (!s) return s;
   return s
@@ -53,9 +58,10 @@ function scoreColor(score: number): string {
 
 function recBadge(rec: string) {
   const map: Record<string, string> = {
-    bid: "bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20",
-    review: "bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20",
-    skip: "bg-[#9ca3af]/10 text-[#9ca3af] border-[#9ca3af]/20",
+    bid: "bg-[#ecfdf5] text-[#059669] border-[#059669]/20",
+    monitor: "bg-[#fffbeb] text-[#d97706] border-[#d97706]/20",
+    review: "bg-[#fffbeb] text-[#d97706] border-[#d97706]/20",
+    skip: "bg-[#f1f5f9] text-[#94a3b8] border-[#94a3b8]/20",
   };
   return map[rec] ?? map.skip;
 }
@@ -89,18 +95,18 @@ function getSourceCategory(source: string | null | undefined, bidRec?: string): 
 
 function sourceBadge(source: string | null | undefined, bidRec?: string) {
   const cat = getSourceCategory(source, bidRec);
-  const badges: Record<string, { text: string; label: string }> = {
-    federal: { text: "text-[#2563eb]", label: "Federal" },
-    state: { text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "").toUpperCase() : "State" },
-    military: { text: "text-[#475569]", label: "Military" },
-    sbir: { text: "text-[#7c3aed]", label: "SBIR" },
-    grants: { text: "text-[#d97706]", label: "Grant" },
-    subcontracting: { text: "text-[#0d9488]", label: "SubK" },
-    recompetes: { text: "text-[#dc2626]", label: "Recompete" },
+  const badges: Record<string, { bg: string; text: string; label: string }> = {
+    federal: { bg: "bg-[#eff6ff]", text: "text-[#2563eb]", label: "Federal" },
+    state: { bg: "bg-[#ecfdf5]", text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "").toUpperCase() : "State" },
+    military: { bg: "bg-[#f1f5f9]", text: "text-[#475569]", label: "Military" },
+    sbir: { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", label: "SBIR" },
+    grants: { bg: "bg-[#fffbeb]", text: "text-[#d97706]", label: "Grant" },
+    subcontracting: { bg: "bg-[#ecfeff]", text: "text-[#0891b2]", label: "SubK" },
+    recompetes: { bg: "bg-[#fef2f2]", text: "text-[#dc2626]", label: "Recompete" },
   };
   const b = badges[cat] ?? badges.federal;
   return (
-    <span className={`inline-block px-1.5 py-0.5 text-[10px] ci-mono uppercase rounded bg-[#f1f5f9] ${b.text}`}>
+    <span className={`inline-block px-1.5 py-0.5 text-[10px] ci-mono uppercase rounded ${b.bg} ${b.text}`}>
       {b.label}
     </span>
   );
@@ -128,6 +134,7 @@ export default function DashboardPage() {
   });
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
   const [seedingDemo, setSeedingDemo] = useState(false);
+  const [dbSourceCounts, setDbSourceCounts] = useState<Record<string, number>>({});
 
   const loadData = useCallback(async (limit?: number) => {
     const effectiveLimit = limit ?? matchLimit;
@@ -141,6 +148,22 @@ export default function DashboardPage() {
     if (error) console.error("Dashboard query error:", error.message);
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
+
+    // Load source counts from a larger sample for accurate filter pills
+    const { data: sourceSample } = await supabase
+      .from("opportunity_matches")
+      .select("opportunities(source)")
+      .eq("organization_id", organization.id)
+      .limit(5000);
+    if (sourceSample) {
+      const counts: Record<string, number> = {};
+      for (const m of sourceSample) {
+        const src = (m as any).opportunities?.source;
+        const cat = getSourceCategory(src);
+        counts[cat] = (counts[cat] ?? 0) + 1;
+      }
+      setDbSourceCounts(counts);
+    }
 
     const { data: compliance } = await supabase
       .from("compliance_items")
@@ -339,8 +362,8 @@ export default function DashboardPage() {
     {} as Record<string, number>
   );
 
-  // Source breakdown counts
-  const sourceCounts = matches.reduce(
+  // Source breakdown counts (use DB counts when available, fall back to page-level)
+  const pageCounts = matches.reduce(
     (acc, m) => {
       const cat = getSourceCategory(m.opportunities?.source, m.bid_recommendation);
       acc[cat] = (acc[cat] ?? 0) + 1;
@@ -348,6 +371,7 @@ export default function DashboardPage() {
     },
     {} as Record<string, number>
   );
+  const sourceCounts = Object.keys(dbSourceCounts).length > 0 ? dbSourceCounts : pageCounts;
 
   // Unique filters
   const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside).filter(Boolean)));
@@ -400,12 +424,12 @@ export default function DashboardPage() {
       {/* Stats Bar */}
       <div data-tour="stats-bar" className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : matches.length, label: "Matches" },
-          { value: formatCurrency(totalValue), label: "Total Value" },
-          { value: urgentCount, label: "Due < 7 days" },
-          { value: topScore, label: "Top Score" },
+          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", tint: "rgba(37,99,235,0.03)" },
+          { value: formatCurrency(totalValue), label: "Total Value", tint: "rgba(5,150,105,0.03)" },
+          { value: String(urgentCount), label: "Due < 7 days", tint: "rgba(220,38,38,0.03)" },
+          { value: String(topScore), label: "Top Score", tint: "rgba(124,58,237,0.03)" },
         ].map((stat) => (
-          <div key={stat.label} className="ci-card p-5 cursor-default">
+          <div key={stat.label} className="ci-card p-5 cursor-default" style={{ background: stat.tint }}>
             <div className="ci-stat-number">{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
@@ -454,9 +478,9 @@ export default function DashboardPage() {
           <div className="space-y-3 mb-5">
             {/* Row 1: Source toggle pills */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-1">Contract Type</span>
+              <span className="ci-section-label mr-1">Contract Type</span>
               {([
-                { key: "", label: "All Types", count: matches.length },
+                { key: "", label: "All Types", count: totalMatchCount },
                 { key: "federal", label: "Federal Contracts", count: sourceCounts.federal ?? 0 },
                 { key: "state", label: "State & Local", count: sourceCounts.state ?? 0 },
                 { key: "grants", label: "Grants", count: sourceCounts.grants ?? 0 },
@@ -474,7 +498,7 @@ export default function DashboardPage() {
                       : "bg-white text-[#475569] border-[#e2e8f0] hover:border-[#cbd5e1]"
                   }`}
                 >
-                  {s.label}{s.count > 0 ? ` (${s.count})` : ""}
+                  {s.label}{s.count > 0 ? ` (${s.count >= 1000 ? `${(s.count/1000).toFixed(1)}K` : s.count})` : ""}
                 </button>
               ))}
             </div>
@@ -483,7 +507,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-4">
               {/* Urgency */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Urgency</span>
+                <span className="ci-section-label mr-0.5">Urgency</span>
                 {([
                   { key: "", label: "All" },
                   { key: "week", label: "This week" },
@@ -506,7 +530,7 @@ export default function DashboardPage() {
 
               {/* Value */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Value</span>
+                <span className="ci-section-label mr-0.5">Value</span>
                 {([
                   { key: "", label: "All" },
                   { key: "under100k", label: "<$100K" },
@@ -530,7 +554,7 @@ export default function DashboardPage() {
 
               {/* Recommendation */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Recommendation</span>
+                <span className="ci-section-label mr-0.5">Rec</span>
                 {([
                   { key: "", label: "All" },
                   { key: "bid", label: `Bid${recCounts.bid ? ` (${recCounts.bid})` : ""}`, color: "#22c55e" },
@@ -696,8 +720,8 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {/* Match count */}
               <div className="flex items-center justify-between px-1">
-                <span className="font-['JetBrains_Mono'] text-[11px] text-[#94a3b8]">
-                  Showing {Math.min(matches.length, filtered.length)} of {totalMatchCount.toLocaleString()} matches
+                <span className="ci-mono text-[10px] text-[#94a3b8]">
+                  {filtered.length} of {totalMatchCount.toLocaleString()}
                 </span>
               </div>
               {filtered.map((match) => {
@@ -717,27 +741,36 @@ export default function DashboardPage() {
                     key={match.id}
                     data-tour={match === filtered[0] ? "opportunity-card" : undefined}
                     className={`ci-card cursor-pointer ${isArchiving ? "opacity-30 scale-75 translate-x-[200px]" : ""}`}
+                    style={{ borderLeft: match.bid_recommendation === "bid" ? "3px solid #059669" : match.bid_recommendation === "recompete_alert" ? "3px solid #dc2626" : undefined }}
                     onClick={() => setExpandedCard(isExpanded ? null : match.id)}
                   >
                     {/* Collapsed card header */}
                     <div className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className={`ci-score-ring shrink-0 border-2 ${match.match_score >= 80 ? "border-[#22c55e] text-[#22c55e]" : match.match_score >= 60 ? "border-[#f59e0b] text-[#f59e0b]" : "border-[#9ca3af] text-[#9ca3af]"}`}>
+                        <div className={`ci-score-ring ${match.match_score >= 90 ? "border-[#059669] text-[#059669]" : match.match_score >= 80 ? "border-[#2563eb] text-[#2563eb]" : match.match_score >= 70 ? "border-[#d97706] text-[#d97706]" : "border-[#94a3b8] text-[#94a3b8]"}`}>
                           {match.match_score}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-semibold text-[#0f172a] truncate">{decodeHtml(opp.title)}</h3>
+                            <h3 className="text-[15px] font-semibold text-[#0f172a] truncate">{cleanTitle(opp.title)}</h3>
                             <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>{match.bid_recommendation}</span>
                             {sourceBadge(opp.source, match.bid_recommendation)}
                             {match.user_notes && <span className="text-[11px] shrink-0" title="Has notes">&#128221;</span>}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#64748b]">
-                            <span className="truncate">{opp.agency}</span>
-                            {getVal(opp) > 0 && <><span className="text-[#e5e7eb]">|</span><span className="font-mono">{formatCurrency(getVal(opp))}</span></>}
-                            {opp.set_aside && <><span className="text-[#e5e7eb]">|</span><span>{opp.set_aside}</span></>}
-                            <span className={`font-mono ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[12px] text-[#64748b] ci-mono">
+                            <span className="truncate max-w-[200px]" style={{fontFamily: "'DM Sans', sans-serif"}}>{opp.agency}</span>
+                            <span className="text-[#e2e8f0]">&middot;</span>
+                            <span>{getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "TBD"}</span>
+                            <span className="text-[#e2e8f0]">&middot;</span>
+                            <span className={deadlineColor}>{deadlineLabel(opp.response_deadline) || "TBD"}</span>
+                            {opp.place_of_performance && <><span className="text-[#e2e8f0]">&middot;</span><span>{opp.place_of_performance}</span></>}
                           </div>
+                          {/* One-line AI guidance */}
+                          {!isExpanded && (
+                            <p className={`text-[11px] mt-0.5 ${match.bid_recommendation === "bid" ? "text-[#059669]" : match.bid_recommendation === "recompete_alert" ? "text-[#dc2626]" : "text-[#94a3b8]"}`}>
+                              {match.bid_recommendation === "bid" ? "Strong match — consider bidding" : match.bid_recommendation === "recompete_alert" ? "Recompete alert — incumbent contract expiring" : match.bid_recommendation === "monitor" ? "Worth monitoring" : "Review opportunity"}
+                            </p>
+                          )}
                         </div>
                         {/* Status badge (collapsed only) */}
                         {!isExpanded && match.user_status === "tracking" && (
