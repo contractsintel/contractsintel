@@ -101,7 +101,7 @@ export default function ProposalsPage() {
             </Link>
           </div>
         </div>
-        <div className="filter blur-sm opacity-40 pointer-events-none">
+        <div className="filter blur-[2px] opacity-40 pointer-events-none">
           <h1 className="ci-page-title">AI Proposals</h1>
 <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample proposal content would appear here...

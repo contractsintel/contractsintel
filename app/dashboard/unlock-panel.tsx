@@ -57,7 +57,7 @@ export function UnlockButton() {
       >
         <span>Unlock More Matches</span>
         {unlockCount > 0 && (
-          <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-xs">
+          <span className="bg-white/20 backdrop-blur-[2px] px-2 py-0.5 rounded-full text-xs">
             +{unlockCount.toLocaleString()} more
           </span>
         )}
@@ -255,7 +255,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-black/30 backdrop-blur-[2px]"
         onClick={onClose}
       />
 

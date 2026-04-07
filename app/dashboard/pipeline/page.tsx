@@ -281,7 +281,7 @@ export default function PipelinePage() {
                       <select
                         value={match.pipeline_stage}
                         onChange={(e) => moveToStage(match.id, e.target.value)}
-                        className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
+                        className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#4b5563] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
                       >
                         {STAGES.map((s) => (
                           <option key={s.key} value={s.key}>
@@ -313,7 +313,7 @@ export default function PipelinePage() {
                   value={wonData.award_amount}
                   onChange={(e) => setWonData((d) => ({ ...d, award_amount: e.target.value }))}
                   placeholder="e.g. 500000"
-                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
               <div>
@@ -325,7 +325,7 @@ export default function PipelinePage() {
                   value={wonData.contract_number}
                   onChange={(e) => setWonData((d) => ({ ...d, contract_number: e.target.value }))}
                   placeholder="e.g. GS-35F-0001X"
-                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
             </div>
@@ -360,7 +360,7 @@ export default function PipelinePage() {
                 <select
                   value={lostData.loss_reason}
                   onChange={(e) => setLostData((d) => ({ ...d, loss_reason: e.target.value }))}
-                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                  className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 >
                   {LOSS_REASONS.map((r) => (
                     <option key={r} value={r}>
@@ -377,7 +377,7 @@ export default function PipelinePage() {
                   value={lostData.loss_notes}
                   onChange={(e) => setLostData((d) => ({ ...d, loss_notes: e.target.value }))}
                   rows={3}
-                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+                  className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
                 />
               </div>
             </div>

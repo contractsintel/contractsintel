@@ -103,7 +103,7 @@ export default function PastPerformancePage() {
             </Link>
           </div>
         </div>
-        <div className="filter blur-sm opacity-40 pointer-events-none">
+        <div className="filter blur-[2px] opacity-40 pointer-events-none">
           <h1 className="ci-page-title">Past Performance</h1>
 <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
             Sample past performance content...
@@ -248,7 +248,7 @@ export default function PastPerformancePage() {
               onChange={(e) => setLogText(e.target.value)}
               rows={6}
               placeholder="Describe key accomplishments, deliverables, metrics, and any challenges this month..."
-              className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+              className="w-full bg-[#fafafa] border border-[#f0f1f3] text-[#111827] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
             />
             <div className="flex gap-3 mt-4">
               <button
