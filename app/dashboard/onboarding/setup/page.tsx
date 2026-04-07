@@ -2,7 +2,7 @@
 
 import { useDashboard } from "../../context";
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const US_STATES = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC","PR"];
@@ -55,10 +55,31 @@ export default function OnboardingSetupPage() {
 
   // Tab 3: Preferences
   const [certs, setCerts] = useState<string[]>(organization.certifications || []);
-  const [naicsCodes, setNaicsCodes] = useState(organization.naics_codes?.join(", ") || "");
+  const [selectedNaics, setSelectedNaics] = useState<string[]>(organization.naics_codes || []);
+  const [naicsSuggestions, setNaicsSuggestions] = useState<{code: string; title: string}[]>([]);
+  const [loadingNaics, setLoadingNaics] = useState(false);
+  const [naicsLoaded, setNaicsLoaded] = useState(false);
+  const [showManualNaics, setShowManualNaics] = useState(false);
+  const [manualNaicsCode, setManualNaicsCode] = useState("");
   const [minValue, setMinValue] = useState("");
   const [maxValue, setMaxValue] = useState("");
   const [setAsidePref, setSetAsidePref] = useState<"matching" | "all">("all");
+
+  // Auto-generate NAICS suggestions when entering Tab 3
+  useEffect(() => {
+    if (activeTab === "preferences" && !naicsLoaded && (description || selectedKeywords.length > 0)) {
+      setLoadingNaics(true);
+      fetch("/api/onboarding/naics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, keywords: selectedKeywords }),
+      })
+        .then(r => r.json())
+        .then(data => { if (data.naics?.length) setNaicsSuggestions(data.naics); })
+        .catch(() => {})
+        .finally(() => { setLoadingNaics(false); setNaicsLoaded(true); });
+    }
+  }, [activeTab, naicsLoaded, description, selectedKeywords]);
 
   const showBanner = (msg: string) => {
     setBanner(msg);
@@ -95,7 +116,7 @@ export default function OnboardingSetupPage() {
   // Validation
   const tab1Valid = companyName.trim().length >= 2;
   const tab2Valid = projectName.trim().length > 0 && description.trim().length >= 20 && selectedKeywords.length >= 2;
-  const tab3Valid = certs.length > 0 && naicsCodes.trim().length > 0;
+  const tab3Valid = certs.length > 0 && selectedNaics.length > 0;
 
   const saveOrganization = async () => {
     setTab1Attempted(true);
@@ -145,12 +166,11 @@ export default function OnboardingSetupPage() {
     setTab3Attempted(true);
     if (!tab3Valid) return;
     setSaving(true);
-    const naicsArr = naicsCodes.split(",").map(s => s.trim()).filter(Boolean);
     const minVal = minValue ? parseInt(minValue) : 0;
     const maxValNum = maxValue ? parseInt(maxValue) : 0;
     await supabase.from("organizations").update({
       certifications: certs,
-      naics_codes: naicsArr,
+      naics_codes: selectedNaics,
       keywords: selectedKeywords,
       serves_nationwide: serviceArea === "nationwide",
       service_states: selectedStates,
@@ -402,42 +422,116 @@ export default function OnboardingSetupPage() {
 
       {/* Tab 3: Match Preferences */}
       {activeTab === "preferences" && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div>
             <h2 className="text-[20px] font-semibold text-[#111827] mb-1">Tell us a few final details</h2>
             <p className="text-[13px] text-[#6b7280]">These help us find the best contract matches for your business.</p>
           </div>
 
+          {/* Certifications — rich card buttons */}
           <div>
-            <label className="text-[14px] font-semibold text-[#111827] block mb-2">Certifications *</label>
-            <div className="space-y-1.5">
-              {CERTS.map(cert => (
-                <label key={cert.id} className="flex items-start gap-3 py-2 cursor-pointer">
-                  <input type="checkbox" checked={certs.includes(cert.id)}
-                    onChange={e => setCerts(prev => e.target.checked ? [...prev, cert.id] : prev.filter(c => c !== cert.id))}
-                    className="w-[18px] h-[18px] rounded border-[#d1d5db] text-[#2563eb] focus:ring-[#2563eb] focus:ring-offset-0 mt-0.5" />
-                  <div>
-                    <span className="text-[14px] text-[#374151] font-medium">{cert.label}</span>
-                    <p className="text-[12px] text-[#6b7280]">{cert.desc}</p>
-                  </div>
-                </label>
-              ))}
+            <p className="text-[14px] font-semibold text-[#111827] mb-1">Certifications *</p>
+            <p className="text-[13px] text-[#6b7280] mb-3">Select all certifications your business holds.</p>
+            <div className="space-y-2">
+              {[
+                { key: "8(a)", label: "8(a)", desc: "SBA 8(a) Business Development", sel: "bg-[#eff6ff] border-[#2563eb] text-[#2563eb]" },
+                { key: "HUBZone", label: "HUBZone", desc: "Historically Underutilized Business Zone", sel: "bg-[#ecfdf5] border-[#059669] text-[#059669]" },
+                { key: "WOSB", label: "WOSB", desc: "Women-Owned Small Business", sel: "bg-[#f5f3ff] border-[#7c3aed] text-[#7c3aed]" },
+                { key: "EDWOSB", label: "EDWOSB", desc: "Economically Disadvantaged WOSB", sel: "bg-[#f5f3ff] border-[#7c3aed] text-[#7c3aed]" },
+                { key: "SDVOSB", label: "SDVOSB", desc: "Service-Disabled Veteran-Owned", sel: "bg-[#fef2f2] border-[#dc2626] text-[#dc2626]" },
+                { key: "Small Business", label: "Small Business", desc: "SBA Small Business", sel: "bg-[#fffbeb] border-[#d97706] text-[#d97706]" },
+                { key: "Service-Disabled Veteran", label: "Service-Disabled Veteran", desc: "Veteran-owned", sel: "bg-[#fef2f2] border-[#dc2626] text-[#dc2626]" },
+              ].map(cert => {
+                const on = certs.includes(cert.key);
+                return (
+                  <button key={cert.key}
+                    onClick={() => setCerts(prev => on ? prev.filter(c => c !== cert.key) : [...prev, cert.key])}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-150 text-left w-full ${
+                      on ? cert.sel : "bg-white border-[#e5e7eb] hover:border-[#d1d5db]"
+                    }`}>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${on ? "bg-current" : "border-2 border-[#d1d5db]"}`}>
+                      {on && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" d="M5 13l4 4L19 7"/></svg>}
+                    </div>
+                    <div>
+                      <div className={`text-[14px] font-semibold ${on ? "" : "text-[#111827]"}`}>{cert.label}</div>
+                      <div className={`text-[12px] ${on ? "opacity-75" : "text-[#6b7280]"}`}>{cert.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {certs.length > 0 && <p className="text-[12px] text-[#059669] mt-2 font-medium">{certs.length} certification{certs.length > 1 ? "s" : ""} selected</p>}
+          </div>
+
+          {/* NAICS Codes — AI-generated pill selector */}
+          <div>
+            <p className="text-[14px] font-semibold text-[#111827] mb-1">NAICS Codes *</p>
+            <p className="text-[13px] text-[#6b7280] mb-3">Select the codes that best describe your services. We use these to match you with relevant contracts.</p>
+
+            {loadingNaics ? (
+              <div className="flex items-center gap-2 text-[13px] text-[#4f46e5] py-4">
+                <div className="w-4 h-4 border-2 border-[#4f46e5] border-t-transparent rounded-full animate-spin" />
+                Analyzing your services to suggest NAICS codes...
+              </div>
+            ) : naicsSuggestions.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {naicsSuggestions.map(item => {
+                  const on = selectedNaics.includes(item.code);
+                  return (
+                    <button key={item.code}
+                      onClick={() => setSelectedNaics(prev => on ? prev.filter(c => c !== item.code) : [...prev, item.code])}
+                      className={`px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
+                        on
+                          ? "bg-[#ecfdf5] border-2 border-[#059669] text-[#059669] font-medium"
+                          : "bg-white border border-[#e5e7eb] text-[#4b5563] hover:border-[#4f46e5] hover:text-[#4f46e5]"
+                      }`}>
+                      <span className="font-mono font-semibold">{item.code}</span>
+                      <span className="ml-1.5 text-[12px] opacity-75">— {item.title}</span>
+                      {on && <span className="ml-2">×</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[13px] text-[#9ca3af] py-2">Complete Tab 2 first to get AI-generated NAICS suggestions, or add codes manually below.</p>
+            )}
+
+            {selectedNaics.length > 0 && <p className="text-[12px] text-[#059669] mt-2 font-medium">{selectedNaics.length} code{selectedNaics.length > 1 ? "s" : ""} selected</p>}
+
+            <div className="mt-3">
+              <button onClick={() => setShowManualNaics(!showManualNaics)} className="text-[13px] text-[#4f46e5] hover:text-[#4338ca]">
+                + Add a NAICS code manually
+              </button>
+              {showManualNaics && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input type="text" placeholder="Enter 6-digit code" maxLength={6}
+                    value={manualNaicsCode}
+                    onChange={e => setManualNaicsCode(e.target.value.replace(/\D/g, ""))}
+                    className="w-[140px] px-3 py-2 text-[14px] border border-[#e5e7eb] rounded-lg font-mono focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10" />
+                  <button onClick={() => {
+                    if (manualNaicsCode.length === 6 && !selectedNaics.includes(manualNaicsCode)) {
+                      setSelectedNaics(prev => [...prev, manualNaicsCode]);
+                      setManualNaicsCode("");
+                      setShowManualNaics(false);
+                    }
+                  }}
+                    disabled={manualNaicsCode.length !== 6}
+                    className={`px-3 py-2 rounded-lg text-[13px] font-medium ${
+                      manualNaicsCode.length === 6 ? "bg-[#4f46e5] text-white" : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
+                    }`}>
+                    Add
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">NAICS Codes *</label>
-            <p className="text-[12px] text-[#6b7280] mb-2">Enter your primary NAICS codes, separated by commas.</p>
-            <input value={naicsCodes} onChange={e => setNaicsCodes(e.target.value)}
-              placeholder="e.g. 541512, 541511, 541519"
-              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
-          </div>
-
+          {/* Contract size */}
           <div>
             <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">Contract size preference</label>
             <div className="flex items-center gap-3">
               <select value={minValue} onChange={e => setMinValue(e.target.value)}
-                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#2563eb] focus:outline-none">
+                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
                 <option value="">No minimum</option>
                 <option value="25000">$25K</option>
                 <option value="50000">$50K</option>
@@ -448,7 +542,7 @@ export default function OnboardingSetupPage() {
               </select>
               <span className="text-[13px] text-[#6b7280]">to</span>
               <select value={maxValue} onChange={e => setMaxValue(e.target.value)}
-                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#2563eb] focus:outline-none">
+                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
                 <option value="">No maximum</option>
                 <option value="100000">$100K</option>
                 <option value="250000">$250K</option>
@@ -460,25 +554,27 @@ export default function OnboardingSetupPage() {
             </div>
           </div>
 
+          {/* Set-aside preference */}
           <div>
             <label className="text-[14px] font-semibold text-[#111827] block mb-2">Set-aside preference</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="radio" checked={setAsidePref === "matching"} onChange={() => setSetAsidePref("matching")} className="w-4 h-4 text-[#2563eb]" />
+                <input type="radio" checked={setAsidePref === "matching"} onChange={() => setSetAsidePref("matching")} className="w-4 h-4 text-[#4f46e5]" />
                 <span className="text-[14px] text-[#374151]">Only show contracts with set-asides matching my certifications</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
-                <input type="radio" checked={setAsidePref === "all"} onChange={() => setSetAsidePref("all")} className="w-4 h-4 text-[#2563eb]" />
+                <input type="radio" checked={setAsidePref === "all"} onChange={() => setSetAsidePref("all")} className="w-4 h-4 text-[#4f46e5]" />
                 <span className="text-[14px] text-[#374151]">Show all contracts (including full &amp; open competition)</span>
               </label>
             </div>
           </div>
 
-          {tab3Attempted && certs.length === 0 && <p className="text-[13px] text-[#dc2626] mt-1.5">Select at least one certification</p>}
-          {tab3Attempted && !naicsCodes.trim() && <p className="text-[13px] text-[#dc2626] mt-1.5">Enter at least one NAICS code</p>}
+          {/* Validation errors */}
+          {tab3Attempted && certs.length === 0 && <p className="text-[13px] text-[#dc2626]">Select at least one certification</p>}
+          {tab3Attempted && selectedNaics.length === 0 && <p className="text-[13px] text-[#dc2626]">Select at least one NAICS code</p>}
 
-          <button onClick={saveAndExit} disabled={saving}
-            className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
+          <button onClick={saveAndExit} disabled={saving || matching}
+            className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all ${
               tab3Valid
                 ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
                 : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
