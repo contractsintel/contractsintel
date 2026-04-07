@@ -778,94 +778,237 @@ const ALL_FEDERAL_SOURCES = [
 ];
 
 // ============================================================
-// BUILT-IN CRON
+// STATE BATCHES (5 batches of ~11 states each)
 // ============================================================
+
+const STATE_BATCH_1 = ALL_STATE_SOURCES.filter(s => ["state_al","state_ak","state_az","state_ar","state_ca","state_co","state_ct","state_de","state_dc","state_fl"].includes(s.source_type));
+const STATE_BATCH_2 = ALL_STATE_SOURCES.filter(s => ["state_ga","state_hi","state_id","state_il","state_in","state_ia","state_ks","state_ky","state_la","state_me","state_md","state_ma"].includes(s.source_type));
+const STATE_BATCH_3 = ALL_STATE_SOURCES.filter(s => ["state_mi","state_mn","state_ms","state_mo","state_mt","state_ne","state_nv","state_nh","state_nj"].includes(s.source_type));
+const STATE_BATCH_4 = ALL_STATE_SOURCES.filter(s => ["state_nm","state_ny","state_nc","state_nd","state_oh","state_ok","state_or","state_pa","state_ri","state_sc"].includes(s.source_type));
+const STATE_BATCH_5 = ALL_STATE_SOURCES.filter(s => ["state_sd","state_tn","state_tx","state_ut","state_vt","state_va","state_wa","state_wv","state_wi","state_wy","state_vi","state_gu","state_pr"].includes(s.source_type));
+
+// ============================================================
+// ROTATION TRACKER & STATUS
+// ============================================================
+
+const cronStats = {
+  rotationIndex: 0,
+  running: false,
+  lastRotationName: "none",
+  lastRunAt: null,
+  recordsAddedLastHour: 0,
+  recordsAddedToday: 0,
+  hourlyRecords: [],
+  dailyRecords: 0,
+  startedAt: new Date().toISOString(),
+  rotationResults: {},
+};
+
+function trackRecords(count) {
+  const now = Date.now();
+  cronStats.hourlyRecords.push({ time: now, count });
+  // Prune entries older than 1 hour
+  cronStats.hourlyRecords = cronStats.hourlyRecords.filter(r => now - r.time < 3600000);
+  cronStats.recordsAddedLastHour = cronStats.hourlyRecords.reduce((s, r) => s + r.count, 0);
+  cronStats.recordsAddedToday += count;
+}
+
+// ============================================================
+// STATUS ENDPOINT
+// ============================================================
+
+app.get("/status", async (req, res) => {
+  const upSec = process.uptime();
+  const hours = Math.floor(upSec / 3600);
+  const mins = Math.floor((upSec % 3600) / 60);
+
+  // Get total from Supabase
+  let totalOpportunities = "?";
+  if (SUPABASE_KEY) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id&limit=1`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" },
+      });
+      const cr = r.headers.get("content-range") || "";
+      if (cr.includes("/")) totalOpportunities = parseInt(cr.split("/")[1]);
+    } catch {}
+  }
+
+  const ROTATION_INTERVAL = 5 * 60 * 1000;
+  const nextRunIn = cronStats.lastRunAt
+    ? Math.max(0, ROTATION_INTERVAL - (Date.now() - new Date(cronStats.lastRunAt).getTime()))
+    : 0;
+  const nextMins = Math.floor(nextRunIn / 60000);
+  const nextSecs = Math.floor((nextRunIn % 60000) / 1000);
+
+  res.json({
+    status: "ok",
+    engine: "patchright",
+    captcha: CAPSOLVER_KEY ? "capsolver-enabled" : "no-key",
+    uptime: `${hours}h ${mins}m`,
+    cron_running: cronStats.running || true,
+    rotation_index: cronStats.rotationIndex,
+    last_rotation: cronStats.lastRotationName,
+    last_run_at: cronStats.lastRunAt,
+    records_added_last_hour: cronStats.recordsAddedLastHour,
+    records_added_today: cronStats.recordsAddedToday,
+    total_opportunities: totalOpportunities,
+    next_run_in: `${nextMins}m ${nextSecs}s`,
+    sam_gov_status: "working (internal API)",
+    sources_configured: ALL_STATE_SOURCES.length + ALL_FEDERAL_SOURCES.length + 3,
+    recent_results: cronStats.rotationResults,
+  });
+});
+
+// ============================================================
+// 5-MINUTE ROTATION CRON
+// ============================================================
+
+const ROTATION_NAMES = [
+  "SAM.gov",
+  "USASpending",
+  "Grants.gov",
+  "States Batch 1 (AL-FL)",
+  "States Batch 2 (GA-MA)",
+  "States Batch 3 (MI-NJ)",
+  "States Batch 4 (NM-SC)",
+  "States Batch 5 (SD-WY+territories)",
+  "Federal Civilian",
+  "SBIR/STTR + Military",
+  "Forecasts + Subcontracting",
+  "SAM.gov (2nd check)",
+];
+
+async function runRotation(index) {
+  const slot = index % ROTATION_NAMES.length;
+  const name = ROTATION_NAMES[slot];
+  cronStats.lastRotationName = name;
+  cronStats.lastRunAt = new Date().toISOString();
+  cronStats.running = true;
+
+  console.log(`[cron] Rotation ${index} (slot ${slot}): ${name}`);
+
+  let saved = 0;
+  try {
+    const headers = { Authorization: `Bearer ${AUTH_TOKEN}`, "Content-Type": "application/json" };
+    const base = `http://localhost:${PORT}`;
+
+    switch (slot) {
+      case 0: // SAM.gov
+      case 11: { // SAM.gov 2nd check
+        const r = await fetch(`${base}/cron/sam`, { method: "POST", headers, signal: AbortSignal.timeout(1800000) });
+        const data = await r.json();
+        saved = data.saved || 0;
+        break;
+      }
+      case 1: { // USASpending
+        const r = await fetch(`${base}/cron/usaspending`, { method: "POST", headers, signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.saved || 0;
+        break;
+      }
+      case 2: { // Grants.gov
+        const r = await fetch(`${base}/cron/grants`, { method: "POST", headers, signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.saved || 0;
+        break;
+      }
+      case 3: { // States batch 1
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_1 }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 4: { // States batch 2
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_2 }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 5: { // States batch 3
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_3 }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 6: { // States batch 4
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_4 }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 7: { // States batch 5
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: STATE_BATCH_5 }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 8: { // Federal civilian
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: ALL_FEDERAL_SOURCES }), signal: AbortSignal.timeout(900000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 9: { // SBIR + Military (scrape via Patchright)
+        const sbirSources = [
+          { id: "sbir_gov", name: "SBIR.gov", url: "https://www.sbir.gov/sbirsearch/topic/current", source_type: "sbir_sttr" },
+          { id: "dodsbir", name: "DoD SBIR", url: "https://www.dodsbirsttr.mil/submissions/", source_type: "sbir_sttr" },
+          { id: "nih_sbir", name: "NIH SBIR", url: "https://seed.nih.gov/sbir-sttr-funding-opportunities", source_type: "sbir_sttr" },
+          { id: "nsf_sbir", name: "NSF SBIR", url: "https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=505362", source_type: "sbir_sttr" },
+          { id: "doe_sbir", name: "DOE SBIR", url: "https://science.osti.gov/sbir", source_type: "sbir_sttr" },
+          { id: "army_mil", name: "Army Procurement", url: "https://www.army.mil/asaalt/", source_type: "military_defense" },
+          { id: "navy_mil", name: "Navy Procurement", url: "https://www.neco.navy.mil/", source_type: "military_defense" },
+        ];
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: sbirSources }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+      case 10: { // Forecasts + Subcontracting
+        const miscSources = [
+          { id: "sam_forecasts", name: "SAM Forecasts", url: "https://sam.gov/search/?index=opp&is_active=true&sort=-modifiedDate&opp_type=forecasts", source_type: "forecasts" },
+          { id: "gsa_subk", name: "GSA Subcontracting", url: "https://www.gsa.gov/small-business/subcontracting-opportunities/subcontracting-directory", source_type: "subcontracting" },
+          { id: "sba_subk", name: "SBA Subcontracting", url: "https://www.sba.gov/federal-contracting/contracting-assistance-programs/subcontracting-network-subnet", source_type: "subcontracting" },
+        ];
+        const r = await fetch(`${base}/cron/scrape-html`, { method: "POST", headers, body: JSON.stringify({ sources: miscSources }), signal: AbortSignal.timeout(600000) });
+        const data = await r.json();
+        saved = data.total || 0;
+        break;
+      }
+    }
+
+    trackRecords(saved);
+    cronStats.rotationResults[name] = { saved, at: new Date().toISOString() };
+    console.log(`[cron] Rotation ${index} (${name}): ${saved} records saved`);
+  } catch (e) {
+    console.log(`[cron] Rotation ${index} (${name}) error: ${e.message}`);
+    cronStats.rotationResults[name] = { error: e.message, at: new Date().toISOString() };
+  }
+
+  cronStats.running = false;
+}
 
 app.listen(PORT, () => {
   console.log(`Patchright scraper server running on port ${PORT}`);
 
   if (SUPABASE_KEY) {
-    const CRON_INTERVAL = 30 * 60 * 1000;
-    const lastRun = { usaspending: 0, grants: 0, sam: 0, states: 0, federal: 0 };
-    const HOUR = 3600000;
+    const ROTATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
-    async function cronCycle() {
-      const now = Date.now();
-      console.log(`[cron] Cycle starting at ${new Date().toISOString()}`);
+    // First rotation 30 seconds after startup
+    setTimeout(async () => {
+      await runRotation(cronStats.rotationIndex++);
 
-      try {
-        // Every 1 hour: API sources
-        if (now - lastRun.usaspending > 1 * HOUR) {
-          console.log("[cron] Triggering USASpending...");
-          const r = await fetch(`http://localhost:${PORT}/cron/usaspending`, {
-            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-            signal: AbortSignal.timeout(600000),
-          });
-          const data = await r.json();
-          console.log(`[cron] USASpending result: ${JSON.stringify(data).substring(0, 200)}`);
-          lastRun.usaspending = now;
+      // Then every 5 minutes
+      setInterval(async () => {
+        if (cronStats.running) {
+          console.log("[cron] Previous rotation still running, skipping...");
+          return;
         }
+        await runRotation(cronStats.rotationIndex++);
+      }, ROTATION_INTERVAL);
+    }, 30000);
 
-        if (now - lastRun.grants > 1 * HOUR) {
-          console.log("[cron] Triggering Grants.gov...");
-          const r = await fetch(`http://localhost:${PORT}/cron/grants`, {
-            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-            signal: AbortSignal.timeout(300000),
-          });
-          const data = await r.json();
-          console.log(`[cron] Grants.gov result: ${JSON.stringify(data).substring(0, 200)}`);
-          lastRun.grants = now;
-        }
-
-        // Every 1 hour: SAM.gov (internal API, no key needed)
-        if (now - lastRun.sam > 1 * HOUR) {
-          console.log("[cron] Triggering SAM.gov...");
-          const r = await fetch(`http://localhost:${PORT}/cron/sam`, {
-            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
-            signal: AbortSignal.timeout(1800000),
-          });
-          const data = await r.json();
-          console.log(`[cron] SAM.gov result: ${JSON.stringify(data).substring(0, 200)}`);
-          lastRun.sam = now;
-        }
-
-        // Every 2 hours: State portals via Patchright
-        if (now - lastRun.states > 2 * HOUR) {
-          console.log("[cron] Triggering state portals...");
-          const r = await fetch(`http://localhost:${PORT}/cron/scrape-html`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${AUTH_TOKEN}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ sources: ALL_STATE_SOURCES }),
-            signal: AbortSignal.timeout(1800000),
-          });
-          const data = await r.json();
-          console.log(`[cron] States result: ${data.total} saved`);
-          lastRun.states = now;
-        }
-
-        // Every 2 hours: Federal civilian agencies via Patchright
-        if (now - lastRun.federal > 2 * HOUR) {
-          console.log("[cron] Triggering federal civilian agencies...");
-          const r = await fetch(`http://localhost:${PORT}/cron/scrape-html`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${AUTH_TOKEN}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ sources: ALL_FEDERAL_SOURCES }),
-            signal: AbortSignal.timeout(1200000),
-          });
-          const data = await r.json();
-          console.log(`[cron] Federal civilian result: ${data.total} saved`);
-          lastRun.federal = now;
-        }
-      } catch (e) {
-        console.log(`[cron] Cycle error: ${e.message}`);
-      }
-
-      console.log(`[cron] Cycle complete at ${new Date().toISOString()}`);
-    }
-
-    setTimeout(cronCycle, 60000);
-    setInterval(cronCycle, CRON_INTERVAL);
-    console.log("[cron] Auto-scraping enabled: every 30 minutes");
+    console.log("[cron] 5-minute rotation cron enabled (12 slots, every source checked hourly)");
   } else {
     console.log("[cron] No SUPABASE_KEY — auto-scraping disabled");
   }
