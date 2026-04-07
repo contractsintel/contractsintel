@@ -31,6 +31,9 @@ export default function OnboardingSetupPage() {
   const [tab1Attempted, setTab1Attempted] = useState(false);
   const [tab2Attempted, setTab2Attempted] = useState(false);
   const [tab3Attempted, setTab3Attempted] = useState(false);
+  const [pullingSam, setPullingSam] = useState(false);
+  const [samSuccess, setSamSuccess] = useState(false);
+  const [samError, setSamError] = useState("");
 
   // Tab 1: Organization
   const [companyName, setCompanyName] = useState(organization.name || "");
@@ -63,18 +66,30 @@ export default function OnboardingSetupPage() {
   };
 
   const pullFromSam = async () => {
-    if (!uei.trim()) return;
-    setSaving(true);
+    if (!uei || uei.trim().length < 5) return;
+    setPullingSam(true);
+    setSamError("");
+    setSamSuccess(false);
     try {
-      const res = await fetch(`/api/audit?uei=${uei.trim()}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.legalBusinessName) setCompanyName(data.legalBusinessName);
+      const res = await fetch(`/api/audit?uei=${encodeURIComponent(uei.trim())}`);
+      const data = await res.json();
+      if (data.entity) {
+        if (data.entity.legalBusinessName) setCompanyName(data.entity.legalBusinessName);
+        if (data.entity.cageCode) setCageCode(data.entity.cageCode);
+        setSamSuccess(true);
+        setTimeout(() => setSamSuccess(false), 3000);
+      } else if (data.legalBusinessName) {
+        setCompanyName(data.legalBusinessName);
         if (data.cageCode) setCageCode(data.cageCode);
-        showBanner("Imported from SAM.gov!");
+        setSamSuccess(true);
+        setTimeout(() => setSamSuccess(false), 3000);
+      } else {
+        setSamError("Could not find this UEI in SAM.gov");
       }
-    } catch {}
-    setSaving(false);
+    } catch {
+      setSamError("Error connecting to SAM.gov. Try again.");
+    }
+    setPullingSam(false);
   };
 
   // Validation
@@ -132,6 +147,7 @@ export default function OnboardingSetupPage() {
     await supabase.from("organizations").update({
       certifications: certs,
       naics_codes: naicsArr,
+      setup_wizard_complete: true,
     }).eq("id", organization.id);
     setSaving(false);
     showBanner("Profile complete!");
@@ -197,13 +213,25 @@ export default function OnboardingSetupPage() {
           <div>
             <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">UEI Number</label>
             <div className="flex gap-2">
-              <input value={uei} onChange={e => setUei(e.target.value)} placeholder="e.g. ZQGGHJH74DW7"
-                className="flex-1 border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
-              <button onClick={pullFromSam} disabled={saving || !uei.trim()}
-                className="px-4 py-2 text-[13px] font-medium border border-[#e5e7eb] rounded-lg text-[#4b5563] hover:border-[#2563eb] hover:text-[#2563eb] disabled:opacity-40 transition-colors">
-                Pull from SAM.gov
+              <input value={uei} onChange={e => { setUei(e.target.value); setSamError(""); setSamSuccess(false); }}
+                placeholder="e.g. ZQGGHJH74DW7"
+                className="flex-1 border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 focus:outline-none" />
+              <button onClick={pullFromSam} disabled={pullingSam || !uei || uei.trim().length < 5}
+                className={`px-4 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 ${
+                  pullingSam ? "bg-[#e5e7eb] text-[#9ca3af]" : "bg-[#4f46e5] text-white hover:bg-[#4338ca]"
+                } disabled:opacity-40`}>
+                {pullingSam ? "Pulling..." : "Pull from SAM.gov"}
               </button>
             </div>
+            {samSuccess && <p className="text-[13px] text-[#059669] mt-2">✓ Data pulled from SAM.gov</p>}
+            {samError && <p className="text-[13px] text-[#dc2626] mt-2">{samError}</p>}
+            <p className="text-[12px] text-[#6b7280] mt-1.5">
+              Your Unique Entity ID from SAM.gov registration.
+              <a href="https://sam.gov" target="_blank" rel="noopener noreferrer"
+                 className="text-[#4f46e5] hover:underline ml-1">
+                Look up your UEI →
+              </a>
+            </p>
           </div>
 
           <div>

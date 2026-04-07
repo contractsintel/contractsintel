@@ -24,9 +24,7 @@ export default function OnboardingPage() {
   const [goal, setGoal] = useState(organization.onboarding_goal || "");
 
   const step1Complete = !!goal;
-  const step2Complete = step1Complete
-    && Array.isArray(organization.certifications) && organization.certifications.length > 0
-    && Array.isArray(organization.naics_codes) && organization.naics_codes.length > 0;
+  const step2Complete = step1Complete && organization.setup_wizard_complete === true;
   const allComplete = step1Complete && step2Complete;
   const progress = allComplete ? 100 : step1Complete ? 33 : 0;
 

@@ -16,6 +16,7 @@ export interface Organization {
   entity_description: string | null;
   onboarding_complete: boolean;
   onboarding_goal: string | null;
+  setup_wizard_complete: boolean;
   created_at: string;
   [key: string]: any; // Allow additional DB columns
 }
