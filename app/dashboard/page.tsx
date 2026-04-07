@@ -8,6 +8,7 @@ import { HelpButton } from "./help-panel";
 import { DemoBanner } from "./demo-banner";
 import { InlineGuide } from "./inline-guide";
 import { seedDemoData } from "@/lib/demo-data";
+import { UnlockButton, ProfileBanner } from "./unlock-panel";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   const { organization, user } = useDashboard();
   const supabase = createClient();
   const PAGE_SIZE = 20;
+  const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
   const [matches, setMatches] = useState<any[]>([]);
   const [totalMatchCount, setTotalMatchCount] = useState(0);
   const [matchLimit, setMatchLimit] = useState(PAGE_SIZE);
@@ -338,6 +340,9 @@ export default function DashboardPage() {
         </div>
       </div>
       <InlineGuide page="dashboard" />
+
+      {/* Profile Completion Banner */}
+      <ProfileBanner />
 
       {/* Demo Banner */}
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
@@ -864,6 +869,9 @@ export default function DashboardPage() {
           <button onClick={() => setToast(null)} className="text-[#9ca3af] hover:text-[#111827] text-lg leading-none">&times;</button>
         </div>
       )}
+
+      {/* Floating Unlock Button */}
+      <UnlockButton />
     </div>
   );
 }
