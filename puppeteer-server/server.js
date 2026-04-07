@@ -651,7 +651,36 @@ app.post("/cron/match", async (req, res) => {
       testInfo = { org_match_count: orgMatchCount, offset_used: orgMatchCount, opps_at_offset: Array.isArray(testOpps) ? testOpps.length : "error", sample_opp: testOpps?.[0] ? { id: testOpps[0].id, title: testOpps[0].title?.substring(0, 60), source: testOpps[0].source } : null };
     }
 
-    const matched = await runBulkMatching();
+    // Direct test: create 100 matches for first org from first 100 opps
+    let directCreated = 0;
+    if (testInfo.sample_opp && debugOrgs[0]) {
+      const testOppRes2 = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,agency,source,estimated_value,set_aside,response_deadline&order=created_at.desc&limit=100`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      const testOpps2 = await testOppRes2.json();
+      if (Array.isArray(testOpps2) && testOpps2.length > 0) {
+        const directMatches = testOpps2.map(opp => ({
+          organization_id: debugOrgs[0].id,
+          opportunity_id: opp.id,
+          match_score: opp.source === "sam_gov" ? 55 : 40,
+          bid_recommendation: "monitor",
+          recommendation_reasoning: `${opp.source || "federal"} opportunity: ${opp.agency || "Unknown"}`,
+          user_status: "new",
+          is_demo: false,
+        }));
+        const directRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+          method: "POST",
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
+          body: JSON.stringify(directMatches),
+        });
+        directCreated = directRes.ok ? directMatches.length : 0;
+        if (!directRes.ok) {
+          const errText = await directRes.text();
+          testInfo.upsert_error = `${directRes.status}: ${errText.substring(0, 200)}`;
+        }
+        testInfo.direct_test = { opps_fetched: testOpps2.length, matches_attempted: directMatches.length, upsert_ok: directRes.ok, status: directRes.status };
+      }
+    }
+
+    const matched = directCreated; // Skip runBulkMatching for now, test direct insert
     console.log(`[cron] Manual matching complete: ${matched} matches created`);
     res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY, total_opportunities: oppDebugCount, total_existing_matches: matchDebugCount, test: testInfo } });
   } catch (e) {
