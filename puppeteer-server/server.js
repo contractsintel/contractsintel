@@ -912,7 +912,8 @@ app.post("/cron/grants", async (req, res) => {
 // Routes API calls through a real browser session with cookies + stealth headers
 app.post("/cron/sam", async (req, res) => {
   if (!authCheck(req, res)) return;
-  console.log("[cron] SAM.gov starting (browser-proxied API, full 45K+ scrape)...");
+  try {
+  console.log("[cron] SAM.gov starting (stealth fetch, full 45K+ scrape)...");
 
   const SAM_SEARCH = "https://sam.gov/api/prod/sgs/v1/search/";
   const PAGE_SIZE = 25; // Smaller pages to look less bot-like
@@ -935,68 +936,35 @@ app.post("/cron/sam", async (req, res) => {
   }
   batches.push({ notice_type: "k", naics: null, label: "type=k,catchall" });
 
-  // Strategy: Navigate browser directly to API URL, extract JSON from page body
-  // This uses Patchright's full anti-detect stack (TLS fingerprint, headers, etc.)
-
-  // Browser-navigated API fetch: loads API URL as a page, extracts JSON from body
-  async function browserNavigateFetch(url) {
-    let ctx = null;
-    try {
-      const result = await getPage();
-      ctx = result.context;
-      const pg = result.page;
-
-      // First visit sam.gov to establish cookies/session
-      await pg.goto("https://sam.gov/search/", { waitUntil: "domcontentloaded", timeout: 20000 });
-      await new Promise(r => setTimeout(r, 2000));
-      await solveCaptchaIfPresent(pg);
-
-      // Now navigate to the API URL — browser handles Cloudflare/WAF
-      const response = await pg.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
-      if (!response || !response.ok()) {
-        return { error: true, status: response ? response.status() : 0 };
-      }
-      const text = await pg.evaluate(() => document.body?.innerText || document.body?.textContent || "");
-      if (!text || text.length < 10) return { error: true, status: "empty" };
-      return JSON.parse(text);
-    } catch (e) {
-      console.log(`[sam] browser navigate error: ${e.message}`);
-      return { error: true, status: e.message };
-    } finally {
-      if (ctx) await ctx.close().catch(() => {});
-    }
-  }
-
-  // Direct fetch with stealth headers + retry
-  async function directFetch(url, attempt = 0) {
+  // Direct fetch with stealth headers + retry (diagnostic confirmed this works from Railway)
+  async function samFetch(url, attempt = 0) {
     const ua = randomStealthUA();
-    const headers = {
+    const hdrs = {
       ...stealthHeaders(ua),
       Accept: "application/json, text/plain, */*",
       Referer: "https://sam.gov/search/",
       Origin: "https://sam.gov",
     };
     try {
-      const apiRes = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+      const apiRes = await fetch(url, { headers: hdrs, signal: AbortSignal.timeout(30000) });
       if (!apiRes.ok) {
         if (attempt < 2) {
+          console.log(`[sam] HTTP ${apiRes.status}, retry ${attempt + 1}...`);
           await exponentialBackoff(attempt);
-          return directFetch(url, attempt + 1);
+          return samFetch(url, attempt + 1);
         }
         return { error: true, status: apiRes.status };
       }
       return await apiRes.json();
     } catch (e) {
       if (attempt < 2) {
+        console.log(`[sam] fetch error: ${e.message}, retry ${attempt + 1}...`);
         await exponentialBackoff(attempt);
-        return directFetch(url, attempt + 1);
+        return samFetch(url, attempt + 1);
       }
       return { error: true, status: e.message };
     }
   }
-
-  // Test which method works on first call, then reuse for all subsequent calls
-  let useMethod = "unknown"; // "direct", "browser", or "none"
 
   function mapSamRecord(r) {
     const orgs = r.organizationHierarchy || [];
@@ -1057,27 +1025,7 @@ app.post("/cron/sam", async (req, res) => {
         if (batch.naics) params.set("naics", batch.naics);
         const url = `${SAM_SEARCH}?${params}`;
 
-        // Try direct first (fast), fall back to browser navigation (slow but bypasses WAF)
-        let data;
-        if (useMethod === "direct" || useMethod === "unknown") {
-          data = await directFetch(url);
-          if (!data.error && useMethod === "unknown") {
-            useMethod = "direct";
-            console.log("[sam] Direct fetch working — using direct for all batches");
-          }
-        }
-        if ((!data || data.error) && useMethod !== "direct") {
-          if (useMethod === "unknown") console.log("[sam] Direct fetch failed, trying browser navigation...");
-          data = await browserNavigateFetch(url);
-          if (!data.error && useMethod === "unknown") {
-            useMethod = "browser";
-            console.log("[sam] Browser navigation working — using browser for all batches");
-          }
-        }
-        if (data.error && useMethod === "unknown") {
-          useMethod = "none";
-          console.log("[sam] Both methods failed — SAM.gov may be fully blocking Railway");
-        }
+        const data = await samFetch(url);
 
         if (data.error) {
           consecutiveErrors++;
@@ -1116,11 +1064,6 @@ app.post("/cron/sam", async (req, res) => {
   const batchResults = [];
 
   for (const batch of batches) {
-    // Fast-fail if we already know neither method works
-    if (useMethod === "none") {
-      batchResults.push({ label: batch.label, saved: 0, total: 0, pages: 0 });
-      continue;
-    }
     const result = await scrapeBatch(batch);
     batchResults.push(result);
     grandTotal += result.saved;
@@ -1131,8 +1074,12 @@ app.post("/cron/sam", async (req, res) => {
     await randomDelay(1000, 3000);
   }
 
-  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches (method: ${useMethod})`);
-  res.json({ source: "sam_gov", saved: grandTotal, method: useMethod, batches: batchResults.filter(b => b.saved > 0) });
+  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches`);
+  res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
+  } catch (e) {
+    console.log(`[cron] SAM.gov fatal error: ${e.message}`);
+    res.status(500).json({ source: "sam_gov", saved: 0, error: e.message });
+  }
 });
 
 // Diagnostic: test SAM.gov connectivity from Railway
