@@ -104,14 +104,14 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
   const [naicsMatchCount, setNaicsMatchCount] = useState(0);
   const [certMatchCount, setCertMatchCount] = useState(0);
   const [celebration, setCelebration] = useState<string | null>(null);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
   // Check existing completion
   useEffect(() => {
-    const done = new Set<number>();
-    if (organization.naics_codes?.length) done.add(1);
-    if (organization.certifications?.length) done.add(2);
-    if (organization.uei) done.add(3);
+    const done: number[] = [];
+    if (organization.naics_codes?.length) done.push(1);
+    if (organization.certifications?.length) done.push(2);
+    if (organization.uei) done.push(3);
     setCompletedSteps(done);
 
     // Check calendar
@@ -122,9 +122,8 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
         .eq("organization_id", organization.id)
         .single();
       if (data?.google_calendar_connected) {
-        done.add(4);
         setCalendarConnected(true);
-        setCompletedSteps(new Set(done));
+        setCompletedSteps([...done, 4]);
       }
     })();
   }, [organization, supabase]);
@@ -173,7 +172,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
       .update({ naics_codes: selectedNaics })
       .eq("id", organization.id);
     setSaving(false);
-    setCompletedSteps((s) => new Set([...s, 1]));
+    setCompletedSteps((s) => s.includes(1) ? s : [...s, 1]);
     setCelebration(`+${naicsMatchCount.toLocaleString()} matches unlocked!`);
     setTimeout(() => setCelebration(null), 3000);
   };
@@ -197,7 +196,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
       count += c ?? 0;
     }
     setCertMatchCount(count);
-    setCompletedSteps((s) => new Set([...s, 2]));
+    setCompletedSteps((s) => s.includes(2) ? s : [...s, 2]);
     setCelebration(`+${count.toLocaleString()} set-aside matches unlocked!`);
     setTimeout(() => setCelebration(null), 3000);
   };
@@ -221,7 +220,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               address: data.physicalAddress || organization.address,
             })
             .eq("id", organization.id);
-          setCompletedSteps((s) => new Set([...s, 3]));
+          setCompletedSteps((s) => s.includes(3) ? s : [...s, 3]);
           setCelebration("Profile imported from SAM.gov!");
           setTimeout(() => setCelebration(null), 3000);
           setSaving(false);
@@ -235,7 +234,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
       .from("organizations")
       .update({ uei: uei.trim() })
       .eq("id", organization.id);
-    setCompletedSteps((s) => new Set([...s, 3]));
+    setCompletedSteps((s) => s.includes(3) ? s : [...s, 3]);
     setCelebration("UEI saved!");
     setTimeout(() => setCelebration(null), 3000);
     setSaving(false);
@@ -246,7 +245,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
   };
 
   const totalSteps = 4;
-  const doneCount = completedSteps.size;
+  const doneCount = completedSteps.length;
   const totalMatches = naicsMatchCount + certMatchCount;
   const allDone = doneCount >= totalSteps;
 
@@ -337,9 +336,9 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 1: NAICS */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.has(1) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(1) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  {completedSteps.has(1) ? (
+                  {completedSteps.includes(1) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
                   ) : (
                     <span className="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold">1</span>
@@ -347,7 +346,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                   <h3 className="text-sm font-bold text-[#0f172a]">What does your business do?</h3>
                 </div>
 
-                {!completedSteps.has(1) && (
+                {!completedSteps.includes(1) && (
                   <div className="ml-8">
                     <input
                       type="text"
@@ -402,9 +401,9 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 2: CERTIFICATIONS */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.has(2) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(2) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  {completedSteps.has(2) ? (
+                  {completedSteps.includes(2) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
                   ) : (
                     <span className="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold">2</span>
@@ -412,7 +411,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                   <h3 className="text-sm font-bold text-[#0f172a]">What certifications do you have?</h3>
                 </div>
 
-                {!completedSteps.has(2) && (
+                {!completedSteps.includes(2) && (
                   <div className="ml-8">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                       {CERTIFICATIONS.map((cert) => {
@@ -457,9 +456,9 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 3: UEI / SAM.gov */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.has(3) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(3) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  {completedSteps.has(3) ? (
+                  {completedSteps.includes(3) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
                   ) : (
                     <span className="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold">3</span>
@@ -467,7 +466,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                   <h3 className="text-sm font-bold text-[#0f172a]">Connect your SAM.gov profile</h3>
                 </div>
 
-                {!completedSteps.has(3) && (
+                {!completedSteps.includes(3) && (
                   <div className="ml-8">
                     <p className="text-xs text-[#64748b] mb-2">
                       Enter your UEI and we&apos;ll import your NAICS codes, certifications, and address automatically.
@@ -494,9 +493,9 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 4: Google Calendar */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.has(4) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(4) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  {completedSteps.has(4) ? (
+                  {completedSteps.includes(4) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
                   ) : (
                     <span className="w-6 h-6 rounded-full bg-[#2563eb] text-white flex items-center justify-center text-xs font-bold">4</span>
@@ -504,7 +503,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                   <h3 className="text-sm font-bold text-[#0f172a]">Get deadline reminders</h3>
                 </div>
 
-                {!completedSteps.has(4) && (
+                {!completedSteps.includes(4) && (
                   <div className="ml-8">
                     <p className="text-xs text-[#64748b] mb-2">
                       Connect Google Calendar to get contract deadline reminders on your phone.
