@@ -474,58 +474,114 @@ app.post("/cron/usaspending", async (req, res) => {
   res.json({ source: "usaspending", saved: totalSaved, pages: page - 1 });
 });
 
-// Cron: Grants.gov
+// Cron: Grants.gov — per-agency queries for all 26 major agencies
 app.post("/cron/grants", async (req, res) => {
   if (!authCheck(req, res)) return;
-  console.log("[cron] Grants.gov starting...");
+  console.log("[cron] Grants.gov starting (per-agency)...");
 
-  let offset = 0, totalSaved = 0, hitCount = 0;
+  const AGENCIES = [
+    "DOD", "HHS", "DOE", "NSF", "NASA", "EPA", "USDA", "DOJ", "DOI", "DOT",
+    "DHS", "VA", "HUD", "ED", "DOL", "DOC", "TREAS", "STATE", "OPM", "SSA",
+    "SBA", "FEMA", "NRC", "USAID", "GSA", "NIH",
+  ];
 
-  while (true) {
-    try {
-      const apiRes = await fetch("https://apply07.grants.gov/grantsws/rest/opportunities/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy: "openDate|desc", rows: 500, offset }),
-        signal: AbortSignal.timeout(30000),
-      });
-      const data = await apiRes.json();
-      const opps = data.oppHits || [];
-      hitCount = data.hitCount || 0;
-      if (!opps.length) break;
+  const GRANTS_URL = "https://apply07.grants.gov/grantsws/rest/opportunities/search";
+  const parseDate = (d) => { if (!d) return null; const p = d.split("/"); return p.length === 3 ? `${p[2]}-${p[0].padStart(2,"0")}-${p[1].padStart(2,"0")}` : d; };
 
-      const records = opps.filter(o => o.id || o.opportunityId).map(o => {
-        const id = o.id || o.opportunityId;
-        const parseDate = (d) => { if (!d) return null; const p = d.split("/"); return p.length === 3 ? `${p[2]}-${p[0].padStart(2,"0")}-${p[1].padStart(2,"0")}` : d; };
-        return {
-          notice_id: `grants-gov-${id}`,
-          title: o.title || o.opportunityTitle || "Untitled Grant",
-          agency: o.agency || o.agencyCode || "Unknown",
-          solicitation_number: o.number || o.opportunityNumber || String(id),
-          value_estimate: o.estimatedTotalFunding ? Math.round(o.estimatedTotalFunding) : (o.awardCeiling ? Math.round(o.awardCeiling) : null),
-          response_deadline: parseDate(o.closeDate || o.closeDateStr),
-          posted_date: parseDate(o.openDate || o.openDateStr),
-          description: (o.description || "").substring(0, 10000) || null,
-          source: "grants_gov",
-          source_url: `https://www.grants.gov/search-results-detail/${id}`,
-          last_seen_at: new Date().toISOString(),
-        };
-      });
+  let grandTotal = 0;
+  const results = {};
 
-      const saved = await upsertToSupabase(records);
-      totalSaved += saved;
-      offset += 500;
-      console.log(`[cron] Grants.gov offset ${offset-500}: ${saved} saved (total: ${totalSaved}/${hitCount})`);
-      if (opps.length < 500 || offset >= hitCount) break;
-      await new Promise(r => setTimeout(r, 1500));
-    } catch (e) {
-      console.log(`[cron] Grants.gov offset ${offset} error: ${e.message}`);
-      break;
+  // First: broad query (no agency filter) to get general results
+  for (const sortBy of ["openDate|desc", "closeDate|asc"]) {
+    let offset = 0;
+    while (offset < 2000) {
+      try {
+        const apiRes = await fetch(GRANTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ keyword: "", oppStatuses: "posted", sortBy, rows: 500, offset }),
+          signal: AbortSignal.timeout(30000),
+        });
+        const data = await apiRes.json();
+        const opps = data.oppHits || [];
+        if (!opps.length) break;
+
+        const records = opps.filter(o => o.id || o.opportunityId).map(o => {
+          const id = o.id || o.opportunityId;
+          return {
+            notice_id: `grants-gov-${id}`,
+            title: o.title || o.opportunityTitle || "Untitled Grant",
+            agency: o.agency || o.agencyCode || "Unknown",
+            solicitation_number: o.number || o.opportunityNumber || String(id),
+            value_estimate: o.estimatedTotalFunding ? Math.round(o.estimatedTotalFunding) : (o.awardCeiling ? Math.round(o.awardCeiling) : null),
+            response_deadline: parseDate(o.closeDate || o.closeDateStr),
+            posted_date: parseDate(o.openDate || o.openDateStr),
+            description: (o.description || "").substring(0, 10000) || null,
+            source: "grants_gov",
+            source_url: `https://www.grants.gov/search-results-detail/${id}`,
+            last_seen_at: new Date().toISOString(),
+          };
+        });
+
+        const saved = await upsertToSupabase(records);
+        grandTotal += saved;
+        offset += 500;
+        if (opps.length < 500) break;
+        await new Promise(r => setTimeout(r, 500));
+      } catch (e) { break; }
+    }
+  }
+  results["broad"] = grandTotal;
+  console.log(`[cron] Grants.gov broad: ${grandTotal} saved`);
+
+  // Then: per-agency queries
+  for (const agency of AGENCIES) {
+    let offset = 0, agencySaved = 0;
+    while (offset < 2000) {
+      try {
+        const apiRes = await fetch(GRANTS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ keyword: "", oppStatuses: "posted", agency, sortBy: "openDate|desc", rows: 500, offset }),
+          signal: AbortSignal.timeout(30000),
+        });
+        const data = await apiRes.json();
+        const opps = data.oppHits || [];
+        if (!opps.length) break;
+
+        const records = opps.filter(o => o.id || o.opportunityId).map(o => {
+          const id = o.id || o.opportunityId;
+          return {
+            notice_id: `grants-gov-${id}`,
+            title: o.title || o.opportunityTitle || "Untitled Grant",
+            agency: o.agency || o.agencyCode || agency,
+            solicitation_number: o.number || o.opportunityNumber || String(id),
+            value_estimate: o.estimatedTotalFunding ? Math.round(o.estimatedTotalFunding) : (o.awardCeiling ? Math.round(o.awardCeiling) : null),
+            response_deadline: parseDate(o.closeDate || o.closeDateStr),
+            posted_date: parseDate(o.openDate || o.openDateStr),
+            description: (o.description || "").substring(0, 10000) || null,
+            source: "grants_gov",
+            source_url: `https://www.grants.gov/search-results-detail/${id}`,
+            last_seen_at: new Date().toISOString(),
+          };
+        });
+
+        const saved = await upsertToSupabase(records);
+        agencySaved += saved;
+        offset += 500;
+        if (opps.length < 500) break;
+        await new Promise(r => setTimeout(r, 300));
+      } catch (e) { break; }
+    }
+    if (agencySaved > 0) {
+      results[agency] = agencySaved;
+      grandTotal += agencySaved;
+      console.log(`[cron] Grants.gov ${agency}: ${agencySaved} saved`);
     }
   }
 
-  console.log(`[cron] Grants.gov done: ${totalSaved} saved`);
-  res.json({ source: "grants_gov", saved: totalSaved, hitCount });
+  console.log(`[cron] Grants.gov complete: ${grandTotal} total saved from ${Object.keys(results).length} queries`);
+  res.json({ source: "grants_gov", saved: grandTotal, byAgency: results });
 });
 
 // Cron: SAM.gov (internal API — no API key needed)
