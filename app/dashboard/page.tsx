@@ -806,16 +806,20 @@ export default function DashboardPage() {
 
                       {/* Quick actions — visible on hover */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
-                          className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors"
-                          title="Track">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
-                          className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-colors"
-                          title="Start Bid">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        </button>
+                        <div className="relative group/tip">
+                          <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                          </button>
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-100 pointer-events-none">Track</span>
+                        </div>
+                        <div className="relative group/tip2">
+                          <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-colors">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                          </button>
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip2:opacity-100 transition-opacity duration-100 pointer-events-none">Start Bid</span>
+                        </div>
                       </div>
 
                       {/* Chevron */}
