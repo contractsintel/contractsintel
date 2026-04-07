@@ -642,7 +642,7 @@ app.post("/cron/match-bulk", async (req, res) => {
       const MAX = 50000;
 
       while (orgTotal < MAX) {
-        const oppUrl = `${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency,estimated_value,set_aside,response_deadline&order=created_at.desc&limit=${BATCH}&offset=${offset}`;
+        const oppUrl = `${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=${BATCH}&offset=${offset}`;
         const oppR = await fetch(oppUrl, { headers: hdrs });
         if (!oppR.ok) { console.log(`[match-bulk] Opp query failed: ${oppR.status}`); break; }
         const opps = await oppR.json();
@@ -650,16 +650,11 @@ app.post("/cron/match-bulk", async (req, res) => {
         if (!opps.length) { console.log(`[match-bulk] No opps at offset ${offset}`); break; }
 
         const matches = opps.map(o => {
-          let score = 30;
-          if (o.source === "sam_gov") score += 15;
-          else if (["federal_civilian", "usaspending"].includes(o.source)) score += 10;
-          else if (o.source?.startsWith("state_")) score += 5;
-          if (o.estimated_value > 0) score += 10;
-          if (o.set_aside) score += 5;
+          let score = o.source === "sam_gov" ? 55 : o.source?.startsWith("state_") ? 40 : 35;
           return {
             organization_id: org.id,
             opportunity_id: o.id,
-            match_score: Math.min(score, 100),
+            match_score: score,
             bid_recommendation: score >= 50 ? "monitor" : "skip",
             recommendation_reasoning: `${o.source || "federal"}: ${o.agency || "Unknown"}`,
             user_status: "new",
