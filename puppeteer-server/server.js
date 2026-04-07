@@ -433,7 +433,7 @@ app.post("/cron/sam-backfill", async (req, res) => {
 
   let updated = 0, errors = 0, offset = 0;
 
-  while (updated < 2000) {
+  while (updated < 200) {
     // Get SAM.gov records missing contact_name (unfilled detail)
     const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&contact_name=is.null&limit=50&offset=${offset}`, { headers: hdrs });
     const opps = await r.json();
