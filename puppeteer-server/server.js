@@ -1162,11 +1162,13 @@ async function runBroadMatching(allOrgs, headers) {
 
   for (const org of allOrgs) {
     // Get existing matches
-    const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&is_demo=eq.false`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    // Get ALL existing match IDs (both demo and real) to avoid duplicates — use large limit
+    const existRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=opportunity_id&organization_id=eq.${org.id}&limit=50000`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
     const existing = await existRes.json();
-    const existingIds = new Set((existing || []).map(m => m.opportunity_id));
+    const existingIds = new Set(Array.isArray(existing) ? existing.map(m => m.opportunity_id) : []);
 
     const newOpps = recentOpps.filter(o => !existingIds.has(o.id));
+    console.log(`[match] Broad: org ${org.name || org.id}: ${existingIds.size} existing matches, ${newOpps.length} new opps out of ${recentOpps.length}`);
     if (!newOpps.length) continue;
 
     // Score broadly: federal sources get higher base, SAM.gov highest
