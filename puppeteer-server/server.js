@@ -434,4 +434,79 @@ app.post("/cron/scrape-all", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Puppeteer server running on port ${PORT}`);
+
+  // Built-in cron: auto-trigger scraping every 30 minutes
+  if (SUPABASE_KEY) {
+    const CRON_INTERVAL = 30 * 60 * 1000; // 30 minutes
+    const lastRun = { usaspending: 0, grants: 0, states: 0 };
+    const HOUR = 3600000;
+
+    async function cronCycle() {
+      const now = Date.now();
+      console.log(`[cron] Cycle starting at ${new Date().toISOString()}`);
+
+      try {
+        // Every 1 hour: API sources
+        if (now - lastRun.usaspending > 1 * HOUR) {
+          console.log("[cron] Triggering USASpending...");
+          const r = await fetch(`http://localhost:${PORT}/cron/usaspending`, {
+            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            signal: AbortSignal.timeout(600000),
+          });
+          const data = await r.json();
+          console.log(`[cron] USASpending result: ${JSON.stringify(data).substring(0, 200)}`);
+          lastRun.usaspending = now;
+        }
+
+        if (now - lastRun.grants > 1 * HOUR) {
+          console.log("[cron] Triggering Grants.gov...");
+          const r = await fetch(`http://localhost:${PORT}/cron/grants`, {
+            method: "POST", headers: { Authorization: `Bearer ${AUTH_TOKEN}` },
+            signal: AbortSignal.timeout(300000),
+          });
+          const data = await r.json();
+          console.log(`[cron] Grants.gov result: ${JSON.stringify(data).substring(0, 200)}`);
+          lastRun.grants = now;
+        }
+
+        // Every 2 hours: State portals
+        if (now - lastRun.states > 2 * HOUR) {
+          console.log("[cron] Triggering state portals...");
+          const stateSources = [
+            { id: "state-AL", name: "Alabama", url: "https://purchasing.alabama.gov/", source_type: "state_local" },
+            { id: "state-CA", name: "California", url: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx", source_type: "state_local" },
+            { id: "state-CT", name: "Connecticut", url: "https://portal.ct.gov/DAS/Procurement/", source_type: "state_local" },
+            { id: "state-FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/search/bids", source_type: "state_local" },
+            { id: "state-IN", name: "Indiana", url: "https://www.in.gov/idoa/procurement/", source_type: "state_local" },
+            { id: "state-ME", name: "Maine", url: "https://www.maine.gov/purchases/", source_type: "state_local" },
+            { id: "state-NY", name: "New York", url: "https://ogs.ny.gov/procurement", source_type: "state_local" },
+            { id: "state-SC", name: "South Carolina", url: "https://procurement.sc.gov/", source_type: "state_local" },
+            { id: "state-TX", name: "Texas", url: "https://www.txsmartbuy.com/sp", source_type: "state_local" },
+            { id: "state-VA", name: "Virginia", url: "https://eva.virginia.gov/", source_type: "state_local" },
+          ];
+          const r = await fetch(`http://localhost:${PORT}/cron/scrape-html`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${AUTH_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ sources: stateSources }),
+            signal: AbortSignal.timeout(600000),
+          });
+          const data = await r.json();
+          console.log(`[cron] States result: ${data.total} saved`);
+          lastRun.states = now;
+        }
+      } catch (e) {
+        console.log(`[cron] Cycle error: ${e.message}`);
+      }
+
+      console.log(`[cron] Cycle complete at ${new Date().toISOString()}`);
+    }
+
+    // First run after 60 seconds (let server start up)
+    setTimeout(cronCycle, 60000);
+    // Then every 30 minutes
+    setInterval(cronCycle, CRON_INTERVAL);
+    console.log("[cron] Auto-scraping enabled: every 30 minutes");
+  } else {
+    console.log("[cron] No SUPABASE_KEY — auto-scraping disabled");
+  }
 });
