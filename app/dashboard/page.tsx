@@ -58,10 +58,12 @@ function scoreColor(score: number): string {
 
 function recBadge(rec: string) {
   const map: Record<string, string> = {
-    bid: "bg-[#ecfdf5] text-[#059669] border-[#059669]/20",
-    monitor: "bg-[#fffbeb] text-[#d97706] border-[#d97706]/20",
-    review: "bg-[#fffbeb] text-[#d97706] border-[#d97706]/20",
-    skip: "bg-[#f1f5f9] text-[#94a3b8] border-[#94a3b8]/20",
+    bid: "bg-[#ecfdf5] text-[#059669]",
+    monitor: "bg-[#fffbeb] text-[#d97706]",
+    review: "bg-[#fffbeb] text-[#d97706]",
+    skip: "bg-[#f3f4f6] text-[#9ca3af]",
+    recompete: "bg-[#fef2f2] text-[#dc2626]",
+    recompete_alert: "bg-[#fef2f2] text-[#dc2626]",
   };
   return map[rec] ?? map.skip;
 }
@@ -435,7 +437,7 @@ export default function DashboardPage() {
                 : "Your first digest arrives tomorrow at 7am"}
             </p>
           </div>
-          <HelpButton page="dashboard" />
+          {/* HelpButton removed — was orphaned after InlineGuide removal */}
         </div>
       </div>
       {/* Profile Completion Banner */}
@@ -453,7 +455,7 @@ export default function DashboardPage() {
           { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
           <div key={stat.label} className={`p-5 bg-white border border-[#e5e7eb] rounded-xl ${stat.urgent ? "border-l-[3px] border-l-[#dc2626]" : ""}`}>
-            <div className="ci-stat-number text-[28px]">{stat.value}</div>
+            <div className="text-[28px] font-medium tracking-tight text-[#111827]" style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
@@ -687,9 +689,9 @@ export default function DashboardPage() {
                     >
                       {/* Score ring */}
                       <div className={`ci-score-ring ${
-                        match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
-                        match.match_score >= 70 ? "border-[#2563eb] text-[#2563eb]" :
-                        match.match_score >= 60 ? "border-[#d97706] text-[#d97706]" :
+                        match.match_score >= 90 ? "border-[#059669] text-[#059669]" :
+                        match.match_score >= 80 ? "border-[#2563eb] text-[#2563eb]" :
+                        match.match_score >= 70 ? "border-[#d97706] text-[#d97706]" :
                         "border-[#9ca3af] text-[#9ca3af]"}`}>
                         {match.match_score}
                       </div>
