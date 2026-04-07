@@ -1822,10 +1822,10 @@ async function runRotation(index) {
 async function verifyExistingContracts(source, batchSize = 50) {
   const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" };
 
-  // Get oldest-verified contracts for this source (use last_seen_at as proxy if last_verified_at doesn't exist)
+  // Get oldest-verified contracts for this source — prioritize never-verified and oldest
   let toVerify = [];
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?source=eq.${source}&status=eq.active&order=last_seen_at.asc.nullsfirst&limit=${batchSize}&select=id,notice_id,solicitation_number,source_url,response_deadline,last_seen_at`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?source=eq.${source}&status=eq.active&order=last_verified_at.asc.nullsfirst&limit=${batchSize}&select=id,notice_id,solicitation_number,source_url,response_deadline,last_verified_at`, {
       headers: hdrs,
     });
     if (r.ok) toVerify = await r.json();
@@ -1870,14 +1870,14 @@ async function verifyExistingContracts(source, batchSize = 50) {
         await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
           method: "PATCH",
           headers: { ...hdrs, Prefer: "return=minimal" },
-          body: JSON.stringify({ last_seen_at: now }),
+          body: JSON.stringify({ last_verified_at: now, verification_count: (opp.verification_count || 0) + 1 }),
         });
         verified++;
       } else {
         await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
           method: "PATCH",
           headers: { ...hdrs, Prefer: "return=minimal" },
-          body: JSON.stringify({ status: "expired", last_seen_at: now }),
+          body: JSON.stringify({ status: "expired", contract_status: "expired", last_verified_at: now }),
         });
         expired++;
       }
