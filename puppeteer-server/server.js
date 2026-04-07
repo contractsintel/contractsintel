@@ -639,9 +639,21 @@ app.post("/cron/match", async (req, res) => {
     const matchDebugRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=id&limit=1`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" } });
     const matchDebugCount = matchDebugRes.headers.get("content-range")?.split("/")[1] || "?";
 
+    // Test broad matching directly for the first org
+    const testOrg = debugOrgs[0];
+    let testInfo = {};
+    if (testOrg) {
+      const countRes2 = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=id&organization_id=eq.${testOrg.id}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "count=exact" } });
+      const orgMatchCount = parseInt(countRes2.headers.get("content-range")?.split("/")[1] || "0");
+      // Get 5 opps at offset=orgMatchCount to see if there are unmatched ones
+      const testOppRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source&order=created_at.desc&limit=5&offset=${orgMatchCount}`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+      const testOpps = await testOppRes.json();
+      testInfo = { org_match_count: orgMatchCount, offset_used: orgMatchCount, opps_at_offset: Array.isArray(testOpps) ? testOpps.length : "error", sample_opp: testOpps?.[0] ? { id: testOpps[0].id, title: testOpps[0].title?.substring(0, 60), source: testOpps[0].source } : null };
+    }
+
     const matched = await runBulkMatching();
     console.log(`[cron] Manual matching complete: ${matched} matches created`);
-    res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY, total_opportunities: oppDebugCount, total_existing_matches: matchDebugCount } });
+    res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY, total_opportunities: oppDebugCount, total_existing_matches: matchDebugCount, test: testInfo } });
   } catch (e) {
     console.log(`[cron] Manual matching error: ${e.message}`);
     res.status(500).json({ error: e.message });
