@@ -147,6 +147,27 @@ export default function DashboardPage() {
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [dbSourceCounts, setDbSourceCounts] = useState<Record<string, number>>({});
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Debug: log data diagnostics
+  useEffect(() => {
+    const debug = async () => {
+      const { count: total } = await supabase.from("opportunities").select("id", { count: "exact", head: true });
+      const { count: withDeadline } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).not("response_deadline", "is", null);
+      const { count: withValue } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).gt("estimated_value", 0);
+      const { count: withNaics } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).not("naics_code", "is", null);
+      const { count: matchCount } = await supabase.from("opportunity_matches").select("id", { count: "exact", head: true }).eq("organization_id", organization.id);
+      const { data: sampleMatches } = await supabase.from("opportunity_matches").select("match_score, bid_recommendation, recommendation_reasoning, opportunities(title, naics_code, set_aside_type, estimated_value, response_deadline)").eq("organization_id", organization.id).order("match_score", { ascending: false }).limit(5);
+      console.log("=== DASHBOARD DEBUG ===");
+      console.log("Total opportunities:", total);
+      console.log("With deadline:", withDeadline);
+      console.log("With value:", withValue);
+      console.log("With NAICS:", withNaics);
+      console.log("Matches for this org:", matchCount);
+      console.log("Sample matches:", JSON.stringify(sampleMatches, null, 2));
+    };
+    debug();
+  }, [organization.id, supabase]);
 
   const loadData = useCallback(async (limit?: number) => {
     const effectiveLimit = limit ?? matchLimit;
@@ -448,14 +469,33 @@ export default function DashboardPage() {
             </p>
           </div>
           <button onClick={async () => {
-            setLoading(true);
+            setRefreshing(true);
             try {
-              await fetch("/api/matching/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organization.id }) });
-              window.location.reload();
-            } catch { setLoading(false); }
+              const res = await fetch("/api/matching/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organization.id }) });
+              const data = await res.json();
+              console.log("Matching result:", data);
+              if (data.success) {
+                window.location.reload();
+              } else {
+                alert("Matching failed: " + (data.error || "Unknown error"));
+                setRefreshing(false);
+              }
+            } catch (err: any) {
+              console.error("Matching error:", err);
+              alert("Matching failed: " + (err?.message || "Network error"));
+              setRefreshing(false);
+            }
           }}
-            className="text-[12px] text-[#4f46e5] hover:text-[#4338ca] font-medium px-3 py-1.5 border border-[#e5e7eb] rounded-lg hover:border-[#c7d2fe] transition-colors">
-            ↻ Refresh Matches
+            disabled={refreshing}
+            className={`text-[12px] font-medium px-3 py-1.5 border rounded-lg transition-colors ${
+              refreshing ? "text-[#9ca3af] border-[#e5e7eb] cursor-wait" : "text-[#4f46e5] hover:text-[#4338ca] border-[#e5e7eb] hover:border-[#c7d2fe]"
+            }`}>
+            {refreshing ? (
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 border-2 border-[#4f46e5] border-t-transparent rounded-full animate-spin" />
+                Matching...
+              </span>
+            ) : "↻ Refresh Matches"}
           </button>
         </div>
       </div>
