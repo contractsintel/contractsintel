@@ -37,15 +37,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    const pipelineStage = status === "bidding" ? "preparing_bid" : status === "tracking" ? "monitoring" : null;
+    const updateData: Record<string, any> = { user_status: status };
 
     const { data, error } = await admin
       .from("opportunity_matches")
-      .update({
-        user_status: status,
-        pipeline_stage: pipelineStage,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", matchId)
       .eq("organization_id", userRec.organization_id)
       .select()

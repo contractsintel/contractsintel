@@ -10,8 +10,20 @@ import { InlineGuide } from "./inline-guide";
 import { seedDemoData } from "@/lib/demo-data";
 import { UnlockButton, ProfileBanner } from "./unlock-panel";
 
-function formatCurrency(n: number | null): string {
-  if (!n) return "$0";
+function decodeHtml(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
+function formatCurrency(n: number | null | undefined): string {
+  if (!n || n <= 0) return "TBD";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n.toLocaleString()}`;
@@ -120,12 +132,13 @@ export default function DashboardPage() {
   const loadData = useCallback(async (limit?: number) => {
     const effectiveLimit = limit ?? matchLimit;
     setLoading(true);
-    const { data, count } = await supabase
+    const { data, count, error } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)", { count: "exact" })
+      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, is_demo, created_at, opportunities(id, title, agency, solicitation_number, set_aside, naics_code, place_of_performance, estimated_value, value_estimate, response_deadline, posted_date, description, sam_url, source, source_url, notice_id)", { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, effectiveLimit - 1);
+    if (error) console.error("Dashboard query error:", error.message);
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
 
@@ -234,7 +247,7 @@ export default function DashboardPage() {
       }
       // Value filter
       if (filters.valueRange) {
-        const v = opp.estimated_value ?? 0;
+        const v = getVal(opp) ?? 0;
         if (filters.valueRange === "under100k" && v >= 100000) return false;
         if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
         if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
@@ -267,17 +280,20 @@ export default function DashboardPage() {
   );
 
   // Stats
-  const totalValue = matches.reduce((s, m) => s + (m.opportunities?.estimated_value ?? 0), 0);
+  const getVal = (opp: any) => opp?.estimated_value ?? opp?.value_estimate ?? 0;
+  const totalValue = matches.reduce((s, m) => s + getVal(m.opportunities), 0);
   const urgentCount = matches.filter((m) => {
     const d = daysUntil(m.opportunities?.response_deadline);
     return d !== null && d >= 0 && d <= 7;
   }).length;
   const topScore = matches.length ? Math.max(...matches.map((m) => m.match_score ?? 0)) : 0;
 
-  // Pipeline summary
+  // Pipeline summary (use user_status since pipeline_stage may not exist)
   const pipelineCounts = matches.reduce(
     (acc, m) => {
-      const stage = m.pipeline_stage ?? "new";
+      const status = m.user_status ?? "new";
+      const stageMap: Record<string, string> = { tracking: "monitoring", bidding: "preparing_bid", new: "new", skipped: "skipped" };
+      const stage = stageMap[status] ?? status;
       acc[stage] = (acc[stage] ?? 0) + 1;
       return acc;
     },
@@ -407,16 +423,16 @@ export default function DashboardPage() {
           <div className="space-y-3 mb-5">
             {/* Row 1: Source toggle pills */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-1">Source</span>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-1">Contract Type</span>
               {([
-                { key: "", label: "All", count: matches.length },
-                { key: "federal", label: "Federal", count: sourceCounts.federal ?? 0 },
-                { key: "state", label: "State", count: sourceCounts.state ?? 0 },
+                { key: "", label: "All Types", count: matches.length },
+                { key: "federal", label: "Federal Contracts", count: sourceCounts.federal ?? 0 },
+                { key: "state", label: "State & Local", count: sourceCounts.state ?? 0 },
                 { key: "grants", label: "Grants", count: sourceCounts.grants ?? 0 },
-                { key: "sbir", label: "SBIR", count: sourceCounts.sbir ?? 0 },
-                { key: "military", label: "Military", count: sourceCounts.military ?? 0 },
-                { key: "subcontracting", label: "SubK", count: sourceCounts.subcontracting ?? 0 },
-                { key: "recompetes", label: "Recompete", count: sourceCounts.recompetes ?? 0 },
+                { key: "sbir", label: "SBIR/STTR", count: sourceCounts.sbir ?? 0 },
+                { key: "military", label: "Military/Defense", count: sourceCounts.military ?? 0 },
+                { key: "subcontracting", label: "Subcontracting", count: sourceCounts.subcontracting ?? 0 },
+                { key: "recompetes", label: "Recompete Alerts", count: sourceCounts.recompetes ?? 0 },
               ] as const).filter(s => s.key === "" || s.count > 0).map((s) => (
                 <button
                   key={s.key}
@@ -680,7 +696,7 @@ export default function DashboardPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <h3 className="text-sm font-semibold text-[#0f172a] truncate">
-                              {opp.title}
+                              {decodeHtml(opp.title)}
                             </h3>
                             <span className={`px-1.5 py-0.5 text-[9px] font-mono uppercase border shrink-0 rounded ${recBadge(match.bid_recommendation)}`}>
                               {match.bid_recommendation}
@@ -696,8 +712,8 @@ export default function DashboardPage() {
 
                         {/* Right side: value + deadline + actions */}
                         <div className="flex items-center gap-3 shrink-0">
-                          {opp.estimated_value ? (
-                            <span className="text-xs font-mono text-[#111827] font-medium">{formatCurrency(opp.estimated_value)}</span>
+                          {getVal(opp) ? (
+                            <span className="text-xs font-mono text-[#111827] font-medium">{formatCurrency(getVal(opp))}</span>
                           ) : null}
                           <span className={`text-xs font-mono ${deadlineColor} w-16 text-right`}>
                             {deadlineLabel(opp.response_deadline)}

@@ -211,7 +211,7 @@ export default function SearchPage() {
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#f8f9fb] text-[#64748b] border border-[#f0f1f3] shrink-0">
                     {sourceLabel(opp.source)}
                   </span>
-                  <span className="text-sm text-[#0f172a] font-medium truncate flex-1">{opp.title}</span>
+                  <span className="text-sm text-[#0f172a] font-medium truncate flex-1">{(opp.title || "").replace(/&#(\d+);/g, (_: string, n: string) => String.fromCharCode(parseInt(n))).replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")}</span>
                   <span className="text-[11px] text-[#64748b] truncate max-w-[200px] hidden md:inline">{opp.agency}</span>
                   {opp.estimated_value ? <span className="text-xs font-mono text-[#111827] shrink-0">{formatCurrency(opp.estimated_value)}</span> : null}
                   <span className={`text-[11px] font-mono shrink-0 w-14 text-right ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
