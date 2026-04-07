@@ -455,9 +455,9 @@ app.post("/cron/sam-backfill", async (req, res) => {
         const naics = d2.naics?.[0]?.code?.[0] || null;
         const sol = d2.solicitation || {};
         const descs = detail.description || [];
-        const fullDesc = descs.map((dd: any) => dd.body || "").join("\n");
+        const fullDesc = descs.map(dd => dd.body || "").join("\n");
 
-        const patch: Record<string, any> = {};
+        const patch = {};
         if (primary.fullName) patch.contact_name = primary.fullName;
         if (primary.email) patch.contact_email = primary.email;
         if (primary.phone) patch.contact_phone = primary.phone;
