@@ -17,6 +17,7 @@ export interface Organization {
   onboarding_complete: boolean;
   onboarding_goal: string | null;
   setup_wizard_complete: boolean;
+  has_seen_dashboard: boolean;
   keywords: string[];
   serves_nationwide: boolean;
   service_states: string[];

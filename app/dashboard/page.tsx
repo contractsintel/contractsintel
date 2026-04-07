@@ -148,6 +148,8 @@ export default function DashboardPage() {
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [dbSourceCounts, setDbSourceCounts] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(organization.has_seen_dashboard !== true);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Debug: log data diagnostics
   useEffect(() => {
@@ -498,6 +500,27 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+      {/* Personalized welcome banner — shows once after onboarding */}
+      {showWelcome && totalMatchCount > 0 && (
+        <div className="mb-6 p-5 bg-gradient-to-r from-[#eef2ff] to-[#f0fdf4] border border-[#c7d2fe] rounded-2xl flex items-center justify-between"
+             style={{animation: "fadeInUp 0.4s ease both"}}>
+          <div>
+            <h2 className="text-[16px] font-bold text-[#111827]">
+              🎯 Your personalized matches are ready
+            </h2>
+            <p className="text-[14px] text-[#6b7280] mt-1">
+              We scored {totalMatchCount.toLocaleString()} contracts based on your {(organization.certifications || []).join(", ")} certification{(organization.certifications || []).length > 1 ? "s" : ""} and NAICS codes. Your best matches are at the top.
+            </p>
+          </div>
+          <button onClick={async () => {
+            setShowWelcome(false);
+            await supabase.from("organizations").update({ has_seen_dashboard: true }).eq("id", organization.id);
+          }} className="text-[13px] text-[#6b7280] hover:text-[#111827] shrink-0 ml-4">
+            Dismiss ✕
+          </button>
+        </div>
+      )}
+
       {/* Profile Completion Banner */}
       <ProfileBanner />
 
@@ -545,8 +568,14 @@ export default function DashboardPage() {
       <div className="flex gap-6">
         {/* Main Column */}
         <div className="flex-1 min-w-0 w-full">
+          {/* Filter toggle */}
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="text-[13px] text-[#4f46e5] hover:text-[#4338ca] font-medium mb-4">
+            {showFilters ? "Hide filters" : "⚙ Filter & sort"}
+          </button>
+
           {/* Filter Bar — single row of compact dropdowns */}
-          <div className="flex items-center gap-2 mb-6 flex-wrap">
+          {showFilters && <div className="flex items-center gap-2 mb-6 flex-wrap">
             <select value={filters.source}
               onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
               className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
@@ -589,7 +618,7 @@ export default function DashboardPage() {
                 Clear
               </button>
             )}
-          </div>
+          </div>}
 
           {/* Opportunity Cards */}
           {loading ? (
@@ -747,9 +776,9 @@ export default function DashboardPage() {
                     >
                       {/* Score ring */}
                       <div className={`ci-score-ring ${
-                        match.match_score >= 90 ? "border-[#059669] text-[#059669]" :
-                        match.match_score >= 80 ? "border-[#2563eb] text-[#2563eb]" :
-                        match.match_score >= 70 ? "border-[#d97706] text-[#d97706]" :
+                        match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
+                        match.match_score >= 60 ? "border-[#2563eb] text-[#2563eb]" :
+                        match.match_score >= 40 ? "border-[#d97706] text-[#d97706]" :
                         "border-[#9ca3af] text-[#9ca3af]"}`}>
                         {match.match_score}
                       </div>
@@ -986,7 +1015,7 @@ export default function DashboardPage() {
                     disabled={loadingMore}
                     className="px-6 py-2.5 text-sm font-medium border border-[#f0f1f3] text-[#4b5563] bg-white hover:border-[#e2e8f0] hover:text-[#111827] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
                   >
-                    {loadingMore ? "Loading..." : `Load more (${totalMatchCount - matches.length} remaining)`}
+                    {loadingMore ? "Loading..." : "Show 50 more"}
                   </button>
                 </div>
               )}
