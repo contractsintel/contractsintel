@@ -28,6 +28,9 @@ export default function OnboardingSetupPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("organization");
   const [saving, setSaving] = useState(false);
   const [banner, setBanner] = useState("");
+  const [tab1Attempted, setTab1Attempted] = useState(false);
+  const [tab2Attempted, setTab2Attempted] = useState(false);
+  const [tab3Attempted, setTab3Attempted] = useState(false);
 
   // Tab 1: Organization
   const [companyName, setCompanyName] = useState(organization.name || "");
@@ -40,6 +43,7 @@ export default function OnboardingSetupPage() {
   const [stateSearch, setStateSearch] = useState("");
 
   // Tab 2: Capabilities
+  const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
@@ -73,7 +77,14 @@ export default function OnboardingSetupPage() {
     setSaving(false);
   };
 
+  // Validation
+  const tab1Valid = companyName.trim().length >= 2;
+  const tab2Valid = projectName.trim().length > 0 && description.trim().length >= 20 && selectedKeywords.length >= 2;
+  const tab3Valid = certs.length > 0 && naicsCodes.trim().length > 0;
+
   const saveOrganization = async () => {
+    setTab1Attempted(true);
+    if (!tab1Valid) return;
     setSaving(true);
     await supabase.from("organizations").update({
       name: companyName,
@@ -102,6 +113,8 @@ export default function OnboardingSetupPage() {
   };
 
   const saveCapabilities = async () => {
+    setTab2Attempted(true);
+    if (!tab2Valid) return;
     setSaving(true);
     await supabase.from("organizations").update({
       entity_description: description,
@@ -112,6 +125,8 @@ export default function OnboardingSetupPage() {
   };
 
   const saveAndExit = async () => {
+    setTab3Attempted(true);
+    if (!tab3Valid) return;
     setSaving(true);
     const naicsArr = naicsCodes.split(",").map(s => s.trim()).filter(Boolean);
     await supabase.from("organizations").update({
@@ -234,8 +249,14 @@ export default function OnboardingSetupPage() {
             </div>
           </div>
 
-          <button onClick={saveOrganization} disabled={saving || !companyName.trim()}
-            className="px-5 py-2.5 bg-[#2563eb] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors">
+          {tab1Attempted && !companyName.trim() && <p className="text-[13px] text-[#dc2626] mt-1.5">Company name is required</p>}
+
+          <button onClick={saveOrganization} disabled={saving}
+            className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
+              tab1Valid
+                ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
+                : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
+            }`}>
             {saving ? "Saving..." : "Save and Continue →"}
           </button>
         </div>
@@ -247,6 +268,13 @@ export default function OnboardingSetupPage() {
           <div>
             <h2 className="text-[20px] font-semibold text-[#111827] mb-1">Tell us about your capabilities</h2>
             <p className="text-[13px] text-[#6b7280]">We&apos;ll use this to generate keyword suggestions for contract matching.</p>
+          </div>
+
+          <div>
+            <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">Project Name *</label>
+            <input value={projectName} onChange={e => setProjectName(e.target.value)}
+              placeholder="e.g. Federal IT Contracts"
+              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 focus:outline-none" />
           </div>
 
           <div>
@@ -303,8 +331,16 @@ export default function OnboardingSetupPage() {
             </div>
           )}
 
+          {tab2Attempted && !projectName.trim() && <p className="text-[13px] text-[#dc2626] mt-1.5">Project name is required</p>}
+          {tab2Attempted && description.trim().length < 20 && <p className="text-[13px] text-[#dc2626] mt-1.5">Please describe your services (minimum 20 characters)</p>}
+          {tab2Attempted && keywords.length > 0 && selectedKeywords.length < 2 && <p className="text-[13px] text-[#dc2626] mt-1.5">Select at least 2 keywords</p>}
+
           <button onClick={saveCapabilities} disabled={saving}
-            className="px-5 py-2.5 bg-[#2563eb] text-white rounded-lg text-[14px] font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors">
+            className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
+              tab2Valid
+                ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
+                : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
+            }`}>
             {saving ? "Saving..." : "Next →"}
           </button>
         </div>
@@ -384,8 +420,15 @@ export default function OnboardingSetupPage() {
             </div>
           </div>
 
-          <button onClick={saveAndExit} disabled={saving || !certs.length || !naicsCodes.trim()}
-            className="px-6 py-3 bg-[#2563eb] text-white rounded-xl text-[15px] font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors">
+          {tab3Attempted && certs.length === 0 && <p className="text-[13px] text-[#dc2626] mt-1.5">Select at least one certification</p>}
+          {tab3Attempted && !naicsCodes.trim() && <p className="text-[13px] text-[#dc2626] mt-1.5">Enter at least one NAICS code</p>}
+
+          <button onClick={saveAndExit} disabled={saving}
+            className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
+              tab3Valid
+                ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
+                : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
+            }`}>
             {saving ? "Saving..." : "Save and Exit"}
           </button>
         </div>

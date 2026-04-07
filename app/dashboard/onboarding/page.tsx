@@ -24,11 +24,14 @@ export default function OnboardingPage() {
   const [goal, setGoal] = useState(organization.onboarding_goal || "");
 
   const step1Complete = !!goal;
-  const step2Complete = !!(organization.certifications?.length > 0 && organization.naics_codes?.length > 0);
+  const step2Complete = Array.isArray(organization.certifications) && organization.certifications.length > 0
+    && Array.isArray(organization.naics_codes) && organization.naics_codes.length > 0;
   const allComplete = step1Complete && step2Complete;
   const progress = allComplete ? 100 : step2Complete ? 66 : step1Complete ? 33 : 0;
 
   const selectedGoal = GOALS[goal];
+
+  console.log("ONBOARDING DEBUG:", { certifications: organization.certifications, naics_codes: organization.naics_codes, step2Complete });
 
   const selectGoal = async (key: string) => {
     setGoal(key);
@@ -43,8 +46,8 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-[660px] mx-auto pt-14 pb-24 px-6">
+    <div className="min-h-[calc(100vh-64px)] bg-white -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[660px] mx-auto pt-16 pb-24 px-6">
 
         {/* Title */}
         <div style={{animation: "fadeInUp 0.5s ease both"}}>
