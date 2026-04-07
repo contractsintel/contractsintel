@@ -626,9 +626,15 @@ app.post("/cron/match", async (req, res) => {
   if (!authCheck(req, res)) return;
   console.log("[cron] Manual bulk matching triggered...");
   try {
+    // Quick debug: check org count
+    const debugRes = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes&limit=5`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    const debugOrgs = await debugRes.json();
+    const orgCount = Array.isArray(debugOrgs) ? debugOrgs.length : 0;
+    const sampleOrg = orgCount > 0 ? { id: debugOrgs[0].id, name: debugOrgs[0].name, naics: debugOrgs[0].naics_codes } : null;
+
     const matched = await runBulkMatching();
     console.log(`[cron] Manual matching complete: ${matched} matches created`);
-    res.json({ success: true, matches_created: matched });
+    res.json({ success: true, matches_created: matched, debug: { org_count: orgCount, sample_org: sampleOrg, has_supabase_key: !!SUPABASE_KEY } });
   } catch (e) {
     console.log(`[cron] Manual matching error: ${e.message}`);
     res.status(500).json({ error: e.message });
@@ -1052,13 +1058,20 @@ async function runBulkMatching() {
   const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" };
 
   // Get ALL organizations (filter NAICS client-side since empty array vs null varies)
+  if (!SUPABASE_KEY) { console.log("[match] No SUPABASE_KEY — cannot match"); return 0; }
   const orgRes = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   const allOrgs = await orgRes.json();
-  if (!Array.isArray(allOrgs)) { console.log("[match] Failed to fetch orgs:", JSON.stringify(allOrgs).substring(0, 200)); return 0; }
+  console.log(`[match] Org query status: ${orgRes.status}, result type: ${typeof allOrgs}, isArray: ${Array.isArray(allOrgs)}, length: ${Array.isArray(allOrgs) ? allOrgs.length : 'N/A'}`);
+  if (!Array.isArray(allOrgs) || allOrgs.length === 0) {
+    console.log("[match] No orgs found or error:", JSON.stringify(allOrgs).substring(0, 300));
+    return 0;
+  }
   const orgs = allOrgs.filter(o => o.naics_codes && Array.isArray(o.naics_codes) && o.naics_codes.length > 0);
   console.log(`[match] ${allOrgs.length} total orgs, ${orgs.length} with NAICS codes`);
+  if (allOrgs.length > 0) {
+    console.log(`[match] Sample org: ${JSON.stringify({ id: allOrgs[0].id, name: allOrgs[0].name, naics: allOrgs[0].naics_codes }).substring(0, 200)}`);
+  }
   if (!orgs.length) {
-    // If no orgs have NAICS, match ALL orgs against ALL new opportunities with a base score
     console.log("[match] No orgs with NAICS — running broad matching for all orgs");
     return await runBroadMatching(allOrgs, headers);
   }
