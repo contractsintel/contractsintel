@@ -910,6 +910,11 @@ export default function DashboardPage() {
                             );
                           })()}
 
+                          {/* Full details link */}
+                          <Link href={`/dashboard/opportunity/${opp.id}`} className="block text-center text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8] py-2">
+                            View Full Details &rarr;
+                          </Link>
+
                           {/* Action buttons (only in expanded view) */}
                           <div className="flex items-center gap-2 pt-1">
                             {match.user_status === "tracking" ? (

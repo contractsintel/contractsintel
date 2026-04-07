@@ -759,7 +759,23 @@ app.post("/cron/sam", async (req, res) => {
             .filter(Boolean)
             .filter((v, i, a) => a.indexOf(v) === i)
             .join(" / ");
-          const desc = (r.descriptions || []).map(d => d.content || "").join("\n").substring(0, 10000);
+          const desc = (r.descriptions || []).map(d => d.content || "").join("\n");
+          // Contact info
+          const contacts = r.pointOfContact || [];
+          const primaryContact = contacts[0] || {};
+          // Place of performance
+          const pop = r.placeOfPerformance || {};
+          const popStr = [pop.city?.name, pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
+          // Type info
+          const typeVal = r.type ? `${r.type.value || ""} (${r.type.code || ""})` : null;
+          // Set-aside
+          const setAside = r.typeOfSetAsideDescription || r.typeOfSetAside || null;
+          // NAICS
+          const naicsCode = r.naicsCode || null;
+          const naicsDesc = r.naicsCodes?.[0]?.description || null;
+          // Attachments
+          const attachments = (r.resourceLinks || []).map(l => ({ name: l.name || "Document", url: l.url || l.uri || "" }));
+
           return {
             notice_id: r._id,
             title: (r.title || "Untitled").substring(0, 500),
@@ -767,9 +783,21 @@ app.post("/cron/sam", async (req, res) => {
             solicitation_number: r.solicitationNumber || null,
             response_deadline: r.responseDate || null,
             posted_date: r.publishDate || null,
-            description: desc || null,
+            description: desc ? desc.substring(0, 10000) : null,
+            full_description: desc || null,
             source: "sam_gov",
             source_url: `https://sam.gov/opp/${r._id}/view`,
+            naics_code: naicsCode,
+            naics_description: naicsDesc,
+            set_aside: setAside,
+            set_aside_description: setAside,
+            place_of_performance: popStr || null,
+            contact_name: primaryContact.fullName || primaryContact.name || null,
+            contact_email: primaryContact.email || null,
+            contact_phone: primaryContact.phone || null,
+            contract_type: typeVal,
+            attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
+            incumbent_name: r.incumbentName || null,
             last_seen_at: new Date().toISOString(),
           };
         });
