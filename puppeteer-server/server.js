@@ -31,6 +31,63 @@ const USER_AGENTS = [
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
 ];
 
+// Expanded User-Agent list for API/scraping stealth (15 real browser UAs)
+const STEALTH_USER_AGENTS = [
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 OPR/116.0.0.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+];
+
+function randomStealthUA() {
+  return STEALTH_USER_AGENTS[Math.floor(Math.random() * STEALTH_USER_AGENTS.length)];
+}
+
+function stealthHeaders(ua) {
+  const isChrome = ua.includes("Chrome") && !ua.includes("Firefox");
+  const isFirefox = ua.includes("Firefox");
+  const headers = {
+    "User-Agent": ua,
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+  };
+  if (isChrome) {
+    const major = ua.match(/Chrome\/(\d+)/)?.[1] || "131";
+    headers["sec-ch-ua"] = `"Chromium";v="${major}", "Not A(Brand";v="99"`;
+    headers["sec-ch-ua-mobile"] = "?0";
+    headers["sec-ch-ua-platform"] = ua.includes("Windows") ? '"Windows"' : ua.includes("Mac") ? '"macOS"' : '"Linux"';
+    headers["sec-fetch-dest"] = "empty";
+    headers["sec-fetch-mode"] = "cors";
+    headers["sec-fetch-site"] = "same-origin";
+    headers["Upgrade-Insecure-Requests"] = "1";
+  }
+  return headers;
+}
+
+function randomDelay(minMs, maxMs) {
+  return new Promise(r => setTimeout(r, minMs + Math.random() * (maxMs - minMs)));
+}
+
+function exponentialBackoff(attempt, baseMs = 1000, maxMs = 30000) {
+  const delay = Math.min(baseMs * Math.pow(2, attempt), maxMs);
+  const jitter = Math.random() * 2000;
+  return new Promise(r => setTimeout(r, delay + jitter));
+}
+
 function randomFingerprint() {
   const fp = FINGERPRINTS[Math.floor(Math.random() * FINGERPRINTS.length)];
   const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
@@ -754,7 +811,9 @@ app.post("/cron/grants", async (req, res) => {
   let grandTotal = 0;
   const results = {};
 
-  // First: broad query (no agency filter) to get general results
+  let totalFetched = 0; // Track total API records vs saved (dedup tracking)
+
+  // First: broad query (no agency filter) to get general results — newest first
   for (const sortBy of ["openDate|desc", "closeDate|asc"]) {
     let offset = 0;
     while (offset < 2000) {
@@ -786,6 +845,7 @@ app.post("/cron/grants", async (req, res) => {
           };
         });
 
+        totalFetched += records.length;
         const saved = await upsertToSupabase(records);
         grandTotal += saved;
         offset += 500;
@@ -795,7 +855,7 @@ app.post("/cron/grants", async (req, res) => {
     }
   }
   results["broad"] = grandTotal;
-  console.log(`[cron] Grants.gov broad: ${grandTotal} saved`);
+  console.log(`[cron] Grants.gov broad: ${grandTotal} new saved (${totalFetched} fetched, ${totalFetched - grandTotal} already existed)`);
 
   // Then: per-agency queries
   for (const agency of AGENCIES) {
@@ -829,6 +889,7 @@ app.post("/cron/grants", async (req, res) => {
           };
         });
 
+        totalFetched += records.length;
         const saved = await upsertToSupabase(records);
         agencySaved += saved;
         offset += 500;
@@ -843,51 +904,136 @@ app.post("/cron/grants", async (req, res) => {
     }
   }
 
-  console.log(`[cron] Grants.gov complete: ${grandTotal} total saved from ${Object.keys(results).length} queries`);
-  res.json({ source: "grants_gov", saved: grandTotal, byAgency: results });
+  console.log(`[cron] Grants.gov complete: ${grandTotal} new saved, ${totalFetched} total fetched from ${Object.keys(results).length} queries`);
+  res.json({ source: "grants_gov", saved: grandTotal, totalFetched, byAgency: results });
 });
 
-// Cron: SAM.gov (internal API — no API key needed)
-// Queries by notice_type + NAICS to bypass 10K pagination cap
+// Cron: SAM.gov (internal API via Patchright browser to bypass IP blocking)
+// Routes API calls through a real browser session with cookies + stealth headers
 app.post("/cron/sam", async (req, res) => {
   if (!authCheck(req, res)) return;
-  console.log("[cron] SAM.gov starting (internal API, full 45K+ scrape)...");
+  console.log("[cron] SAM.gov starting (browser-proxied API, full 45K+ scrape)...");
 
   const SAM_SEARCH = "https://sam.gov/api/prod/sgs/v1/search/";
-  const SAM_HEADERS = {
-    Accept: "application/json, text/plain, */*",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    Referer: "https://sam.gov/search/",
-    Origin: "https://sam.gov",
-  };
-  const PAGE_SIZE = 100;
-  const MAX_PAGES = 99; // SAM.gov caps at page 99 (0-indexed = 10,000 results)
+  const PAGE_SIZE = 25; // Smaller pages to look less bot-like
+  const MAX_PAGES = 399; // 25 * 399 = 9,975 (under 10K cap)
 
   // Build query batches: each must stay under 10K results
-  // Types under 10K: query directly. Type k (15K): split by NAICS 2-digit (33→3-digit)
   const NAICS_2DIGIT = ["11","21","22","23","31","32","42","44","45","48","51","52","53","54","55","56","61","62","71","72","81"];
   const NAICS_33_3DIGIT = ["331","332","333","334","335","336","337","339"];
 
   const batches = [];
-  // Small types — query directly (all under 10K)
   for (const code of ["p","o","r","s","a","u","g","i"]) {
     batches.push({ notice_type: code, naics: null, label: `type=${code}` });
   }
-  // Type k — split by NAICS (each under 10K)
   for (const n of NAICS_2DIGIT) {
-    if (n === "33") continue; // 33 is 12K+, split further
+    if (n === "33") continue;
     batches.push({ notice_type: "k", naics: n, label: `type=k,naics=${n}` });
   }
   for (const n of NAICS_33_3DIGIT) {
     batches.push({ notice_type: "k", naics: n, label: `type=k,naics=${n}` });
   }
-  // Type k with no NAICS match (~35 records) — catch with plain type=k at the end
-  // (will get up to 10K which covers duplicates + the ~35 without NAICS)
   batches.push({ notice_type: "k", naics: null, label: "type=k,catchall" });
 
-  // Helper: paginate one batch
+  // Launch browser and visit sam.gov to establish session cookies
+  let browserContext = null;
+  let browserPage = null;
+  try {
+    const result = await getPage();
+    browserContext = result.context;
+    browserPage = result.page;
+    console.log("[sam] Loading sam.gov in browser to establish session...");
+    await browserPage.goto("https://sam.gov/search/", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await new Promise(r => setTimeout(r, 3000));
+    console.log("[sam] Browser session established");
+  } catch (e) {
+    console.log(`[sam] Browser session failed: ${e.message}, falling back to direct fetch`);
+  }
+
+  // Fetch via browser page.evaluate (uses browser's cookies + TLS fingerprint)
+  async function browserFetch(url) {
+    if (!browserPage) throw new Error("no browser page");
+    return await browserPage.evaluate(async (fetchUrl) => {
+      const res = await fetch(fetchUrl, {
+        credentials: "include",
+        headers: {
+          Accept: "application/json, text/plain, */*",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      if (!res.ok) return { error: true, status: res.status };
+      return await res.json();
+    }, url);
+  }
+
+  // Direct fetch fallback with stealth headers
+  async function directFetch(url, attempt = 0) {
+    const ua = randomStealthUA();
+    const headers = {
+      ...stealthHeaders(ua),
+      Accept: "application/json, text/plain, */*",
+      Referer: "https://sam.gov/search/",
+      Origin: "https://sam.gov",
+    };
+    const apiRes = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+    if (!apiRes.ok) {
+      if (attempt < 3) {
+        await exponentialBackoff(attempt);
+        return directFetch(url, attempt + 1);
+      }
+      return { error: true, status: apiRes.status };
+    }
+    return await apiRes.json();
+  }
+
+  function mapSamRecord(r) {
+    const orgs = r.organizationHierarchy || [];
+    const dept = orgs.find(o => o.level === 1);
+    const subtier = orgs.find(o => o.level === 2);
+    const office = orgs.find(o => o.level === 3);
+    const agency = [dept?.name, subtier?.name, office?.name]
+      .filter(Boolean)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .join(" / ");
+    const desc = (r.descriptions || []).map(d => d.content || "").join("\n");
+    const contacts = r.pointOfContact || [];
+    const primaryContact = contacts[0] || {};
+    const pop = r.placeOfPerformance || {};
+    const popStr = [pop.city?.name, pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
+    const typeVal = r.type ? `${r.type.value || ""} (${r.type.code || ""})` : null;
+    const setAside = r.typeOfSetAsideDescription || r.typeOfSetAside || null;
+    const naicsCode = r.naicsCode || null;
+    const naicsDesc = r.naicsCodes?.[0]?.description || null;
+    const attachments = (r.resourceLinks || []).map(l => ({ name: l.name || "Document", url: l.url || l.uri || "" }));
+
+    return {
+      notice_id: r._id,
+      title: (r.title || "Untitled").substring(0, 500),
+      agency: agency || "Unknown",
+      solicitation_number: r.solicitationNumber || null,
+      response_deadline: r.responseDate || null,
+      posted_date: r.publishDate || null,
+      description: desc ? desc.substring(0, 10000) : null,
+      full_description: desc || null,
+      source: "sam_gov",
+      source_url: `https://sam.gov/opp/${r._id}/view`,
+      naics_code: naicsCode,
+      naics_description: naicsDesc,
+      set_aside: setAside,
+      set_aside_description: setAside,
+      place_of_performance: popStr || null,
+      contact_name: primaryContact.fullName || primaryContact.name || null,
+      contact_email: primaryContact.email || null,
+      contact_phone: primaryContact.phone || null,
+      contract_type: typeVal,
+      attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
+      incumbent_name: r.incumbentName || null,
+      last_seen_at: new Date().toISOString(),
+    };
+  }
+
   async function scrapeBatch(batch) {
-    let page = 0, saved = 0, total = 0;
+    let page = 0, saved = 0, total = 0, consecutiveErrors = 0;
     while (page < MAX_PAGES) {
       try {
         const params = new URLSearchParams({
@@ -897,81 +1043,44 @@ app.post("/cron/sam", async (req, res) => {
           notice_type: batch.notice_type,
         });
         if (batch.naics) params.set("naics", batch.naics);
+        const url = `${SAM_SEARCH}?${params}`;
 
-        const apiRes = await fetch(`${SAM_SEARCH}?${params}`, {
-          headers: SAM_HEADERS,
-          signal: AbortSignal.timeout(30000),
-        });
-
-        if (!apiRes.ok) {
-          if (page > 0) console.log(`[sam] ${batch.label} page ${page} HTTP ${apiRes.status} — stopping`);
-          break;
+        // Try browser fetch first, fall back to direct with stealth
+        let data;
+        try {
+          data = await browserFetch(url);
+        } catch {
+          data = await directFetch(url);
         }
 
-        const data = await apiRes.json();
+        if (data.error) {
+          consecutiveErrors++;
+          if (consecutiveErrors >= 3) {
+            console.log(`[sam] ${batch.label} page ${page} — 3 consecutive errors, stopping`);
+            break;
+          }
+          await exponentialBackoff(consecutiveErrors);
+          page++;
+          continue;
+        }
+        consecutiveErrors = 0;
+
         total = (data.page || {}).totalElements || 0;
         const items = (data._embedded || {}).results || [];
         if (!items.length) break;
 
-        const records = items.filter(r => r._id).map(r => {
-          const orgs = r.organizationHierarchy || [];
-          const dept = orgs.find(o => o.level === 1);
-          const subtier = orgs.find(o => o.level === 2);
-          const office = orgs.find(o => o.level === 3);
-          const agency = [dept?.name, subtier?.name, office?.name]
-            .filter(Boolean)
-            .filter((v, i, a) => a.indexOf(v) === i)
-            .join(" / ");
-          const desc = (r.descriptions || []).map(d => d.content || "").join("\n");
-          // Contact info
-          const contacts = r.pointOfContact || [];
-          const primaryContact = contacts[0] || {};
-          // Place of performance
-          const pop = r.placeOfPerformance || {};
-          const popStr = [pop.city?.name, pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
-          // Type info
-          const typeVal = r.type ? `${r.type.value || ""} (${r.type.code || ""})` : null;
-          // Set-aside
-          const setAside = r.typeOfSetAsideDescription || r.typeOfSetAside || null;
-          // NAICS
-          const naicsCode = r.naicsCode || null;
-          const naicsDesc = r.naicsCodes?.[0]?.description || null;
-          // Attachments
-          const attachments = (r.resourceLinks || []).map(l => ({ name: l.name || "Document", url: l.url || l.uri || "" }));
-
-          return {
-            notice_id: r._id,
-            title: (r.title || "Untitled").substring(0, 500),
-            agency: agency || "Unknown",
-            solicitation_number: r.solicitationNumber || null,
-            response_deadline: r.responseDate || null,
-            posted_date: r.publishDate || null,
-            description: desc ? desc.substring(0, 10000) : null,
-            full_description: desc || null,
-            source: "sam_gov",
-            source_url: `https://sam.gov/opp/${r._id}/view`,
-            naics_code: naicsCode,
-            naics_description: naicsDesc,
-            set_aside: setAside,
-            set_aside_description: setAside,
-            place_of_performance: popStr || null,
-            contact_name: primaryContact.fullName || primaryContact.name || null,
-            contact_email: primaryContact.email || null,
-            contact_phone: primaryContact.phone || null,
-            contract_type: typeVal,
-            attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
-            incumbent_name: r.incumbentName || null,
-            last_seen_at: new Date().toISOString(),
-          };
-        });
-
+        const records = items.filter(r => r._id).map(mapSamRecord);
         saved += await upsertToSupabase(records);
         page++;
         if (items.length < PAGE_SIZE) break;
-        await new Promise(r => setTimeout(r, 250));
+        // Random delay 2-5 seconds between pages
+        await randomDelay(2000, 5000);
       } catch (e) {
+        consecutiveErrors++;
         console.log(`[sam] ${batch.label} page ${page} error: ${e.message}`);
-        break;
+        if (consecutiveErrors >= 3) break;
+        await exponentialBackoff(consecutiveErrors);
+        page++;
       }
     }
     return { label: batch.label, saved, total, pages: page };
@@ -987,7 +1096,12 @@ app.post("/cron/sam", async (req, res) => {
     if (result.saved > 0) {
       console.log(`[sam] ${result.label}: ${result.saved} saved (${result.total} in batch, ${result.pages} pages)`);
     }
+    // Random delay between batches (1-3 seconds)
+    await randomDelay(1000, 3000);
   }
+
+  // Close browser context
+  if (browserContext) await browserContext.close().catch(() => {});
 
   console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches`);
   res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
@@ -1154,11 +1268,11 @@ app.post("/cron/scrape-html", async (req, res) => {
 
       // Strategy 1: Try direct fetch first (faster, works for server-rendered pages)
       try {
+        const ua = randomStealthUA();
         const directRes = await fetch(url, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
+            ...stealthHeaders(ua),
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
           },
           signal: AbortSignal.timeout(15000),
         });
