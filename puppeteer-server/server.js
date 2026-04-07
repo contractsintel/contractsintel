@@ -1210,15 +1210,16 @@ async function runBroadMatching(allOrgs, headers) {
       // Upsert — database handles dedup via on_conflict
       for (let i = 0; i < matches.length; i += 200) {
         const batch = matches.slice(i, i + 200);
-        const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches`, {
+        const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
           method: "POST",
-          headers: { ...headers, Prefer: "resolution=ignore-duplicates,return=minimal" },
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
           body: JSON.stringify(batch),
         });
         if (!upsertRes.ok) {
           const err = await upsertRes.text();
           console.log(`[match] Upsert error: ${upsertRes.status} ${err.substring(0, 200)}`);
-          break;
+          // Return partial count on error
+          return totalMatched + orgMatched;
         }
       }
 
