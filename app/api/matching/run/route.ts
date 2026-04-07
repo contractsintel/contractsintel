@@ -1,195 +1,205 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-// 5-signal scoring engine
-function scoreOpportunity(opp: any, org: any): { score: number; recommendation: string; reasoning: string } {
-  let score = 0;
-  const reasons: string[] = [];
-
-  // ═══ Signal 1: NAICS Classification Match (35 pts) ═══
-  const oppNaics = opp.naics_code || "";
-  const orgNaics: string[] = org.naics_codes || [];
-  if (oppNaics && orgNaics.includes(oppNaics)) {
-    score += 35;
-    reasons.push(`Direct NAICS match: ${oppNaics}`);
-  } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 4) === oppNaics.substring(0, 4))) {
-    score += 25;
-    reasons.push(`Related NAICS group: ${oppNaics.substring(0, 4)}xx`);
-  } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 2) === oppNaics.substring(0, 2))) {
-    score += 10;
-    reasons.push(`Same NAICS sector: ${oppNaics.substring(0, 2)}`);
-  } else if (!oppNaics) {
-    score += 15;
-    reasons.push("No NAICS specified on opportunity");
-  }
-
-  // ═══ Signal 2: Set-Aside Eligibility (25 pts) ═══
-  const setAsideMap: Record<string, string[]> = {
-    "8(a)": ["8(a)"],
-    "8a": ["8(a)"],
-    "sdvosb": ["SDVOSB", "Service-Disabled Veteran"],
-    "service-disabled": ["SDVOSB", "Service-Disabled Veteran"],
-    "wosb": ["WOSB", "EDWOSB"],
-    "women-owned": ["WOSB", "EDWOSB"],
-    "edwosb": ["EDWOSB"],
-    "hubzone": ["HUBZone"],
-    "small business": ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business", "Service-Disabled Veteran"],
-  };
-
-  const sa = (opp.set_aside_type || opp.set_aside_description || "").toLowerCase();
-  const orgCerts: string[] = org.certifications || [];
-  let setAsideMatched = false;
-
-  if (sa) {
-    for (const [pattern, matchingCerts] of Object.entries(setAsideMap)) {
-      if (sa.includes(pattern)) {
-        const matchedCert = orgCerts.find((c: string) => matchingCerts.includes(c));
-        if (matchedCert) {
-          score += 25;
-          reasons.push(`Set-aside match: your ${matchedCert} certification qualifies`);
-          setAsideMatched = true;
-          break;
-        }
-      }
-    }
-    if (!setAsideMatched && orgCerts.length > 0) {
-      reasons.push(`Set-aside: ${opp.set_aside_type || sa} — may not match your certifications`);
-    } else if (!setAsideMatched) {
-      reasons.push(`Set-aside: ${opp.set_aside_type || sa}`);
-    }
-  } else {
-    score += 10;
-    reasons.push("Full & open competition — no set-aside restriction");
-  }
-
-  // ═══ Signal 3: Agency History Affinity (15 pts) ═══
-  const preferredAgencies: string[] = org.preferred_agencies || [];
-  const oppAgency = (opp.agency || "").toLowerCase();
-  if (preferredAgencies.length > 0 && preferredAgencies.some((a: string) => oppAgency.includes(a.toLowerCase()))) {
-    score += 15;
-    reasons.push(`Preferred agency: ${opp.agency}`);
-  }
-
-  // ═══ Signal 4: Contract Value Fit (10 pts) ═══
-  const oppValue = opp.estimated_value || opp.value_estimate || 0;
-  const minVal = org.min_contract_value || 0;
-  const maxVal = org.max_contract_value || 0;
-  if (oppValue > 0 && maxVal > 0) {
-    if (oppValue >= minVal && oppValue <= maxVal) {
-      score += 10;
-      reasons.push("Contract value within your target range");
-    } else if (oppValue <= maxVal * 2) {
-      score += 5;
-      reasons.push("Contract value slightly above your range");
-    }
-  } else {
-    score += 5; // Unknown value or no preference, neutral
-  }
-
-  // ═══ Signal 5: Content Relevance — Keyword Match (15 pts) ═══
-  const keywords: string[] = org.keywords || [];
-  const text = ((opp.title || "") + " " + (opp.description || "")).toLowerCase();
-  const matchedKeywords: string[] = [];
-  for (const kw of keywords) {
-    if (text.includes(kw.toLowerCase())) {
-      matchedKeywords.push(kw);
-    }
-  }
-
-  if (matchedKeywords.length >= 3) {
-    score += 15;
-    reasons.push(`Strong keyword match: ${matchedKeywords.slice(0, 3).join(", ")}`);
-  } else if (matchedKeywords.length >= 2) {
-    score += 10;
-    reasons.push(`Keyword match: ${matchedKeywords.join(", ")}`);
-  } else if (matchedKeywords.length >= 1) {
-    score += 5;
-    reasons.push(`Partial keyword match: ${matchedKeywords[0]}`);
-  }
-
-  // Determine recommendation
-  let recommendation = "skip";
-  if (score >= 75) recommendation = "bid";
-  else if (score >= 45) recommendation = "monitor";
-
-  // Recompete override
-  if (opp.source === "usaspending" || (opp.title || "").toLowerCase().includes("recompete")) {
-    recommendation = "recompete";
-    if (!reasons.some(r => r.includes("ecompete"))) {
-      reasons.push("Recompete alert: expiring contract may be re-solicited");
-    }
-  }
-
-  return {
-    score: Math.min(score, 100),
-    recommendation,
-    reasoning: reasons.join(". ") + ".",
-  };
-}
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    const body = await request.json();
-    const orgId = body.organizationId;
+    const { organizationId } = await request.json();
+    if (!organizationId) return NextResponse.json({ error: "organizationId required" }, { status: 400 });
 
-    // Fetch org profile
-    const { data: org } = await supabase
+    // Get org profile
+    const { data: org } = await supabaseAdmin
       .from("organizations")
       .select("*")
-      .eq("id", orgId)
+      .eq("id", organizationId)
       .single();
-    if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
-    // Fetch active opportunities in batches
-    let totalMatched = 0;
-    let offset = 0;
-    const BATCH = 500;
+    const orgNaics: string[] = org.naics_codes || [];
+    const orgCerts: string[] = org.certifications || [];
+    const orgKeywords: string[] = org.keywords || [];
+    const minVal = org.min_contract_value || 0;
+    const maxVal = org.max_contract_value || 999999999;
+    const nationwide = org.serves_nationwide !== false;
 
-    while (true) {
-      const { data: opps } = await supabase
+    let opportunities: any[] = [];
+
+    // Batch 1: Direct NAICS matches
+    if (orgNaics.length > 0) {
+      const { data } = await supabaseAdmin
         .from("opportunities")
-        .select("id, title, agency, naics_code, set_aside_type, set_aside_description, estimated_value, value_estimate, description, source, status")
-        .in("source", ["sam_gov", "usaspending"])
+        .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+        .in("naics_code", orgNaics)
         .eq("status", "active")
-        .range(offset, offset + BATCH - 1);
-
-      if (!opps || opps.length === 0) break;
-
-      // Score each opportunity
-      const matches = opps.map(opp => {
-        const { score, recommendation, reasoning } = scoreOpportunity(opp, org);
-        return {
-          organization_id: orgId,
-          opportunity_id: opp.id,
-          match_score: score,
-          bid_recommendation: recommendation,
-          recommendation_reasoning: reasoning,
-          user_status: "new",
-          is_demo: false,
-        };
-      }).filter(m => m.match_score >= 15); // Only save if at least some signal
-
-      // Upsert in batches of 200
-      for (let i = 0; i < matches.length; i += 200) {
-        await supabase
-          .from("opportunity_matches")
-          .upsert(matches.slice(i, i + 200), { onConflict: "organization_id,opportunity_id" });
-      }
-
-      totalMatched += matches.length;
-      offset += BATCH;
-
-      // Safety limit
-      if (offset > 100000) break;
+        .limit(500);
+      if (data) opportunities.push(...data);
     }
 
-    return NextResponse.json({ success: true, matched: totalMatched });
+    // Batch 2: Partial NAICS matches (same 4-digit prefix)
+    if (orgNaics.length > 0) {
+      const prefixes = Array.from(new Set(orgNaics.map(n => n.substring(0, 4))));
+      for (const prefix of prefixes.slice(0, 3)) {
+        const { data } = await supabaseAdmin
+          .from("opportunities")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+          .like("naics_code", `${prefix}%`)
+          .eq("status", "active")
+          .limit(200);
+        if (data) opportunities.push(...data);
+      }
+    }
+
+    // Batch 3: Set-aside matches
+    if (orgCerts.length > 0) {
+      for (const cert of orgCerts.slice(0, 3)) {
+        const keyword = cert.toLowerCase().substring(0, 6);
+        const { data } = await supabaseAdmin
+          .from("opportunities")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+          .ilike("set_aside_type", `%${keyword}%`)
+          .eq("status", "active")
+          .limit(200);
+        if (data) opportunities.push(...data);
+      }
+    }
+
+    // Batch 4: Recent opportunities (catch anything with no NAICS)
+    const { data: recentData } = await supabaseAdmin
+      .from("opportunities")
+      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (recentData) opportunities.push(...recentData);
+
+    // Deduplicate
+    const seen = new Set<string>();
+    opportunities = opportunities.filter(o => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+
+    console.log(`[matching] Scoring ${opportunities.length} opportunities for org ${organizationId}`);
+
+    // Score each opportunity
+    const matches = opportunities.map(opp => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      // Signal 1: NAICS (35 pts)
+      const oppNaics = opp.naics_code || "";
+      if (oppNaics && orgNaics.includes(oppNaics)) {
+        score += 35;
+        reasons.push(`Direct NAICS match: ${oppNaics}`);
+      } else if (oppNaics && orgNaics.some(n => n.substring(0, 4) === oppNaics.substring(0, 4))) {
+        score += 25;
+        reasons.push(`Related NAICS: ${oppNaics}`);
+      } else if (!oppNaics) {
+        score += 15;
+        reasons.push("No NAICS on opportunity");
+      } else if (oppNaics && orgNaics.some(n => n.substring(0, 2) === oppNaics.substring(0, 2))) {
+        score += 10;
+        reasons.push(`Same sector: ${oppNaics.substring(0, 2)}`);
+      }
+
+      // Signal 2: Set-aside (25 pts)
+      const sa = (opp.set_aside_type || opp.set_aside_description || "").toLowerCase();
+      const certLower = orgCerts.map(c => c.toLowerCase());
+      if (sa) {
+        if ((sa.includes("8(a)") || sa.includes("8a")) && certLower.some(c => c.includes("8(a)") || c.includes("8a"))) {
+          score += 25; reasons.push("Your 8(a) certification qualifies");
+        } else if ((sa.includes("sdvosb") || sa.includes("service-disabled")) && certLower.some(c => c.includes("sdvosb") || c.includes("service-disabled"))) {
+          score += 25; reasons.push("Your SDVOSB certification qualifies");
+        } else if ((sa.includes("wosb") || sa.includes("women")) && certLower.some(c => c.includes("wosb") || c.includes("edwosb"))) {
+          score += 25; reasons.push("Your WOSB certification qualifies");
+        } else if (sa.includes("hubzone") && certLower.some(c => c.includes("hubzone"))) {
+          score += 25; reasons.push("Your HUBZone certification qualifies");
+        } else if (sa.includes("small business") && orgCerts.length > 0) {
+          score += 20; reasons.push("Small business set-aside");
+        } else {
+          score += 5;
+        }
+      } else {
+        score += 10; reasons.push("Full & open competition");
+      }
+
+      // Signal 3: Keywords (15 pts)
+      const text = ((opp.title || "") + " " + (opp.description || "")).toLowerCase();
+      let kwMatches = 0;
+      const matched: string[] = [];
+      orgKeywords.forEach(kw => {
+        if (text.includes(kw.toLowerCase())) { kwMatches++; matched.push(kw); }
+      });
+      score += Math.min(kwMatches * 5, 15);
+      if (matched.length > 0) reasons.push(`${matched.length} keyword match${matched.length > 1 ? "es" : ""}: ${matched.slice(0, 3).join(", ")}`);
+
+      // Signal 4: Value fit (10 pts)
+      const val = opp.estimated_value || opp.value_estimate || 0;
+      if (val > 0 && val >= minVal && val <= maxVal) {
+        score += 10; reasons.push("Value in your target range");
+      } else if (val > 0 && val <= maxVal * 2) {
+        score += 5;
+      } else {
+        score += 5;
+      }
+
+      // Signal 5: Geographic (15 pts)
+      if (nationwide) {
+        score += 15;
+      }
+
+      const finalScore = Math.min(score, 100);
+      let recommendation = "skip";
+      if (finalScore >= 75) recommendation = "bid";
+      else if (finalScore >= 45) recommendation = "monitor";
+
+      if (opp.source === "usaspending") {
+        recommendation = "recompete";
+        reasons.push("Recompete alert: expiring contract");
+      }
+
+      return {
+        organization_id: organizationId,
+        opportunity_id: opp.id,
+        match_score: finalScore,
+        bid_recommendation: recommendation,
+        recommendation_reasoning: reasons.join(". ") + ".",
+        user_status: "new",
+        is_demo: false,
+      };
+    });
+
+    // Sort by score, take top 500
+    matches.sort((a, b) => b.match_score - a.match_score);
+    const topMatches = matches.slice(0, 500);
+
+    // Delete old matches for this org (clean slate)
+    await supabaseAdmin
+      .from("opportunity_matches")
+      .delete()
+      .eq("organization_id", organizationId)
+      .eq("is_demo", false);
+
+    // Insert in batches of 100
+    for (let i = 0; i < topMatches.length; i += 100) {
+      const batch = topMatches.slice(i, i + 100);
+      const { error } = await supabaseAdmin
+        .from("opportunity_matches")
+        .insert(batch);
+      if (error) console.error("[matching] Insert error:", error.message);
+    }
+
+    console.log(`[matching] Done: ${topMatches.length} matches saved, top score: ${topMatches[0]?.match_score || 0}`);
+    return NextResponse.json({ success: true, matched: topMatches.length, topScore: topMatches[0]?.match_score || 0 });
   } catch (error) {
-    console.error("Matching error:", error);
+    console.error("[matching] Error:", error);
     return NextResponse.json({ error: "Matching failed" }, { status: 500 });
   }
 }

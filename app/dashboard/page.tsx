@@ -447,7 +447,16 @@ export default function DashboardPage() {
                 : "Your first digest arrives tomorrow at 7am"}
             </p>
           </div>
-          {/* HelpButton removed — was orphaned after InlineGuide removal */}
+          <button onClick={async () => {
+            setLoading(true);
+            try {
+              await fetch("/api/matching/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organization.id }) });
+              window.location.reload();
+            } catch { setLoading(false); }
+          }}
+            className="text-[12px] text-[#4f46e5] hover:text-[#4338ca] font-medium px-3 py-1.5 border border-[#e5e7eb] rounded-lg hover:border-[#c7d2fe] transition-colors">
+            ↻ Refresh Matches
+          </button>
         </div>
       </div>
       {/* Profile Completion Banner */}
