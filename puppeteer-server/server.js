@@ -1786,15 +1786,10 @@ async function runRotation(index) {
     }
     console.log(`[cron] Rotation ${index} (${name}): ${saved} records saved`);
 
-    // Run matching after scrape — only for every 6th rotation (once per 30 min, not every 5 min)
-    if (saved > 0 && index % 6 === 0) {
-      try {
-        const matched = await runQuickMatch();
-        if (matched > 0) console.log(`[cron] Matching: ${matched} new matches created`);
-      } catch (e) {
-        console.log(`[cron] Matching error: ${e.message}`);
-      }
-    }
+    // PAUSED: Railway matching disabled — matching now runs via /api/matching/run on Vercel
+    // if (saved > 0 && index % 6 === 0) {
+    //   try { const matched = await runQuickMatch(); } catch (e) {}
+    // }
 
     // Run expired cleanup every 12th rotation (once per hour)
     if (index % 12 === 6) {

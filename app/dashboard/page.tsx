@@ -472,17 +472,16 @@ export default function DashboardPage() {
             setRefreshing(true);
             try {
               const res = await fetch("/api/matching/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organization.id }) });
-              const data = await res.json();
-              console.log("Matching result:", data);
-              if (data.success) {
-                window.location.reload();
-              } else {
-                alert("Matching failed: " + (data.error || "Unknown error"));
-                setRefreshing(false);
-              }
+              const text = await res.text();
+              console.log("RAW RESPONSE:", text);
+              let data;
+              try { data = JSON.parse(text); } catch { data = { error: text }; }
+              alert("Matching result: " + JSON.stringify(data));
+              if (data.success) window.location.reload();
+              else setRefreshing(false);
             } catch (err: any) {
-              console.error("Matching error:", err);
-              alert("Matching failed: " + (err?.message || "Network error"));
+              console.error("Error:", err);
+              alert("ERROR: " + (err?.message || "Network error"));
               setRefreshing(false);
             }
           }}
