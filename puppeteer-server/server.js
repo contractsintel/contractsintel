@@ -352,6 +352,31 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Diagnostic: show org IDs, user IDs, and match counts
+app.get("/debug/orgs", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  try {
+    const [orgR, userR, matchR] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name,naics_codes,certifications&limit=10`, { headers: hdrs }),
+      fetch(`${SUPABASE_URL}/rest/v1/users?select=auth_id,email,organization_id,role&limit=10`, { headers: hdrs }),
+      fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=organization_id&limit=1`, { headers: { ...hdrs, Prefer: "count=exact" } }),
+    ]);
+    const orgs = await orgR.json();
+    const users = await userR.json();
+    const matchCount = matchR.headers.get("content-range")?.split("/")[1] || "?";
+
+    // Get per-org match counts
+    const orgCounts = {};
+    for (const org of (Array.isArray(orgs) ? orgs : [])) {
+      const cr = await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?select=id&organization_id=eq.${org.id}&limit=1`, { headers: { ...hdrs, Prefer: "count=exact" } });
+      orgCounts[org.name || org.id] = cr.headers.get("content-range")?.split("/")[1] || "0";
+    }
+
+    res.json({ orgs, users: Array.isArray(users) ? users.map(u => ({ auth_id: u.auth_id, email: u.email, org_id: u.organization_id })) : users, total_matches: matchCount, matches_by_org: orgCounts });
+  } catch (e) { res.json({ error: e.message }); }
+});
+
 // ============================================================
 // RENDER ENDPOINTS
 // ============================================================
