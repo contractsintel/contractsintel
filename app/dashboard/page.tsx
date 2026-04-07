@@ -134,7 +134,7 @@ export default function DashboardPage() {
     setLoading(true);
     const { data, count, error } = await supabase
       .from("opportunity_matches")
-      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, user_notes, notes_updated_at, is_demo, created_at, opportunities(id, title, agency, solicitation_number, set_aside, naics_code, place_of_performance, estimated_value, value_estimate, response_deadline, posted_date, description, sam_url, source, source_url, notice_id)", { count: "exact" })
+      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, is_demo, created_at, opportunities(*)", { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, effectiveLimit - 1);
@@ -385,8 +385,10 @@ export default function DashboardPage() {
             <p className="text-sm text-[#64748b] mt-2 font-['JetBrains_Mono']">{today}</p>
             {!loading && (
               <p className="text-[15px] text-[#475569] mt-2 font-medium">
-                {matches.length > 0
-                  ? `You have ${matches.length} new match${matches.length === 1 ? "" : "es"} today`
+                {totalMatchCount > 0
+                  ? `You have ${totalMatchCount.toLocaleString()} matched opportunities`
+                  : matches.length > 0
+                  ? `You have ${matches.length} match${matches.length === 1 ? "" : "es"}`
                   : "Your first digest arrives tomorrow at 7am"}
               </p>
             )}
@@ -538,7 +540,7 @@ export default function DashboardPage() {
 
               {/* Recommendation */}
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Rec</span>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#94a3b8] mr-0.5">Recommendation</span>
                 {([
                   { key: "", label: "All" },
                   { key: "bid", label: `Bid${recCounts.bid ? ` (${recCounts.bid})` : ""}`, color: "#22c55e" },
@@ -596,8 +598,8 @@ export default function DashboardPage() {
             <div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af] rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               Loading matches...
             </div>
-          ) : filtered.length === 0 ? (
-            /* ── Empty state welcome card ─────────────────────────────── */
+          ) : filtered.length === 0 && totalMatchCount === 0 ? (
+            /* ── Empty state welcome card — only when truly no matches ── */
             <div className="border border-[#f0f1f3] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-center mb-8">
                 <h2 className="text-xl font-semibold text-[#111827] mb-2">
@@ -697,12 +699,16 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+          ) : filtered.length === 0 ? (
+            <div className="border border-[#f0f1f3] bg-white rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <p className="text-[#9ca3af]">No matches for current filters. Try adjusting your filters above.</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {/* Match count */}
               <div className="flex items-center justify-between px-1">
                 <span className="font-['JetBrains_Mono'] text-[11px] text-[#94a3b8]">
-                  Showing {Math.min(matches.length, filtered.length)} of {totalMatchCount} matches
+                  Showing {Math.min(matches.length, filtered.length)} of {totalMatchCount.toLocaleString()} matches
                 </span>
               </div>
               {filtered.map((match) => {

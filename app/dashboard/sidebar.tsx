@@ -91,8 +91,8 @@ interface NavItem {
 
 const TOP_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "home", bdProLocked: false, teamOnly: false, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
-  { href: "/dashboard/search", label: "Search Contracts", icon: "search", bdProLocked: false, teamOnly: false, tourId: "", color: "#059669", lightBg: "#ecfdf5" },
   { href: "/dashboard/get-started", label: "Get Started", icon: "rocket", bdProLocked: false, teamOnly: false, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
+  { href: "/dashboard/search", label: "Search Contracts", icon: "search", bdProLocked: false, teamOnly: false, tourId: "", color: "#059669", lightBg: "#ecfdf5" },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: "kanban", bdProLocked: false, teamOnly: false, tourId: "sidebar-pipeline", color: "#d97706", lightBg: "#fffbeb" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "document", bdProLocked: true, teamOnly: false, tourId: "sidebar-proposals", color: "#7c3aed", lightBg: "#f5f3ff" },
   { href: "/dashboard/compliance", label: "Compliance", icon: "shield", bdProLocked: false, teamOnly: false, tourId: "sidebar-compliance", color: "#059669", lightBg: "#ecfdf5" },

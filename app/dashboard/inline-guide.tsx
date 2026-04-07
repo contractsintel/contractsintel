@@ -44,7 +44,7 @@ export function InlineGuide({ page }: { page: string }) {
     }
     setDismissed(false);
     const wasSeen = localStorage.getItem(expandKey) === "1";
-    setExpanded(!wasSeen);
+    setExpanded(false); // Always start collapsed
   }, [dismissKey, expandKey, text]);
 
   if (!text || !mounted || dismissed) return null;
