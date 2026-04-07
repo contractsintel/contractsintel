@@ -503,7 +503,7 @@ const ALL_GUIDES: GuideSection[] = [
     title: "State & Local Monitoring",
     maxGuideIndex: 11,
     whatItDoes:
-      "/* PAUSED — State & local monitoring will be re-enabled in a future update. */ "Coming soon: State & local procurement monitoring across all 50 states."",
+      "Coming soon: State & local procurement monitoring across all 50 states.",
     whyItMatters:
       "State and local contracts are often less competitive than federal ones. Many small contractors ignore this $500 billion market. Adding state and local to your pipeline diversifies your revenue.",
     howToUseIt: [

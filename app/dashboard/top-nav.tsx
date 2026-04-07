@@ -34,6 +34,7 @@ export function TopNav({
   };
 
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#e5e7eb] bg-white/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
       <Link href="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">
@@ -90,7 +91,7 @@ export function TopNav({
       </div>
     </nav>
 
-      {/* Mobile navigation overlay */}
+    {/* Mobile navigation overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[4px]" />
@@ -128,5 +129,6 @@ export function TopNav({
           </div>
         </div>
       )}
+    </>
   );
 }

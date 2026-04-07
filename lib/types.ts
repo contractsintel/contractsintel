@@ -5,10 +5,19 @@ export interface Organization {
   cage_code: string | null;
   certifications: string[];
   naics_codes: string[];
-  address: string | null;
+  address: any;
   plan: string;
   stripe_customer_id: string | null;
+  subscription_status: string | null;
+  subscription_tier: string | null;
+  trial_ends_at: string | null;
+  sam_status: string | null;
+  sam_expiration: string | null;
+  entity_description: string | null;
+  onboarding_complete: boolean;
+  onboarding_goal: string | null;
   created_at: string;
+  [key: string]: any; // Allow additional DB columns
 }
 
 export interface UserProfile {
