@@ -139,19 +139,39 @@ export default function OnboardingSetupPage() {
     setActiveTab("preferences");
   };
 
+  const [matching, setMatching] = useState(false);
+
   const saveAndExit = async () => {
     setTab3Attempted(true);
     if (!tab3Valid) return;
     setSaving(true);
     const naicsArr = naicsCodes.split(",").map(s => s.trim()).filter(Boolean);
+    const minVal = minValue ? parseInt(minValue) : 0;
+    const maxValNum = maxValue ? parseInt(maxValue) : 0;
     await supabase.from("organizations").update({
       certifications: certs,
       naics_codes: naicsArr,
+      keywords: selectedKeywords,
+      serves_nationwide: serviceArea === "nationwide",
+      service_states: selectedStates,
+      min_contract_value: minVal,
+      max_contract_value: maxValNum,
       setup_wizard_complete: true,
     }).eq("id", organization.id);
     setSaving(false);
-    showBanner("Profile complete!");
-    setTimeout(() => router.push("/dashboard/onboarding"), 1000);
+
+    // Trigger matching engine
+    setMatching(true);
+    showBanner("Profile saved! Scanning opportunities...");
+    try {
+      await fetch("/api/matching/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: organization.id }),
+      });
+    } catch {}
+    setMatching(false);
+    router.push("/dashboard/onboarding");
   };
 
   const filteredStates = US_STATES.filter(s =>
@@ -463,7 +483,7 @@ export default function OnboardingSetupPage() {
                 ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
                 : "bg-[#e5e7eb] text-[#9ca3af] cursor-not-allowed"
             }`}>
-            {saving ? "Saving..." : "Save and Exit"}
+            {matching ? "Scanning 45,000+ opportunities..." : saving ? "Saving..." : "Save and Exit"}
           </button>
         </div>
       )}

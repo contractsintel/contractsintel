@@ -17,8 +17,14 @@ export interface Organization {
   onboarding_complete: boolean;
   onboarding_goal: string | null;
   setup_wizard_complete: boolean;
+  keywords: string[];
+  serves_nationwide: boolean;
+  service_states: string[];
+  preferred_agencies: string[];
+  min_contract_value: number;
+  max_contract_value: number;
   created_at: string;
-  [key: string]: any; // Allow additional DB columns
+  [key: string]: any;
 }
 
 export interface UserProfile {
