@@ -149,18 +149,24 @@ export default function DashboardPage() {
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
 
-    // Load source counts from a larger sample for accurate filter pills
+    // Load source counts from a small sample (lightweight query)
     const { data: sourceSample } = await supabase
       .from("opportunity_matches")
       .select("opportunities(source)")
       .eq("organization_id", organization.id)
-      .limit(5000);
+      .limit(500);
     if (sourceSample) {
       const counts: Record<string, number> = {};
+      const sampleSize = sourceSample.length;
       for (const m of sourceSample) {
         const src = (m as any).opportunities?.source;
         const cat = getSourceCategory(src);
         counts[cat] = (counts[cat] ?? 0) + 1;
+      }
+      // Extrapolate from sample to total
+      if (sampleSize > 0 && (count ?? 0) > sampleSize) {
+        const ratio = (count ?? 0) / sampleSize;
+        for (const k of Object.keys(counts)) counts[k] = Math.round(counts[k] * ratio);
       }
       setDbSourceCounts(counts);
     }
