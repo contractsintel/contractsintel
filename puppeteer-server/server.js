@@ -1159,7 +1159,7 @@ async function runRotation(index) {
     // Run matching after scrape if new records were added
     if (saved > 0) {
       try {
-        const matched = await runBulkMatching();
+        const matched = await runQuickMatch();
         if (matched > 0) console.log(`[cron] Matching: ${matched} new matches created`);
       } catch (e) {
         console.log(`[cron] Matching error: ${e.message}`);
@@ -1334,6 +1334,41 @@ async function runBroadMatching(allOrgs, headers) {
     if (orgMatched > 0) console.log(`[match] Broad: ${orgMatched} matches for ${org.name || org.id}`);
   }
   return totalMatched;
+}
+
+// Quick match: match most recent 500 opps for all orgs (runs after each scrape)
+async function runQuickMatch() {
+  const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+  const postHdrs = { ...hdrs, "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" };
+
+  const orgR = await fetch(`${SUPABASE_URL}/rest/v1/organizations?select=id,name&limit=100`, { headers: hdrs });
+  const orgs = await orgR.json();
+  if (!Array.isArray(orgs) || !orgs.length) return 0;
+
+  const oppR = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,title,source,agency&order=created_at.desc&limit=500`, { headers: hdrs });
+  const opps = await oppR.json();
+  if (!Array.isArray(opps) || !opps.length) return 0;
+
+  let total = 0;
+  for (const org of orgs) {
+    const matches = opps.map(o => ({
+      organization_id: org.id,
+      opportunity_id: o.id,
+      match_score: o.source === "sam_gov" ? 55 : o.source?.startsWith("state_") ? 40 : 35,
+      bid_recommendation: o.source === "sam_gov" ? "monitor" : "skip",
+      recommendation_reasoning: `${o.source || "federal"}: ${o.agency || "Unknown"}`,
+      user_status: "new",
+      is_demo: false,
+    }));
+
+    for (let i = 0; i < matches.length; i += 200) {
+      await fetch(`${SUPABASE_URL}/rest/v1/opportunity_matches?on_conflict=organization_id,opportunity_id`, {
+        method: "POST", headers: postHdrs, body: JSON.stringify(matches.slice(i, i + 200)),
+      });
+    }
+    total += matches.length;
+  }
+  return total;
 }
 
 app.listen(PORT, () => {
