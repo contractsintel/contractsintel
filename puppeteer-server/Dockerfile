@@ -1,6 +1,11 @@
 FROM mcr.microsoft.com/playwright:v1.59.1-noble
 
+# Force fresh build — 2026-04-06
+ENV BUILD_TS=20260406v3 \
+    NODE_ENV=production
+
 WORKDIR /app
+
 COPY package.json ./
 RUN npm install --production
 
