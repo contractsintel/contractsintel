@@ -504,10 +504,10 @@ app.post("/cron/grants", async (req, res) => {
 });
 
 // Cron: SAM.gov (internal API — no API key needed)
-// Queries by notice_type to bypass 10K pagination cap per query
+// Queries by notice_type + NAICS to bypass 10K pagination cap
 app.post("/cron/sam", async (req, res) => {
   if (!authCheck(req, res)) return;
-  console.log("[cron] SAM.gov starting (internal API, by notice type)...");
+  console.log("[cron] SAM.gov starting (internal API, full 45K+ scrape)...");
 
   const SAM_SEARCH = "https://sam.gov/api/prod/sgs/v1/search/";
   const SAM_HEADERS = {
@@ -519,38 +519,40 @@ app.post("/cron/sam", async (req, res) => {
   const PAGE_SIZE = 100;
   const MAX_PAGES = 99; // SAM.gov caps at page 99 (0-indexed = 10,000 results)
 
-  // All SAM.gov notice types: query each separately to stay under 10K cap
-  const NOTICE_TYPES = [
-    { code: "p", name: "Presolicitation" },
-    { code: "o", name: "Solicitation" },
-    { code: "k", name: "Combined Synopsis/Solicitation" },
-    { code: "r", name: "Sources Sought" },
-    { code: "s", name: "Special Notice" },
-    { code: "a", name: "Award Notice" },
-    { code: "u", name: "Justification" },
-    { code: "g", name: "Sale of Surplus Property" },
-    { code: "i", name: "Intent to Bundle" },
-  ];
+  // Build query batches: each must stay under 10K results
+  // Types under 10K: query directly. Type k (15K): split by NAICS 2-digit (33→3-digit)
+  const NAICS_2DIGIT = ["11","21","22","23","31","32","42","44","45","48","51","52","53","54","55","56","61","62","71","72","81"];
+  const NAICS_33_3DIGIT = ["331","332","333","334","335","336","337","339"];
 
-  let grandTotal = 0;
-  const results = {};
+  const batches = [];
+  // Small types — query directly (all under 10K)
+  for (const code of ["p","o","r","s","a","u","g","i"]) {
+    batches.push({ notice_type: code, naics: null, label: `type=${code}` });
+  }
+  // Type k — split by NAICS (each under 10K)
+  for (const n of NAICS_2DIGIT) {
+    if (n === "33") continue; // 33 is 12K+, split further
+    batches.push({ notice_type: "k", naics: n, label: `type=k,naics=${n}` });
+  }
+  for (const n of NAICS_33_3DIGIT) {
+    batches.push({ notice_type: "k", naics: n, label: `type=k,naics=${n}` });
+  }
+  // Type k with no NAICS match (~35 records) — catch with plain type=k at the end
+  // (will get up to 10K which covers duplicates + the ~35 without NAICS)
+  batches.push({ notice_type: "k", naics: null, label: "type=k,catchall" });
 
-  for (const noticeType of NOTICE_TYPES) {
-    let page = 0, typeSaved = 0, typeTotal = 0;
-    console.log(`[cron] SAM.gov starting type ${noticeType.code} (${noticeType.name})...`);
-
+  // Helper: paginate one batch
+  async function scrapeBatch(batch) {
+    let page = 0, saved = 0, total = 0;
     while (page < MAX_PAGES) {
       try {
         const params = new URLSearchParams({
-          index: "opp",
-          q: "",
-          page: String(page),
-          sort: "-modifiedDate",
-          size: String(PAGE_SIZE),
-          mode: "search",
-          is_active: "true",
-          notice_type: noticeType.code,
+          index: "opp", q: "", page: String(page),
+          sort: "-modifiedDate", size: String(PAGE_SIZE),
+          mode: "search", is_active: "true",
+          notice_type: batch.notice_type,
         });
+        if (batch.naics) params.set("naics", batch.naics);
 
         const apiRes = await fetch(`${SAM_SEARCH}?${params}`, {
           headers: SAM_HEADERS,
@@ -558,13 +560,12 @@ app.post("/cron/sam", async (req, res) => {
         });
 
         if (!apiRes.ok) {
-          console.log(`[cron] SAM.gov type ${noticeType.code} page ${page} HTTP ${apiRes.status}`);
+          if (page > 0) console.log(`[sam] ${batch.label} page ${page} HTTP ${apiRes.status} — stopping`);
           break;
         }
 
         const data = await apiRes.json();
-        const pageInfo = data.page || {};
-        typeTotal = pageInfo.totalElements || 0;
+        total = (data.page || {}).totalElements || 0;
         const items = (data._embedded || {}).results || [];
         if (!items.length) break;
 
@@ -577,9 +578,7 @@ app.post("/cron/sam", async (req, res) => {
             .filter(Boolean)
             .filter((v, i, a) => a.indexOf(v) === i)
             .join(" / ");
-
           const desc = (r.descriptions || []).map(d => d.content || "").join("\n").substring(0, 10000);
-
           return {
             notice_id: r._id,
             title: (r.title || "Untitled").substring(0, 500),
@@ -594,29 +593,32 @@ app.post("/cron/sam", async (req, res) => {
           };
         });
 
-        const saved = await upsertToSupabase(records);
-        typeSaved += saved;
-
-        if (page % 20 === 0 || items.length < PAGE_SIZE) {
-          console.log(`[cron] SAM.gov type ${noticeType.code} page ${page}: ${typeSaved}/${typeTotal}`);
-        }
-
+        saved += await upsertToSupabase(records);
         page++;
         if (items.length < PAGE_SIZE) break;
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 250));
       } catch (e) {
-        console.log(`[cron] SAM.gov type ${noticeType.code} page ${page} error: ${e.message}`);
+        console.log(`[sam] ${batch.label} page ${page} error: ${e.message}`);
         break;
       }
     }
-
-    console.log(`[cron] SAM.gov type ${noticeType.code} done: ${typeSaved} saved (${typeTotal} active)`);
-    results[noticeType.code] = { saved: typeSaved, total: typeTotal, pages: page };
-    grandTotal += typeSaved;
+    return { label: batch.label, saved, total, pages: page };
   }
 
-  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved across all notice types`);
-  res.json({ source: "sam_gov", saved: grandTotal, byType: results });
+  let grandTotal = 0;
+  const batchResults = [];
+
+  for (const batch of batches) {
+    const result = await scrapeBatch(batch);
+    batchResults.push(result);
+    grandTotal += result.saved;
+    if (result.saved > 0) {
+      console.log(`[sam] ${result.label}: ${result.saved} saved (${result.total} in batch, ${result.pages} pages)`);
+    }
+  }
+
+  console.log(`[cron] SAM.gov complete: ${grandTotal} total saved from ${batches.length} batches`);
+  res.json({ source: "sam_gov", saved: grandTotal, batches: batchResults.filter(b => b.saved > 0) });
 });
 
 // Cron: Scrape HTML sources via Patchright + Capsolver
