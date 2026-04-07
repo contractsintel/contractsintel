@@ -59,8 +59,10 @@ export default async function DashboardLayout({
           userName={userProfile.full_name ? userProfile.full_name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : null}
         />
         <div className="flex pt-16">
-          <Sidebar plan={org.plan} />
-          <main className="flex-1 ml-[240px] p-8">
+          <div className="hidden lg:block">
+            <Sidebar plan={org.plan} />
+          </div>
+          <main className="flex-1 lg:ml-[240px] p-4 sm:p-6 lg:p-8">
             <div className="max-w-dashboard mx-auto">{children}</div>
           </main>
           <TourWrapper />

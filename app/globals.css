@@ -244,6 +244,11 @@ select:focus-visible, textarea:focus-visible {
   to { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
 @keyframes shrinkBar {
   from { width: 100%; }
   to { width: 0%; }
@@ -267,4 +272,21 @@ button, a { transition: all 0.15s ease; }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ══════════════════════════════════════════════════════════ */
+
+/* Tablet (< 1024px) */
+@media (max-width: 1024px) {
+  main.flex-1 { margin-left: 0 !important; }
+  .right-sidebar-desktop { display: none !important; }
+}
+
+/* Mobile (< 640px) */
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  .ci-stat-number { font-size: 22px !important; }
+  .ci-page-title { font-size: 22px !important; }
 }

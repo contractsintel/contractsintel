@@ -358,9 +358,9 @@ const ALL_GUIDES: GuideSection[] = [
     title: "Daily Digest & Opportunity Matching",
     maxGuideIndex: 5,
     whatItDoes:
-      "Every night, ContractsIntel scans 100+ government procurement sources — including federal agencies, all 50 state procurement portals, military commands, SBIR programs from 7 agencies, and subcontracting databases. It checks each opportunity against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes. By 7am, a ranked list of your best matches lands in your email inbox with scores and recommendations. Each opportunity shows a colored source badge so you can see where it came from — federal, state, military, SBIR, or recompete.",
+      "Every night, ContractsIntel scans SAM.gov and USASpending — the official federal procurement databases. It checks each opportunity against your certifications (like 8(a), SDVOSB, WOSB, or HUBZone) and your NAICS codes. By 7am, a ranked list of your best matches lands in your email inbox with scores and recommendations. Each opportunity shows whether it's a new federal solicitation or a recompete alert for an expiring contract.",
     whyItMatters:
-      "Most small contractors only check SAM.gov manually every few days, missing state contracts, military RFQs, SBIR grants, and recompete opportunities from expiring contracts. A single missed contract could be worth $150,000 to $2,000,000. ContractsIntel monitors 100+ sources so you never miss an eligible opportunity at any level of government.",
+      "Most small contractors only check SAM.gov manually every few days, missing new solicitations and recompete opportunities from expiring contracts. A single missed contract could be worth $150,000 to $2,000,000. ContractsIntel monitors SAM.gov continuously so you never miss an eligible federal opportunity.",
     howToUseIt: [
       "Check your email every morning -- your digest arrives at 7am with your top 10 matches.",
       "Review the match scores -- higher means a better fit for your business.",
@@ -503,7 +503,7 @@ const ALL_GUIDES: GuideSection[] = [
     title: "State & Local Monitoring",
     maxGuideIndex: 11,
     whatItDoes:
-      "Monitors procurement portals across all 50 states plus local government opportunities. Matches state and local contracts to your NAICS codes just like the federal matching engine.",
+      "/* PAUSED — State & local monitoring will be re-enabled in a future update. */ "Coming soon: State & local procurement monitoring across all 50 states."",
     whyItMatters:
       "State and local contracts are often less competitive than federal ones. Many small contractors ignore this $500 billion market. Adding state and local to your pipeline diversifies your revenue.",
     howToUseIt: [

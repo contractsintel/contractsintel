@@ -444,7 +444,7 @@ export default function DashboardPage() {
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar — KPI Row */}
-      <div data-tour="stats-bar" className="grid grid-cols-4 gap-4 mb-8">
+      <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {[
           { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", urgent: false },
           { value: formatCurrency(totalValue), label: "Total Value", urgent: false },
@@ -483,9 +483,9 @@ export default function DashboardPage() {
 
       <div className="flex gap-6">
         {/* Main Column */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full">
           {/* Filter Bar */}
-          <div className="space-y-3 mb-5">
+          <div className="space-y-3 mb-4 sm:mb-5 overflow-x-auto">
             {/* Row 1: Source toggle pills */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="ci-section-label mr-1">Contract Type</span>
@@ -633,7 +633,7 @@ export default function DashboardPage() {
                   Your first digest arrives tomorrow at 7am
                 </h2>
                 <p className="text-sm text-[#4b5563] max-w-lg mx-auto">
-                  Every night we scan 100+ government procurement sources and match opportunities to your certifications. Your first ranked digest will be here by morning.
+                  Every night we scan official federal procurement databases and match opportunities to your certifications. Your first ranked digest will be here by morning.
                 </p>
               </div>
 
@@ -1014,8 +1014,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-[260px] shrink-0 hidden lg:block space-y-4">
+        {/* Right Sidebar — hidden on mobile/tablet */}
+        <div className="w-[260px] shrink-0 hidden xl:block space-y-4 right-sidebar-desktop">
           {/* Pipeline Summary */}
           <div className="ci-card p-5">
             <h3 className="ci-section-label mb-3">

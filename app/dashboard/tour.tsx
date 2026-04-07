@@ -32,7 +32,7 @@ const ALL_STEPS: TourStep[] = [
     selector: '[data-tour="opportunity-card"]',
     title: "Your matched opportunities",
     description:
-      "Every card is a real contract opportunity that matches your certifications and NAICS codes. Your opportunities come from 100+ sources — federal agencies, all 50 state portals, military commands, and SBIR programs. The colored badge shows where each opportunity came from. You can see the agency, contract value, days until the deadline closes, and your match score. The higher the score, the better the fit for your business.",
+      "Every card is a real contract opportunity that matches your certifications and NAICS codes. Your opportunities come from SAM.gov (federal solicitations) and USASpending (recompete alerts). You can see the agency, contract value, days until the deadline closes, and your match score. The higher the score, the better the fit for your business.",
   },
   {
     selector: '[data-tour="ai-recommendation"]',

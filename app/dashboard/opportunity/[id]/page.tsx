@@ -164,13 +164,13 @@ export default function OpportunityDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
-        <div className="col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Key Details */}
           <div className="ci-card p-6">
             <h2 className="ci-section-label mb-4">Key Details</h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
               <div><span className="text-[#94a3b8]">Solicitation</span><div className="ci-mono text-[#0f172a] font-medium mt-0.5">{opp.solicitation_number || <span className="text-[#94a3b8] italic font-normal">Not specified</span>}</div></div>
               <div><span className="text-[#94a3b8]">Value</span><div className="text-[#0f172a] font-semibold mt-0.5">{formatCurrency(val)}</div></div>
               <div><span className="text-[#94a3b8]">Set-Aside</span><div className="text-[#0f172a] mt-0.5">{opp.set_aside_description || opp.set_aside_type || <span className="text-[#94a3b8] italic">Full & Open</span>}</div></div>

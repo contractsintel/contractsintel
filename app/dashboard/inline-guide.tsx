@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 const GUIDES: Record<string, string> = {
   dashboard:
-    "Your matched opportunities from 100+ government sources appear here every morning at 7am. Federal, state, military, and SBIR opportunities are all included — look for the colored source badge on each card. Review the scores (higher = better fit), read the AI recommendation, then click Track, Mark as Bidding, or Skip on each one.",
+    "Your matched federal opportunities appear here every morning at 7am. Federal solicitations from SAM.gov and recompete alerts from USASpending are included. Review the scores (higher = better fit), read the AI recommendation, then click Track, Mark as Bidding, or Skip on each one.",
   pipeline:
     "Every opportunity you track appears here organized by stage. Move cards between columns using the dropdown to change status. When you mark something as Won, your delivery dashboard and past performance record are created automatically.",
   proposals:
