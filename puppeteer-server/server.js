@@ -1858,16 +1858,19 @@ async function verifyExistingContracts(source, batchSize = 50) {
   let verified = 0, expired = 0;
   const now = new Date().toISOString();
 
+  // 7-day grace period — only mark expired if deadline is more than 7 days in the past
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+
   for (const opp of toVerify) {
     try {
       let isActive = true;
 
-      // Check 1: Has the deadline passed?
-      if (opp.response_deadline && opp.response_deadline < now) {
+      // Check 1: Is the deadline more than 7 days in the past?
+      if (opp.response_deadline && opp.response_deadline < cutoff) {
         isActive = false;
       }
 
-      // Check 2: For SAM.gov, verify against the API
+      // Check 2: For SAM.gov, verify against the API (only if deadline check passed)
       if (isActive && source === "sam_gov" && opp.notice_id) {
         try {
           const ua = randomStealthUA();
@@ -1878,7 +1881,8 @@ async function verifyExistingContracts(source, batchSize = 50) {
           if (apiR.ok) {
             const data = await apiR.json();
             const found = ((data._embedded || {}).results || []).some(r => r._id === opp.notice_id);
-            if (!found) isActive = false;
+            // Only mark expired if API confirms it's gone AND deadline is past (with grace)
+            if (!found && opp.response_deadline && opp.response_deadline < now) isActive = false;
           }
           await randomDelay(1000, 2000);
         } catch {} // API error — keep as active, don't penalize
