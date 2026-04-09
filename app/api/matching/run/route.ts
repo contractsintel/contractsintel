@@ -41,30 +41,44 @@ export async function POST(request: NextRequest) {
       if (data) opportunities.push(...data);
     }
 
-    // Batch 2: Partial NAICS matches (same 4-digit prefix)
+    // Batch 2a: Partial NAICS matches (same 4-digit family) — raised cap 200→400
     if (orgNaics.length > 0) {
-      const prefixes = Array.from(new Set(orgNaics.map(n => n.substring(0, 4))));
-      for (const prefix of prefixes.slice(0, 3)) {
+      const prefixes4 = Array.from(new Set(orgNaics.map(n => n.substring(0, 4))));
+      for (const prefix of prefixes4) {
         const { data } = await supabaseAdmin
           .from("opportunities")
           .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
           .like("naics_code", `${prefix}%`)
           .eq("status", "active")
-          .limit(200);
+          .limit(400);
         if (data) opportunities.push(...data);
       }
     }
 
-    // Batch 3: Set-aside matches
+    // Batch 2b: 3-digit NAICS group matches — previously invisible to fetch
+    if (orgNaics.length > 0) {
+      const prefixes3 = Array.from(new Set(orgNaics.map(n => n.substring(0, 3))));
+      for (const prefix of prefixes3) {
+        const { data } = await supabaseAdmin
+          .from("opportunities")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+          .like("naics_code", `${prefix}%`)
+          .eq("status", "active")
+          .limit(300);
+        if (data) opportunities.push(...data);
+      }
+    }
+
+    // Batch 3: Set-aside matches — use ALL certs, not just first 3
     if (orgCerts.length > 0) {
-      for (const cert of orgCerts.slice(0, 3)) {
+      for (const cert of orgCerts) {
         const keyword = cert.toLowerCase().substring(0, 6);
         const { data } = await supabaseAdmin
           .from("opportunities")
           .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
           .ilike("set_aside_type", `%${keyword}%`)
           .eq("status", "active")
-          .limit(200);
+          .limit(300);
         if (data) opportunities.push(...data);
       }
     }
@@ -129,13 +143,13 @@ export async function POST(request: NextRequest) {
         score += 25;
         reasons.push(`Related NAICS family: ${oppNaics.substring(0, 4)}xx`);
       } else if (oppNaics && orgNaics.some(n => n.substring(0, 3) === oppNaics.substring(0, 3))) {
-        score += 18;
+        score += 22;
         reasons.push(`Same NAICS group: ${oppNaics.substring(0, 3)}xxx`);
       } else if (!oppNaics) {
         score += 15;
         reasons.push("No NAICS on opportunity");
       } else if (oppNaics && orgNaics.some(n => n.substring(0, 2) === oppNaics.substring(0, 2))) {
-        score += 10;
+        score += 12;
         reasons.push(`Same sector: ${oppNaics.substring(0, 2)}`);
       }
 
@@ -154,40 +168,40 @@ export async function POST(request: NextRequest) {
         } else if (sa.includes("small business") && orgCerts.length > 0) {
           score += 20; reasons.push("Small business set-aside");
         } else {
-          score += 5;
+          score += 8; // set-aside exists but doesn't match — still meaningful context
         }
       } else {
-        score += 10; reasons.push("Full & open competition");
+        score += 12; reasons.push("Full & open competition");
       }
 
-      // Signal 3: Keywords (15 pts) — also match partial words
+      // Signal 3: Keywords (15 pts) — full matches + partial word hits
       const text = ((opp.title || "") + " " + (opp.description || "")).toLowerCase();
-      let kwMatches = 0;
+      let kwPts = 0;
       const matched: string[] = [];
       orgKeywords.forEach(kw => {
         const kwLower = kw.toLowerCase();
-        // Match full phrase or individual significant words (4+ chars)
         if (text.includes(kwLower)) {
-          kwMatches++; matched.push(kw);
+          kwPts += 5; matched.push(kw);
         } else {
           const words = kwLower.split(/\s+/).filter(w => w.length >= 4);
-          if (words.length > 0 && words.some(w => text.includes(w))) {
-            kwMatches += 0.5; matched.push(kw + " (partial)");
+          const hits = words.filter(w => text.includes(w)).length;
+          if (hits > 0) {
+            kwPts += Math.min(2 + hits, 4); // 3 pts for 1 word, 4 pts for 2+ words
+            matched.push(kw + ` (${hits} word${hits > 1 ? "s" : ""})`);
           }
         }
       });
-      kwMatches = Math.ceil(kwMatches);
-      score += Math.min(kwMatches * 5, 15);
+      score += Math.min(kwPts, 15);
       if (matched.length > 0) reasons.push(`${matched.length} keyword match${matched.length > 1 ? "es" : ""}: ${matched.slice(0, 3).join(", ")}`);
 
-      // Signal 4: Value fit (10 pts)
+      // Signal 4: Value fit (10 pts) — value often null on SAM, don't over-penalize
       const val = opp.estimated_value || opp.value_estimate || 0;
       if (val > 0 && val >= minVal && val <= maxVal) {
         score += 10; reasons.push("Value in your target range");
       } else if (val > 0 && val <= maxVal * 2) {
-        score += 5;
+        score += 6;
       } else {
-        score += 5;
+        score += 8; // unknown value — modest benefit of the doubt
       }
 
       // Signal 5: Geographic (15 pts)
