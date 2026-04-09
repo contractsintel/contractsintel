@@ -8,6 +8,7 @@ import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { TEAMING_WEIGHTS } from "@/app/lib/teaming-weights";
 
 type Tab = "opportunities" | "posted";
 
@@ -22,6 +23,7 @@ export default function NetworkPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expressingInterest, setExpressingInterest] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -59,16 +61,28 @@ export default function NetworkPage() {
   const expressInterest = async (opportunityId: string) => {
     setExpressingInterest(opportunityId);
     try {
-      await fetch("/api/teaming/interest", {
+      const res = await fetch("/api/teaming/interest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teaming_opportunity_id: opportunityId }),
       });
+      if (res.ok) {
+        // Fire-and-forget notification — silent if Resend isn't configured
+        fetch("/api/network/notify-interest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teaming_opportunity_id: opportunityId }),
+        }).catch(() => {});
+        setToast("Interest sent — the poster will be notified");
+      } else {
+        setToast("Failed to send interest. Try again.");
+      }
       loadData();
     } catch {
-      // silent
+      setToast("Failed to send interest. Try again.");
     }
     setExpressingInterest(null);
+    setTimeout(() => setToast(null), 3500);
   };
 
   const handlePost = async (e: React.FormEvent) => {
@@ -104,11 +118,11 @@ export default function NetworkPage() {
     const oppCerts: string[] = opp.required_certs ?? [];
     const orgNaics = organization.naics_codes ?? [];
     const orgCerts = organization.certifications ?? [];
-    if (oppNaics.some((n: string) => orgNaics.includes(n))) score += 50;
-    if (oppCerts.some((c: string) => orgCerts.includes(c))) score += 30;
-    if (oppNaics.length === 0 && oppCerts.length === 0) score += 40;
-    if (score === 0) score = 20;
-    return Math.min(score, 100);
+    if (oppNaics.some((n: string) => orgNaics.includes(n))) score += TEAMING_WEIGHTS.naicsMatch;
+    if (oppCerts.some((c: string) => orgCerts.includes(c))) score += TEAMING_WEIGHTS.certMatch;
+    if (oppNaics.length === 0 && oppCerts.length === 0) score += TEAMING_WEIGHTS.unrestrictedBonus;
+    if (score === 0) score = TEAMING_WEIGHTS.baselineFloor;
+    return Math.min(score, TEAMING_WEIGHTS.maxScore);
   };
 
   if (!teamTier) {
@@ -386,6 +400,12 @@ export default function NetworkPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 text-sm font-medium text-white bg-[#111827] shadow-lg rounded">
+          {toast}
         </div>
       )}
     </div>

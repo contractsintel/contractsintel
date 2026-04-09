@@ -54,7 +54,20 @@ export async function POST(request: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-    const systemPrompt = `You are a government contracting expert specializing in CPARS (Contractor Performance Assessment Reporting System) responses.
+    // P3.3: switch tone for Exceptional ratings — generate a thank-you /
+    // marketing-asset draft instead of a defensive response.
+    const isExceptional = rating.rating === "Exceptional";
+
+    const systemPrompt = isExceptional
+      ? `You are a government contracting expert helping a contractor capitalize on an Exceptional CPARS rating. Write a brief, professional thank-you letter that:
+- Thanks the contracting officer warmly but professionally
+- Reiterates the specific strengths called out in the evaluation
+- Reinforces commitment to continued performance excellence
+- Is suitable as a marketing asset / past performance reference
+- Follows FAR 42.15 etiquette norms
+
+Company: ${org?.name ?? "Unknown"}`
+      : `You are a government contracting expert specializing in CPARS (Contractor Performance Assessment Reporting System) responses.
 Write a formal, professional contractor response to a CPARS evaluation. The response should:
 - Be respectful but firm in addressing inaccuracies
 - Provide specific evidence and context
@@ -64,7 +77,19 @@ Write a formal, professional contractor response to a CPARS evaluation. The resp
 
 Company: ${org?.name ?? "Unknown"}`;
 
-    const userPrompt = `Generate a formal CPARS contractor response for the following evaluation:
+    const userPrompt = isExceptional
+      ? `Generate a thank-you / marketing-asset draft for the following Exceptional CPARS rating:
+
+Contract: ${rating.contracts?.title ?? "Unknown"} (${rating.contracts?.contract_number ?? "N/A"})
+Agency: ${rating.contracts?.agency ?? "Unknown"}
+Category: ${rating.category}
+Rating Received: ${rating.rating}
+Evaluator Narrative: ${rating.narrative}
+
+Past Performance Context: ${JSON.stringify(perfLogs ?? [])}
+
+Write a 2-4 paragraph thank-you note that the contractor can send to the contracting officer AND repurpose as a marketing testimonial.`
+      : `Generate a formal CPARS contractor response for the following evaluation:
 
 Contract: ${rating.contracts?.title ?? "Unknown"} (${rating.contracts?.contract_number ?? "N/A"})
 Agency: ${rating.contracts?.agency ?? "Unknown"}

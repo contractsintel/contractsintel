@@ -72,13 +72,17 @@ export default function CparsPage() {
     e.preventDefault();
     if (!form.contract_id || !form.narrative) return;
     setSubmitting(true);
-    await supabase.from("cpars_ratings").insert({
-      organization_id: organization.id,
-      contract_id: form.contract_id,
-      category: form.category,
-      rating: form.rating,
-      narrative: form.narrative,
-      evaluation_date: form.evaluation_date || null,
+    // P3.3: Route through server endpoint for explicit org ownership check
+    await fetch("/api/cpars/insert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contract_id: form.contract_id,
+        category: form.category,
+        rating: form.rating,
+        narrative: form.narrative,
+        evaluation_date: form.evaluation_date || null,
+      }),
     });
     setForm({ contract_id: "", category: RATING_CATEGORIES[0], rating: RATING_VALUES[2], narrative: "", evaluation_date: "" });
     setSubmitting(false);
@@ -228,6 +232,74 @@ export default function CparsPage() {
         </form>
       </div>
 
+      {/* P3.3: Rating trend chart — category × rating CSS bars */}
+      {!loading && ratings.length > 0 && (
+        <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
+          <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-4">Rating Trend by Category</h2>
+          <div className="space-y-3">
+            {RATING_CATEGORIES.map((cat) => {
+              const inCat = ratings.filter((r) => r.category === cat);
+              const total = inCat.length;
+              if (total === 0) {
+                return (
+                  <div key={cat} className="flex items-center gap-3">
+                    <div className="w-32 text-xs text-[#4b5563] shrink-0">{cat}</div>
+                    <div className="flex-1 text-[10px] text-[#9ca3af] italic">No ratings yet</div>
+                  </div>
+                );
+              }
+              const counts = {
+                Exceptional: inCat.filter((r) => r.rating === "Exceptional").length,
+                "Very Good": inCat.filter((r) => r.rating === "Very Good").length,
+                Satisfactory: inCat.filter((r) => r.rating === "Satisfactory").length,
+                Marginal: inCat.filter((r) => r.rating === "Marginal").length,
+                Unsatisfactory: inCat.filter((r) => r.rating === "Unsatisfactory").length,
+              };
+              const colors: Record<string, string> = {
+                Exceptional: "#22c55e",
+                "Very Good": "#3b82f6",
+                Satisfactory: "#9ca3af",
+                Marginal: "#f59e0b",
+                Unsatisfactory: "#ef4444",
+              };
+              return (
+                <div key={cat} className="flex items-center gap-3">
+                  <div className="w-32 text-xs text-[#4b5563] shrink-0">{cat}</div>
+                  <div className="flex-1 flex h-5 overflow-hidden border border-[#f0f1f3]">
+                    {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => {
+                      const pct = (counts[k] / total) * 100;
+                      if (pct === 0) return null;
+                      return (
+                        <div
+                          key={k}
+                          title={`${k}: ${counts[k]}`}
+                          style={{ width: `${pct}%`, backgroundColor: colors[k] }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="w-10 text-[10px] font-mono text-[#9ca3af] text-right">{total}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#f0f1f3] flex-wrap">
+            {[
+              { label: "Exceptional", color: "#22c55e" },
+              { label: "Very Good", color: "#3b82f6" },
+              { label: "Satisfactory", color: "#9ca3af" },
+              { label: "Marginal", color: "#f59e0b" },
+              { label: "Unsatisfactory", color: "#ef4444" },
+            ].map((l) => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <div className="w-2 h-2" style={{ backgroundColor: l.color }} />
+                <span className="text-[10px] text-[#6b7280]">{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Ratings List */}
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading ratings...</div>
@@ -263,22 +335,30 @@ export default function CparsPage() {
                 </div>
               </div>
               <p className="text-sm text-[#4b5563] mb-3">{r.narrative}</p>
-              {(r.rating === "Marginal" || r.rating === "Unsatisfactory") && (
+              {/* P3.3: response drafts now also generate thank-you / marketing
+                  variants for Exceptional ratings */}
+              {(r.rating === "Marginal" || r.rating === "Unsatisfactory" || r.rating === "Exceptional") && (
                 <div className="flex items-center gap-3">
                   {r.response_draft ? (
                     <button
                       onClick={() => setResponseView({ id: r.id, text: r.response_draft })}
                       className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
                     >
-                      View Response Draft
+                      View {r.rating === "Exceptional" ? "Thank-You Draft" : "Response Draft"}
                     </button>
                   ) : (
                     <button
                       onClick={() => generateResponse(r.id)}
                       disabled={generatingId === r.id}
-                      className="px-3 py-1 text-xs bg-[#e11d48] text-white hover:bg-[#be123c] transition-colors disabled:opacity-50"
+                      className={`px-3 py-1 text-xs text-white transition-colors disabled:opacity-50 ${
+                        r.rating === "Exceptional" ? "bg-[#22c55e] hover:bg-[#16a34a]" : "bg-[#e11d48] hover:bg-[#be123c]"
+                      }`}
                     >
-                      {generatingId === r.id ? "Generating..." : "Generate Response"}
+                      {generatingId === r.id
+                        ? "Generating..."
+                        : r.rating === "Exceptional"
+                        ? "Generate Thank-You"
+                        : "Generate Response"}
                     </button>
                   )}
                 </div>

@@ -25,15 +25,21 @@ export default function AnalyticsPage() {
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
   const [lossAnalyses, setLossAnalyses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<30 | 90 | 365>(90);
+  const [recomputing, setRecomputing] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!teamTier) { setLoading(false); return; }
+
+    // P3.1: time-range filter — only matches created within the window
+    const cutoff = new Date(Date.now() - timeRange * 86400000).toISOString();
 
     // Fetch opportunity matches with opportunity details
     const { data: matches } = await supabase
       .from("opportunity_matches")
       .select("*, opportunities(agency, estimated_value)")
-      .eq("organization_id", organization.id);
+      .eq("organization_id", organization.id)
+      .gte("created_at", cutoff);
 
     // Build agency stats
     const statsMap: Record<string, AgencyStats> = {};
@@ -62,16 +68,35 @@ export default function AnalyticsPage() {
     stats.sort((a, b) => b.opps_seen - a.opps_seen);
     setAgencyStats(stats);
 
-    // Fetch loss analyses
+    // Fetch loss analyses (also windowed)
     const { data: analyses } = await supabase
       .from("loss_analyses")
       .select("*")
       .eq("organization_id", organization.id)
+      .gte("created_at", cutoff)
       .order("created_at", { ascending: false });
     setLossAnalyses(analyses ?? []);
 
     setLoading(false);
-  }, [organization.id, teamTier, supabase]);
+  }, [organization.id, teamTier, supabase, timeRange]);
+
+  const recomputeInsights = async () => {
+    setRecomputing(true);
+    try {
+      // Best-effort: hit the existing matching/run endpoint to refresh
+      // matches, then reload local state. The loss_analyses table is
+      // populated by a separate background job; this endpoint exists.
+      await fetch("/api/matching/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: organization.id }),
+      });
+      await loadData();
+    } catch {
+      // best-effort
+    }
+    setRecomputing(false);
+  };
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -97,7 +122,9 @@ export default function AnalyticsPage() {
     reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
   });
   const mostCommonReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
-  const lowestWinRate = agencyStats.filter((s) => s.bids >= 3).sort((a, b) => a.win_rate - b.win_rate);
+  // P3.1: type-safe lowest win rate (could legitimately be null when nothing has 3+ bids)
+  const lowestWinRate: AgencyStats | null =
+    agencyStats.filter((s) => s.bids >= 3).sort((a, b) => a.win_rate - b.win_rate)[0] ?? null;
 
   if (!teamTier) {
     return (
@@ -135,10 +162,30 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
-        <h1 className="ci-page-title">Analytics</h1>
-</div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#d97706"}} />
+          <h1 className="ci-page-title">Analytics</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(parseInt(e.target.value, 10) as 30 | 90 | 365)}
+            className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]"
+          >
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={365}>Last 365 days</option>
+          </select>
+          <button
+            onClick={recomputeInsights}
+            disabled={recomputing}
+            className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-white text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-50 transition-colors"
+          >
+            {recomputing ? "Recomputing..." : "Recompute insights"}
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading analytics...</div>
@@ -200,7 +247,7 @@ export default function AnalyticsPage() {
             <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Lowest Win Rate Agency</div>
               <div className="text-sm text-[#111827] mt-1">
-                {lowestWinRate[0] ? `${lowestWinRate[0].agency} (${lowestWinRate[0].win_rate.toFixed(0)}%)` : "N/A"}
+                {lowestWinRate ? `${lowestWinRate.agency} (${lowestWinRate.win_rate.toFixed(0)}%)` : "Need more data"}
               </div>
             </div>
           </div>
