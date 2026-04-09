@@ -46,7 +46,6 @@ export default function OnboardingSetupPage() {
   const [stateSearch, setStateSearch] = useState("");
 
   // Tab 2: Capabilities
-  const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
@@ -115,9 +114,8 @@ export default function OnboardingSetupPage() {
 
   // Validation
   const tab1Valid = companyName.trim().length >= 2;
-  const tab2Valid = projectName.trim().length > 0 && description.trim().length >= 20 && selectedKeywords.length >= 2;
+  const tab2Valid = description.trim().length >= 20 && selectedKeywords.length >= 2;
   const tab3Valid = certs.length > 0 && selectedNaics.length > 0;
-  if (activeTab === "preferences") console.log("TAB3 VALIDATION:", { certs, selectedNaics, tab3Valid });
 
   const saveOrganization = async () => {
     setTab1Attempted(true);
@@ -127,7 +125,12 @@ export default function OnboardingSetupPage() {
       name: companyName,
       uei: uei || null,
       cage_code: cageCode || null,
-      address: { state: selectedStates.length ? selectedStates[0] : null, nationwide: serviceArea === "nationwide" },
+      address: {
+        ...(typeof organization.address === "object" && organization.address ? organization.address : {}),
+        state: selectedStates.length ? selectedStates[0] : null,
+        states: selectedStates,
+        nationwide: serviceArea === "nationwide",
+      },
     }).eq("id", organization.id);
     setSaving(false);
     showBanner("Organization info saved!");
@@ -179,6 +182,7 @@ export default function OnboardingSetupPage() {
       // Step 1: Save profile data
       const minVal = minValue ? parseInt(minValue) : 0;
       const maxValNum = maxValue ? parseInt(maxValue) : 0;
+      const existingAddress = (typeof organization.address === "object" && organization.address) ? organization.address : {};
       const { error: saveError } = await supabase.from("organizations").update({
         certifications: certs,
         naics_codes: selectedNaics,
@@ -188,6 +192,9 @@ export default function OnboardingSetupPage() {
         min_contract_value: minVal,
         max_contract_value: maxValNum,
         setup_wizard_complete: true,
+        // setAsidePref is a UI preference (filter default) — stash on the
+        // address JSONB until a dedicated column ships.
+        address: { ...existingAddress, set_aside_preference: setAsidePref },
       }).eq("id", organization.id);
 
       if (saveError) {
@@ -368,13 +375,6 @@ export default function OnboardingSetupPage() {
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">Project Name *</label>
-            <input value={projectName} onChange={e => setProjectName(e.target.value)}
-              placeholder="e.g. Federal IT Contracts"
-              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 focus:outline-none" />
-          </div>
-
-          <div>
             <label className="text-[14px] font-semibold text-[#111827] block mb-1.5">
               Tell us what government services you provide *
             </label>
@@ -428,7 +428,6 @@ export default function OnboardingSetupPage() {
             </div>
           )}
 
-          {tab2Attempted && !projectName.trim() && <p className="text-[13px] text-[#dc2626] mt-1.5">Project name is required</p>}
           {tab2Attempted && description.trim().length < 20 && <p className="text-[13px] text-[#dc2626] mt-1.5">Please describe your services (minimum 20 characters)</p>}
           {tab2Attempted && keywords.length > 0 && selectedKeywords.length < 2 && <p className="text-[13px] text-[#dc2626] mt-1.5">Select at least 2 keywords</p>}
 

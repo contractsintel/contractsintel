@@ -123,9 +123,6 @@ export function TopNav({
                 </Link>
               ))}
             </nav>
-            <div className="border-t border-[#e5e7eb] p-4">
-              <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-[#eff6ff] text-[#2563eb]">Free Trial</span>
-            </div>
           </div>
         </div>
       )}

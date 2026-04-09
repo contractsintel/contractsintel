@@ -243,9 +243,18 @@ export function Sidebar({ plan }: { plan: string }) {
   const isItemLocked = (item: NavItem) =>
     (item.bdProLocked && locked) || (item.teamOnly && !teamTier);
 
-  // Hardcoded setup progress (2 of 7)
-  const setupCompleted = 2;
-  const setupTotal = 7;
+  // Setup progress: derive from actual organization profile completeness
+  const setupChecks = [
+    !!organization.name,
+    !!organization.uei,
+    (organization.naics_codes?.length ?? 0) > 0,
+    (organization.certifications?.length ?? 0) > 0,
+    (organization.keywords?.length ?? 0) > 0,
+    organization.setup_wizard_complete === true,
+    organization.onboarding_complete === true,
+  ];
+  const setupCompleted = setupChecks.filter(Boolean).length;
+  const setupTotal = setupChecks.length;
 
   const onboardingIncomplete = organization.onboarding_complete === false;
 

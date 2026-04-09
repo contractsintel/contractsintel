@@ -46,13 +46,6 @@ export default function OnboardingPage() {
 
   const selectedGoal = GOALS[goal];
 
-  console.log("ONBOARDING STATE:", JSON.stringify({
-    onboarding_goal: freshOrg.onboarding_goal,
-    setup_wizard_complete: freshOrg.setup_wizard_complete,
-    goal_local: goal,
-    step1Complete, step2Complete, allComplete,
-  }));
-
   const selectGoal = async (key: string) => {
     setGoal(key);
     await supabase.from("organizations").update({ onboarding_goal: key }).eq("id", organization.id);

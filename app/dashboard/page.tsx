@@ -151,25 +151,14 @@ export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(organization.has_seen_dashboard !== true);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Debug: log data diagnostics
+  // If the user picked "show only matching set-asides" in onboarding, default
+  // the recommendation filter to "bid" so they only see strong-fit opportunities.
   useEffect(() => {
-    const debug = async () => {
-      const { count: total } = await supabase.from("opportunities").select("id", { count: "exact", head: true });
-      const { count: withDeadline } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).not("response_deadline", "is", null);
-      const { count: withValue } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).gt("estimated_value", 0);
-      const { count: withNaics } = await supabase.from("opportunities").select("id", { count: "exact", head: true }).not("naics_code", "is", null);
-      const { count: matchCount } = await supabase.from("opportunity_matches").select("id", { count: "exact", head: true }).eq("organization_id", organization.id);
-      const { data: sampleMatches } = await supabase.from("opportunity_matches").select("match_score, bid_recommendation, recommendation_reasoning, opportunities(title, naics_code, set_aside_type, estimated_value, response_deadline)").eq("organization_id", organization.id).order("match_score", { ascending: false }).limit(5);
-      console.log("=== DASHBOARD DEBUG ===");
-      console.log("Total opportunities:", total);
-      console.log("With deadline:", withDeadline);
-      console.log("With value:", withValue);
-      console.log("With NAICS:", withNaics);
-      console.log("Matches for this org:", matchCount);
-      console.log("Sample matches:", JSON.stringify(sampleMatches, null, 2));
-    };
-    debug();
-  }, [organization.id, supabase]);
+    const pref = (organization.address as any)?.set_aside_preference;
+    if (pref === "matching") {
+      setFilters(f => f.recommendation ? f : { ...f, recommendation: "bid" });
+    }
+  }, [organization.address]);
 
   const loadData = useCallback(async (limit?: number) => {
     const effectiveLimit = limit ?? matchLimit;
@@ -180,7 +169,7 @@ export default function DashboardPage() {
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, effectiveLimit - 1);
-    if (error) console.error("Dashboard query error:", error.message);
+    if (error) console.error("[dashboard] query error", error.message);
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
 
@@ -353,7 +342,7 @@ export default function DashboardPage() {
       if (!opp) return false;
       // Hide expired and paused contracts from main feed
       if (opp.status === "expired" || opp.status === "paused") return false;
-      if (filters.setAside && opp.set_aside !== filters.setAside) return false;
+      if (filters.setAside && (opp.set_aside_type || opp.set_aside_description) !== filters.setAside) return false;
       if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
       if (m.match_score < filters.minScore) return false;
       if (filters.source) {
@@ -434,7 +423,7 @@ export default function DashboardPage() {
   const sourceCounts = Object.keys(dbSourceCounts).length > 0 ? dbSourceCounts : pageCounts;
 
   // Unique filters
-  const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside).filter(Boolean)));
+  const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside_type || m.opportunities?.set_aside_description).filter(Boolean)));
 
   // Greeting
   const hour = new Date().getHours();
@@ -472,16 +461,17 @@ export default function DashboardPage() {
             setRefreshing(true);
             try {
               const res = await fetch("/api/matching/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizationId: organization.id }) });
-              const text = await res.text();
-              console.log("RAW RESPONSE:", text);
-              let data;
-              try { data = JSON.parse(text); } catch { data = { error: text }; }
-              alert("Matching result: " + JSON.stringify(data));
-              if (data.success) window.location.reload();
-              else setRefreshing(false);
+              const data = await res.json().catch(() => null);
+              if (res.ok && data?.success) {
+                showToast(`Matched ${data.matched ?? 0} opportunities · top score ${data.topScore ?? 0}`, "#059669");
+                await loadData();
+                setRefreshing(false);
+              } else {
+                showToast(data?.error || "Matching failed — try again", "#dc2626");
+                setRefreshing(false);
+              }
             } catch (err: any) {
-              console.error("Error:", err);
-              alert("ERROR: " + (err?.message || "Network error"));
+              showToast(err?.message || "Network error", "#dc2626");
               setRefreshing(false);
             }
           }}
@@ -841,7 +831,7 @@ export default function DashboardPage() {
 
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            {opp.set_aside && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.set_aside}</span>}
+                            {(opp.set_aside_type || opp.set_aside_description) && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.set_aside_type || opp.set_aside_description}</span>}
                             {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb] font-mono">NAICS {opp.naics_code}</span>}
                             {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.place_of_performance}</span>}
                             {sourceBadge(opp.source, match.bid_recommendation)}
@@ -1058,22 +1048,36 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {/* Compliance Score */}
-          <div className="ci-card p-5">
-            <h3 className="ci-section-label mb-3">
-              Compliance Health
-            </h3>
-            <div className="text-3xl font-bold font-mono text-[#22c55e] mb-2">--</div>
-            <div className="w-full h-1.5 bg-[#f8f9fb]">
-              <div className="h-full bg-[#22c55e] w-0" />
-            </div>
-            <Link
-              href="/dashboard/compliance"
-              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
-            >
-              View Compliance →
-            </Link>
-          </div>
+          {/* Compliance Health — derived from outstanding compliance_items */}
+          {(() => {
+            const profileFields = [
+              !!organization.uei,
+              !!organization.cage_code,
+              (organization.naics_codes?.length ?? 0) > 0,
+              (organization.certifications?.length ?? 0) > 0,
+              (organization.keywords?.length ?? 0) > 0,
+              organization.serves_nationwide !== undefined,
+            ];
+            const profilePct = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100);
+            const alertPenalty = Math.min(complianceAlerts.length * 10, 40);
+            const health = Math.max(0, profilePct - alertPenalty);
+            const color = health >= 80 ? "#22c55e" : health >= 50 ? "#f59e0b" : "#ef4444";
+            return (
+              <div className="ci-card p-5">
+                <h3 className="ci-section-label mb-3">Compliance Health</h3>
+                <div className="text-3xl font-bold font-mono mb-2" style={{ color }}>{health}%</div>
+                <div className="w-full h-1.5 bg-[#f3f4f6] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${health}%`, backgroundColor: color }} />
+                </div>
+                {complianceAlerts.length > 0 && (
+                  <p className="text-[11px] text-[#6b7280] mt-2">{complianceAlerts.length} alert{complianceAlerts.length > 1 ? "s" : ""} due this week</p>
+                )}
+                <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors">
+                  View Compliance →
+                </Link>
+              </div>
+            );
+          })()}
 
           {/* Upcoming Deadlines */}
           <div className="ci-card p-5">

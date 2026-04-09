@@ -77,7 +77,7 @@ Past Performance Context: ${JSON.stringify(perfLogs ?? [])}
 Write a professional response that addresses the evaluation, provides context, and respectfully presents the contractor's perspective. The response should be 3-5 paragraphs.`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 2048,
       messages: [{ role: "user", content: userPrompt }],
       system: systemPrompt,

@@ -22,6 +22,32 @@ function cleanTitle(s: string): string {
   return (s || "").replace(/^\[[^\]]*\]\s*/, "").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n))).replace(/&amp;/g, "&").replace(/&nbsp;/g, " ");
 }
 
+// Convert HTML to plain text — strips all tags, decodes common entities, and
+// preserves rough paragraph breaks. Safer than dangerouslySetInnerHTML for
+// untrusted scraped content.
+function htmlToPlainText(html: string): string {
+  if (!html) return "";
+  return html
+    // Block-level → newlines so paragraphs survive
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6]|tr)\s*>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\n• ")
+    // Strip everything else
+    .replace(/<[^>]+>/g, "")
+    // Decode common entities
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    // Collapse 3+ blank lines
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export default function OpportunityDetailPage() {
   const { organization } = useDashboard();
   const params = useParams();
@@ -188,23 +214,28 @@ export default function OpportunityDetailPage() {
           {/* Full Description */}
           <div className="ci-card p-6">
             <h2 className="ci-section-label mb-4">Description</h2>
-            {(opp.full_description || opp.description) ? (
-              <>
-                <div className={`text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap relative ${!expandDesc ? "max-h-[180px] overflow-hidden" : ""}`}
-                     dangerouslySetInnerHTML={{ __html: (opp.full_description || opp.description).replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "") }} />
-                {!expandDesc && (opp.full_description || opp.description || "").length > 400 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
-                )}
-                {(opp.full_description || opp.description || "").length > 400 && (
-                  <button onClick={() => setExpandDesc(!expandDesc)}
-                    className="mt-2 text-[13px] font-medium text-[#2563eb] hover:text-[#1d4ed8]">
-                    {expandDesc ? "Show less" : "Show full description"}
-                  </button>
-                )}
-              </>
-            ) : (
-              <p className="text-[13px] text-[#94a3b8] italic">No description available. Check the solicitation documents or the original listing for details.</p>
-            )}
+            {(() => {
+              const plain = htmlToPlainText(opp.full_description || opp.description || "");
+              if (!plain) {
+                return <p className="text-[13px] text-[#94a3b8] italic">No description available. Check the solicitation documents or the original listing for details.</p>;
+              }
+              return (
+                <div className="relative">
+                  <div className={`text-[13px] text-[#475569] leading-relaxed whitespace-pre-wrap ${!expandDesc ? "max-h-[180px] overflow-hidden" : ""}`}>
+                    {plain}
+                  </div>
+                  {!expandDesc && plain.length > 400 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  )}
+                  {plain.length > 400 && (
+                    <button onClick={() => setExpandDesc(!expandDesc)}
+                      className="mt-2 text-[13px] font-medium text-[#2563eb] hover:text-[#1d4ed8]">
+                      {expandDesc ? "Show less" : "Show full description"}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Contact Information */}

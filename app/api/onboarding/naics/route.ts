@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: `You are a government contracting NAICS code expert. Based on the business description and keywords, suggest 10-15 relevant NAICS codes with their titles. Return ONLY a JSON array of objects with "code" and "title" fields. Example: [{"code": "541512", "title": "Computer Systems Design Services"}]. Only include real, valid 6-digit NAICS codes.`,
       messages: [{

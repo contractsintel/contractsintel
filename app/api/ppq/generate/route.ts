@@ -77,7 +77,7 @@ Write a professional PPQ narrative (3-5 paragraphs) that:
 Write in third person, suitable for inclusion in a government proposal.`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });

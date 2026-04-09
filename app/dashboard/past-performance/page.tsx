@@ -1,5 +1,4 @@
 "use client";
-"use client";
 
 import { useDashboard } from "../context";
 import { isDiscovery } from "@/lib/feature-gate";
@@ -103,10 +102,16 @@ export default function PastPerformancePage() {
             </Link>
           </div>
         </div>
-        <div className="filter blur-[2px] opacity-40 pointer-events-none">
+        <div className="filter blur-[2px] opacity-40 pointer-events-none select-none" aria-hidden="true">
           <h1 className="ci-page-title">Past Performance</h1>
-<div className="border border-[#f0f1f3] bg-white p-12 text-center text-[#9ca3af]">
-            Sample past performance content...
+          <div className="space-y-3 mt-6">
+            {[1,2,3].map(i => (
+              <div key={i} className="border border-[#f0f1f3] bg-white p-5">
+                <div className="h-3 w-1/2 bg-[#f3f4f6] rounded mb-3" />
+                <div className="h-2 w-1/3 bg-[#f3f4f6] rounded mb-2" />
+                <div className="h-2 w-2/3 bg-[#f3f4f6] rounded" />
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system: `You are a government contracting expert. Based on the user's description of their business services, generate 8-15 keyword phrases that would match them to relevant government contract opportunities on SAM.gov and other procurement sources. Keywords should be specific government contracting terms, not generic business terms. Return a JSON array of strings only, no other text.`,
       messages: [{ role: "user", content: `Generate government contracting keywords for this business:\n\n${description.substring(0, 2000)}` }],

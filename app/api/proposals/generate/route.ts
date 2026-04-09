@@ -88,7 +88,7 @@ Generate four sections in this exact JSON format:
 Each section must be specifically tailored to THIS opportunity and THIS company. Use concrete details from the description. Do not use generic filler.`;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       messages: [{ role: "user", content: userPrompt }],
       system: systemPrompt,

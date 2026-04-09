@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
     const orgKeywords: string[] = org.keywords || [];
     const minVal = org.min_contract_value || 0;
     const maxVal = org.max_contract_value || 999999999;
-    const nationwide = org.serves_nationwide !== false;
+    const orgStates: string[] = (org.service_states || []).map((s: string) => s.toUpperCase());
+    const nationwide = org.serves_nationwide !== false || orgStates.length === 0;
 
     let opportunities: any[] = [];
 
@@ -153,9 +154,7 @@ export async function POST(request: NextRequest) {
       if (AWARD_TITLE_PATTERNS.some(p => title.includes(p))) return false;
       return true;
     });
-    console.log(`[matching] Filtered ${beforeFilter - opportunities.length} non-biddable notices (awards/justifications)`);
-
-    console.log(`[matching] Scoring ${opportunities.length} opportunities for org ${organizationId}`);
+    const filteredCount = beforeFilter - opportunities.length;
 
     // Score each opportunity
     const matches = opportunities.map(opp => {
@@ -239,6 +238,22 @@ export async function POST(request: NextRequest) {
       if (nationwide) {
         score += 15;
         reasons.push("Nationwide service area");
+      } else {
+        const pop = (opp.place_of_performance || "").toUpperCase();
+        // Match if the opp PoP string contains any of the user's state codes
+        // (handles "Fort Belvoir, VA", "VA", "Virginia, USA", etc.)
+        const stateMatch = orgStates.find(s =>
+          pop.includes(`, ${s}`) || pop.includes(` ${s} `) || pop === s ||
+          pop.endsWith(` ${s}`) || pop.startsWith(`${s} `) || pop.startsWith(`${s},`)
+        );
+        if (stateMatch) {
+          score += 15;
+          reasons.push(`In your service area (${stateMatch})`);
+        } else if (!pop) {
+          // Unknown location — modest benefit of the doubt
+          score += 6;
+        }
+        // else: outside service area — 0 pts
       }
 
       const finalScore = Math.min(score, 100);
@@ -246,7 +261,10 @@ export async function POST(request: NextRequest) {
       if (finalScore >= 70) recommendation = "bid";
       else if (finalScore >= 40) recommendation = "monitor";
 
-      if (opp.source === "usaspending") {
+      // USASpending rows surface expiring contracts (recompete intel).
+      // Only flag as recompete if the score actually justifies attention —
+      // otherwise let the score drive the recommendation like any other source.
+      if (opp.source === "usaspending" && finalScore >= 40) {
         recommendation = "recompete";
         reasons.push("Recompete alert: expiring contract");
       }
@@ -282,12 +300,11 @@ export async function POST(request: NextRequest) {
       if (error) console.error("[matching] Insert error:", error.message);
     }
 
-    console.log(`[matching] Done: ${topMatches.length} matches saved, top score: ${topMatches[0]?.match_score || 0}`);
     return NextResponse.json({
       success: true,
       matched: topMatches.length,
       topScore: topMatches[0]?.match_score || 0,
-      filteredNonBiddable: beforeFilter - opportunities.length,
+      filteredNonBiddable: filteredCount,
     });
   } catch (error) {
     console.error("[matching] Error:", error);
