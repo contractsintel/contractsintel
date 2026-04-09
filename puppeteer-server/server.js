@@ -486,89 +486,112 @@ app.post("/debug/fix-urls", async (req, res) => {
   res.json({ success: true, fixed: results });
 });
 
-// Backfill SAM.gov detail data (contacts, NAICS, place of performance) for existing records
-app.post("/cron/sam-backfill", async (req, res) => {
-  if (!authCheck(req, res)) return;
-  console.log("[backfill] SAM.gov detail backfill starting...");
+// Backfill SAM.gov detail data (contacts, NAICS, place of performance) for existing records.
+// Runs in background (fire-and-forget) to avoid Railway's 60s HTTP timeout.
+// Uses a module-level lock to prevent concurrent runs stepping on each other.
+let samBackfillRunning = false;
+let samBackfillLastResult = null;
+
+async function runSamBackfill(maxRows = 2000) {
+  if (samBackfillRunning) return { alreadyRunning: true };
+  samBackfillRunning = true;
   const hdrs = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
   const patchHdrs = { ...hdrs, "Content-Type": "application/json", Prefer: "return=minimal" };
   const SAM_DETAIL = "https://sam.gov/api/prod/opps/v2/opportunities/";
   const SAM_HDR = { Accept: "application/json, text/plain, */*", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", Origin: "https://sam.gov" };
-
-  let updated = 0, errors = 0, processed = 0;
   const SETASIDE_MAP = {
-    "8A": "8(a) Set-Aside",
-    "8AN": "8(a) Sole Source",
-    "SDVOSBC": "SDVOSB Set-Aside",
-    "SDVOSBS": "SDVOSB Sole Source",
-    "WOSB": "WOSB Set-Aside",
-    "WOSBSS": "WOSB Sole Source",
-    "EDWOSB": "EDWOSB Set-Aside",
-    "EDWOSBSS": "EDWOSB Sole Source",
-    "HZC": "HUBZone Set-Aside",
-    "HZS": "HUBZone Sole Source",
-    "SBA": "Total Small Business Set-Aside",
-    "SBP": "Partial Small Business Set-Aside",
-    "VSA": "Veteran-Owned Small Business",
-    "ISBEE": "Indian Small Business Economic Enterprise",
+    "8A": "8(a) Set-Aside", "8AN": "8(a) Sole Source",
+    "SDVOSBC": "SDVOSB Set-Aside", "SDVOSBS": "SDVOSB Sole Source",
+    "WOSB": "WOSB Set-Aside", "WOSBSS": "WOSB Sole Source",
+    "EDWOSB": "EDWOSB Set-Aside", "EDWOSBSS": "EDWOSB Sole Source",
+    "HZC": "HUBZone Set-Aside", "HZS": "HUBZone Sole Source",
+    "SBA": "Total Small Business Set-Aside", "SBP": "Partial Small Business Set-Aside",
+    "VSA": "Veteran-Owned Small Business", "ISBEE": "Indian Small Business Economic Enterprise",
   };
+  const startedAt = new Date().toISOString();
+  let updated = 0, errors = 0, processed = 0;
 
-  while (processed < 500) {
-    // Get active SAM.gov records missing set_aside_type — prioritize ones still active
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&status=eq.active&set_aside_type=is.null&limit=50`, { headers: hdrs });
-    const opps = await r.json();
-    if (!Array.isArray(opps) || !opps.length) break;
+  try {
+    while (processed < maxRows) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&status=eq.active&set_aside_type=is.null&limit=50`, { headers: hdrs });
+      const opps = await r.json();
+      if (!Array.isArray(opps) || !opps.length) break;
 
-    for (const opp of opps) {
-      processed++;
-      try {
-        const detailRes = await fetch(`${SAM_DETAIL}${opp.notice_id}`, {
-          headers: { ...SAM_HDR, Referer: `https://sam.gov/opp/${opp.notice_id}/view` },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!detailRes.ok) { errors++; continue; }
-        const detail = await detailRes.json();
-        const d2 = detail.data2 || {};
-        const contacts = d2.pointOfContact || [];
-        const primary = contacts[0] || {};
-        const pop = d2.placeOfPerformance || {};
-        const popStr = [pop.city?.name, pop.state?.name || pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
-        const naics = d2.naics?.[0]?.code?.[0] || null;
-        const sol = d2.solicitation || {};
-        const descs = detail.description || [];
-        const fullDesc = descs.map(dd => dd.body || "").join("\n");
+      // Process 5 rows in parallel to speed things up
+      const chunks = [];
+      for (let i = 0; i < opps.length; i += 5) chunks.push(opps.slice(i, i + 5));
 
-        const patch = {};
-        if (primary.fullName) patch.contact_name = primary.fullName;
-        if (primary.email) patch.contact_email = primary.email;
-        if (primary.phone) patch.contact_phone = primary.phone;
-        if (popStr) patch.place_of_performance = popStr;
-        if (naics) patch.naics_code = naics;
-        if (d2.classificationCode) patch.contract_type = d2.classificationCode;
-        if (sol.setAside && sol.setAside !== "NONE") {
-          patch.set_aside_type = SETASIDE_MAP[sol.setAside] || sol.setAside;
-          patch.set_aside_description = SETASIDE_MAP[sol.setAside] || sol.setAside;
-        } else {
-          // Mark as "checked" with empty string so we don't re-process
-          patch.set_aside_type = "";
-        }
-        if (fullDesc && fullDesc.length > 100) patch.full_description = fullDesc;
-        if (d2.solicitationNumber) patch.solicitation_number = d2.solicitationNumber;
+      for (const chunk of chunks) {
+        await Promise.all(chunk.map(async (opp) => {
+          processed++;
+          try {
+            const detailRes = await fetch(`${SAM_DETAIL}${opp.notice_id}`, {
+              headers: { ...SAM_HDR, Referer: `https://sam.gov/opp/${opp.notice_id}/view` },
+              signal: AbortSignal.timeout(10000),
+            });
+            if (!detailRes.ok) { errors++; return; }
+            const detail = await detailRes.json();
+            const d2 = detail.data2 || {};
+            const contacts = d2.pointOfContact || [];
+            const primary = contacts[0] || {};
+            const pop = d2.placeOfPerformance || {};
+            const popStr = [pop.city?.name, pop.state?.name || pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
+            const naics = d2.naics?.[0]?.code?.[0] || null;
+            const sol = d2.solicitation || {};
+            const descs = detail.description || [];
+            const fullDesc = descs.map(dd => dd.body || "").join("\n");
 
-        if (Object.keys(patch).length > 0) {
-          await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
-            method: "PATCH", headers: patchHdrs, body: JSON.stringify(patch),
-          });
-          updated++;
-        }
-        await new Promise(r => setTimeout(r, 150)); // rate limit
-      } catch (e) { errors++; }
+            const patch = {};
+            if (primary.fullName) patch.contact_name = primary.fullName;
+            if (primary.email) patch.contact_email = primary.email;
+            if (primary.phone) patch.contact_phone = primary.phone;
+            if (popStr) patch.place_of_performance = popStr;
+            if (naics) patch.naics_code = naics;
+            if (d2.classificationCode) patch.contract_type = d2.classificationCode;
+            if (sol.setAside && sol.setAside !== "NONE") {
+              patch.set_aside_type = SETASIDE_MAP[sol.setAside] || sol.setAside;
+              patch.set_aside_description = SETASIDE_MAP[sol.setAside] || sol.setAside;
+            } else {
+              patch.set_aside_type = "";
+            }
+            if (fullDesc && fullDesc.length > 100) patch.full_description = fullDesc;
+            if (d2.solicitationNumber) patch.solicitation_number = d2.solicitationNumber;
+
+            if (Object.keys(patch).length > 0) {
+              await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
+                method: "PATCH", headers: patchHdrs, body: JSON.stringify(patch),
+              });
+              updated++;
+            }
+          } catch (e) { errors++; }
+        }));
+        await new Promise(r => setTimeout(r, 200)); // small pause between parallel chunks
+      }
+      console.log(`[backfill] Progress: ${updated} updated, ${errors} errors, ${processed} processed`);
     }
-    console.log(`[backfill] Progress: ${updated} updated, ${errors} errors, ${processed} processed`);
+    console.log(`[backfill] SAM.gov detail backfill complete: ${updated} updated, ${errors} errors, ${processed} processed`);
+  } finally {
+    samBackfillLastResult = { startedAt, finishedAt: new Date().toISOString(), updated, errors, processed };
+    samBackfillRunning = false;
   }
+  return samBackfillLastResult;
+}
 
-  console.log(`[backfill] SAM.gov detail backfill complete: ${updated} updated, ${errors} errors, ${processed} processed`);
-  res.json({ success: true, updated, errors, processed });
+app.post("/cron/sam-backfill", async (req, res) => {
+  if (!authCheck(req, res)) return;
+  if (samBackfillRunning) {
+    return res.json({ success: true, status: "already_running", lastResult: samBackfillLastResult });
+  }
+  console.log("[backfill] SAM.gov detail backfill starting (background)...");
+  // Fire and forget — Railway HTTP has a ~60s request cap
+  runSamBackfill(2000).catch((e) => console.error("[backfill] Error:", e));
+  res.json({ success: true, status: "started", lastResult: samBackfillLastResult });
+});
+
+// Poll for backfill status (cheap)
+app.get("/cron/sam-backfill-status", (req, res) => {
+  if (!authCheck(req, res)) return;
+  res.json({ running: samBackfillRunning, lastResult: samBackfillLastResult });
 });
 
 // Mark expired opportunities (set status='expired' instead of deleting)
