@@ -7,7 +7,7 @@ export const maxDuration = 60;
 // One-shot recovery: undo the falsely-expired SAM contracts caused by the
 // verifyExistingContracts() bug (no grace period). Re-marks any sam_gov rows
 // as 'active' if their response_deadline is still in the future or within
-// the last 7 days.
+// the last 7 days. Batched to avoid Postgres statement timeout.
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === "production") {
@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
   );
 
   const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+  const startTime = Date.now();
+  const TIME_BUDGET_MS = 50000; // leave margin before the 60s max
+  const BATCH = 500;
 
-  // Count first so we know what we're recovering
   const { count: beforeActive } = await supabase
     .from("opportunities")
     .select("id", { count: "exact", head: true })
@@ -34,18 +36,49 @@ export async function GET(request: NextRequest) {
     .eq("source", "sam_gov")
     .eq("status", "expired");
 
-  // Recover: any sam_gov rows currently expired whose deadline is null OR
-  // still within the 7-day grace window.
-  const { data: recovered, error: recoverErr } = await supabase
-    .from("opportunities")
-    .update({ status: "active" })
-    .eq("source", "sam_gov")
-    .eq("status", "expired")
-    .or(`response_deadline.is.null,response_deadline.gt.${cutoff}`)
-    .select("id");
+  let totalRecovered = 0;
+  let iterations = 0;
+  let done = false;
+  let lastError: string | null = null;
 
-  if (recoverErr) {
-    return NextResponse.json({ error: recoverErr.message }, { status: 500 });
+  while (!done && Date.now() - startTime < TIME_BUDGET_MS) {
+    iterations++;
+
+    // Fetch a batch of IDs that match the recovery criteria
+    const { data: ids, error: selErr } = await supabase
+      .from("opportunities")
+      .select("id")
+      .eq("source", "sam_gov")
+      .eq("status", "expired")
+      .or(`response_deadline.is.null,response_deadline.gt.${cutoff}`)
+      .limit(BATCH);
+
+    if (selErr) {
+      lastError = selErr.message;
+      break;
+    }
+
+    if (!ids || ids.length === 0) {
+      done = true;
+      break;
+    }
+
+    const idList = ids.map((r) => r.id);
+    const { error: updErr } = await supabase
+      .from("opportunities")
+      .update({ status: "active" })
+      .in("id", idList);
+
+    if (updErr) {
+      lastError = updErr.message;
+      break;
+    }
+
+    totalRecovered += idList.length;
+
+    if (ids.length < BATCH) {
+      done = true;
+    }
   }
 
   const { count: afterActive } = await supabase
@@ -55,10 +88,14 @@ export async function GET(request: NextRequest) {
     .eq("status", "active");
 
   return NextResponse.json({
-    success: true,
+    success: !lastError,
+    done,
     cutoff,
+    iterations,
+    recovered: totalRecovered,
     before: { active: beforeActive, expired: beforeExpired },
-    recovered: recovered?.length || 0,
     after: { active: afterActive },
+    elapsedMs: Date.now() - startTime,
+    error: lastError,
   });
 }
