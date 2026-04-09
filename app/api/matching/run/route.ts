@@ -283,7 +283,14 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[matching] Done: ${topMatches.length} matches saved, top score: ${topMatches[0]?.match_score || 0}`);
-    return NextResponse.json({ success: true, matched: topMatches.length, topScore: topMatches[0]?.match_score || 0 });
+    return NextResponse.json({
+      success: true,
+      matched: topMatches.length,
+      topScore: topMatches[0]?.match_score || 0,
+      filteredNonBiddable: beforeFilter - opportunities.length,
+      fetchedBeforeFilter: beforeFilter,
+      version: "filter-v2",
+    });
   } catch (error) {
     console.error("[matching] Error:", error);
     return NextResponse.json({ error: "Matching failed" }, { status: 500 });
