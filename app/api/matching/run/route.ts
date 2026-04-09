@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (orgNaics.length > 0) {
       const { data } = await supabaseAdmin
         .from("opportunities")
-        .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+        .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
         .in("naics_code", orgNaics)
         .eq("status", "active")
         .limit(500);
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       for (const prefix of prefixes4) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
           .like("naics_code", `${prefix}%`)
           .eq("status", "active")
           .limit(400);
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       for (const prefix of prefixes3) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
           .like("naics_code", `${prefix}%`)
           .eq("status", "active")
           .limit(300);
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         const keyword = cert.toLowerCase().substring(0, 6);
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
           .ilike("set_aside_type", `%${keyword}%`)
           .eq("status", "active")
           .limit(300);
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       for (const kw of orgKeywords.slice(0, 5)) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
           .ilike("title", `%${kw}%`)
           .eq("status", "active")
           .limit(100);
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Batch 5: USASpending recompetes (they often have null NAICS)
     const { data: recompeteData } = await supabaseAdmin
       .from("opportunities")
-      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
       .eq("source", "usaspending")
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Batch 6: Recent SAM.gov opportunities
     const { data: recentData } = await supabaseAdmin
       .from("opportunities")
-      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type")
+      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
       .eq("source", "sam_gov")
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -128,12 +128,29 @@ export async function POST(request: NextRequest) {
     //   (a) Award Notice — contract already awarded
     //   (u) Justification — agency decision memo, not a bid opportunity
     //   (g) Sale of Surplus Property — auction, not a service contract
-    // USASpending rows are allowed through (they're recompete intel, not SAM notices)
+    // The dedicated notice_type column is the authoritative source. Fall back
+    // to contract_type (legacy) and title heuristics for rows that haven't
+    // been re-backfilled yet.
+    // USASpending rows are allowed through (they're recompete intel).
+    const NON_BIDDABLE_CODES = new Set(["a", "u", "g"]);
+    const AWARD_TITLE_PATTERNS = [
+      "award synopsis",
+      "notice of award",
+      "award notice",
+      "contract award",
+      "intent to award",
+    ];
     const beforeFilter = opportunities.length;
     opportunities = opportunities.filter(o => {
       if (o.source !== "sam_gov") return true;
+      // Primary: notice_type code
+      if (o.notice_type && NON_BIDDABLE_CODES.has(o.notice_type.toLowerCase())) return false;
+      // Secondary: legacy contract_type string
       const t = (o.contract_type || "").toLowerCase();
       if (t.includes("(a)") || t.includes("(u)") || t.includes("(g)")) return false;
+      // Tertiary: title heuristic for rows whose notice type was destroyed
+      const title = (o.title || "").toLowerCase();
+      if (AWARD_TITLE_PATTERNS.some(p => title.includes(p))) return false;
       return true;
     });
     console.log(`[matching] Filtered ${beforeFilter - opportunities.length} non-biddable notices (awards/justifications)`);

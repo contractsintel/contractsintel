@@ -547,7 +547,10 @@ async function runSamBackfill(maxRows = 2000) {
             if (primary.phone) patch.contact_phone = primary.phone;
             if (popStr) patch.place_of_performance = popStr;
             if (naics) patch.naics_code = naics;
-            if (d2.classificationCode) patch.contract_type = d2.classificationCode;
+            // NOTE: classificationCode is a PSC (Product Service Code), NOT a notice type.
+            // Previously this overwrote contract_type and destroyed the notice type data.
+            // Now we store notice_type separately from d2.type.code.
+            if (d2.type?.code) patch.notice_type = d2.type.code;
             if (sol.setAside && sol.setAside !== "NONE") {
               patch.set_aside_type = SETASIDE_MAP[sol.setAside] || sol.setAside;
               patch.set_aside_description = SETASIDE_MAP[sol.setAside] || sol.setAside;
@@ -1026,6 +1029,7 @@ async function runSamScrape() {
     const pop = r.placeOfPerformance || {};
     const popStr = [pop.city?.name, pop.state?.code, pop.country?.name].filter(Boolean).join(", ");
     const typeVal = r.type ? `${r.type.value || ""} (${r.type.code || ""})` : null;
+    const noticeTypeCode = r.type?.code || null;
     const setAside = r.typeOfSetAsideDescription || r.typeOfSetAside || null;
     const naicsCode = r.naicsCode || null;
     const naicsDesc = r.naicsCodes?.[0]?.description || null;
@@ -1051,6 +1055,7 @@ async function runSamScrape() {
       contact_email: primaryContact.email || null,
       contact_phone: primaryContact.phone || null,
       contract_type: typeVal,
+      notice_type: noticeTypeCode,
       attachments: attachments.length > 0 ? JSON.stringify(attachments) : null,
       incumbent_name: r.incumbentName || null,
       status: "active",
