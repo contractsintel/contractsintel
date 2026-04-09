@@ -24,7 +24,6 @@ export default function ContractsPage() {
   const [showMilestoneModal, setShowMilestoneModal] = useState<string | null>(null);
   const [milestoneData, setMilestoneData] = useState({ title: "", due_date: "" });
   const [demandLetter, setDemandLetter] = useState<string | null>(null);
-  const [activeInvoice, setActiveInvoice] = useState<{ id: string; contractTitle: string } | null>(null);
   const [view, setView] = useState<"list" | "calendar">("list");
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
 
@@ -112,7 +111,6 @@ Respectfully,
 ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}`;
 
     setDemandLetter(letter);
-    setActiveInvoice({ id: inv.id, contractTitle });
 
     // Persist the demand letter to demand_letters AND mark invoice overdue
     await Promise.all([
