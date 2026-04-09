@@ -57,7 +57,32 @@ export default function CompliancePage() {
         .order("effective_date", { ascending: false })
         .limit(5),
     ]);
-    setItems(itemsRes.data ?? []);
+
+    let items = itemsRes.data ?? [];
+
+    // C3/B6: If the org has no compliance items yet, seed the default
+    // checklist so the health score is computable on first visit.
+    if (items.length === 0) {
+      try {
+        const res = await fetch("/api/compliance/seed", { method: "POST" });
+        if (res.ok) {
+          const { seeded } = await res.json();
+          if (seeded) {
+            const { data: reloaded } = await supabase
+              .from("compliance_items")
+              .select("*")
+              .eq("organization_id", organization.id)
+              .neq("category", "far_change")
+              .order("due_date", { ascending: true });
+            items = reloaded ?? [];
+          }
+        }
+      } catch {
+        /* swallow — still render the page with empty state */
+      }
+    }
+
+    setItems(items);
     setFarAlerts(farRes.data ?? []);
     setLoading(false);
   }, [organization.id, supabase]);

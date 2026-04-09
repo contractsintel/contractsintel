@@ -44,7 +44,7 @@ export default async function DashboardLayout({
     naics_codes: profile?.naics_codes ?? [],
     address: null,
     plan: profile?.plan ?? "discovery",
-    subscription_status: profile?.subscription_status ?? "trialing",
+    subscription_status: profile?.subscription_status ?? null,
     subscription_tier: profile?.subscription_tier ?? "discovery",
     trial_ends_at: profile?.trial_ends_at ?? null,
     stripe_customer_id: null,

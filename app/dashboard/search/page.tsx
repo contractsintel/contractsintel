@@ -46,15 +46,34 @@ export default function SearchPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
 
-  // Load distinct source values once on mount (top 20 by row count).
+  // B4: Load distinct source values once on mount, merged with a known set
+  // so the dropdown always exposes major sources even before data arrives.
   useEffect(() => {
+    const KNOWN_SOURCES = [
+      "sam_gov",
+      "usaspending",
+      "grants_gov",
+      "sbir_sttr",
+      "military_defense",
+      "dla_dibbs",
+      "army_asfi",
+      "navy_neco",
+      "air_force",
+      "marines",
+      "darpa",
+      "state_local",
+      "subcontracting",
+      "forecasts",
+    ];
+    setAvailableSources(KNOWN_SOURCES);
+
     let cancelled = false;
     (async () => {
       // PostgREST has no GROUP BY, so we sample a wide page and bucket in JS.
       const { data } = await supabase
         .from("opportunities")
         .select("source")
-        .neq("status", "expired")
+        .or("status.is.null,status.neq.expired")
         .limit(5000);
       if (cancelled || !data) return;
       const counts: Record<string, number> = {};
@@ -64,11 +83,15 @@ export default function SearchPage() {
       }
       const top = Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
+        .slice(0, 30)
         .map(([s]) => s);
-      setAvailableSources(top);
+      // Merge known + observed, preserving order, deduped.
+      const merged = Array.from(new Set([...top, ...KNOWN_SOURCES]));
+      setAvailableSources(merged);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [supabase]);
 
   const search = useCallback(async (resetOffset = false) => {
@@ -76,11 +99,14 @@ export default function SearchPage() {
     const effectiveOffset = resetOffset ? 0 : offset;
     if (resetOffset) setOffset(0);
 
+    // B3: Previous neq("status", "expired/paused") excluded rows with NULL
+    // status because `NULL <> 'x'` is NULL (falsy) in SQL. Most opportunities
+    // have no status set, so this returned zero rows. Filter expired/paused
+    // only when status is explicitly set, so nulls pass through.
     let q = supabase
       .from("opportunities")
       .select("*", { count: "exact" })
-      .neq("status", "expired")
-      .neq("status", "paused");
+      .or("status.is.null,and(status.neq.expired,status.neq.paused)");
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
@@ -165,7 +191,7 @@ export default function SearchPage() {
       <div className="flex items-center justify-between">
         <PageHeader
           title="Search All Contracts"
-          subtitle={`${total.toLocaleString()} opportunities in database`}
+          subtitle={loading && results.length === 0 ? "Loading opportunities…" : `${total.toLocaleString()} opportunities in database`}
           accentColor="#059669"
         />
         <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>

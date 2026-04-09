@@ -21,6 +21,16 @@ export default function SignupPage() {
     setLoading(true);
     setError("");
 
+    // B7: If the browser has a stale session from a previous user, the new
+    // signup can "land" into the previous user's org because layout.tsx reads
+    // the current auth cookie before the new user row is created. Sign out
+    // first so the new user starts with a clean session.
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* noop — may already be signed out */
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -111,15 +121,15 @@ export default function SignupPage() {
           </Link>
         </div>
 
-        <div className="border border-[#1e2535] bg-white p-8 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <h1 className="font-['DM_Serif_Display'] text-[28px] text-[#0f172a] mb-2">Start your free trial</h1>
+        <div className="border border-[#1e2535] bg-[#0d1018] p-8">
+          <h1 className="ci-serif text-[30px] text-[#e8edf8] mb-2">Start your free trial</h1>
           <p className="text-[#8b9ab5] text-sm mb-6">
             Get AI-powered contract intelligence in minutes.
           </p>
 
           <button
             onClick={handleGoogleSignup}
-            className="w-full border border-[#2a3548] rounded-lg bg-white text-[#e8edf8] py-3 px-4 text-sm font-medium hover:bg-[#080a0f] transition-colors mb-6 flex items-center justify-center gap-2"
+            className="w-full border border-[#2a3548] rounded-lg bg-[#111520] text-[#e8edf8] py-3 px-4 text-sm font-medium hover:bg-[#080a0f] transition-colors mb-6 flex items-center justify-center gap-2"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
             Continue with Google
@@ -127,11 +137,11 @@ export default function SignupPage() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#1e2535]"></div></div>
-            <div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-[#4a5a75]">or sign up with email</span></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-[#0d1018] px-3 text-[#4a5a75]">or sign up with email</span></div>
           </div>
 
           {/* Proof Strip */}
-          <div className="flex items-center gap-4 mb-6 py-3 px-4 bg-[#ecfdf5] border border-[#a7f3d0] rounded-lg">
+          <div className="flex items-center gap-4 mb-6 py-3 px-4 bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.3)] rounded-lg">
             <span className="text-xs text-[#059669]">&#10003; 14-day free trial</span>
             <span className="text-xs text-[#059669]">&#10003; No credit card</span>
             <span className="text-xs text-[#059669]">&#10003; SAM.gov verified</span>

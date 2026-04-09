@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { isDiscovery, isTeam, isTrialActive, tierLabel } from "@/lib/feature-gate";
 import { useDashboard } from "./context";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
@@ -183,18 +185,54 @@ export function Sidebar({ plan }: { plan: string }) {
   const isItemLocked = (item: NavItem) =>
     (item.bdProLocked && locked) || (item.teamOnly && !teamTier);
 
-  // Setup progress: derive from actual organization profile completeness
-  const setupChecks = [
-    !!organization.name,
-    !!organization.uei,
-    (organization.naics_codes?.length ?? 0) > 0,
-    (organization.certifications?.length ?? 0) > 0,
-    (organization.keywords?.length ?? 0) > 0,
-    organization.setup_wizard_complete === true,
-    organization.onboarding_complete === true,
-  ];
-  const setupCompleted = setupChecks.filter(Boolean).length;
-  const setupTotal = setupChecks.length;
+  // B5: single source of truth for "setup progress" — must match the 7-step
+  // checklist on /dashboard/get-started so sidebar and get-started page agree.
+  const [setupCompleted, setSetupCompleted] = useState(0);
+  const setupTotal = 7;
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prefs } = await supabase
+        .from("user_preferences")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+
+      // Check if any opportunity has been tracked by this user's org
+      const { count: trackedCount } = await supabase
+        .from("user_matches")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organization.id)
+        .in("user_status", ["tracking", "bidding", "won", "lost"]);
+
+      // Check if any proposal exists for this org
+      const { count: proposalCount } = await supabase
+        .from("proposals")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", organization.id);
+
+      const items = [
+        true, // account_created — reached this page means logged in
+        !!(organization.uei || organization.sam_audit_complete || prefs?.sam_connected),
+        !!prefs?.checklist_first_digest_reviewed,
+        (trackedCount ?? 0) > 0,
+        !!(prefs?.google_calendar_connected || prefs?.checklist_calendar_connected),
+        !!prefs?.checklist_compliance_reviewed,
+        (proposalCount ?? 0) > 0,
+      ];
+      setSetupCompleted(items.filter(Boolean).length);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [organization.id, organization.uei, organization.sam_audit_complete]);
 
   // Treat null as incomplete — only consider onboarding done when explicitly true.
   const onboardingIncomplete = organization.onboarding_complete !== true;

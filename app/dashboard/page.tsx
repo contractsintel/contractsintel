@@ -43,7 +43,7 @@ function daysUntil(date: string | null): number | null {
 
 function deadlineLabel(date: string | null): string {
   const d = daysUntil(date);
-  if (d === null) return "—";
+  if (d === null) return "No deadline";
   if (d < 0) return "Expired";
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
@@ -375,7 +375,27 @@ export default function DashboardPage() {
     }
   };
 
-  const getVal = (opp: any) => opp?.estimated_value ?? opp?.value_estimate ?? 0;
+  const getVal = (opp: any) => {
+    if (!opp) return 0;
+    // B2: widen search across all possible value fields from different scrapers
+    const candidates = [
+      opp.estimated_value,
+      opp.value_estimate,
+      opp.award_amount,
+      opp.total_award_amount,
+      opp.base_and_all_options_value,
+      opp.base_and_exercised_options_value,
+      opp.current_total_value,
+      opp.potential_total_value,
+      opp.max_award_value,
+      opp.contract_value,
+    ];
+    for (const v of candidates) {
+      const n = typeof v === "string" ? parseFloat(v) : v;
+      if (typeof n === "number" && !isNaN(n) && n > 0) return n;
+    }
+    return 0;
+  };
 
   // Filter and sort
   const filtered = matches
@@ -532,11 +552,11 @@ export default function DashboardPage() {
       </div>
       {/* Personalized welcome banner — shows once after onboarding */}
       {showWelcome && totalMatchCount > 0 && (
-        <div className="mb-6 p-5 bg-gradient-to-r from-[#eef2ff] to-[#f0fdf4] border border-[#c7d2fe] rounded-2xl flex items-center justify-between"
+        <div className="mb-6 p-5 bg-[#0d1018] border border-[#1e2535] flex items-center justify-between"
              style={{animation: "fadeInUp 0.4s ease both"}}>
           <div>
-            <h2 className="text-[16px] font-bold text-[#e8edf8]">
-              🎯 Your personalized matches are ready
+            <h2 className="text-[16px] font-semibold text-[#e8edf8]">
+              Your personalized matches are ready
             </h2>
             <p className="text-[14px] text-[#8b9ab5] mt-1">
               We scored {totalMatchCount.toLocaleString()} contracts based on your {(organization.certifications || []).join(", ")} certification{(organization.certifications || []).length > 1 ? "s" : ""} and NAICS codes. Your best matches are at the top.
@@ -546,7 +566,7 @@ export default function DashboardPage() {
             setShowWelcome(false);
             await supabase.from("organizations").update({ has_seen_dashboard: true }).eq("id", organization.id);
           }} className="text-[13px] text-[#8b9ab5] hover:text-[#e8edf8] shrink-0 ml-4">
-            Dismiss ✕
+            Dismiss
           </button>
         </div>
       )}
@@ -851,17 +871,21 @@ export default function DashboardPage() {
                         {match.match_score}
                       </div>
 
-                      {/* Title + Agency */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-[14px] font-semibold text-[#e8edf8] truncate">{cleanTitle(opp.title)}</h3>
+                      {/* Title + Agency — clickable to opportunity detail */}
+                      <Link
+                        href={`/dashboard/opportunity/${opp.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex-1 min-w-0 group/title"
+                      >
+                        <h3 className="text-[14px] font-semibold text-[#e8edf8] truncate group-hover/title:text-[#3b82f6] transition-colors">{cleanTitle(opp.title)}</h3>
                         <p className="text-[12px] text-[#8b9ab5] mt-0.5 truncate">{opp.agency}</p>
-                      </div>
+                      </Link>
 
                       {/* Value */}
-                      <div className="w-[76px] text-right shrink-0 leading-none">
+                      <div className="w-[88px] text-right shrink-0 leading-none">
                         <div className="text-[9px] font-semibold text-[#4a5a75] uppercase tracking-wider mb-1">Value</div>
                         <div className="text-[13px] font-semibold text-[#e8edf8] font-mono">
-                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "—"}
+                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : <span className="text-[#4a5a75]">Undisclosed</span>}
                         </div>
                       </div>
 
