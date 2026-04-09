@@ -69,10 +69,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Batch 4: Recent opportunities (catch anything with no NAICS)
+    // Batch 4: Keyword matches in titles
+    if (orgKeywords.length > 0) {
+      for (const kw of orgKeywords.slice(0, 5)) {
+        const { data } = await supabaseAdmin
+          .from("opportunities")
+          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+          .ilike("title", `%${kw}%`)
+          .eq("status", "active")
+          .limit(100);
+        if (data) opportunities.push(...data);
+      }
+    }
+
+    // Batch 5: USASpending recompetes (they often have null NAICS)
+    const { data: recompeteData } = await supabaseAdmin
+      .from("opportunities")
+      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+      .eq("source", "usaspending")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (recompeteData) opportunities.push(...recompeteData);
+
+    // Batch 6: Recent SAM.gov opportunities
     const { data: recentData } = await supabaseAdmin
       .from("opportunities")
       .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source")
+      .eq("source", "sam_gov")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(300);
@@ -130,13 +154,23 @@ export async function POST(request: NextRequest) {
         score += 10; reasons.push("Full & open competition");
       }
 
-      // Signal 3: Keywords (15 pts)
+      // Signal 3: Keywords (15 pts) — also match partial words
       const text = ((opp.title || "") + " " + (opp.description || "")).toLowerCase();
       let kwMatches = 0;
       const matched: string[] = [];
       orgKeywords.forEach(kw => {
-        if (text.includes(kw.toLowerCase())) { kwMatches++; matched.push(kw); }
+        const kwLower = kw.toLowerCase();
+        // Match full phrase or individual significant words (4+ chars)
+        if (text.includes(kwLower)) {
+          kwMatches++; matched.push(kw);
+        } else {
+          const words = kwLower.split(/\s+/).filter(w => w.length >= 4);
+          if (words.length > 0 && words.some(w => text.includes(w))) {
+            kwMatches += 0.5; matched.push(kw + " (partial)");
+          }
+        }
       });
+      kwMatches = Math.ceil(kwMatches);
       score += Math.min(kwMatches * 5, 15);
       if (matched.length > 0) reasons.push(`${matched.length} keyword match${matched.length > 1 ? "es" : ""}: ${matched.slice(0, 3).join(", ")}`);
 
@@ -153,6 +187,7 @@ export async function POST(request: NextRequest) {
       // Signal 5: Geographic (15 pts)
       if (nationwide) {
         score += 15;
+        reasons.push("Nationwide service area");
       }
 
       const finalScore = Math.min(score, 100);
@@ -178,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     // Sort by score, take top 500
     matches.sort((a, b) => b.match_score - a.match_score);
-    const topMatches = matches.slice(0, 500);
+    const topMatches = matches.slice(0, 1000);
 
     // Delete old matches for this org (clean slate)
     await supabaseAdmin
