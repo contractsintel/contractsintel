@@ -2,64 +2,67 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+// Robust counts via direct PostgREST HEAD requests with count=exact header.
+async function rawCount(url: string, key: string, params: string): Promise<number | null> {
+  try {
+    const r = await fetch(`${url}/rest/v1/opportunities?${params}`, {
+      method: "HEAD",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Prefer: "count=exact",
+        Range: "0-0",
+      },
+    });
+    const cr = r.headers.get("content-range") || "";
+    const total = cr.split("/")[1];
+    return total && total !== "*" ? parseInt(total) : null;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === "production") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
-  // How many active SAM rows have populated naics_code?
-  const { count: activeTotal } = await supabase
-    .from("opportunities").select("id", { count: "exact", head: true })
-    .eq("source", "sam_gov").eq("status", "active");
-  const { count: activeWithNaics } = await supabase
-    .from("opportunities").select("id", { count: "exact", head: true })
-    .eq("source", "sam_gov").eq("status", "active").not("naics_code", "is", null);
-  const { count: activeWithSetAside } = await supabase
-    .from("opportunities").select("id", { count: "exact", head: true })
-    .eq("source", "sam_gov").eq("status", "active").not("set_aside_type", "is", null);
-  const { count: activeSetAsideEmpty } = await supabase
-    .from("opportunities").select("id", { count: "exact", head: true })
-    .eq("source", "sam_gov").eq("status", "active").eq("set_aside_type", "");
-  const { count: expiredWithNaics } = await supabase
-    .from("opportunities").select("id", { count: "exact", head: true })
-    .eq("source", "sam_gov").eq("status", "expired").not("naics_code", "is", null);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-  // Try every other status value
-  const { data: statusSample } = await supabase
+  const [total, active, expired, activeWithNaics, activeWithSetAside, activeWithoutNaics, activeWithoutSetAside] = await Promise.all([
+    rawCount(url, key, "source=eq.sam_gov&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.active&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.expired&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.active&naics_code=not.is.null&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.active&set_aside_type=not.is.null&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.active&naics_code=is.null&select=id"),
+    rawCount(url, key, "source=eq.sam_gov&status=eq.active&set_aside_type=is.null&select=id"),
+  ]);
+
+  // For the org we care about (Ralph), compute how many matches are possible
+  const supabase = createClient(url, key);
+  const { data: sampleNaics } = await supabase
     .from("opportunities")
-    .select("status")
-    .eq("source", "sam_gov")
-    .limit(1000);
-  const statusCounts: Record<string, number> = {};
-  for (const r of statusSample || []) {
-    statusCounts[r.status || "null"] = (statusCounts[r.status || "null"] || 0) + 1;
-  }
-
-  // Active samples with non-null naics (if any)
-  const { data: goodSamples } = await supabase
-    .from("opportunities")
-    .select("id, title, naics_code, set_aside_type, response_deadline, last_seen_at")
+    .select("naics_code")
     .eq("source", "sam_gov")
     .eq("status", "active")
     .not("naics_code", "is", null)
-    .order("last_seen_at", { ascending: false })
-    .limit(3);
+    .limit(100);
 
   return NextResponse.json({
-    counts: {
-      activeTotal,
+    rawCounts: {
+      total,
+      active,
+      expired,
       activeWithNaics,
       activeWithSetAside,
-      activeSetAsideEmpty,
-      expiredWithNaics,
+      activeWithoutNaics,
+      activeWithoutSetAside,
     },
-    statusCountsInFirst1000: statusCounts,
-    activeGoodSamples: goodSamples,
+    sampleActiveNaicsCodes: Array.from(new Set((sampleNaics || []).map((r) => r.naics_code))).slice(0, 30),
   });
 }
