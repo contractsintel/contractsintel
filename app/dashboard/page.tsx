@@ -29,7 +29,7 @@ function decodeHtml(s: string): string {
 }
 
 function formatCurrency(n: number | null | undefined): string {
-  if (!n || n <= 0) return "TBD";
+  if (!n || n <= 0) return "—";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
   return `$${n.toLocaleString()}`;
@@ -43,7 +43,7 @@ function daysUntil(date: string | null): number | null {
 
 function deadlineLabel(date: string | null): string {
   const d = daysUntil(date);
-  if (d === null) return "TBD";
+  if (d === null) return "—";
   if (d < 0) return "Expired";
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
@@ -526,10 +526,10 @@ export default function DashboardPage() {
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar — KPI Row */}
-      <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div data-tour="stats-bar" className={`grid grid-cols-2 ${totalValue > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-3 sm:gap-4 mb-6 sm:mb-8`}>
         {[
           { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", urgent: false },
-          { value: formatCurrency(totalValue), label: "Total Value", urgent: false },
+          ...(totalValue > 0 ? [{ value: formatCurrency(totalValue), label: "Total Value", urgent: false }] : []),
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
@@ -788,14 +788,20 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Value */}
-                      <span className="text-[13px] font-semibold text-[#111827] font-mono w-[72px] text-right shrink-0">
-                        {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "TBD"}
-                      </span>
+                      <div className="w-[76px] text-right shrink-0 leading-none">
+                        <div className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Value</div>
+                        <div className="text-[13px] font-semibold text-[#111827] font-mono">
+                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "—"}
+                        </div>
+                      </div>
 
                       {/* Deadline */}
-                      <span className={`text-[12px] font-mono w-[52px] text-right shrink-0 ${deadlineColor}`}>
-                        {deadlineLabel(opp.response_deadline) || "TBD"}
-                      </span>
+                      <div className="w-[60px] text-right shrink-0 leading-none">
+                        <div className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Due</div>
+                        <div className={`text-[12px] font-mono ${deadlineColor}`}>
+                          {deadlineLabel(opp.response_deadline)}
+                        </div>
+                      </div>
 
                       {/* Recommendation badge */}
                       <span className={`px-2 py-1 text-[10px] font-semibold uppercase rounded shrink-0 ${recBadge(match.bid_recommendation)}`}>
