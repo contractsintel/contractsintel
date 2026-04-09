@@ -141,16 +141,31 @@ export async function POST(request: NextRequest) {
       "intent to award",
     ];
     const beforeFilter = opportunities.length;
+    const droppedSamples: string[] = [];
+    const awardSynopsisPassed: string[] = [];
     opportunities = opportunities.filter(o => {
       if (o.source !== "sam_gov") return true;
       // Primary: notice_type code
-      if (o.notice_type && NON_BIDDABLE_CODES.has(o.notice_type.toLowerCase())) return false;
+      if (o.notice_type && NON_BIDDABLE_CODES.has(o.notice_type.toLowerCase())) {
+        if (droppedSamples.length < 5) droppedSamples.push(`[notice_type] ${(o.title || "").slice(0, 60)}`);
+        return false;
+      }
       // Secondary: legacy contract_type string
       const t = (o.contract_type || "").toLowerCase();
-      if (t.includes("(a)") || t.includes("(u)") || t.includes("(g)")) return false;
+      if (t.includes("(a)") || t.includes("(u)") || t.includes("(g)")) {
+        if (droppedSamples.length < 5) droppedSamples.push(`[contract_type] ${(o.title || "").slice(0, 60)}`);
+        return false;
+      }
       // Tertiary: title heuristic for rows whose notice type was destroyed
       const title = (o.title || "").toLowerCase();
-      if (AWARD_TITLE_PATTERNS.some(p => title.includes(p))) return false;
+      if (AWARD_TITLE_PATTERNS.some(p => title.includes(p))) {
+        if (droppedSamples.length < 5) droppedSamples.push(`[title] ${(o.title || "").slice(0, 60)}`);
+        return false;
+      }
+      // DEBUG: did an "award synopsis" title slip through?
+      if (title.includes("award synopsis") && awardSynopsisPassed.length < 5) {
+        awardSynopsisPassed.push(`PASSED: ${(o.title || "").slice(0, 80)} | src=${o.source} | ct=${o.contract_type}`);
+      }
       return true;
     });
     console.log(`[matching] Filtered ${beforeFilter - opportunities.length} non-biddable notices (awards/justifications)`);
@@ -289,7 +304,9 @@ export async function POST(request: NextRequest) {
       topScore: topMatches[0]?.match_score || 0,
       filteredNonBiddable: beforeFilter - opportunities.length,
       fetchedBeforeFilter: beforeFilter,
-      version: "filter-v2",
+      droppedSamples,
+      awardSynopsisPassedSamples: awardSynopsisPassed,
+      version: "filter-v3",
     });
   } catch (error) {
     console.error("[matching] Error:", error);
