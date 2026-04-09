@@ -513,7 +513,9 @@ async function runSamBackfill(maxRows = 2000) {
 
   try {
     while (processed < maxRows) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&status=eq.active&set_aside_type=is.null&limit=50`, { headers: hdrs });
+      // Process rows missing EITHER set_aside_type OR notice_type so the
+      // backfill catches up rows that were processed before notice_type existed.
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&status=eq.active&or=(set_aside_type.is.null,notice_type.is.null)&limit=50`, { headers: hdrs });
       const opps = await r.json();
       if (!Array.isArray(opps) || !opps.length) break;
 
