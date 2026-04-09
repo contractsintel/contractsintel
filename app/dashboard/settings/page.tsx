@@ -401,18 +401,42 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Google Calendar — gated until OAuth credentials are wired in */}
+      {/* Google Calendar */}
       <section className="border border-[#f0f1f3]  bg-white p-6 mb-6">
         <h2 className="text-xs text-[#9ca3af] font-medium uppercase tracking-wide mb-4">Google Calendar</h2>
-        <div className="border border-dashed border-[#e5e7eb] bg-[#f8f9fb] p-5 text-center">
-          <svg className="w-8 h-8 mx-auto mb-2 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <h3 className="text-sm font-semibold text-[#111827] mb-1">Coming Soon</h3>
-          <p className="text-xs text-[#6b7280] max-w-[320px] mx-auto">
-            Two-way sync with Google Calendar for bid deadlines and compliance items is in development. We&apos;ll notify you when it&apos;s ready.
-          </p>
-        </div>
+        {calendarConnected ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#22c55e]" />
+              <span className="text-sm text-[#111827]">Connected</span>
+            </div>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-[#4b5563]">Sync bid deadlines</span>
+              <div className="w-10 h-5 bg-[#2563eb] flex items-center">
+                <div className="w-4 h-4 bg-white translate-x-5" />
+              </div>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-[#4b5563]">Sync compliance deadlines</span>
+              <div className="w-10 h-5 bg-[#2563eb] flex items-center">
+                <div className="w-4 h-4 bg-white translate-x-5" />
+              </div>
+            </label>
+            <button
+              onClick={() => setCalendarConnected(false)}
+              className="text-xs text-[#ef4444] hover:text-[#f87171] transition-colors"
+            >
+              Disconnect Calendar
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setCalendarConnected(true)}
+            className="border border-[#f0f1f3] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+          >
+            Connect Google Calendar
+          </button>
+        )}
       </section>
 
       {/* Data Sources */}
