@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const r = await fetch(
       `${url}/rest/v1/opportunity_matches?organization_id=eq.${orgId}&is_demo=eq.false&select=match_score,bid_recommendation,recommendation_reasoning,opportunity_id,opportunities(title,naics_code,set_aside_type,source)&order=match_score.desc`,
       {
+        cache: "no-store",
         headers: {
           apikey: key,
           Authorization: `Bearer ${key}`,
