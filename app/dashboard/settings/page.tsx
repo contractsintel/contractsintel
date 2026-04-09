@@ -40,11 +40,16 @@ export default function SettingsPage() {
   const [agencies, setAgencies] = useState("");
   const [minScore, setMinScore] = useState(50);
 
-  // Notifications
-  const [digestEnabled, setDigestEnabled] = useState(true);
-  const [complianceAlerts, setComplianceAlerts] = useState(true);
-  const [deadlineReminders, setDeadlineReminders] = useState(true);
-  const [weeklyReport, setWeeklyReport] = useState(true);
+  // Notifications — hydrated from organization.notification_preferences JSONB on mount
+  const prefs = (organization.notification_preferences || {}) as Record<string, any>;
+  const [digestEnabled, setDigestEnabled] = useState<boolean>(prefs.daily_digest ?? true);
+  const [complianceAlerts, setComplianceAlerts] = useState<boolean>(prefs.compliance_alerts ?? true);
+  const [deadlineReminders, setDeadlineReminders] = useState<boolean>(prefs.deadline_reminders ?? true);
+  const [weeklyReport, setWeeklyReport] = useState<boolean>(prefs.weekly_report ?? true);
+  const [digestTime, setDigestTime] = useState<string>(prefs.digest_time ?? "08:00");
+  const [cadence, setCadence] = useState<string>(prefs.cadence ?? "daily");
+  const [savingNotifs, setSavingNotifs] = useState(false);
+  const [savedNotifs, setSavedNotifs] = useState(false);
 
   // CMMC
   const [cmmcLevel, setCmmcLevel] = useState("1");
@@ -92,6 +97,37 @@ export default function SettingsPage() {
       }
     })();
   }, []);
+
+  // Re-hydrate notification prefs whenever the org context changes
+  useEffect(() => {
+    const p = (organization.notification_preferences || {}) as Record<string, any>;
+    if (typeof p.daily_digest === "boolean") setDigestEnabled(p.daily_digest);
+    if (typeof p.compliance_alerts === "boolean") setComplianceAlerts(p.compliance_alerts);
+    if (typeof p.deadline_reminders === "boolean") setDeadlineReminders(p.deadline_reminders);
+    if (typeof p.weekly_report === "boolean") setWeeklyReport(p.weekly_report);
+    if (typeof p.digest_time === "string") setDigestTime(p.digest_time);
+    if (typeof p.cadence === "string") setCadence(p.cadence);
+  }, [organization]);
+
+  const saveNotifications = async () => {
+    setSavingNotifs(true);
+    const notification_preferences = {
+      daily_digest: digestEnabled,
+      compliance_alerts: complianceAlerts,
+      deadline_reminders: deadlineReminders,
+      weekly_report: weeklyReport,
+      digest_time: digestTime,
+      cadence,
+      updated_at: new Date().toISOString(),
+    };
+    await supabase
+      .from("organizations")
+      .update({ notification_preferences })
+      .eq("id", organization.id);
+    setSavingNotifs(false);
+    setSavedNotifs(true);
+    setTimeout(() => setSavedNotifs(false), 2500);
+  };
 
   const toggleCert = (c: string) =>
     setCerts((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
@@ -310,6 +346,44 @@ export default function SettingsPage() {
               </button>
             </label>
           ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-[#f0f1f3]">
+          <div>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Digest Time</label>
+            <input
+              type="time"
+              value={digestTime}
+              onChange={(e) => setDigestTime(e.target.value)}
+              className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#4b5563] mb-1.5 font-medium uppercase tracking-wide">Cadence</label>
+            <select
+              value={cadence}
+              onChange={(e) => setCadence(e.target.value)}
+              className="w-full bg-white border border-[#f0f1f3] text-[#111827] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekdays">Weekdays only</option>
+              <option value="weekly">Weekly (Mondays)</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-5">
+          <button
+            onClick={saveNotifications}
+            disabled={savingNotifs}
+            className="px-4 py-2 text-sm bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors"
+          >
+            {savingNotifs ? "Saving..." : "Save Notification Settings"}
+          </button>
+          {savedNotifs && (
+            <span className="text-xs text-[#059669] font-medium">✓ Saved</span>
+          )}
         </div>
       </section>
 

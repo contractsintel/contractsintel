@@ -35,21 +35,52 @@ export default function CompliancePage() {
   const { organization } = useDashboard();
   const supabase = createClient();
   const [items, setItems] = useState<any[]>([]);
+  const [farAlerts, setFarAlerts] = useState<any[]>([]);
+  const [expandedFar, setExpandedFar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cmmcCurrent, setCmmcCurrent] = useState<number>(organization.cmmc_current_level ?? 0);
+  const [cmmcTarget, setCmmcTarget] = useState<number>(organization.cmmc_target_level ?? (organization.plan === "team" ? 2 : 1));
+  const [cmmcSaving, setCmmcSaving] = useState(false);
 
   const loadData = useCallback(async () => {
-    const { data } = await supabase
-      .from("compliance_items")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .order("due_date", { ascending: true });
-    setItems(data ?? []);
+    const [itemsRes, farRes] = await Promise.all([
+      supabase
+        .from("compliance_items")
+        .select("*")
+        .eq("organization_id", organization.id)
+        .neq("category", "far_change")
+        .order("due_date", { ascending: true }),
+      supabase
+        .from("compliance_items")
+        .select("*")
+        .eq("category", "far_change")
+        .order("effective_date", { ascending: false })
+        .limit(5),
+    ]);
+    setItems(itemsRes.data ?? []);
+    setFarAlerts(farRes.data ?? []);
     setLoading(false);
   }, [organization.id, supabase]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Re-sync CMMC state when org changes
+  useEffect(() => {
+    setCmmcCurrent(organization.cmmc_current_level ?? 0);
+    setCmmcTarget(organization.cmmc_target_level ?? (organization.plan === "team" ? 2 : 1));
+  }, [organization]);
+
+  const saveCmmcLevel = async (newLevel: number) => {
+    setCmmcSaving(true);
+    setCmmcCurrent(newLevel);
+    await supabase
+      .from("organizations")
+      .update({ cmmc_current_level: newLevel, cmmc_last_assessment: new Date().toISOString().slice(0, 10) })
+      .eq("id", organization.id);
+    setCmmcSaving(false);
+  };
 
   // Calculate health score
   const totalItems = items.length || 1;
@@ -192,12 +223,52 @@ export default function CompliancePage() {
                 <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-3">
                   FAR Change Alerts
                 </h2>
-                <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
-                  <div className="text-sm text-[#9ca3af]">No recent FAR changes affecting your profile</div>
-                  <p className="text-xs text-[#9ca3af] mt-1">
-                    We monitor Federal Acquisition Regulation updates relevant to your certifications.
-                  </p>
-                </div>
+                {farAlerts.length === 0 ? (
+                  <div className="border border-[#f0f1f3] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
+                    <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-[#f8f9fb] flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </div>
+                    <div className="text-sm text-[#9ca3af]">No recent FAR changes affecting your profile</div>
+                    <p className="text-xs text-[#9ca3af] mt-1">
+                      We monitor Federal Acquisition Regulation updates relevant to your certifications.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {farAlerts.map((alert) => {
+                      const isOpen = expandedFar === alert.id;
+                      return (
+                        <div key={alert.id} className="border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                          <button
+                            onClick={() => setExpandedFar(isOpen ? null : alert.id)}
+                            className="w-full text-left px-4 py-3 hover:bg-[#f9fafb] transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-medium text-[#111827] truncate">{alert.title}</h3>
+                                {alert.effective_date && (
+                                  <p className="text-xs text-[#9ca3af] mt-0.5 font-mono">
+                                    Effective {new Date(alert.effective_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  </p>
+                                )}
+                              </div>
+                              <svg className={`w-4 h-4 text-[#9ca3af] shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </button>
+                          {isOpen && alert.details && (
+                            <div className="px-4 pb-4 pt-1 border-t border-[#f0f1f3]">
+                              <p className="text-xs text-[#4b5563] whitespace-pre-wrap">{alert.details}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* CMMC Tracker */}
@@ -207,17 +278,38 @@ export default function CompliancePage() {
                 </h2>
                 <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-[#111827]">Target Level</span>
+                    <span className="text-sm text-[#111827]">Current / Target</span>
                     <span className="text-sm font-mono text-[#3b82f6]">
-                      {organization.plan === "team" ? "Level 2" : "Level 1"}
+                      Level {cmmcCurrent} / Level {cmmcTarget}
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-[#f8f9fb] mb-2">
-                    <div className="h-full bg-[#3b82f6] w-0 transition-all" />
+                  <div className="w-full h-2 bg-[#f8f9fb] mb-3">
+                    <div
+                      className="h-full bg-[#3b82f6] transition-all"
+                      style={{
+                        width: `${Math.min(100, Math.round((cmmcCurrent / Math.max(cmmcTarget, 1)) * 100))}%`,
+                      }}
+                    />
                   </div>
-                  <p className="text-xs text-[#9ca3af]">
-                    Complete your CMMC assessment in Settings to track readiness.
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs text-[#9ca3af]">Set current level:</label>
+                    <select
+                      value={cmmcCurrent}
+                      onChange={(e) => saveCmmcLevel(parseInt(e.target.value, 10))}
+                      disabled={cmmcSaving}
+                      className="text-xs font-mono border border-[#e5e7eb] bg-white px-2 py-1 rounded"
+                    >
+                      <option value={0}>Level 0 — Not assessed</option>
+                      <option value={1}>Level 1 — Foundational</option>
+                      <option value={2}>Level 2 — Advanced</option>
+                      <option value={3}>Level 3 — Expert</option>
+                    </select>
+                  </div>
+                  {organization.cmmc_last_assessment && (
+                    <p className="text-[10px] text-[#9ca3af] font-mono mt-2">
+                      Last assessed {new Date(organization.cmmc_last_assessment).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

@@ -62,11 +62,14 @@ export default function ProposalsPage() {
     setSelectedMatch(matchId);
     setProposal(null);
     setError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120_000);
     try {
       const res = await fetch("/api/proposals/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ match_id: matchId, organization_id: organization.id, custom_instructions: customInstructions }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (data.proposal) {
@@ -74,10 +77,16 @@ export default function ProposalsPage() {
       } else {
         setError(data.error || "Failed to generate proposal. Please try again.");
       }
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (e: any) {
+      if (e?.name === "AbortError") {
+        setError("Generation timed out. Try again.");
+      } else {
+        setError("Network error. Please try again.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setGenerating(false);
     }
-    setGenerating(false);
   };
 
   const copySection = (tab: string) => {
@@ -95,16 +104,16 @@ export default function ProposalsPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const downloadAsDoc = () => {
+  const downloadAsTxt = () => {
     if (!proposal) return;
     const match = matches.find(m => m.id === selectedMatch);
-    const title = match?.opportunities?.title || "Proposal";
+    const title = (match?.opportunities?.title || "Proposal").slice(0, 60);
     const text = TABS.map(t => `${t.toUpperCase()}\n${"=".repeat(t.length)}\n\n${proposal[t] || ""}`).join("\n\n\n");
-    const blob = new Blob([text], { type: "application/msword" });
+    const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `proposal-${title.replace(/[^a-zA-Z0-9]/g, "-").substring(0, 40)}.doc`;
+    a.download = `${title.replace(/[^a-zA-Z0-9]/g, "_")}_proposal.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -246,18 +255,30 @@ export default function ProposalsPage() {
                           }`}>
                           {copied === "all" ? "Copied All!" : "Copy All Sections"}
                         </button>
-                        <button onClick={downloadAsDoc}
+                        <button onClick={downloadAsTxt}
                           className="px-3.5 py-1.5 text-[12px] font-medium border border-[#e5e7eb] text-[#4b5563] hover:border-[#d1d5db] rounded-lg">
-                          Download as Word
+                          Download as .txt
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-16">
+                    <div className="flex flex-col items-center justify-center py-12 max-w-[520px] mx-auto">
                       <svg className="w-12 h-12 text-[#d1d5db] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                         <path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-[14px] text-[#6b7280] mb-4">Generate an AI proposal draft tailored to this contract</p>
+                      <p className="text-[14px] text-[#6b7280] mb-4 text-center">Generate an AI proposal draft tailored to this contract</p>
+                      <div className="w-full mb-3">
+                        <label className="block text-[11px] font-medium text-[#6b7280] uppercase tracking-wide mb-1.5">
+                          Custom instructions (optional)
+                        </label>
+                        <textarea
+                          value={customInstructions}
+                          onChange={(e) => setCustomInstructions(e.target.value)}
+                          rows={3}
+                          placeholder="e.g. Focus more on our cybersecurity experience, emphasize our local presence in Virginia..."
+                          className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+                        />
+                      </div>
                       <button onClick={() => generateDraft(selectedMatch)}
                         className="px-6 py-2.5 text-[14px] font-semibold bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] transition-colors">
                         Generate Proposal Draft

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "../page-header";
+import { htmlToPlainText } from "@/app/lib/html";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "";
@@ -29,7 +30,6 @@ function deadlineLabel(date: string | null): string {
 }
 
 type SortOption = "newest" | "deadline" | "value";
-type SourceFilter = "" | "sam_gov" | "usaspending" | "state_local" | "federal_civilian" | "sbir_sttr" | "grants_gov" | "subcontracting" | "forecasts" | "military_defense";
 
 const PAGE_SIZE = 20;
 
@@ -40,10 +40,36 @@ export default function SearchPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [source, setSource] = useState<SourceFilter>("");
+  const [source, setSource] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("newest");
   const [offset, setOffset] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [availableSources, setAvailableSources] = useState<string[]>([]);
+
+  // Load distinct source values once on mount (top 20 by row count).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // PostgREST has no GROUP BY, so we sample a wide page and bucket in JS.
+      const { data } = await supabase
+        .from("opportunities")
+        .select("source")
+        .neq("status", "expired")
+        .limit(5000);
+      if (cancelled || !data) return;
+      const counts: Record<string, number> = {};
+      for (const r of data) {
+        const s = r.source || "unknown";
+        counts[s] = (counts[s] || 0) + 1;
+      }
+      const top = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20)
+        .map(([s]) => s);
+      setAvailableSources(top);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
   const search = useCallback(async (resetOffset = false) => {
     setLoading(true);
@@ -54,8 +80,7 @@ export default function SearchPage() {
       .from("opportunities")
       .select("*", { count: "exact" })
       .neq("status", "expired")
-      .neq("status", "paused")
-      .in("source", ["sam_gov", "usaspending"]);
+      .neq("status", "paused");
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
@@ -162,12 +187,13 @@ export default function SearchPage() {
         </div>
         <select
           value={source}
-          onChange={(e) => setSource(e.target.value as SourceFilter)}
+          onChange={(e) => setSource(e.target.value)}
           className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="">All Sources</option>
-          <option value="sam_gov">Federal Solicitations (SAM.gov)</option>
-          <option value="usaspending">Recompete Alerts (USASpending)</option>
+          {availableSources.map((s) => (
+            <option key={s} value={s}>{sourceLabel(s)}</option>
+          ))}
         </select>
         <select
           value={sort}
@@ -222,7 +248,7 @@ export default function SearchPage() {
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#f8f9fb] text-[#64748b] border border-[#f0f1f3] shrink-0">
                     {sourceLabel(opp.source)}
                   </span>
-                  <span className="text-sm text-[#0f172a] font-medium truncate flex-1">{(opp.title || "").replace(/&#\d+;/g, (m: string) => String.fromCharCode(parseInt(m.slice(2, -1)))).replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")}</span>
+                  <span className="text-sm text-[#0f172a] font-medium truncate flex-1">{htmlToPlainText(opp.title || "")}</span>
                   <span className="text-[11px] text-[#64748b] truncate max-w-[200px] hidden md:inline">{opp.agency}</span>
                   {opp.estimated_value ? <span className="text-xs font-mono text-[#111827] shrink-0">{formatCurrency(opp.estimated_value)}</span> : null}
                   <span className={`text-[11px] font-mono shrink-0 w-14 text-right ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
@@ -238,7 +264,7 @@ export default function SearchPage() {
                       {opp.naics_code && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">NAICS {opp.naics_code}</span>}
                       {opp.place_of_performance && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.place_of_performance}</span>}
                     </div>
-                    {opp.description && <p className="text-xs text-[#4b5563] leading-relaxed line-clamp-4">{opp.description}</p>}
+                    {opp.description && <p className="text-xs text-[#4b5563] leading-relaxed line-clamp-4 whitespace-pre-line">{htmlToPlainText(opp.description)}</p>}
                     <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
                       {opp.agency && <div><span className="text-[#9ca3af]">Agency:</span> <span className="text-[#111827]">{opp.agency}</span></div>}
                       {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
