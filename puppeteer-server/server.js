@@ -495,15 +495,32 @@ app.post("/cron/sam-backfill", async (req, res) => {
   const SAM_DETAIL = "https://sam.gov/api/prod/opps/v2/opportunities/";
   const SAM_HDR = { Accept: "application/json, text/plain, */*", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", Origin: "https://sam.gov" };
 
-  let updated = 0, errors = 0, offset = 0;
+  let updated = 0, errors = 0, processed = 0;
+  const SETASIDE_MAP = {
+    "8A": "8(a) Set-Aside",
+    "8AN": "8(a) Sole Source",
+    "SDVOSBC": "SDVOSB Set-Aside",
+    "SDVOSBS": "SDVOSB Sole Source",
+    "WOSB": "WOSB Set-Aside",
+    "WOSBSS": "WOSB Sole Source",
+    "EDWOSB": "EDWOSB Set-Aside",
+    "EDWOSBSS": "EDWOSB Sole Source",
+    "HZC": "HUBZone Set-Aside",
+    "HZS": "HUBZone Sole Source",
+    "SBA": "Total Small Business Set-Aside",
+    "SBP": "Partial Small Business Set-Aside",
+    "VSA": "Veteran-Owned Small Business",
+    "ISBEE": "Indian Small Business Economic Enterprise",
+  };
 
-  while (updated < 200) {
-    // Get SAM.gov records missing contact_name (unfilled detail)
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&contact_name=is.null&limit=50&offset=${offset}`, { headers: hdrs });
+  while (processed < 500) {
+    // Get active SAM.gov records missing set_aside_type — prioritize ones still active
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/opportunities?select=id,notice_id&source=eq.sam_gov&status=eq.active&set_aside_type=is.null&limit=50`, { headers: hdrs });
     const opps = await r.json();
     if (!Array.isArray(opps) || !opps.length) break;
 
     for (const opp of opps) {
+      processed++;
       try {
         const detailRes = await fetch(`${SAM_DETAIL}${opp.notice_id}`, {
           headers: { ...SAM_HDR, Referer: `https://sam.gov/opp/${opp.notice_id}/view` },
@@ -528,26 +545,30 @@ app.post("/cron/sam-backfill", async (req, res) => {
         if (popStr) patch.place_of_performance = popStr;
         if (naics) patch.naics_code = naics;
         if (d2.classificationCode) patch.contract_type = d2.classificationCode;
-        if (sol.setAside && sol.setAside !== "NONE") patch.set_aside = sol.setAside;
+        if (sol.setAside && sol.setAside !== "NONE") {
+          patch.set_aside_type = SETASIDE_MAP[sol.setAside] || sol.setAside;
+          patch.set_aside_description = SETASIDE_MAP[sol.setAside] || sol.setAside;
+        } else {
+          // Mark as "checked" with empty string so we don't re-process
+          patch.set_aside_type = "";
+        }
         if (fullDesc && fullDesc.length > 100) patch.full_description = fullDesc;
         if (d2.solicitationNumber) patch.solicitation_number = d2.solicitationNumber;
 
         if (Object.keys(patch).length > 0) {
-          patch.contact_name = patch.contact_name || "checked"; // mark as backfilled even if no contact
           await fetch(`${SUPABASE_URL}/rest/v1/opportunities?id=eq.${opp.id}`, {
             method: "PATCH", headers: patchHdrs, body: JSON.stringify(patch),
           });
           updated++;
         }
-        await new Promise(r => setTimeout(r, 200)); // rate limit
+        await new Promise(r => setTimeout(r, 150)); // rate limit
       } catch (e) { errors++; }
     }
-    offset += 50;
-    console.log(`[backfill] Progress: ${updated} updated, ${errors} errors, offset ${offset}`);
+    console.log(`[backfill] Progress: ${updated} updated, ${errors} errors, ${processed} processed`);
   }
 
-  console.log(`[backfill] SAM.gov detail backfill complete: ${updated} updated, ${errors} errors`);
-  res.json({ success: true, updated, errors });
+  console.log(`[backfill] SAM.gov detail backfill complete: ${updated} updated, ${errors} errors, ${processed} processed`);
+  res.json({ success: true, updated, errors, processed });
 });
 
 // Mark expired opportunities (set status='expired' instead of deleting)

@@ -117,14 +117,20 @@ export async function POST(request: NextRequest) {
       let score = 0;
       const reasons: string[] = [];
 
-      // Signal 1: NAICS (35 pts)
+      // Signal 1: NAICS (35 pts) — graduated tiers
       const oppNaics = opp.naics_code || "";
       if (oppNaics && orgNaics.includes(oppNaics)) {
         score += 35;
         reasons.push(`Direct NAICS match: ${oppNaics}`);
+      } else if (oppNaics && orgNaics.some(n => n.substring(0, 5) === oppNaics.substring(0, 5))) {
+        score += 30;
+        reasons.push(`Same NAICS sub-industry: ${oppNaics.substring(0, 5)}x`);
       } else if (oppNaics && orgNaics.some(n => n.substring(0, 4) === oppNaics.substring(0, 4))) {
         score += 25;
-        reasons.push(`Related NAICS: ${oppNaics}`);
+        reasons.push(`Related NAICS family: ${oppNaics.substring(0, 4)}xx`);
+      } else if (oppNaics && orgNaics.some(n => n.substring(0, 3) === oppNaics.substring(0, 3))) {
+        score += 18;
+        reasons.push(`Same NAICS group: ${oppNaics.substring(0, 3)}xxx`);
       } else if (!oppNaics) {
         score += 15;
         reasons.push("No NAICS on opportunity");
@@ -192,8 +198,8 @@ export async function POST(request: NextRequest) {
 
       const finalScore = Math.min(score, 100);
       let recommendation = "skip";
-      if (finalScore >= 75) recommendation = "bid";
-      else if (finalScore >= 45) recommendation = "monitor";
+      if (finalScore >= 70) recommendation = "bid";
+      else if (finalScore >= 40) recommendation = "monitor";
 
       if (opp.source === "usaspending") {
         recommendation = "recompete";
