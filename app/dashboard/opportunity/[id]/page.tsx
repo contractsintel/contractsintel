@@ -96,6 +96,33 @@ export default function OpportunityDetailPage() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  // P1.3: Allow user to track an opportunity that has no match row yet.
+  // Inserts a fresh opportunity_matches row with pipeline_stage='monitoring'.
+  const trackOpportunity = async () => {
+    const { data: inserted, error } = await supabase
+      .from("opportunity_matches")
+      .insert({
+        organization_id: organization.id,
+        opportunity_id: oppId,
+        match_score: 0,
+        bid_recommendation: "monitor",
+        recommendation_reasoning: "Manually tracked from opportunity detail page.",
+        user_status: "tracking",
+        pipeline_stage: "monitoring",
+        is_demo: false,
+      })
+      .select()
+      .single();
+    if (error) {
+      setToast("Failed to track — try again");
+      setTimeout(() => setToast(""), 3000);
+      return;
+    }
+    setMatch(inserted);
+    setToast("Now tracking");
+    setTimeout(() => setToast(""), 3000);
+  };
+
   if (loading) return <div className="p-12 text-center text-[#94a3b8]">Loading contract details...</div>;
   if (!opp) return <div className="p-12 text-center text-[#94a3b8]">Contract not found</div>;
 
@@ -234,7 +261,8 @@ export default function OpportunityDetailPage() {
               <div className="space-y-2">
                 {attachments.map((a: any, i: number) => {
                   const isPdf = (a.url || "").toLowerCase().endsWith(".pdf") || (a.name || "").toLowerCase().endsWith(".pdf");
-                  const proxyUrl = `https://puppeteer-production-f147.up.railway.app/proxy-document?url=${encodeURIComponent(a.url)}`;
+                  const proxyBase = process.env.NEXT_PUBLIC_ATTACHMENT_PROXY_URL || "https://puppeteer-production-f147.up.railway.app";
+                  const proxyUrl = `${proxyBase}/proxy-document?url=${encodeURIComponent(a.url)}`;
                   return (
                     <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-[#f1f5f9] hover:bg-[#f8fafc]">
                       <div className="flex items-center gap-2 text-[13px] min-w-0">
@@ -312,6 +340,24 @@ export default function OpportunityDetailPage() {
 
         {/* Right sidebar */}
         <div className="space-y-6">
+          {/* Not yet matched — show track CTA when no match row exists */}
+          {!match && (
+            <div className="ci-card p-5">
+              <div className="inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-3 bg-[#f1f5f9] text-[#64748b]">
+                Not yet matched
+              </div>
+              <p className="text-[13px] text-[#475569] mb-3">
+                This opportunity isn&apos;t in your match list yet. Track it to follow updates and surface it on your dashboard.
+              </p>
+              <button
+                onClick={trackOpportunity}
+                className="w-full px-4 py-2 text-xs font-medium bg-[#2563eb] text-white hover:bg-[#1d4ed8] rounded-lg ci-btn"
+              >
+                Track this opportunity
+              </button>
+            </div>
+          )}
+
           {/* AI Analysis */}
           {match && (
             <div className="p-5 rounded-xl border border-[#bfdbfe]" style={{background: "linear-gradient(135deg, #eff6ff, #f5f3ff)"}}>

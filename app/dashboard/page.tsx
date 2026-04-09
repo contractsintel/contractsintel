@@ -145,6 +145,9 @@ export default function DashboardPage() {
     recommendation: "",
   });
   const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
+  const [highSeverityAlerts, setHighSeverityAlerts] = useState<any[]>([]);
+  const [upcomingComplianceDeadlines, setUpcomingComplianceDeadlines] = useState<any[]>([]);
+  const [stripDismissed, setStripDismissed] = useState(false);
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [dbSourceCounts, setDbSourceCounts] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
@@ -165,7 +168,7 @@ export default function DashboardPage() {
     setLoading(true);
     const { data, count, error } = await supabase
       .from("opportunity_matches")
-      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, is_demo, created_at, opportunities(*)", { count: "exact" })
+      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(*)", { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, effectiveLimit - 1);
@@ -204,8 +207,47 @@ export default function DashboardPage() {
       .limit(5);
     setComplianceAlerts(compliance ?? []);
 
+    // P1.2: high-severity alert strip — items with severity=high due in 30d
+    const { data: highSev } = await supabase
+      .from("compliance_items")
+      .select("id, title, due_date, severity, category")
+      .eq("organization_id", organization.id)
+      .eq("severity", "high")
+      .lte("due_date", new Date(Date.now() + 30 * 86400000).toISOString())
+      .neq("status", "complete")
+      .neq("status", "passed")
+      .order("due_date", { ascending: true })
+      .limit(5);
+    setHighSeverityAlerts(highSev ?? []);
+
+    // P1.1: 3 most urgent compliance_items by due_date for the right rail
+    const { data: upcoming } = await supabase
+      .from("compliance_items")
+      .select("id, title, due_date, category")
+      .eq("organization_id", organization.id)
+      .neq("status", "complete")
+      .neq("status", "passed")
+      .not("due_date", "is", null)
+      .order("due_date", { ascending: true })
+      .limit(3);
+    setUpcomingComplianceDeadlines(upcoming ?? []);
+
     setLoading(false);
   }, [organization.id, supabase, matchLimit]);
+
+  // Restore session-level dismiss for the high-severity strip
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const dismissed = sessionStorage.getItem("ci_high_sev_strip_dismissed");
+    if (dismissed === "true") setStripDismissed(true);
+  }, []);
+
+  const dismissHighSevStrip = () => {
+    setStripDismissed(true);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ci_high_sev_strip_dismissed", "true");
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -399,12 +441,12 @@ export default function DashboardPage() {
   }).length;
   const topScore = matches.length ? Math.max(...matches.map((m) => m.match_score ?? 0)) : 0;
 
-  // Pipeline summary (use user_status since pipeline_stage may not exist)
+  // Pipeline summary — prefer pipeline_stage column when present, fall back
+  // to user_status mapping for legacy rows.
   const pipelineCounts = matches.reduce(
     (acc, m) => {
-      const status = m.user_status ?? "new";
       const stageMap: Record<string, string> = { tracking: "monitoring", bidding: "preparing_bid", new: "new", skipped: "skipped" };
-      const stage = stageMap[status] ?? status;
+      const stage = m.pipeline_stage ?? stageMap[m.user_status ?? "new"] ?? (m.user_status ?? "new");
       acc[stage] = (acc[stage] ?? 0) + 1;
       return acc;
     },
@@ -553,9 +595,47 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="flex gap-6">
+      {/* P1.2: High-severity compliance alert strip */}
+      {!stripDismissed && highSeverityAlerts.length > 0 && (
+        <div className="border border-[#f0f1f3] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-3">
+          <svg className="w-5 h-5 text-[#f59e0b] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-[#f59e0b]">
+                {highSeverityAlerts.length} high-severity compliance item{highSeverityAlerts.length > 1 ? "s" : ""} due within 30 days
+              </span>
+            </div>
+            <p className="text-xs text-[#4b5563] truncate">
+              {highSeverityAlerts.map((a) => a.title).join(" · ")}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/compliance"
+            className="text-xs font-medium text-[#f59e0b] hover:text-[#d97706] whitespace-nowrap shrink-0"
+          >
+            Fix Now →
+          </Link>
+          <button
+            onClick={dismissHighSevStrip}
+            aria-label="Dismiss"
+            className="text-[#9ca3af] hover:text-[#4b5563] shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main Column */}
-        <div className="flex-1 min-w-0 w-full">
+        <div className="min-w-0 w-full">
           {/* Filter toggle */}
           <button onClick={() => setShowFilters(!showFilters)}
             className="text-[13px] text-[#4f46e5] hover:text-[#4338ca] font-medium mb-4">
@@ -1021,8 +1101,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Right Sidebar — hidden on mobile/tablet */}
-        <div className="w-[260px] shrink-0 hidden xl:block space-y-4 right-sidebar-desktop">
+        {/* Right Sidebar — full width on mobile (below main), 320px column at lg+ */}
+        <div className="w-full lg:w-auto space-y-4 right-sidebar-desktop">
           {/* Pipeline Summary */}
           <div className="ci-card p-5">
             <h3 className="ci-section-label mb-3">
@@ -1079,42 +1159,26 @@ export default function DashboardPage() {
             );
           })()}
 
-          {/* Upcoming Deadlines */}
+          {/* Upcoming Compliance Deadlines — 3 most urgent compliance_items */}
           <div className="ci-card p-5">
-            <h3 className="ci-section-label mb-3">
-              Upcoming Deadlines
-            </h3>
-            {matches
-              .filter((m) => {
-                const d = daysUntil(m.opportunities?.response_deadline);
-                return d !== null && d >= 0 && d <= 14;
-              })
-              .sort(
-                (a, b) =>
-                  (daysUntil(a.opportunities?.response_deadline) ?? 999) -
-                  (daysUntil(b.opportunities?.response_deadline) ?? 999)
-              )
-              .slice(0, 5)
-              .map((m) => {
-                const d = daysUntil(m.opportunities?.response_deadline);
+            <h3 className="ci-section-label mb-3">Upcoming Deadlines</h3>
+            {upcomingComplianceDeadlines.length === 0 ? (
+              <p className="text-xs text-[#9ca3af]">No upcoming compliance deadlines</p>
+            ) : (
+              upcomingComplianceDeadlines.map((c) => {
+                const d = daysUntil(c.due_date);
                 const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#4b5563]";
                 return (
-                  <div key={m.id} className="flex items-center justify-between py-1.5">
-                    <span className="text-xs text-[#4b5563] truncate mr-2">
-                      {m.opportunities?.title}
-                    </span>
-                    <span className={`text-xs font-mono shrink-0 ${color}`}>
-                      {deadlineLabel(m.opportunities?.response_deadline)}
-                    </span>
+                  <div key={c.id} className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-[#4b5563] truncate mr-2">{c.title}</span>
+                    <span className={`text-xs font-mono shrink-0 ${color}`}>{deadlineLabel(c.due_date)}</span>
                   </div>
                 );
-              })}
-            {matches.filter((m) => {
-              const d = daysUntil(m.opportunities?.response_deadline);
-              return d !== null && d >= 0 && d <= 14;
-            }).length === 0 && (
-              <p className="text-xs text-[#9ca3af]">No upcoming deadlines</p>
+              })
             )}
+            <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors">
+              View Compliance →
+            </Link>
           </div>
 
           {/* Archived Contracts */}

@@ -24,6 +24,9 @@ export default function ContractsPage() {
   const [showMilestoneModal, setShowMilestoneModal] = useState<string | null>(null);
   const [milestoneData, setMilestoneData] = useState({ title: "", due_date: "" });
   const [demandLetter, setDemandLetter] = useState<string | null>(null);
+  const [activeInvoice, setActiveInvoice] = useState<{ id: string; contractTitle: string } | null>(null);
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
 
   const loadData = useCallback(async () => {
     if (locked) { setLoading(false); return; }
@@ -32,7 +35,25 @@ export default function ContractsPage() {
       .select("*")
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false });
-    setContracts(data ?? []);
+
+    // P1.4: Fetch invoices from the real invoices table and group by contract.
+    const contractIds = (data ?? []).map((c) => c.id);
+    const invoicesByContract: Record<string, any[]> = {};
+    if (contractIds.length > 0) {
+      const { data: invs } = await supabase
+        .from("invoices")
+        .select("*")
+        .in("contract_id", contractIds)
+        .order("due_date", { ascending: true });
+      for (const inv of invs ?? []) {
+        (invoicesByContract[inv.contract_id] ||= []).push(inv);
+      }
+    }
+    const enriched = (data ?? []).map((c) => ({
+      ...c,
+      invoices: invoicesByContract[c.id] ?? c.invoices ?? [],
+    }));
+    setContracts(enriched);
     setLoading(false);
   }, [organization.id, locked, supabase]);
 
@@ -60,7 +81,7 @@ export default function ContractsPage() {
   };
 
   const flagLatePayment = async (contractId: string, inv: any, contractTitle: string) => {
-    const submittedDate = inv.submitted_date || inv.date || "unknown";
+    const submittedDate = inv.submitted_date || "unknown";
     const dueDate = inv.due_date || "unknown";
     const amount = inv.amount ? `$${Number(inv.amount).toLocaleString()}` : "$0";
     const invoiceNum = inv.invoice_number || inv.number || "N/A";
@@ -91,12 +112,18 @@ Respectfully,
 ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}`;
 
     setDemandLetter(letter);
+    setActiveInvoice({ id: inv.id, contractTitle });
 
-    // Mark invoice as flagged in DB
-    await supabase
-      .from("invoices")
-      .update({ demand_letter_sent: true, demand_letter_date: today.toISOString().split("T")[0] })
-      .eq("id", inv.id);
+    // Persist the demand letter to demand_letters AND mark invoice overdue
+    await Promise.all([
+      supabase
+        .from("demand_letters")
+        .insert({ invoice_id: inv.id, body: letter }),
+      supabase
+        .from("invoices")
+        .update({ status: "overdue" })
+        .eq("id", inv.id),
+    ]);
     loadData();
   };
 
@@ -145,6 +172,22 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       <InlineGuide page="contracts" />
       <TrialTierBanner page="contracts" />
 
+      {/* View toggle */}
+      <div className="flex items-center gap-2 mb-5">
+        <button
+          onClick={() => setView("list")}
+          className={`px-3 py-1.5 text-xs font-medium border ${view === "list" ? "bg-[#111827] text-white border-[#111827]" : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+        >
+          List
+        </button>
+        <button
+          onClick={() => setView("calendar")}
+          className={`px-3 py-1.5 text-xs font-medium border ${view === "calendar" ? "bg-[#111827] text-white border-[#111827]" : "bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+        >
+          Calendar
+        </button>
+      </div>
+
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading contracts...</div>
       ) : contracts.length === 0 ? (
@@ -154,6 +197,8 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
           <p className="text-sm text-[#4b5563] mb-6">When you win a contract in the Pipeline, your delivery dashboard activates automatically with milestones, invoices, and deadline tracking.</p>
           <a href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#0891b2"}}>Go to Pipeline</a>
         </div>
+      ) : view === "calendar" ? (
+        <ContractsCalendarView contracts={contracts} month={calendarMonth} setMonth={setCalendarMonth} />
       ) : (
         <div className="space-y-6">
           {contracts.map((contract) => (
@@ -252,24 +297,24 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                     <tbody>
                       {contract.invoices.map((inv: any) => (
                         <tr key={inv.id} className="border-t border-[#e5e7eb]">
-                          <td className="py-2 text-xs text-[#111827] font-mono">{inv.number}</td>
+                          <td className="py-2 text-xs text-[#111827] font-mono">{inv.invoice_number || inv.number || "—"}</td>
                           <td className="py-2 text-xs text-[#111827] font-mono text-right">
                             {formatCurrency(inv.amount)}
                           </td>
                           <td className="py-2 text-xs text-[#9ca3af] font-mono text-right">
                             {inv.submitted_date
                               ? new Date(inv.submitted_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                              : "--"}
+                              : "—"}
                           </td>
                           <td className="py-2 text-right">
                             <span className={`text-[10px] font-mono uppercase ${
                               inv.status === "paid"
                                 ? "text-[#22c55e]"
-                                : inv.flagged_late
+                                : inv.status === "overdue"
                                 ? "text-[#ef4444]"
                                 : "text-[#f59e0b]"
                             }`}>
-                              {inv.flagged_late ? "LATE" : inv.status}
+                              {inv.status || "submitted"}
                             </span>
                           </td>
                           <td className="py-2 text-right">
@@ -278,7 +323,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                                 onClick={() => flagLatePayment(contract.id, inv, contract.title)}
                                 className="text-[10px] text-[#ef4444] hover:text-[#f87171] transition-colors"
                               >
-                                {inv.demand_letter_sent ? "View Letter" : "Flag Late →"}
+                                {inv.status === "overdue" ? "View Letter" : "Flag Late →"}
                               </button>
                             )}
                           </td>
@@ -368,6 +413,165 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// P1.4: Monthly grid view of contract deliverables, reports, invoices, and option periods.
+type CalendarEvent = {
+  id: string;
+  date: Date;
+  title: string;
+  type: "deliverable" | "report" | "invoice" | "option";
+  contractTitle: string;
+};
+
+const TYPE_COLORS: Record<CalendarEvent["type"], string> = {
+  deliverable: "bg-[#dbeafe] text-[#1d4ed8] border-[#93c5fd]",
+  report: "bg-[#ede9fe] text-[#6d28d9] border-[#c4b5fd]",
+  invoice: "bg-[#dcfce7] text-[#15803d] border-[#86efac]",
+  option: "bg-[#fef3c7] text-[#a16207] border-[#fde68a]",
+};
+
+function ContractsCalendarView({
+  contracts,
+  month,
+  setMonth,
+}: {
+  contracts: any[];
+  month: Date;
+  setMonth: (d: Date) => void;
+}) {
+  // Build event list from all contracts' milestones, invoices, option periods
+  const events: CalendarEvent[] = [];
+  for (const c of contracts) {
+    const ctitle = c.title || "Untitled contract";
+    for (const ms of c.milestones || []) {
+      if (!ms.due_date) continue;
+      const t: CalendarEvent["type"] = (ms.title || "").toLowerCase().includes("report") ? "report" : "deliverable";
+      events.push({ id: `m-${ms.id}`, date: new Date(ms.due_date), title: ms.title || "Milestone", type: t, contractTitle: ctitle });
+    }
+    for (const inv of c.invoices || []) {
+      const d = inv.due_date || inv.submitted_date;
+      if (!d) continue;
+      events.push({
+        id: `i-${inv.id}`,
+        date: new Date(d),
+        title: `Invoice ${inv.invoice_number || ""}`.trim(),
+        type: "invoice",
+        contractTitle: ctitle,
+      });
+    }
+    for (const op of c.option_periods || []) {
+      if (!op.start_date) continue;
+      events.push({
+        id: `o-${op.id}`,
+        date: new Date(op.start_date),
+        title: op.label || "Option period",
+        type: "option",
+        contractTitle: ctitle,
+      });
+    }
+  }
+
+  const year = month.getFullYear();
+  const m = month.getMonth();
+  const firstDay = new Date(year, m, 1);
+  const lastDay = new Date(year, m + 1, 0);
+  const startWeekday = firstDay.getDay(); // 0 = Sun
+  const daysInMonth = lastDay.getDate();
+
+  // Build a 6x7 grid (42 cells)
+  const cells: { date: Date | null; events: CalendarEvent[] }[] = [];
+  for (let i = 0; i < startWeekday; i++) cells.push({ date: null, events: [] });
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(year, m, d);
+    const dayEvents = events.filter(
+      (e) =>
+        e.date.getFullYear() === year &&
+        e.date.getMonth() === m &&
+        e.date.getDate() === d
+    );
+    cells.push({ date: cellDate, events: dayEvents });
+  }
+  while (cells.length < 42) cells.push({ date: null, events: [] });
+
+  const monthLabel = firstDay.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const goPrev = () => setMonth(new Date(year, m - 1, 1));
+  const goNext = () => setMonth(new Date(year, m + 1, 1));
+  const goToday = () => setMonth(new Date());
+
+  return (
+    <div className="border border-[#f0f1f3] bg-white rounded-xl">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-[#f0f1f3]">
+        <div className="flex items-center gap-2">
+          <button onClick={goPrev} className="px-2 py-1 text-xs border border-[#e5e7eb] hover:border-[#d1d5db] rounded">
+            ←
+          </button>
+          <button onClick={goToday} className="px-3 py-1 text-xs border border-[#e5e7eb] hover:border-[#d1d5db] rounded">
+            Today
+          </button>
+          <button onClick={goNext} className="px-2 py-1 text-xs border border-[#e5e7eb] hover:border-[#d1d5db] rounded">
+            →
+          </button>
+          <h3 className="text-sm font-semibold text-[#111827] ml-2">{monthLabel}</h3>
+        </div>
+        <div className="flex items-center gap-3 text-[10px]">
+          {(["deliverable", "report", "invoice", "option"] as const).map((t) => (
+            <div key={t} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 border ${TYPE_COLORS[t].split(" ").slice(0, 1).join(" ")}`} />
+              <span className="text-[#6b7280] capitalize">{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Weekday header */}
+      <div className="grid grid-cols-7 border-b border-[#f0f1f3]">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] px-2 py-2 text-center">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Cells */}
+      <div className="grid grid-cols-7 grid-rows-6">
+        {cells.map((cell, i) => {
+          const isToday =
+            cell.date &&
+            cell.date.toDateString() === new Date().toDateString();
+          return (
+            <div
+              key={i}
+              className={`min-h-[88px] border-r border-b border-[#f0f1f3] p-1.5 ${
+                cell.date ? "" : "bg-[#fafbfc]"
+              }`}
+            >
+              {cell.date && (
+                <div className={`text-[11px] font-mono mb-1 ${isToday ? "text-[#2563eb] font-bold" : "text-[#9ca3af]"}`}>
+                  {cell.date.getDate()}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {cell.events.slice(0, 3).map((ev) => (
+                  <div
+                    key={ev.id}
+                    title={`${ev.title} — ${ev.contractTitle}`}
+                    className={`text-[10px] px-1.5 py-0.5 truncate border ${TYPE_COLORS[ev.type]}`}
+                  >
+                    {ev.title}
+                  </div>
+                ))}
+                {cell.events.length > 3 && (
+                  <div className="text-[10px] text-[#6b7280] px-1.5">+{cell.events.length - 3} more</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
