@@ -19,6 +19,7 @@ export default function CompetitorsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [analysisView, setAnalysisView] = useState<{ id: string; text: string } | null>(null);
+  const [encountersVisible, setEncountersVisible] = useState<Record<string, number>>({});
   const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState({ name: "", uei: "", notes: "" });
@@ -63,11 +64,22 @@ export default function CompetitorsPage() {
       const data = await res.json();
       if (data.analysis) {
         setAnalysisView({ id: competitorId, text: data.analysis });
+        // P2.4: persist analysis to competitor_analyses for history
+        await supabase
+          .from("competitor_analyses")
+          .insert({ competitor_id: competitorId, analysis: data.analysis });
       }
     } catch {
       // silent
     }
     setAnalyzingId(null);
+  };
+
+  const showMoreEncounters = (competitorId: string) => {
+    setEncountersVisible((prev) => ({
+      ...prev,
+      [competitorId]: (prev[competitorId] ?? 10) + 10,
+    }));
   };
 
   if (!teamTier) {
@@ -219,32 +231,42 @@ export default function CompetitorsPage() {
                   {comp.notes && <p className="text-sm text-[#4b5563] mt-3">{comp.notes}</p>}
                 </div>
 
-                {/* Encounters */}
-                {encounters.length > 0 && (
-                  <div className="p-5">
-                    <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">Encounters</h4>
-                    <div className="space-y-2">
-                      {encounters.slice(0, 5).map((enc: any) => (
-                        <div key={enc.id} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 ${
-                              enc.outcome === "win" ? "bg-[#22c55e]" : enc.outcome === "loss" ? "bg-[#ef4444]" : "bg-[#9ca3af]"
-                            }`} />
-                            <span className="text-xs text-[#111827]">{enc.opportunity_title ?? "Unknown"}</span>
+                {/* Encounters — paginated 10 at a time */}
+                {encounters.length > 0 && (() => {
+                  const visibleCount = encountersVisible[comp.id] ?? 10;
+                  const visible = encounters.slice(0, visibleCount);
+                  const hasMore = encounters.length > visibleCount;
+                  return (
+                    <div className="p-5">
+                      <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-3">Encounters</h4>
+                      <div className="space-y-2">
+                        {visible.map((enc: any) => (
+                          <div key={enc.id} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 ${
+                                enc.outcome === "win" ? "bg-[#22c55e]" : enc.outcome === "loss" ? "bg-[#ef4444]" : "bg-[#9ca3af]"
+                              }`} />
+                              <span className="text-xs text-[#111827]">{enc.opportunity_title ?? "Unknown"}</span>
+                            </div>
+                            <span className={`text-[10px] font-mono uppercase ${
+                              enc.outcome === "win" ? "text-[#22c55e]" : enc.outcome === "loss" ? "text-[#ef4444]" : "text-[#9ca3af]"
+                            }`}>
+                              {enc.outcome ?? "pending"}
+                            </span>
                           </div>
-                          <span className={`text-[10px] font-mono uppercase ${
-                            enc.outcome === "win" ? "text-[#22c55e]" : enc.outcome === "loss" ? "text-[#ef4444]" : "text-[#9ca3af]"
-                          }`}>
-                            {enc.outcome ?? "pending"}
-                          </span>
-                        </div>
-                      ))}
-                      {encounters.length > 5 && (
-                        <p className="text-xs text-[#9ca3af]">+{encounters.length - 5} more</p>
-                      )}
+                        ))}
+                        {hasMore && (
+                          <button
+                            onClick={() => showMoreEncounters(comp.id)}
+                            className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
+                          >
+                            Load more ({encounters.length - visibleCount} remaining)
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })}

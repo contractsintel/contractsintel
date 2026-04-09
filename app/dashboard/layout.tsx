@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { headers, cookies } from "next/headers";
 import { DashboardProvider } from "./context";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
@@ -16,6 +17,15 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!authUser) redirect("/login");
+
+  // P2.5: Server-side onboarding redirect with cookie-based loop break.
+  // Pathname comes from x-pathname header set by middleware.ts. The
+  // ci_onboarding_checked cookie expires after 60s and prevents
+  // redirect loops if the header is missing for any reason.
+  const headerStore = await headers();
+  const cookieStore = await cookies();
+  const pathname = headerStore.get("x-pathname") ?? "";
+  const onboardingChecked = cookieStore.get("ci_onboarding_checked")?.value === "1";
 
   // Fetch user profile joined with organization
   const { data: profile } = await supabase
@@ -50,8 +60,19 @@ export default async function DashboardLayout({
     created_at: profile?.created_at ?? new Date().toISOString(),
   };
 
-  // Onboarding redirect removed from server layout — causes redirect loops.
-  // Instead, the redirect is handled client-side in the dashboard page itself.
+  // P2.5: Redirect users with incomplete onboarding to the wizard, unless
+  // they're already on a /dashboard/onboarding route OR the loop-break
+  // cookie says we just checked. Treat null as incomplete.
+  if (
+    org &&
+    org.onboarding_complete !== true &&
+    pathname &&
+    !pathname.startsWith("/dashboard/onboarding") &&
+    !onboardingChecked
+  ) {
+    cookieStore.set("ci_onboarding_checked", "1", { maxAge: 60, path: "/" });
+    redirect("/dashboard/onboarding");
+  }
 
   return (
     <DashboardProvider user={userProfile} organization={org}>

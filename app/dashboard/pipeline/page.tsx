@@ -52,7 +52,8 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [wonModal, setWonModal] = useState<string | null>(null);
   const [lostModal, setLostModal] = useState<string | null>(null);
-  const [wonData, setWonData] = useState({ award_amount: "", contract_number: "" });
+  const [wonData, setWonData] = useState({ award_amount: "", contract_number: "", period_months: "12" });
+  const [wonError, setWonError] = useState<string | null>(null);
   const [lostData, setLostData] = useState({ loss_reason: LOSS_REASONS[0], loss_notes: "" });
 
   const loadData = useCallback(async () => {
@@ -90,7 +91,14 @@ export default function PipelinePage() {
     if (!wonModal) return;
     const match = matches.find((m: any) => m.id === wonModal);
     const opp = match?.opportunities;
-    const amount = wonData.award_amount ? Number(wonData.award_amount) : null;
+    // P2.1: validate award amount before insert
+    const parsed = parseFloat(wonData.award_amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setWonError("Enter a valid award amount greater than $0");
+      return;
+    }
+    setWonError(null);
+    const amount = parsed;
     const contractNum = wonData.contract_number || null;
 
     // 1. Update opportunity match status
@@ -138,11 +146,13 @@ export default function PipelinePage() {
       .select("id")
       .single();
 
-    // 4. Auto-create default milestones (monthly reports for 12 months)
+    // 4. Auto-create default milestones (monthly reports), capped at 36 months
     if (contractRecord?.id) {
+      const requested = parseInt(wonData.period_months, 10);
+      const months = Math.min(Number.isFinite(requested) && requested > 0 ? requested : 12, 36);
       const milestones = [];
       const now = new Date();
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= months; i++) {
         const due = new Date(now.getFullYear(), now.getMonth() + i, 10);
         milestones.push({
           contract_id: contractRecord.id,
@@ -189,7 +199,7 @@ export default function PipelinePage() {
     }
 
     setWonModal(null);
-    setWonData({ award_amount: "", contract_number: "" });
+    setWonData({ award_amount: "", contract_number: "", period_months: "12" });
     loadData();
   };
 
@@ -328,6 +338,26 @@ export default function PipelinePage() {
                   className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                 />
               </div>
+              <div>
+                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">
+                  Period of Performance (months)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={36}
+                  value={wonData.period_months}
+                  onChange={(e) => setWonData((d) => ({ ...d, period_months: e.target.value }))}
+                  placeholder="12"
+                  className="w-full bg-[#f9fafb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                />
+                <p className="text-[10px] text-[#9ca3af] mt-1">Auto-generates monthly milestones, capped at 36.</p>
+              </div>
+              {wonError && (
+                <div className="text-xs text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] px-3 py-2 rounded">
+                  {wonError}
+                </div>
+              )}
             </div>
             <div className="flex gap-3 mt-6">
               <button

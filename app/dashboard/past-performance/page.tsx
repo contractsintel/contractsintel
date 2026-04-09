@@ -23,6 +23,7 @@ export default function PastPerformancePage() {
   const [ppqNarrative, setPpqNarrative] = useState<string | null>(null);
   const [ppqRecordId, setPpqRecordId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showVersionsForId, setShowVersionsForId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (locked) { setLoading(false); return; }
@@ -54,7 +55,7 @@ export default function PastPerformancePage() {
     loadData();
   };
 
-  const generatePpq = async (recordId: string) => {
+  const generatePpq = async (recordId: string, isRegenerate = false) => {
     setGeneratingPpq(recordId);
     setPpqNarrative(null);
     setPpqRecordId(recordId);
@@ -67,15 +68,48 @@ export default function PastPerformancePage() {
       const data = await res.json();
       if (data.narrative) {
         setPpqNarrative(data.narrative);
-        await supabase
-          .from("past_performance")
-          .update({ ppq_narrative: data.narrative })
-          .eq("id", recordId);
+        // P2.3: when regenerating, push old narrative onto versions array
+        if (isRegenerate) {
+          const record = records.find((r: any) => r.id === recordId);
+          if (record?.ppq_narrative) {
+            const existingVersions = Array.isArray(record.ppq_narrative_versions) ? record.ppq_narrative_versions : [];
+            const newVersions = [
+              ...existingVersions,
+              { narrative: record.ppq_narrative, archived_at: new Date().toISOString() },
+            ];
+            await supabase
+              .from("past_performance")
+              .update({ ppq_narrative: data.narrative, ppq_narrative_versions: newVersions })
+              .eq("id", recordId);
+          } else {
+            await supabase
+              .from("past_performance")
+              .update({ ppq_narrative: data.narrative })
+              .eq("id", recordId);
+          }
+        } else {
+          await supabase
+            .from("past_performance")
+            .update({ ppq_narrative: data.narrative })
+            .eq("id", recordId);
+        }
+        loadData();
       }
     } catch {
       // handle error
     }
     setGeneratingPpq(null);
+  };
+
+  const downloadNarrative = () => {
+    if (!ppqNarrative) return;
+    const blob = new Blob([ppqNarrative], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ppq_narrative_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const copyNarrative = () => {
@@ -135,11 +169,11 @@ export default function PastPerformancePage() {
       {loading ? (
         <div className="text-center text-[#9ca3af] py-12">Loading records...</div>
       ) : records.length === 0 ? (
-        <div className="max-w-[480px] mx-auto text-center p-12" style={{background: "linear-gradient(135deg, #fef2f2, #fff)", borderRadius: "16px", border: "1px solid rgba(220,38,38,0.08)"}}>
-          <svg className="w-12 h-12 mx-auto mb-4" style={{color: "#dc2626"}} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-          <div className="text-[20px] font-bold text-[#0f172a] mb-2">Your performance library starts here</div>
+        <div className="max-w-[480px] mx-auto text-center p-12 border border-[#f0f1f3] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <svg className="w-12 h-12 mx-auto mb-4 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <div className="text-[18px] font-semibold text-[#111827] mb-2">Your performance library starts here</div>
           <p className="text-sm text-[#4b5563] mb-6">Win a contract in your Pipeline and a performance record is created automatically. Log monthly to build narratives that win future proposals.</p>
-          <a href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5" style={{background: "#dc2626"}}>Go to Pipeline</a>
+          <Link href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white bg-[#2563eb] hover:bg-[#1d4ed8] transition-colors">Go to Pipeline</Link>
         </div>
       ) : (
         <div className="space-y-4">
@@ -213,16 +247,57 @@ export default function PastPerformancePage() {
                     <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">
                       PPQ Narrative
                     </h4>
-                    <button
-                      onClick={copyNarrative}
-                      className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
-                    >
-                      {copied ? "Copied" : "Copy"}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={copyNarrative}
+                        className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
+                      >
+                        {copied ? "Copied" : "Copy"}
+                      </button>
+                      <button
+                        onClick={downloadNarrative}
+                        className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
+                      >
+                        Download
+                      </button>
+                      <button
+                        onClick={() => generatePpq(record.id, true)}
+                        disabled={generatingPpq === record.id}
+                        className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors disabled:opacity-50"
+                      >
+                        {generatingPpq === record.id ? "Regenerating..." : "Regenerate"}
+                      </button>
+                      {Array.isArray(record.ppq_narrative_versions) && record.ppq_narrative_versions.length > 0 && (
+                        <button
+                          onClick={() => setShowVersionsForId(showVersionsForId === record.id ? null : record.id)}
+                          className="text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
+                        >
+                          {showVersionsForId === record.id ? "Hide" : "View"} previous versions
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-sm text-[#4b5563] whitespace-pre-wrap leading-relaxed bg-[#f8f9fb] p-4 border border-[#f0f1f3]">
                     {ppqNarrative}
                   </div>
+                  {showVersionsForId === record.id && Array.isArray(record.ppq_narrative_versions) && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">
+                        {record.ppq_narrative_versions.length} previous version{record.ppq_narrative_versions.length > 1 ? "s" : ""}
+                      </p>
+                      {record.ppq_narrative_versions.slice().reverse().map((v: any, i: number) => (
+                        <details key={i} className="border border-[#f0f1f3] bg-white">
+                          <summary className="cursor-pointer px-3 py-2 text-xs text-[#4b5563]">
+                            v{record.ppq_narrative_versions.length - i} —{" "}
+                            {v.archived_at ? new Date(v.archived_at).toLocaleString() : "older"}
+                          </summary>
+                          <div className="px-3 py-2 text-xs text-[#4b5563] whitespace-pre-wrap border-t border-[#f0f1f3] bg-[#f8f9fb]">
+                            {v.narrative}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {record.ppq_narrative && ppqRecordId !== record.id && (

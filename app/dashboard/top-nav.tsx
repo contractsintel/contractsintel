@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { NAV_ITEMS } from "./nav-items";
 
 export function TopNav({
   companyName,
@@ -16,6 +17,7 @@ export function TopNav({
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -29,8 +31,14 @@ export function TopNav({
     : userEmail[0]?.toUpperCase() ?? "U";
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      router.push("/login");
+    } catch {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -80,9 +88,13 @@ export function TopNav({
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="block w-full text-left px-4 py-2 text-sm text-[#ef4444] hover:bg-[#f8f9fb]"
+                  disabled={signingOut}
+                  className="flex w-full items-center gap-2 text-left px-4 py-2 text-sm text-[#ef4444] hover:bg-[#f8f9fb] disabled:opacity-60"
                 >
-                  Sign Out
+                  {signingOut && (
+                    <span className="w-3 h-3 border-2 border-[#ef4444] border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {signingOut ? "Signing out..." : "Sign Out"}
                 </button>
               </div>
             </>
@@ -105,16 +117,7 @@ export function TopNav({
               </button>
             </div>
             <nav className="py-2">
-              {[
-                { href: "/dashboard", label: "Dashboard" },
-                { href: "/dashboard/get-started", label: "Get Started" },
-                { href: "/dashboard/search", label: "Search Contracts" },
-                { href: "/dashboard/pipeline", label: "Pipeline" },
-                { href: "/dashboard/proposals", label: "Proposals" },
-                { href: "/dashboard/compliance", label: "Compliance" },
-                { href: "/dashboard/contracts", label: "Contracts" },
-                { href: "/dashboard/settings", label: "Settings" },
-              ].map((item) => (
+              {NAV_ITEMS.map((item) => (
                 <Link key={item.href} href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-5 py-3 text-[15px] font-medium text-[#4b5563] hover:bg-[#f3f4f6] hover:text-[#111827] transition-colors"

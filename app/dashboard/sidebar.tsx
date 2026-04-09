@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { isDiscovery, isTeam, isTrialActive, tierLabel } from "@/lib/feature-gate";
 import { useDashboard } from "./context";
+import { NAV_ITEMS, type NavItem } from "./nav-items";
 
 /* ── Icon map ──────────────────────────────────────────────────────────── */
 
@@ -72,42 +72,6 @@ const ICONS: Record<string, JSX.Element> = {
   ),
 };
 
-/* ── Nav item type ─────────────────────────────────────────────────────── */
-
-interface NavItem {
-  href: string;
-  label: string;
-  icon: string;
-  /** locked behind BD Pro (trial unlocks) */
-  bdProLocked: boolean;
-  /** locked behind Team tier (trial unlocks) */
-  teamOnly: boolean;
-  tourId: string;
-  color: string;
-  lightBg: string;
-}
-
-/* ── Top-level nav items (always visible) ──────────────────────────────── */
-
-const TOP_NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "home", bdProLocked: false, teamOnly: false, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
-  { href: "/dashboard/get-started", label: "Get Started", icon: "rocket", bdProLocked: false, teamOnly: false, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
-  { href: "/dashboard/search", label: "Search Contracts", icon: "search", bdProLocked: false, teamOnly: false, tourId: "", color: "#059669", lightBg: "#ecfdf5" },
-  { href: "/dashboard/pipeline", label: "Pipeline", icon: "kanban", bdProLocked: false, teamOnly: false, tourId: "sidebar-pipeline", color: "#d97706", lightBg: "#fffbeb" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: "document", bdProLocked: true, teamOnly: false, tourId: "sidebar-proposals", color: "#7c3aed", lightBg: "#f5f3ff" },
-  { href: "/dashboard/compliance", label: "Compliance", icon: "shield", bdProLocked: false, teamOnly: false, tourId: "sidebar-compliance", color: "#059669", lightBg: "#ecfdf5" },
-  { href: "/dashboard/contracts", label: "Contracts", icon: "briefcase", bdProLocked: true, teamOnly: false, tourId: "sidebar-contracts", color: "#0891b2", lightBg: "#ecfeff" },
-  { href: "/dashboard/past-performance", label: "Past Performance", icon: "star", bdProLocked: true, teamOnly: false, tourId: "sidebar-past-performance", color: "#dc2626", lightBg: "#fef2f2" },
-  { href: "/dashboard/cpars", label: "CPARS", icon: "cpars_star", bdProLocked: false, teamOnly: true, tourId: "", color: "#e11d48", lightBg: "#fff1f2" },
-  { href: "/dashboard/network", label: "Network", icon: "handshake", bdProLocked: false, teamOnly: true, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
-  { href: "/dashboard/competitors", label: "Competitors", icon: "search", bdProLocked: false, teamOnly: true, tourId: "", color: "#7c3aed", lightBg: "#f5f3ff" },
-  { href: "/dashboard/analytics", label: "Analytics", icon: "chart", bdProLocked: false, teamOnly: true, tourId: "", color: "#d97706", lightBg: "#fffbeb" },
-  { href: "/dashboard/settings", label: "Settings", icon: "gear", bdProLocked: false, teamOnly: false, tourId: "sidebar-settings", color: "#6b7280", lightBg: "#f1f5f9" },
-];
-
-/* ── "More Products" — now merged into TOP_NAV ──────────────────────────── */
-const MORE_NAV: NavItem[] = [];
-
 /* ── Setup progress ring ───────────────────────────────────────────────── */
 
 function SetupProgressRing({ completed, total }: { completed: number; total: number }) {
@@ -166,12 +130,10 @@ function SidebarLink({
   item,
   isActive,
   isLocked,
-  indented,
 }: {
   item: NavItem;
   isActive: boolean;
   isLocked: boolean;
-  indented?: boolean;
 }) {
   return (
     <Link
@@ -215,28 +177,6 @@ export function Sidebar({ plan }: { plan: string }) {
   const locked = trial ? false : isDiscovery(plan);
   const teamTier = trial ? true : isTeam(plan);
 
-  const [moreOpen, setMoreOpen] = useState(false);
-
-  // Hydrate expand state from localStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("ci_sidebar_more");
-      if (stored === "true") setMoreOpen(true);
-    } catch {
-      // SSR / restricted storage
-    }
-  }, []);
-
-  const toggleMore = () => {
-    const next = !moreOpen;
-    setMoreOpen(next);
-    try {
-      localStorage.setItem("ci_sidebar_more", String(next));
-    } catch {
-      // ignore
-    }
-  };
-
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
@@ -256,7 +196,8 @@ export function Sidebar({ plan }: { plan: string }) {
   const setupCompleted = setupChecks.filter(Boolean).length;
   const setupTotal = setupChecks.length;
 
-  const onboardingIncomplete = organization.onboarding_complete === false;
+  // Treat null as incomplete — only consider onboarding done when explicitly true.
+  const onboardingIncomplete = organization.onboarding_complete !== true;
 
   return (
     <aside className="fixed left-0 top-16 bottom-0 w-[240px] ci-sidebar-bg flex flex-col z-40">
@@ -279,7 +220,7 @@ export function Sidebar({ plan }: { plan: string }) {
 
         {/* Regular nav items — grayed out during onboarding */}
         <div className={onboardingIncomplete ? "opacity-40 pointer-events-none" : ""}>
-        {TOP_NAV.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <SidebarLink
             key={item.href}
             item={item}
@@ -287,42 +228,6 @@ export function Sidebar({ plan }: { plan: string }) {
             isLocked={isItemLocked(item)}
           />
         ))}
-
-        {/* "More Products" divider + toggle */}
-        <div className="border-t border-[#f0f1f3] mx-4 my-2" />
-        <button
-          onClick={toggleMore}
-          className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#9ca3af] hover:text-[#4b5563] transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <span
-              className="inline-block transition-transform duration-200"
-              style={{ transform: moreOpen ? "rotate(90deg)" : "rotate(0deg)" }}
-            >
-              &#9656;
-            </span>
-            More Products
-          </span>
-          <span className="text-[10px] bg-[#f1f5f9] text-[#6b7280] px-1.5 py-0.5 rounded-full">
-            {MORE_NAV.length}
-          </span>
-        </button>
-
-        {/* Expandable section */}
-        <div
-          className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
-          style={{ maxHeight: moreOpen ? "500px" : "0px" }}
-        >
-          {MORE_NAV.map((item) => (
-            <SidebarLink
-              key={item.href}
-              item={item}
-              isActive={isActive(item.href)}
-              isLocked={isItemLocked(item)}
-              indented
-            />
-          ))}
-        </div>
         </div> {/* end onboarding gray wrapper */}
       </nav>
 
