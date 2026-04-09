@@ -274,7 +274,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-[#9ca3af] hover:text-[#111827] text-xl"
+            className="absolute top-4 right-4 text-[#4a5a75] hover:text-[#e8edf8] text-xl"
           >
             &times;
           </button>
@@ -342,7 +342,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 1: NAICS */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(1) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(1) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#1e2535]"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {completedSteps.includes(1) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
@@ -359,12 +359,12 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                       value={naicsSearch}
                       onChange={(e) => setNaicsSearch(e.target.value)}
                       placeholder="Type your industry... (e.g. IT consulting, construction, janitorial)"
-                      className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/20 mb-2"
+                      className="w-full px-3 py-2 text-sm border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/20 mb-2"
                     />
 
                     {/* Suggestions */}
                     {naicsSuggestions.length > 0 && (
-                      <div className="border border-[#e5e7eb] rounded-lg mb-2 max-h-48 overflow-y-auto">
+                      <div className="border border-[#1e2535] rounded-lg mb-2 max-h-48 overflow-y-auto">
                         {naicsSuggestions.map((n) => (
                           <button
                             key={n.code}
@@ -407,7 +407,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 2: CERTIFICATIONS */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(2) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(2) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#1e2535]"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {completedSteps.includes(2) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
@@ -435,7 +435,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                             className={`p-3 rounded-lg border-2 text-left transition-all ${
                               selected
                                 ? "border-[#2563eb] bg-[#eff4ff]"
-                                : "border-[#e5e7eb] hover:border-[#cbd5e1]"
+                                : "border-[#1e2535] hover:border-[#cbd5e1]"
                             }`}
                           >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold mb-1.5 ${selected ? "bg-[#2563eb] text-white" : "bg-[#f1f5f9] text-[#64748b]"}`}>
@@ -462,7 +462,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 3: UEI / SAM.gov */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(3) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(3) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#1e2535]"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {completedSteps.includes(3) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
@@ -483,7 +483,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                         value={uei}
                         onChange={(e) => setUei(e.target.value.toUpperCase())}
                         placeholder="Enter your UEI (e.g. ZQGGQQK69CP7)"
-                        className="flex-1 px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] font-mono"
+                        className="flex-1 px-3 py-2 text-sm border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] font-mono"
                         maxLength={13}
                       />
                       <button
@@ -499,7 +499,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
               </div>
 
               {/* STEP 4: Google Calendar */}
-              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(4) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#e5e7eb]"}`}>
+              <div className={`border rounded-xl p-4 mb-3 transition-all ${completedSteps.includes(4) ? "border-[#22c55e] bg-[#f0fdf4]" : "border-[#1e2535]"}`}>
                 <div className="flex items-center gap-2 mb-2">
                   {completedSteps.includes(4) ? (
                     <span className="w-6 h-6 rounded-full bg-[#22c55e] text-white flex items-center justify-center text-xs font-bold">&#10003;</span>
@@ -516,7 +516,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
                     </p>
                     <button
                       onClick={connectCalendar}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[#e5e7eb] rounded-lg hover:bg-[#f8fafc] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-[#1e2535] rounded-lg hover:bg-[#f8fafc] transition-colors"
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
@@ -547,7 +547,7 @@ export function ProfileBanner() {
 
   return (
     <div className="mb-4 px-4 py-2.5 bg-gradient-to-r from-[#eff4ff] to-[#f5f3ff] border border-[#e0e7ff] rounded-xl flex items-center justify-between">
-      <span className="text-xs text-[#4b5563]">
+      <span className="text-xs text-[#8b9ab5]">
         Showing general results. <span className="font-medium text-[#2563eb]">Unlock personalized matches</span> by completing your profile.
       </span>
       <button

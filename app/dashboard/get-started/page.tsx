@@ -12,11 +12,11 @@ import { ProductTour } from "../tour";
 
 function MockDigestEmail() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Sample digest email
       </div>
-      <div className="border border-[#f0f1f3] bg-[#f8f9fb] p-4 space-y-2">
+      <div className="border border-[#1e2535] bg-[#080a0f] p-4 space-y-2">
         <div className="text-xs text-[#2563eb] font-medium">
           ContractsIntel Daily Digest — 7 New Matches
         </div>
@@ -28,11 +28,11 @@ function MockDigestEmail() {
         ].map((item, i) => (
           <div key={i} className="flex items-center gap-3 py-1">
             <span className="text-xs font-mono text-[#22c55e] w-8">{item.score}</span>
-            <span className="text-xs text-[#4b5563] flex-1 truncate">{item.title}</span>
-            <span className="text-xs font-mono text-[#111827]">{item.val}</span>
+            <span className="text-xs text-[#8b9ab5] flex-1 truncate">{item.title}</span>
+            <span className="text-xs font-mono text-[#e8edf8]">{item.val}</span>
           </div>
         ))}
-        <div className="text-[10px] text-[#9ca3af] pt-1">+ 4 more matches</div>
+        <div className="text-[10px] text-[#4a5a75] pt-1">+ 4 more matches</div>
       </div>
     </div>
   );
@@ -40,22 +40,22 @@ function MockDigestEmail() {
 
 function MockOpportunityCard() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Opportunity card with recommendation
       </div>
-      <div className="border border-[#f0f1f3] bg-[#f8f9fb] p-4">
+      <div className="border border-[#1e2535] bg-[#080a0f] p-4">
         <div className="flex items-start gap-3">
           <span className="text-2xl font-bold font-mono text-[#22c55e]">94</span>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm text-[#111827]">IT Support Services — Fort Belvoir, VA</span>
+              <span className="text-sm text-[#e8edf8]">IT Support Services — Fort Belvoir, VA</span>
               <span className="px-2 py-0.5 text-[10px] font-mono bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20 uppercase">
                 bid
               </span>
             </div>
-            <div className="text-xs text-[#4b5563] mb-2">Department of Defense | DEMO-2026-0001</div>
-            <p className="text-xs text-[#9ca3af]">
+            <div className="text-xs text-[#8b9ab5] mb-2">Department of Defense | DEMO-2026-0001</div>
+            <p className="text-xs text-[#4a5a75]">
               Your SDVOSB certification is a direct match for this set-aside, and your NAICS 541512 experience aligns perfectly.
             </p>
           </div>
@@ -67,14 +67,14 @@ function MockOpportunityCard() {
 
 function MockActionButtons() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Action buttons highlighted
       </div>
-      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="flex items-center gap-2 bg-[#080a0f] border border-[#1e2535] p-4">
         <div className="px-3 py-1.5 text-xs border border-[#2563eb] text-[#2563eb] bg-[#2563eb]/5">Track</div>
         <div className="px-3 py-1.5 text-xs bg-[#2563eb] text-white">Bid</div>
-        <div className="px-3 py-1.5 text-xs text-[#9ca3af]">Skip</div>
+        <div className="px-3 py-1.5 text-xs text-[#4a5a75]">Skip</div>
         <div className="px-3 py-1.5 text-xs text-[#3b82f6]">SAM.gov</div>
       </div>
     </div>
@@ -83,21 +83,21 @@ function MockActionButtons() {
 
 function MockFilterBar() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Filter bar
       </div>
-      <div className="flex items-center gap-2 bg-[#f8f9fb] border border-[#f0f1f3] p-3">
-        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
+      <div className="flex items-center gap-2 bg-[#080a0f] border border-[#1e2535] p-3">
+        <div className="px-2 py-1 text-[10px] border border-[#1e2535] text-[#8b9ab5] bg-white">
           All Set-Asides &#x25BC;
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#1e2535] text-[#8b9ab5] bg-white">
           Filter agency...
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#1e2535] text-[#8b9ab5] bg-white">
           Min Score: Any &#x25BC;
         </div>
-        <div className="px-2 py-1 text-[10px] border border-[#f0f1f3] text-[#4b5563] bg-white">
+        <div className="px-2 py-1 text-[10px] border border-[#1e2535] text-[#8b9ab5] bg-white">
           Sort: Score &#x25BC;
         </div>
       </div>
@@ -107,8 +107,8 @@ function MockFilterBar() {
 
 function MockPipeline() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Pipeline page with cards in stages
       </div>
       <div className="flex gap-2">
@@ -118,12 +118,12 @@ function MockPipeline() {
           { label: "Submitted", count: 0, items: [] },
           { label: "Won", count: 0, items: [] },
         ].map((col) => (
-          <div key={col.label} className="flex-1 bg-[#f8f9fb] border border-[#f0f1f3] p-2">
-            <div className="text-[9px] font-mono text-[#9ca3af] uppercase mb-2">
+          <div key={col.label} className="flex-1 bg-[#080a0f] border border-[#1e2535] p-2">
+            <div className="text-[9px] font-mono text-[#4a5a75] uppercase mb-2">
               {col.label} ({col.count})
             </div>
             {col.items.map((item, i) => (
-              <div key={i} className="bg-white border border-[#f0f1f3] p-1.5 mb-1 text-[9px] text-[#4b5563] truncate">
+              <div key={i} className="bg-white border border-[#1e2535] p-1.5 mb-1 text-[9px] text-[#8b9ab5] truncate">
                 {item}
               </div>
             ))}
@@ -136,11 +136,11 @@ function MockPipeline() {
 
 function MockComplianceDashboard() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Compliance dashboard with health score
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
         <div className="flex items-center gap-4 mb-3">
           <span className="text-2xl font-bold font-mono text-[#22c55e]">87</span>
           <div className="flex-1">
@@ -155,7 +155,7 @@ function MockComplianceDashboard() {
           { label: "CMMC Level 2", status: "In Progress", color: "text-[#f59e0b]" },
         ].map((item, i) => (
           <div key={i} className="flex items-center justify-between py-1 text-[10px]">
-            <span className="text-[#4b5563]">{item.label}</span>
+            <span className="text-[#8b9ab5]">{item.label}</span>
             <span className={`font-mono ${item.color}`}>{item.status ?? `${item.due} left`}</span>
           </div>
         ))}
@@ -166,19 +166,19 @@ function MockComplianceDashboard() {
 
 function MockCalendarSync() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Google Calendar with synced deadlines
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 space-y-1.5">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4 space-y-1.5">
         {[
           { date: "Apr 9", title: "Bid Due: Program Support Services", color: "border-l-[#ef4444]" },
           { date: "Apr 13", title: "Bid Due: IT Support Services", color: "border-l-[#f59e0b]" },
           { date: "Apr 15", title: "SAM.gov Registration Renewal", color: "border-l-[#2563eb]" },
         ].map((item, i) => (
           <div key={i} className={`flex items-center gap-3 border-l-2 ${item.color} pl-2 py-1`}>
-            <span className="text-[10px] font-mono text-[#9ca3af] w-10">{item.date}</span>
-            <span className="text-[10px] text-[#4b5563]">{item.title}</span>
+            <span className="text-[10px] font-mono text-[#4a5a75] w-10">{item.date}</span>
+            <span className="text-[10px] text-[#8b9ab5]">{item.title}</span>
           </div>
         ))}
       </div>
@@ -188,15 +188,15 @@ function MockCalendarSync() {
 
 function MockProposalDraft() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Proposal draft with tabs
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
         <div className="flex gap-1 mb-3">
           <div className="px-2 py-1 text-[9px] bg-[#2563eb] text-white">Technical Approach</div>
-          <div className="px-2 py-1 text-[9px] border border-[#f0f1f3] text-[#9ca3af]">Past Performance</div>
-          <div className="px-2 py-1 text-[9px] border border-[#f0f1f3] text-[#9ca3af]">Executive Summary</div>
+          <div className="px-2 py-1 text-[9px] border border-[#1e2535] text-[#4a5a75]">Past Performance</div>
+          <div className="px-2 py-1 text-[9px] border border-[#1e2535] text-[#4a5a75]">Executive Summary</div>
         </div>
         <div className="space-y-1">
           <div className="h-2 bg-[#e5e7eb] w-full" />
@@ -211,16 +211,16 @@ function MockProposalDraft() {
 
 function MockPastPerformance() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Past performance record with monthly logs
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
-        <div className="text-xs text-[#111827] mb-2">VA IT Support Contract</div>
-        <div className="text-[10px] text-[#9ca3af] mb-3">DEMO-VA-2025-001 | $320,000</div>
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
+        <div className="text-xs text-[#e8edf8] mb-2">VA IT Support Contract</div>
+        <div className="text-[10px] text-[#4a5a75] mb-3">DEMO-VA-2025-001 | $320,000</div>
         {["Jan 2026", "Feb 2026", "Mar 2026"].map((month, i) => (
-          <div key={i} className="flex items-center justify-between py-1 border-b border-[#e5e7eb] last:border-0">
-            <span className="text-[10px] text-[#4b5563]">{month}</span>
+          <div key={i} className="flex items-center justify-between py-1 border-b border-[#1e2535] last:border-0">
+            <span className="text-[10px] text-[#8b9ab5]">{month}</span>
             <span className="text-[10px] text-[#22c55e] font-mono">Logged</span>
           </div>
         ))}
@@ -231,11 +231,11 @@ function MockPastPerformance() {
 
 function MockContractDashboard() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Contract delivery dashboard with milestones
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
         {[
           { title: "Kick-off Meeting", status: "Completed", color: "text-[#22c55e]" },
           { title: "Q1 Performance Report", status: "Completed", color: "text-[#22c55e]" },
@@ -243,7 +243,7 @@ function MockContractDashboard() {
           { title: "Mid-Year Review", status: "14 days", color: "text-[#f59e0b]" },
         ].map((item, i) => (
           <div key={i} className="flex items-center justify-between py-1.5 text-[10px]">
-            <span className="text-[#4b5563]">{item.title}</span>
+            <span className="text-[#8b9ab5]">{item.title}</span>
             <span className={`font-mono ${item.color}`}>{item.status}</span>
           </div>
         ))}
@@ -254,14 +254,14 @@ function MockContractDashboard() {
 
 function MockCpars() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: CPARS rating trends
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
         {["Quality", "Schedule", "Cost Control", "Management"].map((cat, i) => (
           <div key={i} className="flex items-center justify-between py-1 text-[10px]">
-            <span className="text-[#4b5563]">{cat}</span>
+            <span className="text-[#8b9ab5]">{cat}</span>
             <span className="font-mono text-[#22c55e]">
               {["Exceptional", "Very Good", "Satisfactory", "Very Good"][i]}
             </span>
@@ -274,22 +274,22 @@ function MockCpars() {
 
 function MockNetwork() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Teaming opportunity matches
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4 space-y-2">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4 space-y-2">
         {[
           { prime: "Lockheed Martin", need: "SDVOSB Subcontractor", naics: "541512" },
           { prime: "Raytheon", need: "8(a) IT Support", naics: "541511" },
         ].map((item, i) => (
           <div key={i} className="flex items-center justify-between text-[10px]">
             <div>
-              <span className="text-[#111827]">{item.prime}</span>
-              <span className="text-[#9ca3af] mx-2">|</span>
-              <span className="text-[#4b5563]">{item.need}</span>
+              <span className="text-[#e8edf8]">{item.prime}</span>
+              <span className="text-[#4a5a75] mx-2">|</span>
+              <span className="text-[#8b9ab5]">{item.need}</span>
             </div>
-            <span className="font-mono text-[#9ca3af]">{item.naics}</span>
+            <span className="font-mono text-[#4a5a75]">{item.naics}</span>
           </div>
         ))}
       </div>
@@ -299,17 +299,17 @@ function MockNetwork() {
 
 function MockCompetitors() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Competitor profile with win/loss history
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
-        <div className="text-xs text-[#111827] mb-2">Apex Systems Inc.</div>
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
+        <div className="text-xs text-[#e8edf8] mb-2">Apex Systems Inc.</div>
         <div className="flex gap-4 text-[10px] mb-2">
           <span className="text-[#22c55e]">2 Wins vs them</span>
           <span className="text-[#ef4444]">1 Loss to them</span>
         </div>
-        <div className="text-[10px] text-[#9ca3af]">
+        <div className="text-[10px] text-[#4a5a75]">
           Primary agencies: DoD, VA | Focus: IT services, cybersecurity
         </div>
       </div>
@@ -319,18 +319,18 @@ function MockCompetitors() {
 
 function MockVehicleAlerts() {
   return (
-    <div className="border border-[#f0f1f3] bg-white p-4 my-4">
-      <div className="text-[10px] font-mono text-[#9ca3af] mb-3 uppercase tracking-wider">
+    <div className="border border-[#1e2535] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#4a5a75] mb-3 uppercase tracking-wider">
         Screenshot: Contract vehicle alert
       </div>
-      <div className="bg-[#f8f9fb] border border-[#f0f1f3] p-4">
+      <div className="bg-[#080a0f] border border-[#1e2535] p-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] px-2 py-0.5 bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/20 font-mono uppercase">
             On-Ramp Open
           </span>
-          <span className="text-xs text-[#111827]">GSA Schedule 70</span>
+          <span className="text-xs text-[#e8edf8]">GSA Schedule 70</span>
         </div>
-        <div className="text-[10px] text-[#4b5563]">
+        <div className="text-[10px] text-[#8b9ab5]">
           Application deadline: 45 days | Your NAICS codes qualify
         </div>
       </div>
@@ -821,7 +821,7 @@ export default function GetStartedPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="ci-page-title">Get Started</h1>
-<p className="text-sm text-[#4b5563] mt-1">
+<p className="text-sm text-[#8b9ab5] mt-1">
             Welcome to ContractsIntel, {(organization.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}. Here is everything
             you need to get up and running.
           </p>
@@ -834,10 +834,10 @@ export default function GetStartedPage() {
         {/* Progress bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[#111827]">{completedCount} of {totalItems} complete</span>
-            <span className="text-sm text-[#6b7280]">{progressPct}%</span>
+            <span className="text-sm font-medium text-[#e8edf8]">{completedCount} of {totalItems} complete</span>
+            <span className="text-sm text-[#8b9ab5]">{progressPct}%</span>
           </div>
-          <div className="h-2 rounded-full bg-[#f3f4f6]">
+          <div className="h-2 rounded-full bg-[#111520]">
             <div className="h-full rounded-full bg-gradient-to-r from-[#2563eb] to-[#7c3aed] transition-all duration-500"
                  style={{ width: `${progressPct}%` }} />
           </div>
@@ -850,8 +850,8 @@ export default function GetStartedPage() {
               key={item.key}
               className={`border rounded-lg flex items-center gap-4 px-5 py-4 ${
                 item.done
-                  ? "border-l-[3px] border-l-[#059669] border-[#e5e7eb] bg-[#f0fdf4]"
-                  : "border-[#e5e7eb] bg-white"
+                  ? "border-l-[3px] border-l-[#059669] border-[#1e2535] bg-[#f0fdf4]"
+                  : "border-[#1e2535] bg-white"
               }`}
             >
               {/* Number */}
@@ -861,8 +861,8 @@ export default function GetStartedPage() {
 
               {/* Title + description */}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-[15px] text-[#111827]">{item.label}</p>
-                <p className="text-sm text-[#4b5563] mt-0.5">{item.detail}</p>
+                <p className="font-semibold text-[15px] text-[#e8edf8]">{item.label}</p>
+                <p className="text-sm text-[#8b9ab5] mt-0.5">{item.detail}</p>
               </div>
 
               {/* Status / action */}
@@ -878,7 +878,7 @@ export default function GetStartedPage() {
                   Go &rarr;
                 </Link>
               ) : (
-                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded border border-[#f0f1f3] text-[#9ca3af]">
+                <span className="shrink-0 px-3 py-1 text-xs font-medium rounded border border-[#1e2535] text-[#4a5a75]">
                   Pending
                 </span>
               )}
@@ -891,22 +891,22 @@ export default function GetStartedPage() {
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={handleRestartTour}
-          className="border border-[#f0f1f3] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+          className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
         >
           Restart Product Tour
         </button>
         <button
           onClick={handleSetHomepage}
-          className="border border-[#f0f1f3] text-[#4b5563] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#111827] transition-colors"
+          className="border border-[#1e2535] text-[#8b9ab5] px-4 py-2 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
         >
           Set Dashboard as Homepage
         </button>
       </div>
 
       {/* Quick Start Guide */}
-      <div className="border border-[#f0f1f3] bg-white p-6 mb-6">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-2">Quick Start Guide</h2>
-        <p className="text-sm text-[#4b5563]">Written guides for every product, grouped by tier. Each explains what it does, why it matters, and how to use it step by step.</p>
+      <div className="border border-[#1e2535] bg-white p-6 mb-6">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-2">Quick Start Guide</h2>
+        <p className="text-sm text-[#8b9ab5]">Written guides for every product, grouped by tier. Each explains what it does, why it matters, and how to use it step by step.</p>
       </div>
 
       {/* Categorized Product Guides */}
@@ -919,55 +919,55 @@ export default function GetStartedPage() {
           const catKey = category.label;
           const isCatOpen = expandedCategories[catKey] ?? category.defaultOpen;
           return (
-            <div key={catKey} className="border border-[#f0f1f3] rounded-lg overflow-hidden">
+            <div key={catKey} className="border border-[#1e2535] rounded-lg overflow-hidden">
               {/* Category header */}
               <button
                 onClick={() => setExpandedCategories((prev) => ({ ...prev, [catKey]: !isCatOpen }))}
                 className="w-full flex items-center justify-between px-5 py-4 bg-[#f1f5f9] hover:bg-[#e8ecf1] transition-colors text-left"
               >
                 <div className="flex items-center gap-3">
-                  <h3 className="text-base font-bold text-[#111827]">{category.label}</h3>
+                  <h3 className="text-base font-bold text-[#e8edf8]">{category.label}</h3>
                   {category.badge && (
                     <span className={`px-2 py-0.5 text-[10px] font-mono uppercase border rounded ${category.badgeColor}`}>{category.badge}</span>
                   )}
-                  <span className="text-xs text-[#9ca3af]">({category.guides.length})</span>
+                  <span className="text-xs text-[#4a5a75]">({category.guides.length})</span>
                 </div>
-                <svg className={`w-4 h-4 text-[#9ca3af] transition-transform duration-200 ${isCatOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
+                <svg className={`w-4 h-4 text-[#4a5a75] transition-transform duration-200 ${isCatOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
               </button>
 
               {/* Category content */}
               <div style={{ maxHeight: isCatOpen ? "5000px" : "0", overflow: "hidden", transition: "max-height 300ms ease" }}>
-                <div className="divide-y divide-[#e5e7eb]">
+                <div className="divide-y divide-[#1e2535]">
                   {category.guides.map((guide) => {
                     const isOpen = expandedGuide === guide.id;
                     return (
                       <div key={guide.id}>
                         <button
                           onClick={() => setExpandedGuide(isOpen ? null : guide.id)}
-                          className="w-full flex items-center justify-between px-5 py-3.5 pl-8 text-left hover:bg-[#f8f9fb] transition-colors"
+                          className="w-full flex items-center justify-between px-5 py-3.5 pl-8 text-left hover:bg-[#080a0f] transition-colors"
                         >
                           <div className="flex items-center gap-3">
                             <span className="text-xs font-mono text-[#3b82f6] w-5">{guide.num}</span>
-                            <h4 className="text-sm font-medium text-[#111827]">{guide.title}</h4>
+                            <h4 className="text-sm font-medium text-[#e8edf8]">{guide.title}</h4>
                           </div>
-                          <svg className={`w-3.5 h-3.5 text-[#9ca3af] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
+                          <svg className={`w-3.5 h-3.5 text-[#4a5a75] transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
                         </button>
                         {isOpen && (
                           <div className="px-5 pl-16 pb-5 pt-1">
                             <div className="space-y-5">
                               <div>
-                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">What it does</h5>
-                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whatItDoes}</p>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-1.5">What it does</h5>
+                                <p className="text-sm text-[#8b9ab5] leading-relaxed">{guide.whatItDoes}</p>
                               </div>
                               <div>
-                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">Why it matters</h5>
-                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.whyItMatters}</p>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-1.5">Why it matters</h5>
+                                <p className="text-sm text-[#8b9ab5] leading-relaxed">{guide.whyItMatters}</p>
                               </div>
                               <div>
-                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">How to use it</h5>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-1.5">How to use it</h5>
                                 <ol className="space-y-1.5">
                                   {guide.howToUseIt.map((step, i) => (
-                                    <li key={i} className="flex gap-2 text-sm text-[#4b5563] leading-relaxed">
+                                    <li key={i} className="flex gap-2 text-sm text-[#8b9ab5] leading-relaxed">
                                       <span className="text-[#3b82f6] font-mono shrink-0">{i + 1}.</span>
                                       <span>{step}</span>
                                     </li>
@@ -975,8 +975,8 @@ export default function GetStartedPage() {
                                 </ol>
                               </div>
                               <div>
-                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-1.5">Tips</h5>
-                                <p className="text-sm text-[#4b5563] leading-relaxed">{guide.tips}</p>
+                                <h5 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-1.5">Tips</h5>
+                                <p className="text-sm text-[#8b9ab5] leading-relaxed">{guide.tips}</p>
                               </div>
                             </div>
                           </div>

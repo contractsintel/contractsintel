@@ -174,7 +174,7 @@ export default function SearchPage() {
       {/* Search bar */}
       <div className="flex items-center gap-3 mb-6">
         <div className="relative flex-1">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#4a5a75]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -182,13 +182,13 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by title, agency, or solicitation number..."
-            className="w-full h-12 pl-11 pr-4 text-[15px] border-2 border-[#e5e7eb] rounded-xl bg-white focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
+            className="w-full h-12 pl-11 pr-4 text-[15px] border-2 border-[#1e2535] rounded-xl bg-white focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10"
           />
         </div>
         <select
           value={source}
           onChange={(e) => setSource(e.target.value)}
-          className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
+          className="h-12 bg-white border border-[#1e2535] text-[#8b9ab5] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="">All Sources</option>
           {availableSources.map((s) => (
@@ -198,7 +198,7 @@ export default function SearchPage() {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortOption)}
-          className="h-12 bg-white border border-[#e5e7eb] text-[#4b5563] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
+          className="h-12 bg-white border border-[#1e2535] text-[#8b9ab5] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
         >
           <option value="newest">Newest</option>
           <option value="deadline">Deadline soonest</option>
@@ -208,28 +208,28 @@ export default function SearchPage() {
 
       {/* Results */}
       {loading && results.length === 0 ? (
-        <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
           {[1,2,3,4,5].map(i => (
-            <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#f3f4f6]">
-              <div className="w-12 h-12 rounded-full bg-[#f3f4f6] animate-pulse" />
+            <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#1e2535]">
+              <div className="w-12 h-12 rounded-full bg-[#111520] animate-pulse" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/5 bg-[#f3f4f6] rounded animate-pulse" />
-                <div className="h-3 w-2/5 bg-[#f3f4f6] rounded animate-pulse" />
+                <div className="h-4 w-3/5 bg-[#111520] rounded animate-pulse" />
+                <div className="h-3 w-2/5 bg-[#111520] rounded animate-pulse" />
               </div>
-              <div className="h-4 w-16 bg-[#f3f4f6] rounded animate-pulse" />
+              <div className="h-4 w-16 bg-[#111520] rounded animate-pulse" />
             </div>
           ))}
         </div>
       ) : results.length === 0 ? (
         <div className="max-w-[400px] mx-auto text-center p-8">
-          <div className="w-10 h-10 mx-auto mb-3 text-[#9ca3af]">
+          <div className="w-10 h-10 mx-auto mb-3 text-[#4a5a75]">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           </div>
-          <h3 className="text-[16px] font-semibold text-[#111827] mb-2">No opportunities found</h3>
-          <p className="text-[14px] text-[#6b7280]">Try a different search term or adjust your filters.</p>
+          <h3 className="text-[16px] font-semibold text-[#e8edf8] mb-2">No opportunities found</h3>
+          <p className="text-[14px] text-[#8b9ab5]">Try a different search term or adjust your filters.</p>
         </div>
       ) : (
-        <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
           <div className="text-[11px] font-mono text-[#94a3b8] px-1 mb-2">
             Showing {results.length} of {total.toLocaleString()} results
           </div>
@@ -239,37 +239,37 @@ export default function SearchPage() {
             return (
               <div
                 key={opp.id}
-                className="border border-[#f0f1f3] bg-white rounded-lg hover:border-[#e2e8f0] hover:shadow-sm transition-all"
+                className="border border-[#1e2535] bg-white rounded-lg hover:border-[#e2e8f0] hover:shadow-sm transition-all"
               >
                 <div
                   className="px-4 py-2.5 flex items-center gap-3 cursor-pointer"
                   onClick={() => setExpandedId(expandedId === opp.id ? null : opp.id)}
                 >
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#f8f9fb] text-[#64748b] border border-[#f0f1f3] shrink-0">
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#080a0f] text-[#64748b] border border-[#1e2535] shrink-0">
                     {sourceLabel(opp.source)}
                   </span>
                   <span className="text-sm text-[#0f172a] font-medium truncate flex-1">{htmlToPlainText(opp.title || "")}</span>
                   <span className="text-[11px] text-[#64748b] truncate max-w-[200px] hidden md:inline">{opp.agency}</span>
-                  {opp.estimated_value ? <span className="text-xs font-mono text-[#111827] shrink-0">{formatCurrency(opp.estimated_value)}</span> : null}
+                  {opp.estimated_value ? <span className="text-xs font-mono text-[#e8edf8] shrink-0">{formatCurrency(opp.estimated_value)}</span> : null}
                   <span className={`text-[11px] font-mono shrink-0 w-14 text-right ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
-                  <svg className={`w-4 h-4 text-[#9ca3af] shrink-0 transition-transform ${expandedId === opp.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className={`w-4 h-4 text-[#4a5a75] shrink-0 transition-transform ${expandedId === opp.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
 
                 {expandedId === opp.id && (
-                  <div className="px-4 pb-3 border-t border-[#f0f1f3] pt-3 space-y-2">
+                  <div className="px-4 pb-3 border-t border-[#1e2535] pt-3 space-y-2">
                     <div className="flex flex-wrap gap-1.5">
-                      {opp.set_aside && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.set_aside}</span>}
-                      {opp.naics_code && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563] font-mono">NAICS {opp.naics_code}</span>}
-                      {opp.place_of_performance && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#f0f1f3] text-[#4b5563]">{opp.place_of_performance}</span>}
+                      {opp.set_aside && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#080a0f] border border-[#1e2535] text-[#8b9ab5]">{opp.set_aside}</span>}
+                      {opp.naics_code && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#080a0f] border border-[#1e2535] text-[#8b9ab5] font-mono">NAICS {opp.naics_code}</span>}
+                      {opp.place_of_performance && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#080a0f] border border-[#1e2535] text-[#8b9ab5]">{opp.place_of_performance}</span>}
                     </div>
-                    {opp.description && <p className="text-xs text-[#4b5563] leading-relaxed line-clamp-4 whitespace-pre-line">{htmlToPlainText(opp.description)}</p>}
+                    {opp.description && <p className="text-xs text-[#8b9ab5] leading-relaxed line-clamp-4 whitespace-pre-line">{htmlToPlainText(opp.description)}</p>}
                     <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                      {opp.agency && <div><span className="text-[#9ca3af]">Agency:</span> <span className="text-[#111827]">{opp.agency}</span></div>}
-                      {opp.posted_date && <div><span className="text-[#9ca3af]">Posted:</span> <span className="text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
-                      {opp.response_deadline && <div><span className="text-[#9ca3af]">Deadline:</span> <span className="text-[#111827]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
-                      {opp.solicitation_number && <div><span className="text-[#9ca3af]">Solicitation:</span> <span className="text-[#111827] font-mono">{opp.solicitation_number}</span></div>}
+                      {opp.agency && <div><span className="text-[#4a5a75]">Agency:</span> <span className="text-[#e8edf8]">{opp.agency}</span></div>}
+                      {opp.posted_date && <div><span className="text-[#4a5a75]">Posted:</span> <span className="text-[#e8edf8]">{new Date(opp.posted_date).toLocaleDateString()}</span></div>}
+                      {opp.response_deadline && <div><span className="text-[#4a5a75]">Deadline:</span> <span className="text-[#e8edf8]">{new Date(opp.response_deadline).toLocaleDateString()}</span></div>}
+                      {opp.solicitation_number && <div><span className="text-[#4a5a75]">Solicitation:</span> <span className="text-[#e8edf8] font-mono">{opp.solicitation_number}</span></div>}
                     </div>
                     {(opp.sam_url || opp.source_url) && (
                       <a href={opp.sam_url || opp.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#2563eb] bg-[#eff4ff] hover:bg-[#dbeafe] rounded-lg transition-colors">
@@ -286,7 +286,7 @@ export default function SearchPage() {
             <div className="flex justify-center pt-4">
               <button
                 onClick={loadMore}
-                className="px-6 py-2.5 text-sm font-medium border border-[#f0f1f3] text-[#4b5563] bg-white hover:border-[#e2e8f0] hover:text-[#111827] hover:shadow-sm rounded-xl transition-all"
+                className="px-6 py-2.5 text-sm font-medium border border-[#1e2535] text-[#8b9ab5] bg-white hover:border-[#e2e8f0] hover:text-[#e8edf8] hover:shadow-sm rounded-xl transition-all"
               >
                 Load more ({(total - results.length).toLocaleString()} remaining)
               </button>

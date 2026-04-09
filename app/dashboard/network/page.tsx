@@ -129,12 +129,12 @@ export default function NetworkPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
-            <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="border border-[#1e2535] bg-white p-8 max-w-md text-center">
+            <svg className="w-12 h-12 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
             <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Subcontracting Network — Team Feature</h2>
-            <p className="text-sm text-[#4b5563] mb-4">
+            <p className="text-sm text-[#8b9ab5] mb-4">
               Find teaming partners and post subcontracting opportunities.
             </p>
             <Link href="/dashboard/settings" className="inline-block bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors">
@@ -146,11 +146,11 @@ export default function NetworkPage() {
           <h1 className="ci-page-title">Subcontracting Network</h1>
           <div className="space-y-3 mt-6">
             {[1,2,3].map(i => (
-              <div key={i} className="border border-[#f0f1f3] bg-white p-4 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#f3f4f6]" />
+              <div key={i} className="border border-[#1e2535] bg-white p-4 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-[#111520]" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 w-2/5 bg-[#f3f4f6] rounded" />
-                  <div className="h-2 w-1/3 bg-[#f3f4f6] rounded" />
+                  <div className="h-3 w-2/5 bg-[#111520] rounded" />
+                  <div className="h-2 w-1/3 bg-[#111520] rounded" />
                 </div>
               </div>
             ))}
@@ -172,13 +172,13 @@ export default function NetworkPage() {
       <InlineGuide page="network" />
 
       {/* Tabs */}
-      <div className="flex gap-0 border-b border-[#e5e7eb] mb-6">
+      <div className="flex gap-0 border-b border-[#1e2535] mb-6">
         <button
           onClick={() => setTab("opportunities")}
           className={`px-5 py-2.5 text-sm transition-colors border-b-2 ${
             tab === "opportunities"
-              ? "text-[#111827] border-[#2563eb]"
-              : "text-[#4b5563] border-transparent hover:text-[#111827]"
+              ? "text-[#e8edf8] border-[#2563eb]"
+              : "text-[#8b9ab5] border-transparent hover:text-[#e8edf8]"
           }`}
         >
           Opportunities for You
@@ -187,8 +187,8 @@ export default function NetworkPage() {
           onClick={() => setTab("posted")}
           className={`px-5 py-2.5 text-sm transition-colors border-b-2 ${
             tab === "posted"
-              ? "text-[#111827] border-[#2563eb]"
-              : "text-[#4b5563] border-transparent hover:text-[#111827]"
+              ? "text-[#e8edf8] border-[#2563eb]"
+              : "text-[#8b9ab5] border-transparent hover:text-[#e8edf8]"
           }`}
         >
           Your Posted Opportunities
@@ -196,13 +196,13 @@ export default function NetworkPage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-[#9ca3af] py-12">Loading...</div>
+        <div className="text-center text-[#4a5a75] py-12">Loading...</div>
       ) : tab === "opportunities" ? (
         <div>
           {opportunities.length === 0 ? (
-            <div className="border border-[#f0f1f3] bg-white p-12 text-center">
-              <div className="text-[#9ca3af] text-lg mb-2">No matching opportunities</div>
-              <p className="text-sm text-[#4b5563]">New teaming opportunities matching your profile will appear here.</p>
+            <div className="border border-[#1e2535] bg-white p-12 text-center">
+              <div className="text-[#4a5a75] text-lg mb-2">No matching opportunities</div>
+              <p className="text-sm text-[#8b9ab5]">New teaming opportunities matching your profile will appear here.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -212,34 +212,34 @@ export default function NetworkPage() {
                   (m: any) => m.interest_status === "interested"
                 );
                 return (
-                  <div key={opp.id} className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div key={opp.id} className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="text-sm text-[#111827] font-medium">{opp.title}</h3>
+                          <h3 className="text-sm text-[#e8edf8] font-medium">{opp.title}</h3>
                           <span className={`px-2 py-0.5 text-[10px] font-mono ${
                             score >= 70 ? "bg-[#22c55e]/10 text-[#22c55e]" :
                             score >= 40 ? "bg-[#f59e0b]/10 text-[#f59e0b]" :
-                            "bg-[#9ca3af]/10 text-[#9ca3af]"
+                            "bg-[#9ca3af]/10 text-[#4a5a75]"
                           }`}>
                             {score}% match
                           </span>
                         </div>
-                        {opp.agency && <p className="text-xs text-[#4b5563]">{opp.agency}</p>}
-                        {opp.description && <p className="text-sm text-[#4b5563] mt-2">{opp.description}</p>}
+                        {opp.agency && <p className="text-xs text-[#8b9ab5]">{opp.agency}</p>}
+                        {opp.description && <p className="text-sm text-[#8b9ab5] mt-2">{opp.description}</p>}
                         <div className="flex items-center gap-4 mt-2">
                           {opp.estimated_value && (
-                            <span className="text-xs font-mono text-[#111827]">
+                            <span className="text-xs font-mono text-[#e8edf8]">
                               ${Number(opp.estimated_value).toLocaleString()}
                             </span>
                           )}
                           {opp.naics_codes?.length > 0 && (
-                            <span className="text-xs font-mono text-[#9ca3af]">
+                            <span className="text-xs font-mono text-[#4a5a75]">
                               NAICS: {opp.naics_codes.join(", ")}
                             </span>
                           )}
                           {opp.deadline && (
-                            <span className="text-xs font-mono text-[#9ca3af]">
+                            <span className="text-xs font-mono text-[#4a5a75]">
                               Due: {new Date(opp.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
@@ -268,84 +268,84 @@ export default function NetworkPage() {
       ) : (
         <div>
           {/* Post Form */}
-          <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
-            <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-4">Post Teaming Opportunity</h2>
+          <div className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
+            <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] mb-4">Post Teaming Opportunity</h2>
             <form onSubmit={handlePost} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Title</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Title</label>
                   <input
                     type="text"
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                     placeholder="Opportunity title"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Agency</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Agency</label>
                   <input
                     type="text"
                     value={form.agency}
                     onChange={(e) => setForm((f) => ({ ...f, agency: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Estimated Value</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Estimated Value</label>
                   <input
                     type="number"
                     value={form.estimated_value}
                     onChange={(e) => setForm((f) => ({ ...f, estimated_value: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Geography</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Geography</label>
                   <input
                     type="text"
                     value={form.geography}
                     onChange={(e) => setForm((f) => ({ ...f, geography: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Required Certs (comma-sep)</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Required Certs (comma-sep)</label>
                   <input
                     type="text"
                     value={form.required_certs}
                     onChange={(e) => setForm((f) => ({ ...f, required_certs: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                     placeholder="8(a), HUBZone, SDVOSB..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">NAICS Codes (comma-sep)</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">NAICS Codes (comma-sep)</label>
                   <input
                     type="text"
                     value={form.naics_codes}
                     onChange={(e) => setForm((f) => ({ ...f, naics_codes: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                     placeholder="541512, 541519..."
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Deadline</label>
+                  <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Deadline</label>
                   <input
                     type="date"
                     value={form.deadline}
                     onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                    className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-[#4b5563] mb-1 font-medium uppercase tracking-wide">Description</label>
+                <label className="block text-xs text-[#8b9ab5] mb-1 font-medium uppercase tracking-wide">Description</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
-                  className="w-full bg-[#f8f9fb] border border-[#f0f1f3] text-[#111827] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+                  className="w-full bg-[#080a0f] border border-[#1e2535] text-[#e8edf8] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
                 />
               </div>
               <button
@@ -360,9 +360,9 @@ export default function NetworkPage() {
 
           {/* Posted List */}
           {posted.length === 0 ? (
-            <div className="border border-[#f0f1f3] bg-white p-12 text-center">
-              <div className="text-[#9ca3af] text-lg mb-2">No posted opportunities</div>
-              <p className="text-sm text-[#4b5563]">Post your first teaming opportunity above.</p>
+            <div className="border border-[#1e2535] bg-white p-12 text-center">
+              <div className="text-[#4a5a75] text-lg mb-2">No posted opportunities</div>
+              <p className="text-sm text-[#8b9ab5]">Post your first teaming opportunity above.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -371,26 +371,26 @@ export default function NetworkPage() {
                   (m: any) => m.interest_status === "interested"
                 ).length ?? 0;
                 return (
-                  <div key={opp.id} className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div key={opp.id} className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-sm text-[#111827] font-medium">{opp.title}</h3>
-                        {opp.agency && <p className="text-xs text-[#4b5563] mt-0.5">{opp.agency}</p>}
+                        <h3 className="text-sm text-[#e8edf8] font-medium">{opp.title}</h3>
+                        {opp.agency && <p className="text-xs text-[#8b9ab5] mt-0.5">{opp.agency}</p>}
                         <div className="flex items-center gap-4 mt-2">
                           {opp.estimated_value && (
-                            <span className="text-xs font-mono text-[#111827]">
+                            <span className="text-xs font-mono text-[#e8edf8]">
                               ${Number(opp.estimated_value).toLocaleString()}
                             </span>
                           )}
                           {opp.deadline && (
-                            <span className="text-xs font-mono text-[#9ca3af]">
+                            <span className="text-xs font-mono text-[#4a5a75]">
                               Due: {new Date(opp.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           )}
                         </div>
                       </div>
                       <span className={`px-2 py-0.5 text-[10px] font-mono ${
-                        matchCount > 0 ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#9ca3af]/10 text-[#9ca3af]"
+                        matchCount > 0 ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#9ca3af]/10 text-[#4a5a75]"
                       }`}>
                         {matchCount} interested
                       </span>

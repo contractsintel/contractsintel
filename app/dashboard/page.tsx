@@ -54,7 +54,7 @@ function scoreColor(score: number): string {
   if (score >= 80) return "text-[#22c55e]";
   if (score >= 60) return "text-[#3b82f6]";
   if (score >= 40) return "text-[#f59e0b]";
-  return "text-[#9ca3af]";
+  return "text-[#4a5a75]";
 }
 
 function recBadge(rec: string) {
@@ -62,7 +62,7 @@ function recBadge(rec: string) {
     bid: "bg-[#ecfdf5] text-[#059669]",
     monitor: "bg-[#fffbeb] text-[#d97706]",
     review: "bg-[#fffbeb] text-[#d97706]",
-    skip: "bg-[#f3f4f6] text-[#9ca3af]",
+    skip: "bg-[#111520] text-[#4a5a75]",
     recompete: "bg-[#fef2f2] text-[#dc2626]",
     recompete_alert: "bg-[#fef2f2] text-[#dc2626]",
   };
@@ -99,7 +99,7 @@ function getSourceCategory(source: string | null | undefined, bidRec?: string): 
 function sourceBadge(source: string | null | undefined, bidRec?: string) {
   const cat = getSourceCategory(source, bidRec);
   const badges: Record<string, { bg: string; text: string; label: string }> = {
-    federal: { bg: "bg-[#eff6ff]", text: "text-[#2563eb]", label: "Federal" },
+    federal: { bg: "bg-[rgba(37,99,235,0.12)]", text: "text-[#2563eb]", label: "Federal" },
     state: { bg: "bg-[#ecfdf5]", text: "text-[#059669]", label: source?.startsWith("state_") ? source.replace("state_", "").toUpperCase() : "State" },
     military: { bg: "bg-[#f1f5f9]", text: "text-[#475569]", label: "Military" },
     sbir: { bg: "bg-[#f5f3ff]", text: "text-[#7c3aed]", label: "SBIR" },
@@ -489,11 +489,11 @@ export default function DashboardPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[22px] font-medium text-[#111827] tracking-[-0.01em]"
+            <h1 className="text-[22px] font-medium text-[#e8edf8] tracking-[-0.01em]"
                 style={{fontFamily: "'DM Sans', sans-serif"}}>
               {greeting}, {displayName}
             </h1>
-            <p className="text-[13px] text-[#6b7280] mt-0.5">
+            <p className="text-[13px] text-[#8b9ab5] mt-0.5">
               {today} · {totalMatchCount > 0
                 ? `${totalMatchCount.toLocaleString()} opportunities matched`
                 : "Your first digest arrives tomorrow at 7am"}
@@ -519,7 +519,7 @@ export default function DashboardPage() {
           }}
             disabled={refreshing}
             className={`text-[12px] font-medium px-3 py-1.5 border rounded-lg transition-colors ${
-              refreshing ? "text-[#9ca3af] border-[#e5e7eb] cursor-wait" : "text-[#4f46e5] hover:text-[#4338ca] border-[#e5e7eb] hover:border-[#c7d2fe]"
+              refreshing ? "text-[#4a5a75] border-[#1e2535] cursor-wait" : "text-[#4f46e5] hover:text-[#4338ca] border-[#1e2535] hover:border-[#c7d2fe]"
             }`}>
             {refreshing ? (
               <span className="flex items-center gap-1.5">
@@ -535,17 +535,17 @@ export default function DashboardPage() {
         <div className="mb-6 p-5 bg-gradient-to-r from-[#eef2ff] to-[#f0fdf4] border border-[#c7d2fe] rounded-2xl flex items-center justify-between"
              style={{animation: "fadeInUp 0.4s ease both"}}>
           <div>
-            <h2 className="text-[16px] font-bold text-[#111827]">
+            <h2 className="text-[16px] font-bold text-[#e8edf8]">
               🎯 Your personalized matches are ready
             </h2>
-            <p className="text-[14px] text-[#6b7280] mt-1">
+            <p className="text-[14px] text-[#8b9ab5] mt-1">
               We scored {totalMatchCount.toLocaleString()} contracts based on your {(organization.certifications || []).join(", ")} certification{(organization.certifications || []).length > 1 ? "s" : ""} and NAICS codes. Your best matches are at the top.
             </p>
           </div>
           <button onClick={async () => {
             setShowWelcome(false);
             await supabase.from("organizations").update({ has_seen_dashboard: true }).eq("id", organization.id);
-          }} className="text-[13px] text-[#6b7280] hover:text-[#111827] shrink-0 ml-4">
+          }} className="text-[13px] text-[#8b9ab5] hover:text-[#e8edf8] shrink-0 ml-4">
             Dismiss ✕
           </button>
         </div>
@@ -565,8 +565,8 @@ export default function DashboardPage() {
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
-          <div key={stat.label} className={`p-5 bg-white border border-[#e5e7eb] rounded-xl ${stat.urgent ? "border-l-[3px] border-l-[#dc2626]" : ""}`}>
-            <div className="text-[28px] font-medium tracking-tight text-[#111827]" style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>{stat.value}</div>
+          <div key={stat.label} className={`p-5 bg-white border border-[#1e2535] rounded-xl ${stat.urgent ? "border-l-[3px] border-l-[#dc2626]" : ""}`}>
+            <div className="text-[28px] font-medium tracking-tight text-[#e8edf8]" style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
@@ -576,7 +576,7 @@ export default function DashboardPage() {
 
       {/* Compliance Alert */}
       {complianceAlerts.length > 0 && (
-        <div className="border border-[#f0f1f3] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="flex items-center gap-2 mb-1">
             <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -589,7 +589,7 @@ export default function DashboardPage() {
               {complianceAlerts.length} compliance item{complianceAlerts.length > 1 ? "s" : ""} due within 7 days
             </span>
           </div>
-          <p className="text-xs text-[#4b5563]">
+          <p className="text-xs text-[#8b9ab5]">
             {complianceAlerts.map((a) => a.title).join(", ")}
           </p>
         </div>
@@ -597,7 +597,7 @@ export default function DashboardPage() {
 
       {/* P1.2: High-severity compliance alert strip */}
       {!stripDismissed && highSeverityAlerts.length > 0 && (
-        <div className="border border-[#f0f1f3] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-3">
+        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-3">
           <svg className="w-5 h-5 text-[#f59e0b] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -611,7 +611,7 @@ export default function DashboardPage() {
                 {highSeverityAlerts.length} high-severity compliance item{highSeverityAlerts.length > 1 ? "s" : ""} due within 30 days
               </span>
             </div>
-            <p className="text-xs text-[#4b5563] truncate">
+            <p className="text-xs text-[#8b9ab5] truncate">
               {highSeverityAlerts.map((a) => a.title).join(" · ")}
             </p>
           </div>
@@ -624,7 +624,7 @@ export default function DashboardPage() {
           <button
             onClick={dismissHighSevStrip}
             aria-label="Dismiss"
-            className="text-[#9ca3af] hover:text-[#4b5563] shrink-0"
+            className="text-[#4a5a75] hover:text-[#8b9ab5] shrink-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -646,14 +646,14 @@ export default function DashboardPage() {
           {showFilters && <div className="flex items-center gap-2 mb-6 flex-wrap">
             <select value={filters.source}
               onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
               <option value="">All Types</option>
               <option value="federal">Federal Solicitations</option>
               <option value="recompetes">Recompete Alerts</option>
             </select>
             <select value={filters.urgency}
               onChange={(e) => setFilters((f) => ({...f, urgency: e.target.value as UrgencyFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Deadline</option>
               <option value="week">This Week</option>
               <option value="2weeks">Next 2 Weeks</option>
@@ -661,7 +661,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.valueRange}
               onChange={(e) => setFilters((f) => ({...f, valueRange: e.target.value as ValueFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Value</option>
               <option value="under100k">&lt;$100K</option>
               <option value="100k-500k">$100K–$500K</option>
@@ -670,7 +670,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.sort}
               onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
               <option value="score">Best Match</option>
               <option value="deadline">Deadline</option>
               <option value="value">Value</option>
@@ -679,7 +679,7 @@ export default function DashboardPage() {
             <input type="text" placeholder="Search agency..."
               value={filters.agency}
               onChange={(e) => setFilters((f) => ({...f, agency: e.target.value}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] w-48 focus:outline-none focus:border-[#2563eb]" />
+              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] w-48 focus:outline-none focus:border-[#2563eb]" />
             {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
               <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
                 className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">
@@ -690,33 +690,33 @@ export default function DashboardPage() {
 
           {/* Opportunity Cards */}
           {loading ? (
-            <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+            <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
               {[1,2,3,4,5].map(i => (
-                <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#f3f4f6]">
-                  <div className="w-12 h-12 rounded-full bg-[#f3f4f6] animate-pulse" />
+                <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#1e2535]">
+                  <div className="w-12 h-12 rounded-full bg-[#111520] animate-pulse" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/5 bg-[#f3f4f6] rounded animate-pulse" />
-                    <div className="h-3 w-2/5 bg-[#f3f4f6] rounded animate-pulse" />
+                    <div className="h-4 w-3/5 bg-[#111520] rounded animate-pulse" />
+                    <div className="h-3 w-2/5 bg-[#111520] rounded animate-pulse" />
                   </div>
-                  <div className="h-4 w-16 bg-[#f3f4f6] rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-[#111520] rounded animate-pulse" />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 && totalMatchCount === 0 ? (
             /* ── Empty state welcome card — only when truly no matches ── */
-            <div className="border border-[#f0f1f3] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div className="border border-[#1e2535] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-[#111827] mb-2">
+                <h2 className="text-xl font-semibold text-[#e8edf8] mb-2">
                   Your first digest arrives tomorrow at 7am
                 </h2>
-                <p className="text-sm text-[#4b5563] max-w-lg mx-auto">
+                <p className="text-sm text-[#8b9ab5] max-w-lg mx-auto">
                   Every night we scan official federal procurement databases and match opportunities to your certifications. Your first ranked digest will be here by morning.
                 </p>
               </div>
 
               {/* Sample opportunity mockup */}
-              <div className="border border-dashed border-[#e5e7eb] bg-[#f9fafb] rounded-lg p-5 max-w-xl mx-auto mb-8">
-                <div className="text-[10px] text-[#9ca3af] font-medium uppercase tracking-wide mb-3">
+              <div className="border border-dashed border-[#1e2535] bg-[#080a0f] rounded-lg p-5 max-w-xl mx-auto mb-8">
+                <div className="text-[10px] text-[#4a5a75] font-medium uppercase tracking-wide mb-3">
                   Example
                 </div>
                 <div className="flex items-start gap-4">
@@ -725,14 +725,14 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-[#111827]">
+                      <span className="text-sm font-medium text-[#e8edf8]">
                         DoD IT Support Services — Fort Belvoir, VA
                       </span>
                       <span className="px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20">
                         bid
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#4b5563]">
+                    <div className="flex items-center gap-3 text-xs text-[#8b9ab5]">
                       <span>$847,000</span>
                       <span className="text-[#e5e7eb]">|</span>
                       <span>8 days</span>
@@ -745,22 +745,22 @@ export default function DashboardPage() {
 
               {/* "While you wait" action cards */}
               <div className="mb-2">
-                <h3 className="text-xs font-medium uppercase tracking-wide text-[#9ca3af] mb-4 text-center">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-4 text-center">
                   While you wait
                 </h3>
                 <div className="grid grid-cols-1 max-w-md mx-auto gap-3">
                   {/* Card 1: Complete profile */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
+                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#111827]">Complete your profile</span>
+                      <span className="text-sm font-semibold text-[#e8edf8]">Complete your profile</span>
                     </div>
-                    <p className="text-xs text-[#4b5563]">
+                    <p className="text-xs text-[#8b9ab5]">
                       Add your UEI, certifications, and NAICS codes
                     </p>
                   </Link>
@@ -768,15 +768,15 @@ export default function DashboardPage() {
                   {/* Card 2: Connect Calendar */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
+                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#111827]">Connect Google Calendar</span>
+                      <span className="text-sm font-semibold text-[#e8edf8]">Connect Google Calendar</span>
                     </div>
-                    <p className="text-xs text-[#4b5563]">
+                    <p className="text-xs text-[#8b9ab5]">
                       Get deadline reminders on your phone
                     </p>
                   </Link>
@@ -785,18 +785,18 @@ export default function DashboardPage() {
                   <button
                     onClick={handleSeedDemo}
                     disabled={seedingDemo}
-                    className="border border-[#f0f1f3] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group text-left disabled:opacity-50"
+                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group text-left disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#9ca3af] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path strokeLinecap="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#111827]">
+                      <span className="text-sm font-semibold text-[#e8edf8]">
                         {seedingDemo ? "Loading..." : "Explore with sample data"}
                       </span>
                     </div>
-                    <p className="text-xs text-[#4b5563]">
+                    <p className="text-xs text-[#8b9ab5]">
                       See how the dashboard looks with real data
                     </p>
                   </button>
@@ -804,18 +804,18 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="border border-[#f0f1f3] bg-white rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <p className="text-[#9ca3af]">No matches for current filters. Try adjusting your filters above.</p>
+            <div className="border border-[#1e2535] bg-white rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <p className="text-[#4a5a75]">No matches for current filters. Try adjusting your filters above.</p>
             </div>
           ) : (
             <div>
               {/* Match count */}
               <div className="flex items-center justify-between px-1 mb-2">
-                <span className="text-[12px] text-[#9ca3af]">
+                <span className="text-[12px] text-[#4a5a75]">
                   Showing {filtered.length} of {totalMatchCount.toLocaleString()} matches
                 </span>
               </div>
-              <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+              <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
               {filtered.map((match) => {
                 const opp = match.opportunities;
                 if (!opp) return null;
@@ -823,7 +823,7 @@ export default function DashboardPage() {
                 const deadlineColor =
                   days !== null && days <= 3 ? "text-[#ef4444]"
                     : days !== null && days <= 7 ? "text-[#f59e0b]"
-                    : "text-[#4b5563]";
+                    : "text-[#8b9ab5]";
                 const isExpanded = expandedCard === match.id;
                 const isArchiving = archiveAnim === match.id;
 
@@ -836,8 +836,8 @@ export default function DashboardPage() {
                   >
                     {/* Compact list row */}
                     <div
-                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#f3f4f6] cursor-pointer
-                                  transition-colors hover:bg-[#f9fafb] group
+                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#1e2535] cursor-pointer
+                                  transition-colors hover:bg-[#080a0f] group
                                   ${match.bid_recommendation === "bid" ? "border-l-[3px] border-l-[#059669]" :
                                     match.bid_recommendation === "recompete_alert" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
                       onClick={() => setExpandedCard(isExpanded ? null : match.id)}
@@ -847,27 +847,27 @@ export default function DashboardPage() {
                         match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
                         match.match_score >= 60 ? "border-[#2563eb] text-[#2563eb]" :
                         match.match_score >= 40 ? "border-[#d97706] text-[#d97706]" :
-                        "border-[#9ca3af] text-[#9ca3af]"}`}>
+                        "border-[#9ca3af] text-[#4a5a75]"}`}>
                         {match.match_score}
                       </div>
 
                       {/* Title + Agency */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[14px] font-semibold text-[#111827] truncate">{cleanTitle(opp.title)}</h3>
-                        <p className="text-[12px] text-[#6b7280] mt-0.5 truncate">{opp.agency}</p>
+                        <h3 className="text-[14px] font-semibold text-[#e8edf8] truncate">{cleanTitle(opp.title)}</h3>
+                        <p className="text-[12px] text-[#8b9ab5] mt-0.5 truncate">{opp.agency}</p>
                       </div>
 
                       {/* Value */}
                       <div className="w-[76px] text-right shrink-0 leading-none">
-                        <div className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Value</div>
-                        <div className="text-[13px] font-semibold text-[#111827] font-mono">
+                        <div className="text-[9px] font-semibold text-[#4a5a75] uppercase tracking-wider mb-1">Value</div>
+                        <div className="text-[13px] font-semibold text-[#e8edf8] font-mono">
                           {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : "—"}
                         </div>
                       </div>
 
                       {/* Deadline */}
                       <div className="w-[60px] text-right shrink-0 leading-none">
-                        <div className="text-[9px] font-semibold text-[#9ca3af] uppercase tracking-wider mb-1">Due</div>
+                        <div className="text-[9px] font-semibold text-[#4a5a75] uppercase tracking-wider mb-1">Due</div>
                         <div className={`text-[12px] font-mono ${deadlineColor}`}>
                           {deadlineLabel(opp.response_deadline)}
                         </div>
@@ -882,14 +882,14 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                         <div className="relative group/tip">
                           <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors">
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#8b9ab5] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                           </button>
                           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-100 pointer-events-none">Track</span>
                         </div>
                         <div className="relative group/tip2">
                           <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#6b7280] hover:bg-[#eff6ff] hover:text-[#2563eb] transition-colors">
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#8b9ab5] hover:bg-[rgba(37,99,235,0.12)] hover:text-[#2563eb] transition-colors">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                           </button>
                           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip2:opacity-100 transition-opacity duration-100 pointer-events-none">Start Bid</span>
@@ -897,7 +897,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Chevron */}
-                      <svg className={`w-4 h-4 text-[#9ca3af] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                      <svg className={`w-4 h-4 text-[#4a5a75] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
                       </svg>
@@ -905,21 +905,21 @@ export default function DashboardPage() {
 
                     {/* Expanded section */}
                     {isExpanded && (
-                      <div className="px-5 py-5 pl-[76px] border-b border-[#e5e7eb] bg-[#fafbfc]"
+                      <div className="px-5 py-5 pl-[76px] border-b border-[#1e2535] bg-[#fafbfc]"
                            onClick={(e) => e.stopPropagation()}
                            style={{animation: "fadeInUp 0.15s ease"}}>
 
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            {(opp.set_aside_type || opp.set_aside_description) && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.set_aside_type || opp.set_aside_description}</span>}
-                            {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb] font-mono">NAICS {opp.naics_code}</span>}
-                            {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]">{opp.place_of_performance}</span>}
+                            {(opp.set_aside_type || opp.set_aside_description) && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535]">{opp.set_aside_type || opp.set_aside_description}</span>}
+                            {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535] font-mono">NAICS {opp.naics_code}</span>}
+                            {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535]">{opp.place_of_performance}</span>}
                             {sourceBadge(opp.source, match.bid_recommendation)}
                           </div>
 
                           {/* Description */}
                           {opp.description && (
-                            <p className="text-[13px] text-[#4b5563] leading-relaxed mb-4 line-clamp-3">
+                            <p className="text-[13px] text-[#8b9ab5] leading-relaxed mb-4 line-clamp-3">
                               {decodeHtml(opp.description.substring(0, 500))}
                             </p>
                           )}
@@ -928,19 +928,19 @@ export default function DashboardPage() {
                           <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-4">
                             {opp.solicitation_number && (
                               <div>
-                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Solicitation</div>
-                                <div className="text-[13px] text-[#111827] font-mono">{opp.solicitation_number}</div>
+                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Solicitation</div>
+                                <div className="text-[13px] text-[#e8edf8] font-mono">{opp.solicitation_number}</div>
                               </div>
                             )}
                             {getVal(opp) > 0 && (
                               <div>
-                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Estimated Value</div>
-                                <div className="text-[13px] text-[#111827] font-semibold">{formatCurrency(getVal(opp))}</div>
+                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Estimated Value</div>
+                                <div className="text-[13px] text-[#e8edf8] font-semibold">{formatCurrency(getVal(opp))}</div>
                               </div>
                             )}
                             {opp.response_deadline && (
                               <div>
-                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Response Deadline</div>
+                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Response Deadline</div>
                                 <div className={`text-[13px] font-semibold ${deadlineColor}`}>
                                   {new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})
                                 </div>
@@ -948,24 +948,24 @@ export default function DashboardPage() {
                             )}
                             {opp.place_of_performance && (
                               <div>
-                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Location</div>
-                                <div className="text-[13px] text-[#111827]">{opp.place_of_performance}</div>
+                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Location</div>
+                                <div className="text-[13px] text-[#e8edf8]">{opp.place_of_performance}</div>
                               </div>
                             )}
                             {opp.posted_date && (
                               <div>
-                                <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Posted</div>
-                                <div className="text-[13px] text-[#111827]">{new Date(opp.posted_date).toLocaleDateString()}</div>
+                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Posted</div>
+                                <div className="text-[13px] text-[#e8edf8]">{new Date(opp.posted_date).toLocaleDateString()}</div>
                               </div>
                             )}
                             <div>
-                              <div className="text-[11px] text-[#9ca3af] font-medium mb-0.5">Source</div>
-                              <div className="text-[13px] text-[#111827]">{getSourceLabel(opp.source, opp.agency)}</div>
+                              <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Source</div>
+                              <div className="text-[13px] text-[#e8edf8]">{getSourceLabel(opp.source, opp.agency)}</div>
                             </div>
                           </div>
 
                           {/* AI Recommendation */}
-                          <div className="p-4 bg-[#eff6ff] border border-[#bfdbfe] rounded-lg mb-4">
+                          <div className="p-4 bg-[rgba(37,99,235,0.12)] border border-[#bfdbfe] rounded-lg mb-4">
                             <div className="text-[11px] font-semibold text-[#1d4ed8] uppercase tracking-wide mb-1">AI Recommendation</div>
                             <p className="text-[13px] text-[#1e40af] leading-relaxed">{match.recommendation_reasoning || getRecText(match.bid_recommendation)}</p>
                           </div>
@@ -978,23 +978,23 @@ export default function DashboardPage() {
                                   value={noteText}
                                   onChange={(e) => setNoteText(e.target.value)}
                                   rows={3}
-                                  className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+                                  className="w-full px-3 py-2 text-[13px] border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                                   placeholder="Add your notes about this contract..."
                                   autoFocus
                                 />
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => saveNote(match.id)} className="px-3 py-1 text-xs bg-[#2563eb] text-white rounded-lg hover:bg-[#3b82f6]">Save Note</button>
-                                  <button onClick={() => setEditingNote(null)} className="text-xs text-[#94a3b8] hover:text-[#4b5563]">Cancel</button>
+                                  <button onClick={() => setEditingNote(null)} className="text-xs text-[#94a3b8] hover:text-[#8b9ab5]">Cancel</button>
                                 </div>
                               </div>
                             ) : match.user_notes ? (
                               <div>
-                                <p className="text-xs text-[#4b5563] mb-1">{match.user_notes}</p>
+                                <p className="text-xs text-[#8b9ab5] mb-1">{match.user_notes}</p>
                                 {match.notes_updated_at && <span className="text-[10px] text-[#94a3b8]">Note added {new Date(match.notes_updated_at).toLocaleDateString()}</span>}
                                 <button onClick={() => { setEditingNote(match.id); setNoteText(match.user_notes || ""); }} className="ml-2 text-[10px] text-[#2563eb] hover:text-[#1d4ed8]">Edit</button>
                               </div>
                             ) : (
-                              <button onClick={() => { setEditingNote(match.id); setNoteText(""); }} className="text-xs text-[#94a3b8] hover:text-[#4b5563] italic">Add a note...</button>
+                              <button onClick={() => { setEditingNote(match.id); setNoteText(""); }} className="text-xs text-[#94a3b8] hover:text-[#8b9ab5] italic">Add a note...</button>
                             )}
                           </div>
 
@@ -1034,7 +1034,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="flex gap-2 pt-1">
                                   <a href={`https://www.google.com/search?q=${googleQuery}`} target="_blank" rel="noopener noreferrer"
-                                    className="px-3 py-1.5 text-xs font-medium text-[#2563eb] border border-[#e2e8f0] rounded-lg hover:bg-[#eff6ff] ci-btn">
+                                    className="px-3 py-1.5 text-xs font-medium text-[#2563eb] border border-[#e2e8f0] rounded-lg hover:bg-[rgba(37,99,235,0.12)] ci-btn">
                                     Search Google &rarr;
                                   </a>
                                   <button onClick={() => {
@@ -1060,11 +1060,11 @@ export default function DashboardPage() {
                               {match.user_status === "tracking" ? (
                                 <span className="px-3 py-1.5 text-[12px] text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
                               ) : match.user_status === "bidding" ? (
-                                <span className="px-3 py-1.5 text-[12px] text-[#2563eb] bg-[#eff6ff] rounded-lg font-medium">Bidding</span>
+                                <span className="px-3 py-1.5 text-[12px] text-[#2563eb] bg-[rgba(37,99,235,0.12)] rounded-lg font-medium">Bidding</span>
                               ) : (
                                 <>
                                   <button onClick={() => updateStatus(match.id, "tracking")}
-                                    className="px-4 py-2 text-[13px] font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
+                                    className="px-4 py-2 text-[13px] font-medium border border-[#1e2535] text-[#8b9ab5] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
                                     Track
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "bidding")}
@@ -1072,7 +1072,7 @@ export default function DashboardPage() {
                                     Start Bid
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "skipped")}
-                                    className="px-4 py-2 text-[13px] text-[#9ca3af] hover:text-[#6b7280] transition-colors">
+                                    className="px-4 py-2 text-[13px] text-[#4a5a75] hover:text-[#8b9ab5] transition-colors">
                                     Archive
                                   </button>
                                 </>
@@ -1091,7 +1091,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className="px-6 py-2.5 text-sm font-medium border border-[#f0f1f3] text-[#4b5563] bg-white hover:border-[#e2e8f0] hover:text-[#111827] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
+                    className="px-6 py-2.5 text-sm font-medium border border-[#1e2535] text-[#8b9ab5] bg-white hover:border-[#e2e8f0] hover:text-[#e8edf8] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
                   >
                     {loadingMore ? "Loading..." : "Show 50 more"}
                   </button>
@@ -1116,13 +1116,13 @@ export default function DashboardPage() {
               { label: "Lost", key: "lost" },
             ].map((s) => (
               <div key={s.key} className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-[#4b5563]">{s.label}</span>
-                <span className="text-xs font-mono text-[#111827]">{pipelineCounts[s.key] ?? 0}</span>
+                <span className="text-xs text-[#8b9ab5]">{s.label}</span>
+                <span className="text-xs font-mono text-[#e8edf8]">{pipelineCounts[s.key] ?? 0}</span>
               </div>
             ))}
             <Link
               href="/dashboard/pipeline"
-              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
             >
               View Pipeline →
             </Link>
@@ -1146,13 +1146,13 @@ export default function DashboardPage() {
               <div className="ci-card p-5">
                 <h3 className="ci-section-label mb-3">Compliance Health</h3>
                 <div className="text-3xl font-bold font-mono mb-2" style={{ color }}>{health}%</div>
-                <div className="w-full h-1.5 bg-[#f3f4f6] rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[#111520] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${health}%`, backgroundColor: color }} />
                 </div>
                 {complianceAlerts.length > 0 && (
-                  <p className="text-[11px] text-[#6b7280] mt-2">{complianceAlerts.length} alert{complianceAlerts.length > 1 ? "s" : ""} due this week</p>
+                  <p className="text-[11px] text-[#8b9ab5] mt-2">{complianceAlerts.length} alert{complianceAlerts.length > 1 ? "s" : ""} due this week</p>
                 )}
-                <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors">
+                <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors">
                   View Compliance →
                 </Link>
               </div>
@@ -1163,20 +1163,20 @@ export default function DashboardPage() {
           <div className="ci-card p-5">
             <h3 className="ci-section-label mb-3">Upcoming Deadlines</h3>
             {upcomingComplianceDeadlines.length === 0 ? (
-              <p className="text-xs text-[#9ca3af]">No upcoming compliance deadlines</p>
+              <p className="text-xs text-[#4a5a75]">No upcoming compliance deadlines</p>
             ) : (
               upcomingComplianceDeadlines.map((c) => {
                 const d = daysUntil(c.due_date);
-                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#4b5563]";
+                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#8b9ab5]";
                 return (
                   <div key={c.id} className="flex items-center justify-between py-1.5">
-                    <span className="text-xs text-[#4b5563] truncate mr-2">{c.title}</span>
+                    <span className="text-xs text-[#8b9ab5] truncate mr-2">{c.title}</span>
                     <span className={`text-xs font-mono shrink-0 ${color}`}>{deadlineLabel(c.due_date)}</span>
                   </div>
                 );
               })
             )}
-            <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#111827] transition-colors">
+            <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors">
               View Compliance →
             </Link>
           </div>
@@ -1186,7 +1186,7 @@ export default function DashboardPage() {
             const archived = matches.filter((m) => m.user_status === "skipped");
             if (!archived.length) return null;
             return (
-              <div className="border border-[#f0f1f3] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="border border-[#1e2535] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <button
                   onClick={() => setArchivedOpen(!archivedOpen)}
                   className="w-full flex items-center justify-between"
@@ -1203,7 +1203,7 @@ export default function DashboardPage() {
                     {archived.slice(0, 20).map((m) => (
                       <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-[#f8f9fb] last:border-0 group">
                         <div className="min-w-0 flex-1">
-                          <span className="text-xs text-[#4b5563] truncate block">{decodeHtml(m.opportunities?.title || "")}</span>
+                          <span className="text-xs text-[#8b9ab5] truncate block">{decodeHtml(m.opportunities?.title || "")}</span>
                           <span className="text-[10px] text-[#94a3b8]">{m.opportunities?.agency}</span>
                         </div>
                         <button
@@ -1233,7 +1233,7 @@ export default function DashboardPage() {
           {toast.link && (
             <a href={toast.link} className="text-[#93c5fd] underline ml-1">{toast.linkText || "View"}</a>
           )}
-          <button onClick={() => setToast(null)} className="text-[#6b7280] hover:text-white ml-2">&times;</button>
+          <button onClick={() => setToast(null)} className="text-[#8b9ab5] hover:text-white ml-2">&times;</button>
         </div>
       )}
 

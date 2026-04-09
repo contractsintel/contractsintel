@@ -172,7 +172,7 @@ export default function OpportunityDetailPage() {
               {match?.user_status === "tracking" ? (
                 <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
               ) : match?.user_status === "bidding" ? (
-                <span className="px-3 py-1.5 text-xs text-[#2563eb] bg-[#eff6ff] rounded-lg font-medium">Preparing Bid</span>
+                <span className="px-3 py-1.5 text-xs text-[#2563eb] bg-[rgba(37,99,235,0.12)] rounded-lg font-medium">Preparing Bid</span>
               ) : match ? (
                 <>
                   <button onClick={() => updateStatus("tracking")} className="px-4 py-1.5 text-xs border border-[#e2e8f0] text-[#475569] hover:border-[#059669] hover:text-[#059669] rounded-lg ci-btn">Track</button>
@@ -365,7 +365,7 @@ export default function OpportunityDetailPage() {
               <div className="text-[13px] leading-relaxed">
                 <div className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold mb-3 ${
                   match.match_score >= 80 ? "bg-[#ecfdf5] text-[#059669]" :
-                  match.match_score >= 70 ? "bg-[#eff6ff] text-[#2563eb]" :
+                  match.match_score >= 70 ? "bg-[rgba(37,99,235,0.12)] text-[#2563eb]" :
                   match.match_score >= 60 ? "bg-[#fffbeb] text-[#d97706]" :
                   "bg-[#f1f5f9] text-[#64748b]"
                 }`}>
@@ -378,7 +378,7 @@ export default function OpportunityDetailPage() {
                 )}
                 <div className={`text-xs font-medium px-2 py-1 rounded ${
                   match.bid_recommendation === "bid" ? "bg-[#ecfdf5] text-[#059669]" :
-                  match.bid_recommendation === "monitor" ? "bg-[#eff6ff] text-[#2563eb]" :
+                  match.bid_recommendation === "monitor" ? "bg-[rgba(37,99,235,0.12)] text-[#2563eb]" :
                   match.bid_recommendation === "recompete" ? "bg-[#fefce8] text-[#a16207]" :
                   "bg-[#f1f5f9] text-[#64748b]"
                 }`}>

@@ -101,7 +101,7 @@ export default function AnalyticsPage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const winRateColor = (rate: number, bids: number): string => {
-    if (bids < 3) return "text-[#9ca3af]";
+    if (bids < 3) return "text-[#4a5a75]";
     if (rate > 40) return "text-[#22c55e]";
     if (rate >= 20) return "text-[#f59e0b]";
     return "text-[#ef4444]";
@@ -131,12 +131,12 @@ export default function AnalyticsPage() {
       <div className="relative">
       <InlineGuide page="analytics" />
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#f0f1f3] bg-white p-8 max-w-md text-center">
-            <svg className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="border border-[#1e2535] bg-white p-8 max-w-md text-center">
+            <svg className="w-12 h-12 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-lg font-serif text-[#111827] mb-2">Analytics — Team Feature</h2>
-            <p className="text-sm text-[#4b5563] mb-4">
+            <h2 className="text-lg font-serif text-[#e8edf8] mb-2">Analytics — Team Feature</h2>
+            <p className="text-sm text-[#8b9ab5] mb-4">
               Agency heat maps, win rate analysis, and loss pattern insights.
             </p>
             <Link href="/dashboard/settings" className="inline-block bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors">
@@ -148,10 +148,10 @@ export default function AnalyticsPage() {
           <h1 className="ci-page-title">Analytics</h1>
           <div className="grid grid-cols-3 gap-4 mt-6">
             {[1,2,3].map(i => (
-              <div key={i} className="border border-[#f0f1f3] bg-white p-5">
-                <div className="h-2 w-1/3 bg-[#f3f4f6] rounded mb-3" />
-                <div className="h-8 w-1/2 bg-[#f3f4f6] rounded mb-2" />
-                <div className="h-2 w-2/3 bg-[#f3f4f6] rounded" />
+              <div key={i} className="border border-[#1e2535] bg-white p-5">
+                <div className="h-2 w-1/3 bg-[#111520] rounded mb-3" />
+                <div className="h-8 w-1/2 bg-[#111520] rounded mb-2" />
+                <div className="h-2 w-2/3 bg-[#111520] rounded" />
               </div>
             ))}
           </div>
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(parseInt(e.target.value, 10) as 30 | 90 | 365)}
-            className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-white text-[#4b5563] focus:outline-none focus:border-[#2563eb]"
+            className="h-9 px-3 text-[13px] border border-[#1e2535] bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]"
           >
             <option value={30}>Last 30 days</option>
             <option value={90}>Last 90 days</option>
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
           <button
             onClick={recomputeInsights}
             disabled={recomputing}
-            className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-white text-[#4b5563] hover:border-[#d1d5db] disabled:opacity-50 transition-colors"
+            className="h-9 px-3 text-[13px] border border-[#1e2535] bg-white text-[#8b9ab5] hover:border-[#2a3548] disabled:opacity-50 transition-colors"
           >
             {recomputing ? "Recomputing..." : "Recompute insights"}
           </button>
@@ -188,22 +188,22 @@ export default function AnalyticsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-[#9ca3af] py-12">Loading analytics...</div>
+        <div className="text-center text-[#4a5a75] py-12">Loading analytics...</div>
       ) : (
         <>
           {/* Agency Heat Map Table */}
-          <div className="border border-[#f0f1f3] bg-white mb-6">
-            <div className="p-5 border-b border-[#e5e7eb]">
-              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">Agency Heat Map</h2>
+          <div className="border border-[#1e2535] bg-white mb-6">
+            <div className="p-5 border-b border-[#1e2535]">
+              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75]">Agency Heat Map</h2>
             </div>
             {agencyStats.length === 0 ? (
-              <div className="p-12 text-center text-[#9ca3af] text-sm">
+              <div className="p-12 text-center text-[#4a5a75] text-sm">
                 No agency data yet. Track opportunities to build analytics.
               </div>
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] border-b border-[#e5e7eb]">
+                  <tr className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] border-b border-[#1e2535]">
                     <th className="text-left p-3 pl-5">Agency</th>
                     <th className="text-right p-3">Opps</th>
                     <th className="text-right p-3">Bids</th>
@@ -215,16 +215,16 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody>
                   {agencyStats.map((s) => (
-                    <tr key={s.agency} className={`border-b border-[#e5e7eb] ${winRateBg(s.win_rate, s.bids)}`}>
-                      <td className="p-3 pl-5 text-xs text-[#111827]">{s.agency}</td>
-                      <td className="p-3 text-xs text-[#4b5563] text-right font-mono">{s.opps_seen}</td>
-                      <td className="p-3 text-xs text-[#4b5563] text-right font-mono">{s.bids}</td>
+                    <tr key={s.agency} className={`border-b border-[#1e2535] ${winRateBg(s.win_rate, s.bids)}`}>
+                      <td className="p-3 pl-5 text-xs text-[#e8edf8]">{s.agency}</td>
+                      <td className="p-3 text-xs text-[#8b9ab5] text-right font-mono">{s.opps_seen}</td>
+                      <td className="p-3 text-xs text-[#8b9ab5] text-right font-mono">{s.bids}</td>
                       <td className="p-3 text-xs text-[#22c55e] text-right font-mono">{s.wins}</td>
                       <td className="p-3 text-xs text-[#ef4444] text-right font-mono">{s.losses}</td>
                       <td className={`p-3 text-xs text-right font-mono ${winRateColor(s.win_rate, s.bids)}`}>
                         {s.bids < 3 ? "N/A" : `${s.win_rate.toFixed(0)}%`}
                       </td>
-                      <td className="p-3 pr-5 text-xs text-[#111827] text-right font-mono">
+                      <td className="p-3 pr-5 text-xs text-[#e8edf8] text-right font-mono">
                         ${s.total_value.toLocaleString()}
                       </td>
                     </tr>
@@ -236,39 +236,39 @@ export default function AnalyticsPage() {
 
           {/* Loss Analysis Summary Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Total Losses Analyzed</div>
-              <div className="text-2xl font-mono text-[#111827]">{totalLosses}</div>
+            <div className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] mb-1">Total Losses Analyzed</div>
+              <div className="text-2xl font-mono text-[#e8edf8]">{totalLosses}</div>
             </div>
-            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Most Common Reason</div>
-              <div className="text-sm text-[#111827] mt-1">{mostCommonReason}</div>
+            <div className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] mb-1">Most Common Reason</div>
+              <div className="text-sm text-[#e8edf8] mt-1">{mostCommonReason}</div>
             </div>
-            <div className="border border-[#f0f1f3] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <div className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af] mb-1">Lowest Win Rate Agency</div>
-              <div className="text-sm text-[#111827] mt-1">
+            <div className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] mb-1">Lowest Win Rate Agency</div>
+              <div className="text-sm text-[#e8edf8] mt-1">
                 {lowestWinRate ? `${lowestWinRate.agency} (${lowestWinRate.win_rate.toFixed(0)}%)` : "Need more data"}
               </div>
             </div>
           </div>
 
           {/* Loss Analyses */}
-          <div className="border border-[#f0f1f3] bg-white">
-            <div className="p-5 border-b border-[#e5e7eb]">
-              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#9ca3af]">Loss Analysis Insights</h2>
+          <div className="border border-[#1e2535] bg-white">
+            <div className="p-5 border-b border-[#1e2535]">
+              <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75]">Loss Analysis Insights</h2>
             </div>
             {lossAnalyses.length === 0 ? (
-              <div className="p-12 text-center text-[#9ca3af] text-sm">
+              <div className="p-12 text-center text-[#4a5a75] text-sm">
                 No loss analyses yet. Losses will be analyzed automatically.
               </div>
             ) : (
-              <div className="divide-y divide-[#e5e7eb]">
+              <div className="divide-y divide-[#1e2535]">
                 {lossAnalyses.map((la) => (
                   <div key={la.id} className="p-5">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="text-sm text-[#111827] font-medium">{la.opportunity_title ?? "Unknown"}</h3>
-                        <p className="text-xs text-[#9ca3af] font-mono mt-0.5">{la.agency ?? ""}</p>
+                        <h3 className="text-sm text-[#e8edf8] font-medium">{la.opportunity_title ?? "Unknown"}</h3>
+                        <p className="text-xs text-[#4a5a75] font-mono mt-0.5">{la.agency ?? ""}</p>
                       </div>
                       {la.primary_reason && (
                         <span className="px-2 py-0.5 text-[10px] font-mono bg-[#ef4444]/10 text-[#ef4444]">
@@ -277,7 +277,7 @@ export default function AnalyticsPage() {
                       )}
                     </div>
                     {la.ai_insights && (
-                      <p className="text-sm text-[#4b5563]">{la.ai_insights}</p>
+                      <p className="text-sm text-[#8b9ab5]">{la.ai_insights}</p>
                     )}
                   </div>
                 ))}

@@ -64,14 +64,14 @@ export function InlineGuide({ page }: { page: string }) {
 
   return (
     <div
-      className="mb-5 border border-[#f0f1f3] bg-[#f8f9fb]"
+      className="mb-5 border border-[#1e2535] bg-[#080a0f]"
       style={{ borderRadius: "12px", overflow: "hidden" }}
     >
       <button
         onClick={handleToggle}
-        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-[#f0f1f3] transition-colors"
+        className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-[#111520] transition-colors"
       >
-        <span className="text-sm font-medium text-[#4b5563] flex items-center gap-2">
+        <span className="text-sm font-medium text-[#8b9ab5] flex items-center gap-2">
           <svg
             width="14"
             height="14"
@@ -98,7 +98,7 @@ export function InlineGuide({ page }: { page: string }) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`text-[#9ca3af] transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`text-[#4a5a75] transition-transform ${expanded ? "rotate-180" : ""}`}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -106,10 +106,10 @@ export function InlineGuide({ page }: { page: string }) {
 
       {expanded && (
         <div className="px-6 pb-4">
-          <p className="text-sm text-[#4b5563] leading-relaxed">{text}</p>
+          <p className="text-sm text-[#8b9ab5] leading-relaxed">{text}</p>
           <button
             onClick={handleDismiss}
-            className="mt-3 text-xs text-[#9ca3af] hover:text-[#4b5563] transition-colors"
+            className="mt-3 text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors"
           >
             Don&apos;t show this again
           </button>
