@@ -10,7 +10,22 @@ import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
 import { TEAMING_WEIGHTS } from "@/app/lib/teaming-weights";
 
-type Tab = "opportunities" | "posted";
+type Tab = "opportunities" | "posted" | "sub_awards";
+
+type SubAward = {
+  id: string;
+  prime_award_id: string | null;
+  prime_contractor: string | null;
+  sub_vendor: string;
+  sub_uei: string | null;
+  agency: string | null;
+  naics_code: string | null;
+  description: string | null;
+  value: number | null;
+  awarded_at: string | null;
+  source: string | null;
+  source_url: string | null;
+};
 
 export default function NetworkPage() {
   const { organization } = useDashboard();
@@ -20,6 +35,9 @@ export default function NetworkPage() {
   const [tab, setTab] = useState<Tab>("opportunities");
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [posted, setPosted] = useState<any[]>([]);
+  const [subAwards, setSubAwards] = useState<SubAward[]>([]);
+  const [subAwardsLoading, setSubAwardsLoading] = useState(false);
+  const [subAwardsError, setSubAwardsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expressingInterest, setExpressingInterest] = useState<string | null>(null);
@@ -57,6 +75,30 @@ export default function NetworkPage() {
   }, [organization.id, teamTier, supabase]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (tab !== "sub_awards") return;
+    let cancelled = false;
+    setSubAwardsLoading(true);
+    setSubAwardsError(null);
+    (async () => {
+      try {
+        const res = await fetch("/api/sub-awards?limit=50");
+        const j = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setSubAwardsError(j.error ?? "Failed to load sub-awards");
+        } else {
+          setSubAwards(j.sub_awards ?? []);
+        }
+      } catch (e: any) {
+        if (!cancelled) setSubAwardsError(e?.message ?? "Failed to load sub-awards");
+      } finally {
+        if (!cancelled) setSubAwardsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tab]);
 
   const expressInterest = async (opportunityId: string) => {
     setExpressingInterest(opportunityId);
@@ -193,9 +235,96 @@ export default function NetworkPage() {
         >
           Your Posted Opportunities
         </button>
+        <button
+          onClick={() => setTab("sub_awards")}
+          className={`px-5 py-2.5 text-sm transition-colors border-b-2 ${
+            tab === "sub_awards"
+              ? "text-[#0f172a] border-[#2563eb]"
+              : "text-[#64748b] border-transparent hover:text-[#0f172a]"
+          }`}
+        >
+          Public Sub-Awards
+        </button>
       </div>
 
-      {loading ? (
+      {tab === "sub_awards" ? (
+        <div>
+          <p className="text-xs text-[#64748b] mb-4">
+            Public subcontract awards posted under federal prime contracts. Sourced from USAspending /
+            FPDS sub-award feeds.
+          </p>
+          {subAwardsLoading ? (
+            <div className="text-center text-[#94a3b8] py-12 text-sm">Loading sub-awards...</div>
+          ) : subAwardsError ? (
+            <div className="text-center text-[#dc2626] py-12 text-sm">{subAwardsError}</div>
+          ) : subAwards.length === 0 ? (
+            <div className="border border-[#e5e7eb] bg-white p-12 text-center">
+              <div className="text-[#94a3b8] text-lg mb-2">No public sub-awards on file</div>
+              <p className="text-sm text-[#64748b]">
+                Sub-award rows will appear here once the USAspending feed has been ingested.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {subAwards.map((sa) => (
+                <div
+                  key={sa.id}
+                  className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+                >
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm text-[#0f172a] font-medium break-words">
+                        {sa.sub_vendor}
+                        {sa.prime_contractor ? (
+                          <span className="text-[#64748b] font-normal"> · sub to {sa.prime_contractor}</span>
+                        ) : null}
+                      </h3>
+                      <p className="text-xs text-[#64748b] mt-1">
+                        {sa.agency ?? "Unknown agency"}
+                        {sa.naics_code ? ` · NAICS ${sa.naics_code}` : ""}
+                        {sa.prime_award_id ? ` · PIID ${sa.prime_award_id}` : ""}
+                      </p>
+                      {sa.description && (
+                        <p className="text-xs text-[#64748b] mt-2 line-clamp-2">{sa.description}</p>
+                      )}
+                    </div>
+                    <span className="px-2 py-0.5 text-[10px] font-mono bg-[#eff6ff] text-[#1d4ed8] rounded">
+                      SUB-AWARD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-3 text-xs flex-wrap gap-2">
+                    <div className="flex items-center gap-4">
+                      {sa.value != null && (
+                        <span className="text-xs font-mono text-[#0f172a]">
+                          ${Number(sa.value).toLocaleString()}
+                        </span>
+                      )}
+                      {sa.awarded_at && (
+                        <span className="text-xs font-mono text-[#94a3b8]">
+                          Awarded {new Date(sa.awarded_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {sa.sub_uei && (
+                        <span className="text-xs font-mono text-[#94a3b8]">UEI {sa.sub_uei}</span>
+                      )}
+                    </div>
+                    {sa.source_url && (
+                      <a
+                        href={sa.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#3b82f6] hover:underline"
+                      >
+                        Source →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : loading ? (
         <div className="text-center text-[#94a3b8] py-12">Loading...</div>
       ) : tab === "opportunities" ? (
         <div>
