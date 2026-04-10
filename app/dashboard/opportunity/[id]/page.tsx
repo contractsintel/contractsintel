@@ -42,6 +42,10 @@ export default function OpportunityDetailPage() {
     basis: { agency: string | null; naics_code: string | null; set_aside_type: string | null };
     prior_buys: any[];
   } | null>(null);
+  // G05 — RFP shredder state
+  const [shred, setShred] = useState<any>(null);
+  const [shredLoading, setShredLoading] = useState(false);
+  const [shredError, setShredError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -94,6 +98,45 @@ export default function OpportunityDetailPage() {
       cancelled = true;
     };
   }, [oppId]);
+
+  // G05: Load most recent existing shred for this opportunity, if any
+  useEffect(() => {
+    if (!oppId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/proposals/shred?opportunity_id=${oppId}`);
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!cancelled && j.shreds && j.shreds.length > 0) setShred(j.shreds[0]);
+      } catch {
+        /* swallow */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [oppId]);
+
+  const runShred = async () => {
+    if (!oppId) return;
+    setShredLoading(true);
+    setShredError(null);
+    try {
+      const r = await fetch("/api/proposals/shred", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunity_id: oppId }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error ?? "Shred failed");
+      setShred(j.shred);
+    } catch (e: any) {
+      setShredError(e?.message ?? "Shred failed");
+    } finally {
+      setShredLoading(false);
+    }
+  };
 
   const updateStatus = async (status: string) => {
     if (!match) return;
@@ -282,6 +325,110 @@ export default function OpportunityDetailPage() {
               )}
             </div>
           )}
+
+          {/* G05: RFP Shredder */}
+          <div className="ci-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="ci-section-label">RFP Shred</h2>
+              <button
+                onClick={runShred}
+                disabled={shredLoading}
+                className="px-3 py-1.5 text-xs bg-[#2563eb] text-white rounded disabled:opacity-50"
+              >
+                {shredLoading ? "Shredding..." : shred ? "Re-shred" : "Shred RFP"}
+              </button>
+            </div>
+            {shredError && (
+              <div className="mb-3 px-3 py-2 rounded bg-[#fef2f2] border border-[#fecaca] text-xs text-[#dc2626]">
+                {shredError}
+              </div>
+            )}
+            {!shred && !shredLoading && !shredError && (
+              <p className="text-[12px] text-[#94a3b8] italic">
+                Run an AI shred to extract Section L instructions, Section M evaluation factors,
+                deadlines, and incumbent hints from this solicitation.
+              </p>
+            )}
+            {shred && shred.sections && (
+              <div className="space-y-4 text-[12px] text-[#475569]">
+                {shred.sections.summary && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">Summary</div>
+                    <div className="text-[#0f172a]">{shred.sections.summary}</div>
+                  </div>
+                )}
+                {Array.isArray(shred.sections.section_l) && shred.sections.section_l.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">
+                      Section L (Instructions)
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {shred.sections.section_l.map((s: string, i: number) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(shred.sections.section_m) && shred.sections.section_m.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">
+                      Section M (Evaluation)
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {shred.sections.section_m.map((s: string, i: number) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(shred.sections.evaluation_criteria) &&
+                  shred.sections.evaluation_criteria.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">
+                        Evaluation Criteria
+                      </div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {shred.sections.evaluation_criteria.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {Array.isArray(shred.sections.deadlines) && shred.sections.deadlines.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">
+                      Deadlines
+                    </div>
+                    <ul className="list-none space-y-0.5">
+                      {shred.sections.deadlines.map((d: any, i: number) => (
+                        <li key={i} className="font-mono">
+                          {d.label}{d.label && d.date ? " · " : ""}{d.date}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(shred.sections.incumbent_hints) &&
+                  shred.sections.incumbent_hints.length > 0 && (
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">
+                        Incumbent hints
+                      </div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {shred.sections.incumbent_hints.map((s: string, i: number) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                {typeof shred.confidence === "number" && (
+                  <div className="text-[10px] text-[#94a3b8] font-mono">
+                    confidence {(shred.confidence * 100).toFixed(0)}%
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Full Description */}
           <div className="ci-card p-6">
