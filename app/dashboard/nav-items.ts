@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/get-started", label: "Get Started", icon: "rocket", bdProLocked: false, teamOnly: false, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
   { href: "/dashboard/search", label: "Search Contracts", icon: "search", bdProLocked: false, teamOnly: false, tourId: "", color: "#059669", lightBg: "#ecfdf5" },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: "kanban", bdProLocked: false, teamOnly: false, tourId: "sidebar-pipeline", color: "#d97706", lightBg: "#fffbeb" },
+  { href: "/dashboard/forecasts", label: "Forecasts", icon: "chart", bdProLocked: false, teamOnly: false, tourId: "", color: "#0284c7", lightBg: "#f0f9ff" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "document", bdProLocked: true, teamOnly: false, tourId: "sidebar-proposals", color: "#7c3aed", lightBg: "#f5f3ff" },
   { href: "/dashboard/compliance", label: "Compliance", icon: "shield", bdProLocked: false, teamOnly: false, tourId: "sidebar-compliance", color: "#059669", lightBg: "#ecfdf5" },
   { href: "/dashboard/contracts", label: "Contracts", icon: "briefcase", bdProLocked: true, teamOnly: false, tourId: "sidebar-contracts", color: "#0891b2", lightBg: "#ecfeff" },
