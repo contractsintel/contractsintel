@@ -37,6 +37,11 @@ export default function OpportunityDetailPage() {
   const [editingNote, setEditingNote] = useState(false);
   const [toast, setToast] = useState("");
   const [expandDesc, setExpandDesc] = useState(false);
+  const [incumbent, setIncumbent] = useState<{
+    incumbent: { name: string | null; value: number | null };
+    basis: { agency: string | null; naics_code: string | null; set_aside_type: string | null };
+    prior_buys: any[];
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -70,6 +75,25 @@ export default function OpportunityDetailPage() {
       setLoading(false);
     })();
   }, [oppId, organization.id, supabase]);
+
+  // G17: Load incumbent + prior buys panel data
+  useEffect(() => {
+    if (!oppId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/opportunities/${oppId}/incumbent`);
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!cancelled) setIncumbent(j);
+      } catch {
+        /* swallow */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [oppId]);
 
   const updateStatus = async (status: string) => {
     if (!match) return;
@@ -212,6 +236,52 @@ export default function OpportunityDetailPage() {
               {opp.incumbent_name && <div><span className="text-[#94a3b8]">Incumbent</span><div className="text-[#0f172a] mt-0.5">{opp.incumbent_name}</div></div>}
             </div>
           </div>
+
+          {/* G17: Incumbent + prior buys panel */}
+          {incumbent && (incumbent.incumbent.name || (incumbent.prior_buys && incumbent.prior_buys.length > 0)) && (
+            <div className="ci-card p-6">
+              <h2 className="ci-section-label mb-4">Incumbent &amp; Prior Buys</h2>
+              {incumbent.incumbent.name ? (
+                <div className="mb-4 p-3 rounded border border-[#e5e7eb] bg-[#f8f9fb]">
+                  <div className="text-[11px] uppercase tracking-wide text-[#94a3b8] mb-1">Likely incumbent</div>
+                  <div className="text-[14px] text-[#0f172a] font-medium">{incumbent.incumbent.name}</div>
+                  {incumbent.incumbent.value && incumbent.incumbent.value > 0 && (
+                    <div className="text-[12px] text-[#475569] font-mono mt-0.5">
+                      {formatCurrency(incumbent.incumbent.value)} prior award value
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-4 text-[12px] text-[#94a3b8] italic">
+                  No declared incumbent on this notice. Showing similar prior buys from the same agency &amp; NAICS.
+                </div>
+              )}
+              {incumbent.prior_buys && incumbent.prior_buys.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[11px] uppercase tracking-wide text-[#94a3b8]">
+                    Similar prior buys ({incumbent.basis.agency || "agency"} · NAICS {incumbent.basis.naics_code || "—"})
+                  </div>
+                  {incumbent.prior_buys.map((b: any) => {
+                    const v = b.estimated_value ?? b.value_estimate ?? 0;
+                    return (
+                      <Link
+                        key={b.id}
+                        href={`/dashboard/opportunity/${b.id}`}
+                        className="block p-3 rounded border border-[#e5e7eb] bg-white hover:bg-[#f8f9fb]"
+                      >
+                        <div className="text-[13px] text-[#0f172a] line-clamp-1">{cleanTitle(b.title)}</div>
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-[#64748b]">
+                          {b.posted_date && <span>{new Date(b.posted_date).toLocaleDateString()}</span>}
+                          {v > 0 && <span className="font-mono">{formatCurrency(v)}</span>}
+                          {b.incumbent_name && <span>· {b.incumbent_name}</span>}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Full Description */}
           <div className="ci-card p-6">
