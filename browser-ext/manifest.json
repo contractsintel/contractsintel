@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "ContractsIntel — Save to Pipeline",
+  "version": "0.1.0",
+  "description": "Save SAM.gov solicitations to your ContractsIntel pipeline with one click.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ContractsIntel"
+  },
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://sam.gov/*",
+    "https://www.sam.gov/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sam.gov/opp/*",
+        "https://www.sam.gov/opp/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
