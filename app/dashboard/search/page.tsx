@@ -42,6 +42,8 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [source, setSource] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("newest");
+  // G19 — Full-text search inside solicitation body text
+  const [ftsMode, setFtsMode] = useState(false);
   const [offset, setOffset] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
@@ -173,6 +175,28 @@ export default function SearchPage() {
     const effectiveOffset = resetOffset ? 0 : offset;
     if (resetOffset) setOffset(0);
 
+    // G19 — When the "Search inside solicitation PDFs" checkbox is on and the
+    // user has typed a query, route through the FTS endpoint instead of
+    // PostgREST ilike. Skip pagination — the API caps at 100 already.
+    if (ftsMode && query.trim()) {
+      try {
+        const r = await fetch(`/api/opportunities/fts?q=${encodeURIComponent(query.trim())}&limit=100`);
+        const j = await r.json();
+        if (r.ok) {
+          setResults(j.opportunities ?? []);
+          setTotal(j.count ?? (j.opportunities?.length ?? 0));
+        } else {
+          setResults([]);
+          setTotal(0);
+        }
+      } catch {
+        setResults([]);
+        setTotal(0);
+      }
+      setLoading(false);
+      return;
+    }
+
     // B3: Previous neq("status", "expired/paused") excluded rows with NULL
     // status because `NULL <> 'x'` is NULL (falsy) in SQL. Most opportunities
     // have no status set, so this returned zero rows. Filter expired/paused
@@ -208,11 +232,11 @@ export default function SearchPage() {
     }
     setTotal(count ?? 0);
     setLoading(false);
-  }, [supabase, query, source, sort, offset]);
+  }, [supabase, query, source, sort, offset, ftsMode]);
 
   useEffect(() => {
     search(true);
-  }, [query, source, sort]);
+  }, [query, source, sort, ftsMode]);
 
   const loadMore = () => {
     const newOffset = offset + PAGE_SIZE;
@@ -376,6 +400,15 @@ export default function SearchPage() {
           <option value="deadline">Deadline soonest</option>
           <option value="value">Highest value</option>
         </select>
+        <label className="inline-flex items-center gap-2 h-12 px-3 text-[12px] text-[#475569] bg-white border border-[#e5e7eb] rounded-xl cursor-pointer hover:border-[#cbd5e1]">
+          <input
+            type="checkbox"
+            checked={ftsMode}
+            onChange={(e) => setFtsMode(e.target.checked)}
+            className="w-4 h-4 accent-[#2563eb]"
+          />
+          Search inside solicitation PDFs
+        </label>
       </div>
 
       {/* Results */}
