@@ -338,13 +338,177 @@ function MockVehicleAlerts() {
   );
 }
 
+function MockRfpDocumentChat() {
+  return (
+    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#94a3b8] mb-3 uppercase tracking-wider">
+        Screenshot: RFP document chat with Q&A exchange
+      </div>
+      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+        <div className="flex gap-3">
+          {/* Document sidebar */}
+          <div className="w-1/3 border border-[#e5e7eb] bg-white p-2">
+            <div className="text-[9px] font-mono text-[#94a3b8] uppercase mb-2">Loaded Document</div>
+            <div className="text-[10px] text-[#0f172a] mb-1 truncate">DEMO-2026-0042-RFP.pdf</div>
+            <div className="text-[9px] text-[#94a3b8] mb-2">42 pages | Uploaded Apr 8</div>
+            <div className="space-y-1">
+              <div className="h-1.5 bg-[#e5e7eb] w-full" />
+              <div className="h-1.5 bg-[#e5e7eb] w-[85%]" />
+              <div className="h-1.5 bg-[#e5e7eb] w-[92%]" />
+              <div className="h-1.5 bg-[#e5e7eb] w-[60%]" />
+            </div>
+          </div>
+          {/* Chat panel */}
+          <div className="flex-1 border border-[#7c3aed]/30 bg-[#faf5ff] p-3 space-y-2">
+            <div className="text-[9px] font-mono text-[#7c3aed] uppercase mb-1">AI Document Chat</div>
+            <div className="bg-white border border-[#e5e7eb] p-2 text-[10px] text-[#64748b]">
+              <span className="text-[#7c3aed] font-medium">You:</span> What are the key evaluation criteria?
+            </div>
+            <div className="bg-[#7c3aed]/5 border border-[#7c3aed]/20 p-2 text-[10px] text-[#64748b]">
+              <span className="text-[#7c3aed] font-medium">AI:</span> The RFP lists 3 evaluation factors: (1) Technical Approach — 40%, (2) Past Performance — 35%, (3) Price — 25%. Technical is most important. Section L.4 requires...
+            </div>
+            <div className="bg-white border border-[#e5e7eb] p-2 text-[10px] text-[#64748b]">
+              <span className="text-[#7c3aed] font-medium">You:</span> Are there any small business set-asides?
+            </div>
+            <div className="bg-[#7c3aed]/5 border border-[#7c3aed]/20 p-2 text-[10px] text-[#64748b]">
+              <span className="text-[#7c3aed] font-medium">AI:</span> Yes — this is a 100% SDVOSB set-aside per Section A.6. Your certification qualifies.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MockPinkTeamReview() {
+  return (
+    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#94a3b8] mb-3 uppercase tracking-wider">
+        Screenshot: Pink-team review with scores and win probability
+      </div>
+      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+        <div className="flex items-center gap-4 mb-3">
+          <div className="text-center">
+            <span className="text-2xl font-bold font-mono text-[#f59e0b]">72</span>
+            <div className="text-[9px] text-[#94a3b8] uppercase">Overall</div>
+          </div>
+          <div className="flex-1 h-px bg-[#e5e7eb]" />
+          <div className="text-center">
+            <span className="text-lg font-bold font-mono text-[#f59e0b]">58%</span>
+            <div className="text-[9px] text-[#94a3b8] uppercase">Win Probability</div>
+          </div>
+        </div>
+        {[
+          { section: "Technical Approach", score: 78, color: "text-[#22c55e]", bar: "bg-[#22c55e]" },
+          { section: "Past Performance", score: 82, color: "text-[#22c55e]", bar: "bg-[#22c55e]" },
+          { section: "Executive Summary", score: 65, color: "text-[#f59e0b]", bar: "bg-[#f59e0b]" },
+          { section: "Compliance Matrix", score: 61, color: "text-[#f59e0b]", bar: "bg-[#f59e0b]" },
+        ].map((item, i) => (
+          <div key={i} className="flex items-center gap-3 py-1">
+            <span className="text-[10px] text-[#64748b] w-28 truncate">{item.section}</span>
+            <div className="flex-1 h-1.5 bg-[#e5e7eb]">
+              <div className={`h-full ${item.bar}`} style={{ width: `${item.score}%` }} />
+            </div>
+            <span className={`text-[10px] font-mono w-6 text-right ${item.color}`}>{item.score}</span>
+          </div>
+        ))}
+        <div className="mt-2 text-[9px] text-[#ef4444] border-l-2 border-[#ef4444] pl-2">
+          Weakness: Executive Summary lacks specific metrics. Add quantified outcomes from past contracts.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MockCapabilityStatement() {
+  return (
+    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#94a3b8] mb-3 uppercase tracking-wider">
+        Screenshot: Capability statement PDF preview and download
+      </div>
+      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+        <div className="flex gap-3">
+          {/* PDF preview */}
+          <div className="w-1/2 border border-[#e5e7eb] bg-white p-3">
+            <div className="text-[10px] font-mono text-[#2563eb] mb-2 uppercase">Capability Statement</div>
+            <div className="text-[9px] text-[#0f172a] font-medium mb-1">Your Company Name, LLC</div>
+            <div className="text-[9px] text-[#94a3b8] mb-2">SDVOSB | 8(a) | HUBZone</div>
+            <div className="space-y-1 mb-2">
+              <div className="h-1.5 bg-[#e5e7eb] w-full" />
+              <div className="h-1.5 bg-[#e5e7eb] w-[80%]" />
+            </div>
+            <div className="text-[9px] text-[#94a3b8] uppercase mb-1">Core Competencies</div>
+            <div className="flex gap-1 flex-wrap">
+              {["IT Support", "Cybersecurity", "Cloud Migration"].map((c, i) => (
+                <span key={i} className="text-[8px] px-1.5 py-0.5 bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+          {/* Actions */}
+          <div className="flex-1 flex flex-col gap-2 justify-center">
+            <div className="px-3 py-2 text-[10px] bg-[#2563eb] text-white text-center">
+              Download PDF
+            </div>
+            <div className="px-3 py-2 text-[10px] border border-[#e5e7eb] text-[#64748b] text-center">
+              Customize Sections
+            </div>
+            <div className="px-3 py-2 text-[10px] border border-[#e5e7eb] text-[#64748b] text-center">
+              Share Link
+            </div>
+            <div className="text-[9px] text-[#94a3b8] text-center mt-1">
+              Last generated: Apr 8, 2026
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MockSlackWebhook() {
+  return (
+    <div className="border border-[#e5e7eb] bg-white p-4 my-4">
+      <div className="text-[10px] font-mono text-[#94a3b8] mb-3 uppercase tracking-wider">
+        Screenshot: Slack notification card with opportunity alert
+      </div>
+      <div className="bg-[#f8f9fb] border border-[#e5e7eb] p-4">
+        <div className="border-l-4 border-[#2563eb] bg-white p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-5 h-5 bg-[#4A154B] rounded flex items-center justify-center">
+              <span className="text-white text-[8px] font-bold">S</span>
+            </div>
+            <span className="text-[10px] font-medium text-[#0f172a]">ContractsIntel Bot</span>
+            <span className="text-[9px] text-[#94a3b8]">9:02 AM</span>
+          </div>
+          <div className="text-[10px] text-[#0f172a] mb-1.5">
+            New high-score opportunity matched your profile
+          </div>
+          <div className="border border-[#e5e7eb] bg-[#f8f9fb] p-2 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-[#22c55e] font-bold">94</span>
+              <span className="text-[10px] text-[#0f172a]">IT Support Services — Fort Belvoir, VA</span>
+            </div>
+            <div className="text-[9px] text-[#64748b]">DoD | $847K | Due Apr 13 | SDVOSB Set-Aside</div>
+            <div className="flex gap-2 mt-1">
+              <span className="text-[9px] px-2 py-0.5 bg-[#2563eb] text-white">View in Dashboard</span>
+              <span className="text-[9px] px-2 py-0.5 border border-[#e5e7eb] text-[#64748b]">Track</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Product Guide Sections ──────────────────────────────────────────────
 
 interface GuideSection {
   num: string;
   id: string;
   title: string;
-  maxGuideIndex: number; // Discovery: 5, BD Pro: 11, Team: 16
+  maxGuideIndex: number; // Discovery: 5, BD Pro: 11, Team: 16, New AI: 17
   whatItDoes: string;
   whyItMatters: string;
   howToUseIt: string[];
@@ -634,6 +798,81 @@ const ALL_GUIDES: GuideSection[] = [
     ],
     tips: "GSA MAS (Multiple Award Schedule) is the most common starting point -- it's almost always open for new vendors. Start there if you're not on any vehicle yet.",
   },
+  {
+    num: "17",
+    id: "rfp-document-chat",
+    title: "RFP Document Chat",
+    maxGuideIndex: 17,
+    whatItDoes:
+      "Upload any RFP, SOW, or solicitation document and have a real-time AI conversation about it. Ask questions like \"What are the evaluation criteria?\", \"Is this set aside for small business?\", or \"Summarize Section L requirements.\" The AI reads the full document and answers with page references so you can verify everything.",
+    whyItMatters:
+      "Government RFPs are dense -- often 40-100 pages of legal language, compliance requirements, and evaluation criteria buried across multiple sections. Reading and understanding one takes hours. The document chat lets you extract the critical information in minutes, so you can make a quick go/no-go decision before investing time in a full proposal.",
+    howToUseIt: [
+      "Open any opportunity and click Chat with Document.",
+      "Upload the RFP PDF or paste the solicitation number to pull it from SAM.gov.",
+      "Ask questions in plain English -- the AI answers with section and page references.",
+      "Use suggested questions (evaluation criteria, set-asides, key dates) or ask your own.",
+      "Export the Q&A as a summary document to share with your team.",
+    ],
+    tips: "Start with \"What are the top 3 things I need to know about this RFP?\" to get a quick overview. Then drill into evaluation criteria and compliance requirements. The chat remembers context, so you can ask follow-up questions.",
+  },
+  {
+    num: "18",
+    id: "proposal-pink-team-review",
+    title: "Proposal Pink-Team Review",
+    maxGuideIndex: 17,
+    whatItDoes:
+      "Runs an AI-powered pink-team review on your proposal draft before you submit. Scores your overall proposal (0-100), each section individually, and estimates a win probability based on how well you address the evaluation criteria. Flags weaknesses with specific recommendations on what to fix.",
+    whyItMatters:
+      "A real pink-team review with consultants costs $5,000-$15,000 and takes a week. Most small contractors skip it entirely and submit proposals with avoidable weaknesses. The AI review catches missing requirements, weak sections, and compliance gaps in under 60 seconds -- giving you time to fix issues before the deadline.",
+    howToUseIt: [
+      "Go to the Proposals page and open your draft.",
+      "Click Run Pink-Team Review.",
+      "Wait 30-60 seconds while the AI evaluates your proposal against the RFP requirements.",
+      "Review your overall score and section-by-section breakdown.",
+      "Read the flagged weaknesses and specific fix recommendations.",
+      "Make improvements and re-run the review to see your score increase.",
+    ],
+    tips: "Aim for an overall score above 80 before submitting. Pay special attention to red-flagged items -- those are likely discriminators that evaluators will notice. Run the review at least twice: once early for direction, once final before submission.",
+  },
+  {
+    num: "19",
+    id: "capability-statement-pdf",
+    title: "Capability Statement PDF",
+    maxGuideIndex: 17,
+    whatItDoes:
+      "Generates a professional one-page capability statement PDF from your SAM.gov profile, certifications, NAICS codes, past performance, and core competencies. You can customize sections, add your logo, and download or share a link. The document updates automatically as your profile changes.",
+    whyItMatters:
+      "Every government contractor needs a capability statement -- it's the first thing contracting officers and prime contractors ask for. Most small contractors either don't have one or use an outdated Word document. A polished, current capability statement makes you look professional and ready to work.",
+    howToUseIt: [
+      "Go to the Capability Statement page from the sidebar.",
+      "Review the auto-generated content pulled from your SAM.gov profile.",
+      "Customize your core competencies, differentiators, and past performance highlights.",
+      "Upload your company logo (optional).",
+      "Click Download PDF to get the finished document.",
+      "Use Share Link to send a live link that always shows your latest information.",
+    ],
+    tips: "Keep your capability statement to one page -- contracting officers skim, they don't read. Update it every time you win a new contract or add a certification. Use the Share Link when responding to RFI (Request for Information) notices.",
+  },
+  {
+    num: "20",
+    id: "slack-teams-webhooks",
+    title: "Slack / Teams Webhooks",
+    maxGuideIndex: 17,
+    whatItDoes:
+      "Sends real-time notifications to your Slack or Microsoft Teams channels when ContractsIntel finds a high-scoring opportunity, a compliance deadline is approaching, or a pipeline status changes. Notifications include match scores, key details, and direct links back to your dashboard.",
+    whyItMatters:
+      "Email digests are great for morning review, but high-value opportunities can appear at any time. A Slack or Teams notification means your whole BD team sees new matches instantly -- no one has to remember to check their email or log into the dashboard. Faster awareness means faster response, which matters when deadlines are tight.",
+    howToUseIt: [
+      "Go to Settings and click Integrations.",
+      "Choose Slack or Microsoft Teams.",
+      "For Slack: click Add to Slack and select your channel. For Teams: paste your webhook URL.",
+      "Configure which alerts to send: new high-score matches (80+), compliance warnings, pipeline updates.",
+      "Set a minimum match score threshold to avoid notification fatigue.",
+      "Notifications start flowing immediately to your selected channel.",
+    ],
+    tips: "Create a dedicated #contracts or #opportunities channel so alerts don't get lost in general chat. Set your score threshold to 80+ to start -- you can lower it later if you want more volume. The View in Dashboard button in each notification takes you directly to the opportunity.",
+  },
 ];
 
 // ─── Main Page Component ────────────────────────────────────────────────
@@ -802,11 +1041,11 @@ export default function GetStartedPage() {
   // Build guides based on tier
   // During trial: all 16. After trial: Discovery 1-5, BD Pro 1-11, Team 1-16
   const maxGuide = trialActive
-    ? 16
+    ? 20
     : organization.plan === "team"
-      ? 16
+      ? 20
       : organization.plan === "bd_pro"
-        ? 11
+        ? 17
         : 5;
 
   const visibleGuides = ALL_GUIDES.slice(0, maxGuide);
@@ -914,7 +1153,8 @@ export default function GetStartedPage() {
         {[
           { label: "Core Products", badge: null, badgeColor: "", guides: visibleGuides.filter((g) => g.maxGuideIndex <= 5), defaultOpen: true },
           { label: "Business Development Tools", badge: "BD PRO", badgeColor: "text-[#2563eb] border-[#2563eb]/30 bg-[#eff4ff]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 5 && g.maxGuideIndex <= 11), defaultOpen: false },
-          { label: "Enterprise & Intelligence", badge: "TEAM", badgeColor: "text-[#7c3aed] border-[#7c3aed]/30 bg-[#f5f3ff]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 11), defaultOpen: false },
+          { label: "Enterprise & Intelligence", badge: "TEAM", badgeColor: "text-[#7c3aed] border-[#7c3aed]/30 bg-[#f5f3ff]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 11 && g.maxGuideIndex <= 16), defaultOpen: false },
+          { label: "New AI Tools", badge: "NEW", badgeColor: "text-[#059669] border-[#059669]/30 bg-[#ecfdf5]", guides: visibleGuides.filter((g) => g.maxGuideIndex > 16), defaultOpen: false },
         ].filter((cat) => cat.guides.length > 0).map((category) => {
           const catKey = category.label;
           const isCatOpen = expandedCategories[catKey] ?? category.defaultOpen;

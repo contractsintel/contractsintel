@@ -10,7 +10,7 @@ const PLANS = [
     price: "$499",
     tier: "discovery",
     best: "Solo contractors finding opportunities",
-    features: ["Opportunity Intelligence + Daily Digest", "Compliance Alerts", "Pipeline Tracker", "Google Calendar Sync", "SAM.gov Profile Audit"],
+    features: ["Opportunity Intelligence + Daily Digest", "Compliance Alerts", "Pipeline Tracker", "Google Calendar Sync", "SAM.gov Profile Audit", "Slack & Teams Webhooks"],
   },
   {
     name: "BD Pro",
@@ -18,14 +18,14 @@ const PLANS = [
     tier: "bd_pro",
     best: "Contractors actively bidding on contracts",
     popular: true,
-    features: ["Everything in Discovery", "AI Proposal First Drafts", "Full Compliance (CMMC + FAR)", "Past Performance Builder", "Contract Delivery Dashboard", "State + Local Monitoring", "Weekly Pipeline Report"],
+    features: ["Everything in Discovery", "AI Proposal First Drafts", "Proposal Pink-Team Review", "RFP Document Chat", "Proposal Outline Generator", "Capability Statement PDF", "Full Compliance (CMMC + FAR)", "Past Performance Builder", "Contract Delivery Dashboard", "State + Local Monitoring", "Weekly Pipeline Report"],
   },
   {
     name: "Team",
     price: "$2,499",
     tier: "team",
     best: "Growing firms managing multiple contracts",
-    features: ["Everything in BD Pro", "Unlimited team users", "CPARS Monitor", "Subcontracting Network", "Competitor Intelligence", "Agency Heat Maps", "Contract Vehicle Alerts"],
+    features: ["Everything in BD Pro", "Unlimited team users", "CPARS Monitor", "Subcontracting Network", "Competitor Intelligence", "Agency Heat Maps", "Contract Vehicle Alerts", "Market Intelligence"],
   },
 ];
 
@@ -34,6 +34,10 @@ const BD_PRO_FEATURES = [
   { key: "past_perf", label: "Past Performance Builder", table: "past_performance" },
   { key: "contracts", label: "Contract Delivery", table: "contracts" },
   { key: "compliance_full", label: "Full Compliance Monitor", table: "compliance_items" },
+  { key: "pink_team", label: "Proposal Pink-Team Review", table: "proposal_reviews" },
+  { key: "outline", label: "Proposal Outline Generator", table: "proposal_outlines" },
+  { key: "rfp_chat", label: "RFP Document Chat", table: "document_chat_sessions" },
+  { key: "cap_pdf", label: "Capability Statement PDF", table: "capability_exports" },
 ];
 
 const TEAM_FEATURES_LIST = [
@@ -42,6 +46,7 @@ const TEAM_FEATURES_LIST = [
   { key: "competitors", label: "Competitor Intelligence", table: "competitors" },
   { key: "analytics", label: "Agency Analytics", table: "agency_analytics" },
   { key: "loss", label: "Loss Analysis", table: "loss_analyses" },
+  { key: "market_intel", label: "Market Intelligence", table: "market_intelligence" },
 ];
 
 export default function ExpiredPage() {
@@ -117,7 +122,7 @@ export default function ExpiredPage() {
         {usage && usage.used.length > 0 && (
           <div className="border border-[#e5e7eb] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-8">
             <div className="text-sm text-[#64748b] mb-3">
-              During your trial, you used <strong className="text-[#0f172a]">{usage.used.length + 4}</strong> of 16 products:
+              During your trial, you used <strong className="text-[#0f172a]">{usage.used.length + 4}</strong> of 22 products:
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
               {["Opportunity Intelligence", "Pipeline Tracker", "Compliance Alerts", "Calendar Sync"].map((f) => (

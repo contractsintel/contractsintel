@@ -48,6 +48,10 @@ export default function SettingsPage() {
   const [weeklyReport, setWeeklyReport] = useState<boolean>(prefs.weekly_report ?? true);
   const [digestTime, setDigestTime] = useState<string>(prefs.digest_time ?? "08:00");
   const [cadence, setCadence] = useState<string>(prefs.cadence ?? "daily");
+  const [webhookUrl, setWebhookUrl] = useState<string>(prefs.webhook_url ?? "");
+  const [webhookPlatform, setWebhookPlatform] = useState<string>(prefs.webhook_platform ?? "slack");
+  const [testingWebhook, setTestingWebhook] = useState(false);
+  const [webhookTestMsg, setWebhookTestMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [savingNotifs, setSavingNotifs] = useState(false);
   const [savedNotifs, setSavedNotifs] = useState(false);
 
@@ -108,6 +112,8 @@ export default function SettingsPage() {
     if (typeof p.weekly_report === "boolean") setWeeklyReport(p.weekly_report);
     if (typeof p.digest_time === "string") setDigestTime(p.digest_time);
     if (typeof p.cadence === "string") setCadence(p.cadence);
+    if (typeof p.webhook_url === "string") setWebhookUrl(p.webhook_url);
+    if (typeof p.webhook_platform === "string") setWebhookPlatform(p.webhook_platform);
   }, [organization]);
 
   const saveNotifications = async () => {
@@ -119,6 +125,8 @@ export default function SettingsPage() {
       weekly_report: weeklyReport,
       digest_time: digestTime,
       cadence,
+      webhook_url: webhookUrl || undefined,
+      webhook_platform: webhookUrl ? webhookPlatform : undefined,
       updated_at: new Date().toISOString(),
     };
     await supabase
@@ -128,6 +136,28 @@ export default function SettingsPage() {
     setSavingNotifs(false);
     setSavedNotifs(true);
     setTimeout(() => setSavedNotifs(false), 2500);
+  };
+
+  const testWebhook = async () => {
+    if (!webhookUrl) return;
+    setTestingWebhook(true);
+    setWebhookTestMsg(null);
+    try {
+      const res = await fetch("/api/webhooks/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhook_url: webhookUrl, platform: webhookPlatform }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWebhookTestMsg({ kind: "ok", text: "Test message sent successfully!" });
+      } else {
+        setWebhookTestMsg({ kind: "error", text: data.error || "Test failed" });
+      }
+    } catch (err: any) {
+      setWebhookTestMsg({ kind: "error", text: err?.message || "Test failed" });
+    }
+    setTestingWebhook(false);
   };
 
   const toggleCert = (c: string) =>
@@ -422,6 +452,68 @@ export default function SettingsPage() {
           </button>
           {savedNotifs && (
             <span className="text-xs text-[#059669] font-medium">✓ Saved</span>
+          )}
+        </div>
+      </section>
+
+      {/* Webhook Notifications */}
+      <section className="border border-[#e5e7eb]  bg-white p-6 mb-6">
+        <h2 className="text-xs text-[#94a3b8] font-medium uppercase tracking-wide mb-5">Webhook Notifications</h2>
+        <p className="text-xs text-[#64748b] mb-4">
+          Send opportunity alerts and daily digest summaries to a Slack or Microsoft Teams channel.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">Platform</label>
+            <select
+              value={webhookPlatform}
+              onChange={(e) => setWebhookPlatform(e.target.value)}
+              className="w-full bg-white border border-[#e5e7eb] text-[#0f172a] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+            >
+              <option value="slack">Slack</option>
+              <option value="teams">Microsoft Teams</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">Webhook URL</label>
+            <input
+              type="url"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder={webhookPlatform === "slack" ? "https://hooks.slack.com/services/..." : "https://outlook.office.com/webhook/..."}
+              className="w-full bg-white border border-[#e5e7eb] text-[#0f172a] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={testWebhook}
+              disabled={testingWebhook || !webhookUrl}
+              className="border border-[#e5e7eb] text-[#64748b] px-4 py-2 text-sm hover:border-[#d1d5db] hover:text-[#0f172a] transition-colors disabled:opacity-30 flex items-center gap-2"
+            >
+              {testingWebhook && (
+                <span className="w-3 h-3 border-2 border-[#64748b] border-t-transparent rounded-full animate-spin" />
+              )}
+              {testingWebhook ? "Sending..." : "Send Test Message"}
+            </button>
+            {webhookUrl && (
+              <button
+                onClick={() => { setWebhookUrl(""); setWebhookTestMsg(null); }}
+                className="text-xs text-[#ef4444] hover:text-[#f87171] transition-colors"
+              >
+                Remove Webhook
+              </button>
+            )}
+          </div>
+          {webhookTestMsg && (
+            <div
+              className={`text-xs px-3 py-2 border ${
+                webhookTestMsg.kind === "ok"
+                  ? "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]"
+                  : "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444]"
+              }`}
+            >
+              {webhookTestMsg.text}
+            </div>
           )}
         </div>
       </section>

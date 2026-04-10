@@ -22,19 +22,28 @@ export type Feature =
   | 'prompt_payment_enforcement'
   | 'competitor_intelligence'
   | 'loss_analysis'
-  | 'agency_heat_maps';
+  | 'agency_heat_maps'
+  | 'rfp_document_chat'
+  | 'proposal_pink_team'
+  | 'capability_statement_pdf'
+  | 'proposal_outline'
+  | 'webhook_notifications'
+  | 'market_intelligence';
 
 const TIER_ACCESS: Record<string, Feature[]> = {
   discovery: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
-    'basic_compliance', 'calendar_sync', 'sam_audit'
+    'basic_compliance', 'calendar_sync', 'sam_audit',
+    'webhook_notifications'
   ],
   bd_pro: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
     'basic_compliance', 'calendar_sync', 'sam_audit',
     'proposal_drafts', 'full_compliance', 'past_performance',
     'contract_delivery', 'state_local_monitoring', 'agency_mapping',
-    'weekly_report'
+    'weekly_report', 'webhook_notifications',
+    'rfp_document_chat', 'proposal_pink_team',
+    'capability_statement_pdf', 'proposal_outline'
   ],
   team: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
@@ -45,21 +54,23 @@ const TIER_ACCESS: Record<string, Feature[]> = {
     'team_users', 'api_access', 'cpars_monitor',
     'subcontracting_network', 'vehicle_alerts',
     'prompt_payment_enforcement', 'competitor_intelligence',
-    'loss_analysis', 'agency_heat_maps'
+    'loss_analysis', 'agency_heat_maps',
+    'market_intelligence'
   ]
 };
 
 // Features exclusive to BD Pro (not in Discovery)
 const BD_PRO_FEATURES: Feature[] = [
   'proposal_drafts', 'full_compliance', 'past_performance',
-  'contract_delivery', 'state_local_monitoring', 'agency_mapping', 'weekly_report'
+  'contract_delivery', 'state_local_monitoring', 'agency_mapping', 'weekly_report',
+  'rfp_document_chat', 'proposal_pink_team', 'capability_statement_pdf', 'proposal_outline'
 ];
 
 // Features exclusive to Team (not in BD Pro)
 const TEAM_FEATURES: Feature[] = [
   'team_users', 'api_access', 'cpars_monitor', 'subcontracting_network',
   'vehicle_alerts', 'prompt_payment_enforcement', 'competitor_intelligence',
-  'loss_analysis', 'agency_heat_maps'
+  'loss_analysis', 'agency_heat_maps', 'market_intelligence'
 ];
 
 const TIER_LEVELS: Record<Tier, number> = {
@@ -144,11 +155,11 @@ export function getUpgradeTier(currentTier: string): { name: string; price: stri
   if (currentTier === 'bd_pro') return {
     name: 'Team',
     price: '$2,499/mo',
-    features: ['CPARS Monitor', 'Subcontracting Network', 'Competitor Intelligence', 'Loss Analysis', 'Agency Heat Maps', 'Contract Vehicle Alerts', 'Unlimited team users', 'API access']
+    features: ['CPARS Monitor', 'Subcontracting Network', 'Competitor Intelligence', 'Loss Analysis', 'Agency Heat Maps', 'Market Intelligence', 'Contract Vehicle Alerts', 'Unlimited team users', 'API access']
   };
   return {
     name: 'BD Pro',
     price: '$999/mo',
-    features: ['AI Proposal Drafts', 'Full Compliance Monitor', 'Past Performance Builder', 'Contract Delivery Dashboard', 'Agency Relationship Mapping', 'Weekly Pipeline Report']
+    features: ['AI Proposal Drafts', 'Proposal Pink-Team Review', 'RFP Document Chat', 'Capability Statement PDF', 'Proposal Outline Generator', 'Full Compliance Monitor', 'Past Performance Builder', 'Contract Delivery Dashboard', 'Agency Relationship Mapping', 'Weekly Pipeline Report']
   };
 }

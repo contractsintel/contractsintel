@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { InlineGuide } from "../inline-guide";
+import { MarketIntelligence } from "./market-intel";
 
 interface AgencyStats {
   agency: string;
@@ -27,6 +28,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<30 | 90 | 365>(90);
   const [recomputing, setRecomputing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"performance" | "market">("performance");
 
   const loadData = useCallback(async () => {
     if (!teamTier) { setLoading(false); return; }
@@ -189,6 +191,20 @@ export default function AnalyticsPage() {
           <h1 className="ci-page-title">Analytics</h1>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex border border-[#e5e7eb] bg-white mr-3">
+            <button
+              onClick={() => setActiveTab("performance")}
+              className={`px-4 py-1.5 text-[12px] font-medium transition-colors ${activeTab === "performance" ? "bg-[#2563eb] text-white" : "text-[#64748b] hover:text-[#0f172a]"}`}
+            >
+              Performance
+            </button>
+            <button
+              onClick={() => setActiveTab("market")}
+              className={`px-4 py-1.5 text-[12px] font-medium transition-colors ${activeTab === "market" ? "bg-[#2563eb] text-white" : "text-[#64748b] hover:text-[#0f172a]"}`}
+            >
+              Market Intel
+            </button>
+          </div>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(parseInt(e.target.value, 10) as 30 | 90 | 365)}
@@ -208,7 +224,9 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {activeTab === "market" ? (
+        <MarketIntelligence />
+      ) : loading ? (
         <div className="text-center text-[#94a3b8] py-12">Loading analytics...</div>
       ) : (
         <>

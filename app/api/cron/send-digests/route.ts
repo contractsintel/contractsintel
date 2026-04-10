@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { sendDigestSummary } from "@/lib/webhook-notify";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Fetch ALL orgs (don't filter by digest_enabled — column may not exist)
     const { data: orgs } = await supabase
       .from("organizations")
-      .select("id, name");
+      .select("id, name, notification_preferences");
 
     if (!orgs || orgs.length === 0) {
       return NextResponse.json({ success: true, sent: 0, reason: "no orgs" });
@@ -115,9 +116,18 @@ export async function GET(request: NextRequest) {
         <a href="${appUrl}/dashboard" style="display:inline-block;padding:10px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">View All Matches</a>
       </div>
     </div>
+    <div style="margin-top:20px;padding:16px 20px;background:white;border-radius:10px;border:1px solid #e2e8f0;">
+      <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">New on ContractsIntel</p>
+      <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">
+        <strong style="color:#2563eb;">RFP Document Chat</strong> — Upload any solicitation and ask AI questions about it.
+        <strong style="color:#7c3aed;">Pink-Team Review</strong> — AI scores your proposal draft before submission.
+        <strong style="color:#059669;">Market Intelligence</strong> — USASpending data for your NAICS codes.
+        <a href="${appUrl}/dashboard" style="color:#2563eb;text-decoration:none;font-weight:600;">Try them now →</a>
+      </p>
+    </div>
     <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:24px;">
       ContractsIntel — Government contract intelligence<br>
-      <a href="${appUrl}/dashboard/settings" style="color:#94a3b8;">Manage email preferences</a>
+      <a href="${appUrl}/dashboard/settings" style="color:#94a3b8;">Manage email preferences</a> · <a href="${appUrl}/dashboard/settings" style="color:#94a3b8;">Set up Slack/Teams webhooks</a>
     </p>
   </div>
 </body>
@@ -127,6 +137,7 @@ export async function GET(request: NextRequest) {
         try {
           await resend.emails.send({
             from: "ContractsIntel <digest@contractsintel.com>",
+            replyTo: "ralph@contractsintel.com",
             to: u.email,
             subject: `${matches.length} contract matches for ${org.name}`,
             html,
@@ -134,6 +145,31 @@ export async function GET(request: NextRequest) {
           sent++;
         } catch (err: any) {
           errors.push(`${u.email}: ${err?.message || "unknown"}`);
+        }
+      }
+
+      // Send webhook notification if configured
+      const notifPrefs = (org.notification_preferences || {}) as Record<string, any>;
+      const webhookUrl = notifPrefs.webhook_url;
+      const webhookPlatform = notifPrefs.webhook_platform;
+
+      if (webhookUrl && webhookPlatform) {
+        try {
+          const topMatch = matches[0] as any;
+          const topTitle = (topMatch.opportunities?.title || "Untitled")
+            .replace(/^\[[^\]]*\]\s*/, "")
+            .substring(0, 60);
+          const topScore = topMatch.match_score;
+
+          await sendDigestSummary(
+            webhookUrl,
+            webhookPlatform,
+            matches.length,
+            topTitle,
+            topScore
+          );
+        } catch (err: any) {
+          errors.push(`webhook(${org.name}): ${err?.message || "unknown"}`);
         }
       }
     }

@@ -18,6 +18,7 @@ export default function CapabilityStatementPage() {
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Statement | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -77,6 +78,26 @@ export default function CapabilityStatementPage() {
     a.download = `capability-statement-${Date.now()}.md`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadPdf = async () => {
+    if (!active) return;
+    setPdfLoading(true);
+    try {
+      const r = await fetch("/api/capability-statement/pdf");
+      if (!r.ok) throw new Error("PDF download failed");
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `capability-statement-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e?.message ?? "PDF download failed");
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
@@ -151,6 +172,13 @@ export default function CapabilityStatementPage() {
                     </button>
                     <button onClick={download} className="text-xs text-[#3b82f6] hover:underline">
                       Download .md
+                    </button>
+                    <button
+                      onClick={downloadPdf}
+                      disabled={pdfLoading}
+                      className="text-xs text-[#3b82f6] hover:underline disabled:opacity-50"
+                    >
+                      {pdfLoading ? "Downloading..." : "Download PDF"}
                     </button>
                   </div>
                 </div>

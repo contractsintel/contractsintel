@@ -1,7 +1,7 @@
 "use client";
 
 import { useDashboard } from "../context";
-import { isDiscovery } from "@/lib/feature-gate";
+import { isDiscovery, isBdProOrHigher } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -37,6 +37,20 @@ export default function ProposalsPage() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [showInstructions, setShowInstructions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pink-Team Review state
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewResult, setReviewResult] = useState<any | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [showReview, setShowReview] = useState(false);
+
+  // Outline Generator state
+  const [outlineLoading, setOutlineLoading] = useState(false);
+  const [outlineResult, setOutlineResult] = useState<any | null>(null);
+  const [outlineError, setOutlineError] = useState<string | null>(null);
+  const [showOutline, setShowOutline] = useState(false);
+
+  const bdProAccess = isBdProOrHigher(organization.plan, organization);
 
   const loadData = useCallback(async () => {
     if (locked) { setLoading(false); return; }
@@ -86,6 +100,58 @@ export default function ProposalsPage() {
     } finally {
       clearTimeout(timeoutId);
       setGenerating(false);
+    }
+  };
+
+  const runPinkTeamReview = async () => {
+    if (!selectedMatch || !proposal) return;
+    setReviewLoading(true);
+    setReviewResult(null);
+    setReviewError(null);
+    setShowReview(true);
+    try {
+      const res = await fetch("/api/proposals/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match_id: selectedMatch,
+          sections: {
+            executive_summary: proposal["Executive Summary"] || "",
+            technical_approach: proposal["Technical Approach"] || "",
+            past_performance: proposal["Past Performance"] || "",
+            management_plan: proposal["Management Plan"] || "",
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setReviewResult(data);
+    } catch (e: any) {
+      setReviewError(e?.message || "Failed to run Pink-Team Review. Please try again.");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const generateOutline = async () => {
+    if (!selectedMatch) return;
+    setOutlineLoading(true);
+    setOutlineResult(null);
+    setOutlineError(null);
+    setShowOutline(true);
+    try {
+      const res = await fetch("/api/proposals/outline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match_id: selectedMatch }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setOutlineResult(data);
+    } catch (e: any) {
+      setOutlineError(e?.message || "Failed to generate outline. Please try again.");
+    } finally {
+      setOutlineLoading(false);
     }
   };
 
@@ -218,7 +284,7 @@ export default function ProposalsPage() {
             {matches.map((m) => {
               const opp = m.opportunities;
               return (
-                <button key={m.id} onClick={() => { setSelectedMatch(m.id); setProposal(null); setError(null); }}
+                <button key={m.id} onClick={() => { setSelectedMatch(m.id); setProposal(null); setError(null); setReviewResult(null); setReviewError(null); setShowReview(false); setOutlineResult(null); setOutlineError(null); setShowOutline(false); }}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     selectedMatch === m.id
                       ? "border-[#2563eb] bg-[rgba(37,99,235,0.12)] shadow-sm"
@@ -306,6 +372,19 @@ export default function ProposalsPage() {
                           {exporting ? "Exporting…" : "Export Word (.docx)"}
                         </button>
                       </div>
+                      {/* Pink-Team Review & Outline buttons */}
+                      {bdProAccess && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <button onClick={runPinkTeamReview} disabled={reviewLoading}
+                            className="px-3.5 py-1.5 text-[12px] font-medium rounded-lg border border-[#f59e0b] text-[#92400e] bg-[#fffbeb] hover:bg-[#fef3c7] disabled:opacity-50 transition-colors">
+                            {reviewLoading ? "Reviewing..." : "Pink-Team Review"}
+                          </button>
+                          <button onClick={generateOutline} disabled={outlineLoading}
+                            className="px-3.5 py-1.5 text-[12px] font-medium rounded-lg border border-[#8b5cf6] text-[#5b21b6] bg-[#f5f3ff] hover:bg-[#ede9fe] disabled:opacity-50 transition-colors">
+                            {outlineLoading ? "Generating..." : "Generate Outline"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 max-w-[520px] mx-auto">
@@ -325,10 +404,18 @@ export default function ProposalsPage() {
                           className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                         />
                       </div>
-                      <button onClick={() => generateDraft(selectedMatch)}
-                        className="px-6 py-2.5 text-[14px] font-semibold bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] transition-colors">
-                        Generate Proposal Draft
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => generateDraft(selectedMatch)}
+                          className="px-6 py-2.5 text-[14px] font-semibold bg-[#2563eb] text-white rounded-xl hover:bg-[#1d4ed8] transition-colors">
+                          Generate Proposal Draft
+                        </button>
+                        {bdProAccess && (
+                          <button onClick={generateOutline} disabled={outlineLoading}
+                            className="px-5 py-2.5 text-[14px] font-semibold border border-[#8b5cf6] text-[#5b21b6] rounded-xl hover:bg-[#f5f3ff] disabled:opacity-50 transition-colors">
+                            {outlineLoading ? "Generating..." : "Generate Outline"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -356,6 +443,236 @@ export default function ProposalsPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Pink-Team Review Panel */}
+                {showReview && bdProAccess && (
+                  <div className="px-5 pb-5 border-t border-[#e5e7eb] pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-[14px] font-semibold text-[#0f172a]">Pink-Team Review</h3>
+                      <button onClick={() => setShowReview(false)} className="text-[12px] text-[#64748b] hover:text-[#0f172a]">Close</button>
+                    </div>
+                    {reviewLoading ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-[#94a3b8]">
+                        <div className="w-6 h-6 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-[13px] font-medium">Running Pink-Team Review...</p>
+                        <p className="text-[11px] mt-1">Analyzing proposal strengths & weaknesses</p>
+                      </div>
+                    ) : reviewError ? (
+                      <div className="text-center py-6">
+                        <p className="text-[13px] text-[#dc2626] mb-3">{reviewError}</p>
+                        <button onClick={runPinkTeamReview}
+                          className="px-4 py-2 text-[12px] font-medium bg-[#f59e0b] text-white rounded-lg hover:bg-[#d97706]">
+                          Retry Review
+                        </button>
+                      </div>
+                    ) : reviewResult ? (
+                      <div className="space-y-4">
+                        {/* Score & Win Probability */}
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide">Overall Score</span>
+                            <span className={`text-[20px] font-bold ${
+                              reviewResult.overall_score >= 75 ? "text-[#059669]" :
+                              reviewResult.overall_score >= 50 ? "text-[#f59e0b]" : "text-[#dc2626]"
+                            }`}>{reviewResult.overall_score}<span className="text-[12px] text-[#94a3b8]">/100</span></span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide">Win Probability</span>
+                            <span className={`text-[13px] font-semibold px-2.5 py-0.5 rounded-full ${
+                              reviewResult.win_probability === "High" ? "bg-[#ecfdf5] text-[#059669]" :
+                              reviewResult.win_probability === "Medium" ? "bg-[#fffbeb] text-[#92400e]" :
+                              "bg-[#fef2f2] text-[#dc2626]"
+                            }`}>{reviewResult.win_probability}</span>
+                          </div>
+                        </div>
+
+                        {/* Section Reviews */}
+                        {reviewResult.section_reviews && Object.entries(reviewResult.section_reviews).length > 0 && (
+                          <div>
+                            <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Section Reviews</h4>
+                            <div className="space-y-3">
+                              {Object.entries(reviewResult.section_reviews).map(([section, review]: [string, any]) => (
+                                <div key={section} className="border border-[#e5e7eb] rounded-lg p-3">
+                                  <h5 className="text-[13px] font-semibold text-[#0f172a] mb-2 capitalize">
+                                    {section.replace(/_/g, " ")}
+                                  </h5>
+                                  {review.strengths?.length > 0 && (
+                                    <div className="mb-2">
+                                      <span className="text-[11px] font-mono font-medium text-[#059669] uppercase tracking-wide">Strengths</span>
+                                      <ul className="mt-1 space-y-0.5">
+                                        {review.strengths.map((s: string, i: number) => (
+                                          <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                            <span className="text-[#059669] shrink-0">+</span>{s}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {review.weaknesses?.length > 0 && (
+                                    <div className="mb-2">
+                                      <span className="text-[11px] font-mono font-medium text-[#dc2626] uppercase tracking-wide">Weaknesses</span>
+                                      <ul className="mt-1 space-y-0.5">
+                                        {review.weaknesses.map((w: string, i: number) => (
+                                          <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                            <span className="text-[#dc2626] shrink-0">-</span>{w}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {review.suggestions?.length > 0 && (
+                                    <div>
+                                      <span className="text-[11px] font-mono font-medium text-[#2563eb] uppercase tracking-wide">Suggestions</span>
+                                      <ul className="mt-1 space-y-0.5">
+                                        {review.suggestions.map((s: string, i: number) => (
+                                          <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                            <span className="text-[#2563eb] shrink-0">*</span>{s}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Compliance Gaps */}
+                        {reviewResult.compliance_gaps?.length > 0 && (
+                          <div>
+                            <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Compliance Gaps</h4>
+                            <ul className="space-y-1">
+                              {reviewResult.compliance_gaps.map((gap: string, i: number) => (
+                                <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                  <span className="text-[#dc2626] shrink-0">!</span>{gap}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Recommended Improvements */}
+                        {reviewResult.recommended_improvements?.length > 0 && (
+                          <div>
+                            <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Recommended Improvements</h4>
+                            <ul className="space-y-1">
+                              {reviewResult.recommended_improvements.map((imp: string, i: number) => (
+                                <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                  <span className="text-[#2563eb] shrink-0">&rarr;</span>{imp}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Proposal Outline Panel */}
+                {showOutline && bdProAccess && (
+                  <div className="px-5 pb-5 border-t border-[#e5e7eb] pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-[14px] font-semibold text-[#0f172a]">Proposal Outline</h3>
+                      <button onClick={() => setShowOutline(false)} className="text-[12px] text-[#64748b] hover:text-[#0f172a]">Close</button>
+                    </div>
+                    {outlineLoading ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-[#94a3b8]">
+                        <div className="w-6 h-6 border-2 border-[#8b5cf6] border-t-transparent rounded-full animate-spin mb-3" />
+                        <p className="text-[13px] font-medium">Generating proposal outline...</p>
+                        <p className="text-[11px] mt-1">Building structure and compliance checklist</p>
+                      </div>
+                    ) : outlineError ? (
+                      <div className="text-center py-6">
+                        <p className="text-[13px] text-[#dc2626] mb-3">{outlineError}</p>
+                        <button onClick={generateOutline}
+                          className="px-4 py-2 text-[12px] font-medium bg-[#8b5cf6] text-white rounded-lg hover:bg-[#7c3aed]">
+                          Retry Outline
+                        </button>
+                      </div>
+                    ) : outlineResult ? (
+                      <div className="space-y-4">
+                        {/* Page Budget */}
+                        {outlineResult.page_budget && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide">Page Budget</span>
+                            <span className="text-[13px] font-semibold text-[#0f172a]">{outlineResult.page_budget} pages</span>
+                          </div>
+                        )}
+
+                        {/* Outline Sections */}
+                        {outlineResult.outline?.length > 0 && (
+                          <div>
+                            <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Outline</h4>
+                            <div className="space-y-3">
+                              {outlineResult.outline.map((section: any, idx: number) => (
+                                <div key={idx} className="border border-[#e5e7eb] rounded-lg p-3">
+                                  <h5 className="text-[13px] font-semibold text-[#0f172a] mb-2">
+                                    {idx + 1}. {section.title || section.section || `Section ${idx + 1}`}
+                                  </h5>
+                                  {section.subsections?.length > 0 && (
+                                    <div className="mb-2">
+                                      <span className="text-[11px] font-mono font-medium text-[#8b5cf6] uppercase tracking-wide">Subsections</span>
+                                      <ul className="mt-1 space-y-0.5">
+                                        {section.subsections.map((sub: string, i: number) => (
+                                          <li key={i} className="text-[12px] text-[#64748b] pl-3">{idx + 1}.{i + 1} {sub}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  {section.writing_instructions && (
+                                    <div className="mb-2">
+                                      <span className="text-[11px] font-mono font-medium text-[#2563eb] uppercase tracking-wide">Writing Instructions</span>
+                                      <p className="text-[12px] text-[#64748b] mt-1">{section.writing_instructions}</p>
+                                    </div>
+                                  )}
+                                  {section.key_themes?.length > 0 && (
+                                    <div className="mb-2">
+                                      <span className="text-[11px] font-mono font-medium text-[#059669] uppercase tracking-wide">Key Themes</span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {section.key_themes.map((theme: string, i: number) => (
+                                          <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">{theme}</span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {section.evidence_needed?.length > 0 && (
+                                    <div>
+                                      <span className="text-[11px] font-mono font-medium text-[#f59e0b] uppercase tracking-wide">Evidence Needed</span>
+                                      <ul className="mt-1 space-y-0.5">
+                                        {section.evidence_needed.map((ev: string, i: number) => (
+                                          <li key={i} className="text-[12px] text-[#64748b] flex gap-1.5">
+                                            <span className="text-[#f59e0b] shrink-0">&bull;</span>{ev}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Compliance Checklist */}
+                        {outlineResult.compliance_checklist?.length > 0 && (
+                          <div>
+                            <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Compliance Checklist</h4>
+                            <ul className="space-y-1">
+                              {outlineResult.compliance_checklist.map((item: string, i: number) => (
+                                <li key={i} className="text-[12px] text-[#64748b] flex items-start gap-1.5">
+                                  <input type="checkbox" className="mt-0.5 shrink-0 accent-[#8b5cf6]" />
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>

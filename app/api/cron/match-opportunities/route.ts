@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 const BATCH_SIZE = 500;
 
 function computeScore(
-  opp: { naics_code?: string; set_aside?: string; title?: string; source?: string; estimated_value?: number; description?: string },
+  opp: { naics_code?: string; set_aside_type?: string; set_aside?: string; title?: string; source?: string; value_estimate?: number; estimated_value?: number; description?: string },
   org: { naics_codes?: string[]; certifications?: string[]; keywords?: string[] }
 ): { score: number; recommendation: string; reasoning: string } {
   let score = 0;
@@ -29,8 +29,9 @@ function computeScore(
   }
 
   // Set-aside / certification alignment (0-20 points)
-  if (opp.set_aside && org.certifications?.length) {
-    const sa = (opp.set_aside || "").toLowerCase();
+  const setAside = opp.set_aside_type || opp.set_aside;
+  if (setAside && org.certifications?.length) {
+    const sa = setAside.toLowerCase();
     const certMap: Record<string, string[]> = {
       "8(a)": ["8a", "8(a)"],
       sdvosb: ["sdvosb", "service-disabled veteran"],
@@ -69,9 +70,10 @@ function computeScore(
   }
 
   // Value alignment bonus (0-5 points)
-  if (opp.estimated_value && opp.estimated_value > 0) {
+  const estValue = opp.value_estimate || opp.estimated_value;
+  if (estValue && estValue > 0) {
     score += 5;
-    reasons.push(`est. value: $${(opp.estimated_value / 1000).toFixed(0)}K`);
+    reasons.push(`est. value: $${(estValue / 1000).toFixed(0)}K`);
   }
 
   // Clamp score
@@ -155,7 +157,7 @@ export async function GET(request: NextRequest) {
         while (true) {
           const { data: opps } = await supabase
             .from("opportunities")
-            .select("id, notice_id, title, agency, naics_code, set_aside, estimated_value, source, description, response_deadline")
+            .select("id, notice_id, title, agency, naics_code, set_aside_type, value_estimate, source, description, response_deadline")
             .eq("naics_code", naics)
             .range(offset, offset + BATCH_SIZE - 1);
 
@@ -178,7 +180,7 @@ export async function GET(request: NextRequest) {
         while (true) {
           const { data: opps } = await supabase
             .from("opportunities")
-            .select("id, notice_id, title, agency, naics_code, set_aside, estimated_value, source, description, response_deadline")
+            .select("id, notice_id, title, agency, naics_code, set_aside_type, value_estimate, source, description, response_deadline")
             .like("naics_code", `${prefix}%`)
             .neq("naics_code", naics)
             .range(offset, offset + BATCH_SIZE - 1);

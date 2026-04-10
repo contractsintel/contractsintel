@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import { TourWrapper } from "./tour-wrapper";
 import { CopilotPanel } from "./copilot-panel";
+import { DocumentChatPanel } from "./document-chat-panel";
 
 export default async function DashboardLayout({
   children,
@@ -36,7 +37,7 @@ export default async function DashboardLayout({
     .single();
 
   // Fallback: try profiles table if users table doesn't exist yet
-  const org = profile?.organizations ?? {
+  const rawOrg = profile?.organizations ?? {
     id: profile?.organization_id ?? authUser.id,
     name: profile?.company_name ?? authUser.email?.split("@")[0] ?? "Company",
     uei: null,
@@ -52,6 +53,12 @@ export default async function DashboardLayout({
     created_at: profile?.created_at ?? new Date().toISOString(),
   };
 
+  // Ensure plan field is set from subscription_tier (DB uses subscription_tier, UI uses plan)
+  const org = {
+    ...rawOrg,
+    plan: rawOrg.subscription_tier ?? rawOrg.plan ?? "discovery",
+  };
+
   const userProfile = {
     id: authUser.id,
     email: authUser.email ?? "",
@@ -64,14 +71,16 @@ export default async function DashboardLayout({
   // P2.5: Redirect users with incomplete onboarding to the wizard, unless
   // they're already on a /dashboard/onboarding route OR the loop-break
   // cookie says we just checked. Treat null as incomplete.
+  // NOTE: Cookie writes are NOT allowed in Server Components (layout).
+  // The loop-break cookie is now set by the middleware redirect instead.
   if (
     org &&
     org.onboarding_complete !== true &&
     pathname &&
     !pathname.startsWith("/dashboard/onboarding") &&
+    !pathname.startsWith("/dashboard/get-started") &&
     !onboardingChecked
   ) {
-    cookieStore.set("ci_onboarding_checked", "1", { maxAge: 60, path: "/" });
     redirect("/dashboard/onboarding");
   }
 
@@ -92,6 +101,7 @@ export default async function DashboardLayout({
           </main>
           <TourWrapper />
         </div>
+        <DocumentChatPanel />
         <CopilotPanel />
       </div>
     </DashboardProvider>

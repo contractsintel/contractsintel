@@ -46,19 +46,23 @@ const HELP_CONTENT: Record<string, HelpContent> = {
   },
   proposals: {
     title: "Proposals",
-    what: "This page generates AI-written first drafts of your proposal based on the solicitation requirements and your company profile.",
+    what: "This page generates AI-written first drafts of your proposal based on the solicitation requirements and your company profile. You can also run a Pink-Team Review to get AI feedback before submitting, and use the Outline Generator to structure your response before writing.",
     quickActions: [
       "Generate a new draft",
       "Switch between Technical, Past Performance, and Executive Summary tabs",
       "Copy text to clipboard",
       "Download as a document",
       "Regenerate with specific guidance",
+      "Run a Pink-Team Review on your draft",
+      "Generate a proposal outline from the solicitation",
     ],
     howItWorks:
-      "When you mark an opportunity as 'Bidding' in your Pipeline, it appears here. Click 'Generate Draft' and the AI reads the full solicitation, analyzes the requirements, and writes three proposal sections tailored to your company's certifications and experience. The draft is a starting point — review it, add your specific details, and polish it before submitting.",
+      "When you mark an opportunity as 'Bidding' in your Pipeline, it appears here. Click 'Generate Draft' and the AI reads the full solicitation, analyzes the requirements, and writes three proposal sections tailored to your company's certifications and experience. The draft is a starting point — review it, add your specific details, and polish it before submitting. Once you have a draft, click 'Pink-Team Review' to get an AI evaluation that checks compliance with solicitation requirements, flags missing elements, scores each section, and suggests improvements. Use the Outline Generator before writing to create a structured response skeleton based on the solicitation's evaluation criteria.",
     tips: [
       "Use the 'Guidance' field when regenerating to give the AI specific instructions, like 'Focus more on our cybersecurity experience' or 'Emphasize our past VA work.'",
       "The AI gets better at writing for your company over time as you build more past performance records.",
+      "Run Pink-Team Review before every submission — it catches compliance gaps that are easy to miss when you've been staring at the same document for hours.",
+      "Start with the Outline Generator on complex solicitations — it maps the evaluation criteria to sections so you don't miss any requirements.",
     ],
   },
   compliance: {
@@ -80,18 +84,20 @@ const HELP_CONTENT: Record<string, HelpContent> = {
   },
   "past-performance": {
     title: "Past Performance",
-    what: "Your Performance Library stores records of every contract you've delivered, tracks monthly performance, and generates ready-to-use narratives for future proposals.",
+    what: "Your Performance Library stores records of every contract you've delivered, tracks monthly performance, generates ready-to-use narratives for future proposals, and can export a Capability Statement PDF summarizing your qualifications.",
     quickActions: [
       "Log this month's performance",
       "Generate PPQ narrative",
       "Search past performance by NAICS or agency",
       "Copy narrative text for a proposal",
+      "Export Capability Statement as PDF",
     ],
     howItWorks:
-      "When you win a contract, a performance record is created automatically. Each month, you get an email reminder to log what you delivered — deliverables completed, milestones met, issues resolved, and client feedback. This takes 5 minutes. When it's time to write a proposal, click 'Generate PPQ Narrative' and the AI creates formatted Past Performance Questionnaire text from your logged data — ready to paste directly into your proposal.",
+      "When you win a contract, a performance record is created automatically. Each month, you get an email reminder to log what you delivered — deliverables completed, milestones met, issues resolved, and client feedback. This takes 5 minutes. When it's time to write a proposal, click 'Generate PPQ Narrative' and the AI creates formatted Past Performance Questionnaire text from your logged data — ready to paste directly into your proposal. You can also export a Capability Statement PDF that pulls together your certifications, NAICS codes, past performance summaries, and key differentiators into a professional one-pager — ready to send to primes, COs, or teaming partners.",
     tips: [
       "Log your performance every month, even if it feels repetitive. The more data the AI has, the stronger your narratives will be.",
       "Past performance is one of the highest-weighted evaluation factors in federal proposals — a strong library gives you a real competitive advantage.",
+      "Export a fresh Capability Statement PDF before networking events or industry days — it's the single most-requested document when meeting primes.",
     ],
   },
   contracts: {
@@ -156,20 +162,40 @@ const HELP_CONTENT: Record<string, HelpContent> = {
       "Before writing a proposal, check if you've competed against the incumbent before — your competitor profile might reveal their weaknesses.",
     ],
   },
+  analytics: {
+    title: "Analytics",
+    what: "Your Analytics page shows win/loss trends, pipeline value over time, and — on the Market Intel tab — real federal spending data from USASpending.gov broken down by agency, NAICS code, and contractor.",
+    quickActions: [
+      "View your win rate trends",
+      "Check pipeline value by stage",
+      "Open the Market Intel tab for USASpending data",
+      "See top agencies and contractors in your NAICS codes",
+      "Explore spending trends by fiscal year",
+    ],
+    howItWorks:
+      "The Analytics page pulls from two sources. Your internal data — pipeline history, win/loss records, and proposal outcomes — drives the performance charts. The Market Intel tab pulls real federal spending data from USASpending.gov and maps it to your NAICS codes. You can see which agencies spend the most in your areas, who the top-awarded contractors are, how total contract values are trending, and where there may be growth opportunities. Use this data to decide which markets to prioritize and which agencies to target.",
+    tips: [
+      "Check Market Intel before entering a new NAICS code — it shows you the real size of the market and who dominates it.",
+      "Compare your win rate against the average for your contract size range to see if your capture process needs improvement.",
+      "Use the agency breakdown to identify agencies that are spending more each year — growing budgets mean more opportunities.",
+    ],
+  },
   settings: {
     title: "Settings",
-    what: "Manage your company profile, notification preferences, subscription, and integrations.",
+    what: "Manage your company profile, notification preferences, subscription, and integrations — including Slack and Microsoft Teams webhook notifications.",
     quickActions: [
       "Refresh your SAM.gov profile",
       "Update notification preferences",
       "Connect Google Calendar",
+      "Configure Slack or Teams webhook notifications",
       "Manage your subscription",
     ],
     howItWorks:
-      "Your company profile drives everything — certifications, NAICS codes, and preferences determine which opportunities match. Keep your profile up to date for the best results. Connect Google Calendar to push all deadlines to your phone automatically.",
+      "Your company profile drives everything — certifications, NAICS codes, and preferences determine which opportunities match. Keep your profile up to date for the best results. Connect Google Calendar to push all deadlines to your phone automatically. You can also configure Slack or Microsoft Teams webhooks in the Integrations section to receive real-time notifications — new matched opportunities, deadline reminders, compliance alerts, and bid status changes — directly in your team's channels.",
     tips: [
       "Update your NAICS codes whenever you add new capabilities.",
       "Connect Google Calendar early — it's the easiest way to never miss a deadline.",
+      "Set up a Slack or Teams webhook so your whole team sees new opportunities the moment they match — no one has to remember to check the dashboard.",
     ],
   },
 };

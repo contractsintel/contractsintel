@@ -75,9 +75,15 @@ export async function updateSession(request: NextRequest) {
       }
     }
 
-    // Get-started redirect removed from middleware to prevent navigation issues.
-    // The auth callback handles first-login redirect to /dashboard/get-started.
-    // Users can freely click Dashboard in the sidebar to see the main dashboard.
+    // P2.5 onboarding loop-break: set a cookie so the dashboard layout's
+    // onboarding redirect doesn't infinite-loop (the layout reads the cookie
+    // but CANNOT write cookies because it's a Server Component).
+    if (pathname.startsWith("/dashboard/onboarding")) {
+      supabaseResponse.cookies.set("ci_onboarding_checked", "1", {
+        maxAge: 60,
+        path: "/",
+      });
+    }
   }
 
   return supabaseResponse;
