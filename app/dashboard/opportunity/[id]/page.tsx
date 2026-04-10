@@ -227,7 +227,7 @@ export default function OpportunityDetailPage() {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="ci-serif text-[24px] tracking-[-0.01em] text-[#0f172a] mb-1">{cleanTitle(opp.title)}</h1>
+            <h1 className="ci-serif text-[20px] sm:text-[24px] tracking-[-0.01em] text-[#0f172a] mb-1 break-words">{cleanTitle(opp.title)}</h1>
             <p className="text-[14px] text-[#475569] mb-1">{opp.agency}</p>
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#f1f5f9] text-[#475569]">{sourceName}</span>
@@ -235,7 +235,7 @@ export default function OpportunityDetailPage() {
               {isRecompete && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#fefce8] text-[#a16207]">Recompete Alert</span>}
               {opp.set_aside_type && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#ecfdf5] text-[#059669]">{opp.set_aside_type}</span>}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {match?.user_status === "tracking" ? (
                 <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
               ) : match?.user_status === "bidding" ? (

@@ -239,7 +239,7 @@ export default function PipelinePage() {
       <InlineGuide page="pipeline" />
 
       {/* D6: Pipeline summary bar — one card per stage with count + total value */}
-      <div className="grid grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {STAGES.map((s) => {
           const items = grouped[s.key] ?? [];
           const total = items.reduce((sum: number, m: any) => sum + (m.opportunities?.estimated_value ?? 0), 0);
@@ -258,7 +258,7 @@ export default function PipelinePage() {
       {loading ? (
         <div className="text-center text-[#94a3b8] py-12">Loading pipeline...</div>
       ) : (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {STAGES.map((stage) => (
             <div key={stage.key} className="min-h-[calc(100vh-320px)] border border-[#e5e7eb] bg-[#ffffff] p-2">
               <div

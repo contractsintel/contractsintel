@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="filter blur-[2px] opacity-40 pointer-events-none select-none" aria-hidden="true">
           <h1 className="ci-page-title">Analytics</h1>
-          <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             {[1,2,3].map(i => (
               <div key={i} className="border border-[#e5e7eb] bg-white p-5">
                 <div className="h-2 w-1/3 bg-[#f1f5f9] rounded mb-3" />
@@ -222,7 +222,8 @@ export default function AnalyticsPage() {
                 No agency data yet. Track opportunities to build analytics.
               </div>
             ) : (
-              <table className="w-full">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full min-w-[640px]">
                 <thead>
                   <tr className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] border-b border-[#e5e7eb]">
                     <th className="text-left p-3 pl-5">Agency</th>
@@ -252,11 +253,12 @@ export default function AnalyticsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
           {/* Loss Analysis Summary Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-1">Total Losses Analyzed</div>
               <div className="text-2xl font-mono text-[#0f172a]">{totalLosses}</div>

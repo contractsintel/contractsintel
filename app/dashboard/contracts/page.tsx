@@ -282,7 +282,8 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                   <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-3">
                     Invoices
                   </h4>
-                  <table className="w-full">
+                  <div className="overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0">
+                  <table className="w-full min-w-[520px]">
                     <thead>
                       <tr className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8]">
                         <th className="text-left pb-2">Invoice #</th>
@@ -329,6 +330,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -526,6 +528,8 @@ function ContractsCalendarView({
       </div>
 
       {/* Weekday header */}
+      <div className="overflow-x-auto">
+      <div className="min-w-[560px]">
       <div className="grid grid-cols-7 border-b border-[#e5e7eb]">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] px-2 py-2 text-center">
@@ -569,6 +573,8 @@ function ContractsCalendarView({
             </div>
           );
         })}
+      </div>
+      </div>
       </div>
     </div>
   );
