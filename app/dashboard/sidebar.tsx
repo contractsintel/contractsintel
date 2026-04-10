@@ -201,7 +201,7 @@ export function Sidebar({ plan }: { plan: string }) {
       const { data: prefs } = await supabase
         .from("user_preferences")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("organization_id", organization.id)
         .maybeSingle();
       if (cancelled) return;
 
@@ -214,7 +214,7 @@ export function Sidebar({ plan }: { plan: string }) {
 
       // Check if any proposal exists for this org
       const { count: proposalCount } = await supabase
-        .from("proposals")
+        .from("proposal_drafts")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", organization.id);
 

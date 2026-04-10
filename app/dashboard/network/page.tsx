@@ -48,7 +48,10 @@ type TeamingPartner = {
 export default function NetworkPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan, organization);
+  // Do NOT pass `organization` — isTeam(plan, org) returns true during
+  // active trials, which incorrectly bypasses the Team-tier gate for
+  // Discovery trial users. Check the raw plan value only.
+  const teamTier = isTeam(organization.plan);
 
   const [tab, setTab] = useState<Tab>("opportunities");
   const [opportunities, setOpportunities] = useState<any[]>([]);

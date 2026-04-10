@@ -117,6 +117,17 @@ export async function POST(request: NextRequest) {
       .limit(300);
     if (recentData) opportunities.push(...recentData);
 
+    // Batch 7: Broad catch-all — fetch ALL active opportunities not yet seen,
+    // so that even accounts with niche NAICS codes still see adjacent opportunities.
+    // The scoring engine will rank them appropriately.
+    const { data: allActive } = await supabaseAdmin
+      .from("opportunities")
+      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (allActive) opportunities.push(...allActive);
+
     // Deduplicate
     const seen = new Set<string>();
     opportunities = opportunities.filter(o => {
@@ -156,114 +167,128 @@ export async function POST(request: NextRequest) {
     });
     const filteredCount = beforeFilter - opportunities.length;
 
-    // Score each opportunity
+    // ── Recalibrated Scoring Engine ──────────────────────────────────────
+    //
+    // Design goals (from product requirements):
+    //   • Every account should see 50-150 matched contracts
+    //   • Score distribution: 10-15% Strong (75+), 30-40% Good (55-74), 45-55% Worth a Look (40-54)
+    //   • Nothing below 40 displayed
+    //   • Base score floor: any active opportunity starts at 42 (passes minimum relevance)
+    //   • Set-asides are additive (certification match = bonus, full-and-open always included)
+    //   • Value and geography are soft scoring, never hard filters
+    //
+    // Max possible = 42 (base) + 30 (NAICS) + 15 (set-aside) + 8 (keywords) + 5 (value) = 100
+    //
     const matches = opportunities.map(opp => {
-      let score = 0;
+      // Base score — any active government opportunity has baseline relevance
+      let score = 42;
       const reasons: string[] = [];
 
-      // Signal 1: NAICS (35 pts) — graduated tiers
+      // Signal 1: NAICS match (0–30 pts) — the primary relevance signal
       const oppNaics = opp.naics_code || "";
       if (oppNaics && orgNaics.includes(oppNaics)) {
-        score += 35;
-        reasons.push(`Direct NAICS match: ${oppNaics}`);
-      } else if (oppNaics && orgNaics.some(n => n.substring(0, 5) === oppNaics.substring(0, 5))) {
         score += 30;
-        reasons.push(`Same NAICS sub-industry: ${oppNaics.substring(0, 5)}x`);
-      } else if (oppNaics && orgNaics.some(n => n.substring(0, 4) === oppNaics.substring(0, 4))) {
+        reasons.push(`Direct NAICS match: ${oppNaics}`);
+      } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 5) === oppNaics.substring(0, 5))) {
         score += 25;
+        reasons.push(`Same NAICS sub-industry: ${oppNaics.substring(0, 5)}x`);
+      } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 4) === oppNaics.substring(0, 4))) {
+        score += 20;
         reasons.push(`Related NAICS family: ${oppNaics.substring(0, 4)}xx`);
-      } else if (oppNaics && orgNaics.some(n => n.substring(0, 3) === oppNaics.substring(0, 3))) {
-        score += 22;
+      } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 3) === oppNaics.substring(0, 3))) {
+        score += 15;
         reasons.push(`Same NAICS group: ${oppNaics.substring(0, 3)}xxx`);
       } else if (!oppNaics) {
-        score += 15;
-        reasons.push("No NAICS on opportunity");
-      } else if (oppNaics && orgNaics.some(n => n.substring(0, 2) === oppNaics.substring(0, 2))) {
-        score += 12;
-        reasons.push(`Same sector: ${oppNaics.substring(0, 2)}`);
+        score += 10;
+        reasons.push("No NAICS listed — may be relevant");
+      } else if (oppNaics && orgNaics.some((n: string) => n.substring(0, 2) === oppNaics.substring(0, 2))) {
+        score += 8;
+        reasons.push(`Same sector: ${oppNaics.substring(0, 2)}xxxx`);
+      } else {
+        // Different sector — reduce base score to indicate low relevance
+        score -= 10;
       }
 
-      // Signal 2: Set-aside (25 pts)
+      // Signal 2: Set-aside certification match (0–15 pts) — ADDITIVE bonus
+      // Full-and-open contracts are always included (no penalty).
+      // Matching certification = significant boost.
       const sa = (opp.set_aside_type || opp.set_aside_description || "").toLowerCase();
-      const certLower = orgCerts.map(c => c.toLowerCase());
+      const certLower = orgCerts.map((c: string) => c.toLowerCase());
       if (sa) {
-        if ((sa.includes("8(a)") || sa.includes("8a")) && certLower.some(c => c.includes("8(a)") || c.includes("8a"))) {
-          score += 25; reasons.push("Your 8(a) certification qualifies");
-        } else if ((sa.includes("sdvosb") || sa.includes("service-disabled")) && certLower.some(c => c.includes("sdvosb") || c.includes("service-disabled"))) {
-          score += 25; reasons.push("Your SDVOSB certification qualifies");
-        } else if ((sa.includes("wosb") || sa.includes("women")) && certLower.some(c => c.includes("wosb") || c.includes("edwosb"))) {
-          score += 25; reasons.push("Your WOSB certification qualifies");
-        } else if (sa.includes("hubzone") && certLower.some(c => c.includes("hubzone"))) {
-          score += 25; reasons.push("Your HUBZone certification qualifies");
-        } else if (sa.includes("small business") && orgCerts.length > 0) {
-          score += 20; reasons.push("Small business set-aside");
-        } else {
-          score += 8; // set-aside exists but doesn't match — still meaningful context
+        let certMatch = false;
+        if ((sa.includes("8(a)") || sa.includes("8a")) && certLower.some((c: string) => c.includes("8(a)") || c.includes("8a"))) {
+          score += 15; reasons.push("Your 8(a) certification qualifies"); certMatch = true;
+        } else if ((sa.includes("sdvosb") || sa.includes("service-disabled")) && certLower.some((c: string) => c.includes("sdvosb") || c.includes("service-disabled"))) {
+          score += 15; reasons.push("Your SDVOSB certification qualifies"); certMatch = true;
+        } else if ((sa.includes("wosb") || sa.includes("women")) && certLower.some((c: string) => c.includes("wosb") || c.includes("edwosb"))) {
+          score += 15; reasons.push("Your WOSB certification qualifies"); certMatch = true;
+        } else if (sa.includes("hubzone") && certLower.some((c: string) => c.includes("hubzone"))) {
+          score += 15; reasons.push("Your HUBZone certification qualifies"); certMatch = true;
+        }
+        if (!certMatch) {
+          if (sa.includes("small business") && orgCerts.length > 0) {
+            score += 10; reasons.push("Small business set-aside — you're eligible");
+          } else if (orgCerts.length > 0) {
+            score += 3; reasons.push("Set-aside present (different certification)");
+          }
         }
       } else {
-        score += 12; reasons.push("Full & open competition");
+        score += 5; reasons.push("Full & open competition — all businesses eligible");
       }
 
-      // Signal 3: Keywords (15 pts) — full matches + partial word hits
+      // Signal 3: Keywords (0–8 pts) — semantic relevance boost
       const text = ((opp.title || "") + " " + (opp.description || "")).toLowerCase();
       let kwPts = 0;
       const matched: string[] = [];
-      orgKeywords.forEach(kw => {
+      orgKeywords.forEach((kw: string) => {
         const kwLower = kw.toLowerCase();
         if (text.includes(kwLower)) {
-          kwPts += 5; matched.push(kw);
+          kwPts += 4; matched.push(kw);
         } else {
-          const words = kwLower.split(/\s+/).filter(w => w.length >= 4);
-          const hits = words.filter(w => text.includes(w)).length;
+          const words = kwLower.split(/\s+/).filter((w: string) => w.length >= 4);
+          const hits = words.filter((w: string) => text.includes(w)).length;
           if (hits > 0) {
-            kwPts += Math.min(2 + hits, 4); // 3 pts for 1 word, 4 pts for 2+ words
-            matched.push(kw + ` (${hits} word${hits > 1 ? "s" : ""})`);
+            kwPts += Math.min(1 + hits, 3);
+            matched.push(kw + ` (partial)`);
           }
         }
       });
-      score += Math.min(kwPts, 15);
-      if (matched.length > 0) reasons.push(`${matched.length} keyword match${matched.length > 1 ? "es" : ""}: ${matched.slice(0, 3).join(", ")}`);
+      score += Math.min(kwPts, 8);
+      if (matched.length > 0) reasons.push(`Keywords: ${matched.slice(0, 3).join(", ")}`);
 
-      // Signal 4: Value fit (10 pts) — value often null on SAM, don't over-penalize
+      // Signal 4: Value fit (0–5 pts) — soft scoring, never penalizes unknown
       const val = opp.estimated_value || opp.value_estimate || 0;
       if (val > 0 && val >= minVal && val <= maxVal) {
-        score += 10; reasons.push("Value in your target range");
+        score += 5; reasons.push("Value in your target range");
       } else if (val > 0 && val <= maxVal * 2) {
-        score += 6;
-      } else {
-        score += 8; // unknown value — modest benefit of the doubt
+        score += 3;
+      } else if (val <= 0) {
+        score += 3; // Unknown value — benefit of the doubt
       }
 
-      // Signal 5: Geographic (15 pts)
+      // Geographic preference — soft bonus, never penalizes
       if (nationwide) {
-        score += 15;
-        reasons.push("Nationwide service area");
+        // Already in base score
       } else {
         const pop = (opp.place_of_performance || "").toUpperCase();
-        // Match if the opp PoP string contains any of the user's state codes
-        // (handles "Fort Belvoir, VA", "VA", "Virginia, USA", etc.)
-        const stateMatch = orgStates.find(s =>
+        const stateMatch = orgStates.find((s: string) =>
           pop.includes(`, ${s}`) || pop.includes(` ${s} `) || pop === s ||
           pop.endsWith(` ${s}`) || pop.startsWith(`${s} `) || pop.startsWith(`${s},`)
         );
         if (stateMatch) {
-          score += 15;
+          score += 3;
           reasons.push(`In your service area (${stateMatch})`);
-        } else if (!pop) {
-          // Unknown location — modest benefit of the doubt
-          score += 6;
         }
-        // else: outside service area — 0 pts
       }
 
-      const finalScore = Math.min(score, 100);
-      let recommendation = "skip";
-      if (finalScore >= 70) recommendation = "bid";
-      else if (finalScore >= 40) recommendation = "monitor";
+      const finalScore = Math.min(Math.max(score, 0), 100);
 
-      // USASpending rows surface expiring contracts (recompete intel).
-      // Only flag as recompete if the score actually justifies attention —
-      // otherwise let the score drive the recommendation like any other source.
+      // Recommendation tiers
+      let recommendation = "skip";
+      if (finalScore >= 75) recommendation = "bid";
+      else if (finalScore >= 55) recommendation = "monitor";
+      else if (finalScore >= 40) recommendation = "review";
+
       if (opp.source === "usaspending" && finalScore >= 40) {
         recommendation = "recompete";
         reasons.push("Recompete alert: expiring contract");
@@ -280,9 +305,9 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Sort by score, take top 500
+    // Filter out matches below 40 (not worth showing) and take top 1000
     matches.sort((a, b) => b.match_score - a.match_score);
-    const topMatches = matches.slice(0, 1000);
+    const topMatches = matches.filter(m => m.match_score >= 40).slice(0, 1000);
 
     // Delete old matches for this org (clean slate)
     await supabaseAdmin

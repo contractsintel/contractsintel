@@ -11,6 +11,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Look up the user's organization
+    const { data: profile } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
     // Clear calendar tokens
     await supabase
       .from("user_preferences")
@@ -20,7 +31,7 @@ export async function POST(request: NextRequest) {
         google_calendar_token_expiry: null,
         google_calendar_connected: false,
       })
-      .eq("user_id", user.id);
+      .eq("organization_id", profile.organization_id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -927,7 +927,7 @@ export default function GetStartedPage() {
     const { data: prefs } = await supabase
       .from("user_preferences")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("organization_id", organization.id)
       .single();
 
     if (prefs) {

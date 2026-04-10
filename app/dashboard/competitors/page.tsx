@@ -12,7 +12,11 @@ import { InlineGuide } from "../inline-guide";
 export default function CompetitorsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan, organization);
+  // Do NOT pass `organization` — isTeam(plan, org) returns true during
+  // active trials, which incorrectly bypasses the Team-tier gate for
+  // Discovery trial users. Check the raw plan value only, consistent
+  // with CPARS / Network / Analytics gate behaviour.
+  const teamTier = isTeam(organization.plan);
 
   const [competitors, setCompetitors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

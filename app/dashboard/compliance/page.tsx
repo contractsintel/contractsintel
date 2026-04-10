@@ -7,10 +7,11 @@ import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
 
 const CATEGORIES = [
-  { key: "sam", label: "SAM.gov Registration", icon: "S" },
-  { key: "certs", label: "Certifications", icon: "C" },
-  { key: "cmmc", label: "CMMC Readiness", icon: "M" },
-  { key: "compliance", label: "Compliance Items", icon: "F" },
+  { key: "registration", label: "SAM.gov Registration", icon: "S" },
+  { key: "certifications", label: "Certifications", icon: "C" },
+  { key: "cybersecurity", label: "CMMC Readiness", icon: "M" },
+  { key: "quality", label: "Quality & Compliance", icon: "Q" },
+  { key: "accounting", label: "Accounting & Bonding", icon: "A" },
 ];
 
 function urgencyColor(dueDate: string | null): string {

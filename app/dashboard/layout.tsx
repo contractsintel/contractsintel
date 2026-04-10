@@ -88,9 +88,10 @@ export default async function DashboardLayout({
     <DashboardProvider user={userProfile} organization={org}>
       <div className="min-h-screen bg-[#f8f9fb]">
         <TopNav
-          companyName={(org.name || "").includes("@") ? (org.name || "").split("@")[0].charAt(0).toUpperCase() + (org.name || "").split("@")[0].slice(1) : (org.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+          companyName={org.name || ""}
           userEmail={authUser.email ?? ""}
-          userName={userProfile.full_name ? userProfile.full_name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : null}
+          userName={userProfile.full_name || null}
+          plan={org.plan}
         />
         <div className="flex pt-16">
           <div className="hidden lg:block">

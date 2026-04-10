@@ -21,7 +21,10 @@ interface AgencyStats {
 export default function AnalyticsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const teamTier = isTeam(organization.plan, organization);
+  // Do NOT pass `organization` — isTeam(plan, org) returns true during
+  // active trials, which incorrectly bypasses the Team-tier gate for
+  // Discovery trial users. Check the raw plan value only.
+  const teamTier = isTeam(organization.plan);
 
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
   const [lossAnalyses, setLossAnalyses] = useState<any[]>([]);

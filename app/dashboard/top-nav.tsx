@@ -5,15 +5,19 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { NAV_ITEMS } from "./nav-items";
+import { isDiscovery, isTeam, isTrialActive } from "@/lib/feature-gate";
+import { useDashboard } from "./context";
 
 export function TopNav({
   companyName,
   userEmail,
   userName,
+  plan,
 }: {
   companyName: string;
   userEmail: string;
   userName: string | null;
+  plan: string;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,11 +39,18 @@ export function TopNav({
     setSigningOut(true);
     try {
       await supabase.auth.signOut();
-      router.push("/login");
+      window.location.href = "/login";
     } catch {
       setSigningOut(false);
     }
   };
+
+  const { organization } = useDashboard();
+  const trial = isTrialActive(organization);
+  const locked = trial ? false : isDiscovery(plan);
+  const teamTier = trial ? true : isTeam(plan);
+  const isItemLocked = (item: typeof NAV_ITEMS[0]) =>
+    (item.bdProLocked && locked) || (item.teamOnly && !teamTier);
 
   return (
     <>
@@ -136,17 +147,32 @@ export function TopNav({
               </button>
             </div>
             <nav className="py-2">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-5 py-3 text-[15px] font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition-colors"
-                  style={{ minHeight: "48px", display: "flex", alignItems: "center" }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {NAV_ITEMS.map((item) => {
+                const itemLocked = isItemLocked(item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={itemLocked ? "#" : item.href}
+                    onClick={(e) => {
+                      if (itemLocked) { e.preventDefault(); return; }
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`block px-5 py-3 text-[15px] font-medium transition-colors ${
+                      itemLocked
+                        ? "text-[#94a3b8] cursor-not-allowed"
+                        : "text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                    }`}
+                    style={{ minHeight: "48px", display: "flex", alignItems: "center", gap: "8px" }}
+                  >
+                    {item.label}
+                    {itemLocked && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 bg-[#f1f5f9] border border-[#e5e7eb] text-[#94a3b8] ml-auto">
+                        {item.teamOnly ? "Team" : "BD Pro"}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         </div>

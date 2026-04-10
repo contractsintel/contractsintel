@@ -51,17 +51,24 @@ function deadlineLabel(date: string | null): string {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 80) return "text-[#22c55e]";
-  if (score >= 60) return "text-[#3b82f6]";
-  if (score >= 40) return "text-[#f59e0b]";
+  if (score >= 75) return "text-[#22c55e]";  // Strong Match
+  if (score >= 55) return "text-[#3b82f6]";  // Good Match
+  if (score >= 40) return "text-[#f59e0b]";  // Worth a Look
   return "text-[#94a3b8]";
+}
+
+function scoreTier(score: number): string {
+  if (score >= 75) return "Strong Match";
+  if (score >= 55) return "Good Match";
+  if (score >= 40) return "Worth a Look";
+  return "";
 }
 
 function recBadge(rec: string) {
   const map: Record<string, string> = {
     bid: "bg-[#ecfdf5] text-[#059669]",
     monitor: "bg-[#fffbeb] text-[#d97706]",
-    review: "bg-[#fffbeb] text-[#d97706]",
+    review: "bg-[#f1f5f9] text-[#64748b]",
     skip: "bg-[#f1f5f9] text-[#94a3b8]",
     recompete: "bg-[#fef2f2] text-[#dc2626]",
     recompete_alert: "bg-[#fef2f2] text-[#dc2626]",
@@ -425,13 +432,18 @@ export default function DashboardPage() {
         if (filters.urgency === "2weeks" && d > 14) return false;
         if (filters.urgency === "month" && d > 30) return false;
       }
-      // Value filter
+      // Value filter — include contracts with unknown value (most SAM.gov
+      // listings don't publish estimated value), only exclude when value is
+      // known and out of range.
       if (filters.valueRange) {
-        const v = getVal(opp) ?? 0;
-        if (filters.valueRange === "under100k" && v >= 100000) return false;
-        if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
-        if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
-        if (filters.valueRange === "over1m" && v < 1000000) return false;
+        const v = getVal(opp);
+        if (v > 0) {
+          if (filters.valueRange === "under100k" && v >= 100000) return false;
+          if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
+          if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
+          if (filters.valueRange === "over1m" && v < 1000000) return false;
+        }
+        // v === 0 means unknown value — include it (don't hide opportunities)
       }
       // Recommendation filter
       if (filters.recommendation && m.bid_recommendation !== filters.recommendation) return false;
@@ -449,6 +461,8 @@ export default function DashboardPage() {
       return 0;
     });
 
+  const hasActiveFilter = !!(filters.source || filters.urgency || filters.valueRange || filters.agency || filters.setAside || filters.recommendation || filters.minScore > 0);
+
   // Recommendation counts
   const recCounts = matches.reduce(
     (acc, m) => {
@@ -459,13 +473,14 @@ export default function DashboardPage() {
     {} as Record<string, number>
   );
 
-  // Stats (getVal defined above filter section)
-  const totalValue = matches.reduce((s, m) => s + getVal(m.opportunities), 0);
-  const urgentCount = matches.filter((m) => {
+  // Stats — computed from the FILTERED list so they update when filters change
+  const activeList = filtered;
+  const totalValue = activeList.reduce((s, m) => s + getVal(m.opportunities), 0);
+  const urgentCount = activeList.filter((m) => {
     const d = daysUntil(m.opportunities?.response_deadline);
     return d !== null && d >= 0 && d <= 7;
   }).length;
-  const topScore = matches.length ? Math.max(...matches.map((m) => m.match_score ?? 0)) : 0;
+  const topScore = activeList.length ? Math.max(...activeList.map((m) => m.match_score ?? 0)) : 0;
 
   // Pipeline summary — prefer pipeline_stage column when present, fall back
   // to user_status mapping for legacy rows.
@@ -586,7 +601,7 @@ export default function DashboardPage() {
       {/* Stats Bar — KPI Row (D1: always show 4th Total Value card) */}
       <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {[
-          { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", urgent: false },
+          { value: hasActiveFilter ? String(filtered.length) : (totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length)), label: "Matches", urgent: false },
           { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Total Value", urgent: false },
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
@@ -646,6 +661,11 @@ export default function DashboardPage() {
               className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
               <option value="">All Types</option>
               <option value="federal">Federal Solicitations</option>
+              <option value="military">Military / Defense</option>
+              <option value="state">State &amp; Local</option>
+              <option value="sbir">SBIR / STTR</option>
+              <option value="grants">Grants</option>
+              <option value="subcontracting">Subcontracting</option>
               <option value="recompetes">Recompete Alerts</option>
             </select>
             <select value={filters.urgency}

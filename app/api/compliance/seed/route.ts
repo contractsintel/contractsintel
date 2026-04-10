@@ -67,7 +67,8 @@ export async function POST() {
       // SAM.gov
       {
         organization_id: orgId,
-        category: "sam",
+        type: "sam_renewal",
+        category: "registration",
         title: "SAM.gov registration annual renewal",
         status: "pending",
         due_date: daysFromNow(60),
@@ -77,7 +78,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "sam",
+        type: "sam_renewal",
+        category: "registration",
         title: "Verify UEI and CAGE code on profile",
         status: (profile?.organizations as any)?.uei ? "complete" : "pending",
         due_date: daysFromNow(14),
@@ -86,7 +88,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "sam",
+        type: "sam_renewal",
+        category: "registration",
         title: "Confirm POC and banking (FSRS) details",
         status: "pending",
         due_date: daysFromNow(30),
@@ -99,7 +102,8 @@ export async function POST() {
       ...(certs.length > 0
         ? certs.map((c) => ({
             organization_id: orgId,
-            category: "certs",
+            type: "reps_certs",
+            category: "certifications",
             title: `${c} certification active`,
             status: "complete",
             due_date: daysFromNow(300),
@@ -109,7 +113,8 @@ export async function POST() {
         : [
             {
               organization_id: orgId,
-              category: "certs",
+              type: "reps_certs",
+              category: "certifications",
               title: "Add at least one socio-economic certification",
               status: "pending",
               due_date: daysFromNow(21),
@@ -122,7 +127,8 @@ export async function POST() {
       // CMMC readiness
       {
         organization_id: orgId,
-        category: "cmmc",
+        type: "cmmc",
+        category: "cybersecurity",
         title: "Complete CMMC self-assessment (Level 1 basic safeguarding)",
         status: "pending",
         due_date: daysFromNow(45),
@@ -132,7 +138,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "cmmc",
+        type: "cmmc",
+        category: "cybersecurity",
         title: "Implement basic access control policy",
         status: "pending",
         due_date: daysFromNow(75),
@@ -142,7 +149,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "cmmc",
+        type: "cmmc",
+        category: "cybersecurity",
         title: "Post assessment score in SPRS",
         status: "pending",
         due_date: daysFromNow(90),
@@ -154,7 +162,8 @@ export async function POST() {
       // General compliance
       {
         organization_id: orgId,
-        category: "compliance",
+        type: "iso",
+        category: "quality",
         title: "General liability insurance certificate on file",
         status: "pending",
         due_date: daysFromNow(120),
@@ -164,7 +173,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "compliance",
+        type: "dcaa",
+        category: "accounting",
         title: "Bonding capacity letter",
         status: "pending",
         due_date: daysFromNow(150),
@@ -174,7 +184,8 @@ export async function POST() {
       },
       {
         organization_id: orgId,
-        category: "compliance",
+        type: "iso",
+        category: "quality",
         title: "Quality management plan (ISO 9001 equivalent)",
         status: "pending",
         due_date: daysFromNow(180),

@@ -21,6 +21,28 @@ const CERT_COLORS: Record<string, { bg: string; text: string; border: string }> 
 const GEO_OPTIONS = ["Nationwide", "DC Metro", "Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific"];
 const SIZE_OPTIONS = ["Micro (<$150K)", "Small ($150K-$750K)", "Medium ($750K-$5M)", "Large ($5M+)"];
 
+/** Safely convert an address value (string or JSON object) into a display string. */
+function formatAddress(addr: unknown): string {
+  if (!addr) return "";
+  if (typeof addr === "string") return addr;
+  if (typeof addr === "object" && addr !== null) {
+    const a = addr as Record<string, unknown>;
+    // SAM.gov physicalAddress shape: { addressLine1, addressLine2, city, stateOrProvinceCode, zipCode, countryCode }
+    // Also handle generic shapes: { street, city, state, zip }
+    const parts = [
+      a.addressLine1 ?? a.street ?? "",
+      a.addressLine2 ?? "",
+      a.city ?? "",
+      a.stateOrProvinceCode ?? a.state ?? "",
+      a.zipCode ?? a.zip ?? "",
+    ]
+      .map((p) => String(p).trim())
+      .filter(Boolean);
+    return parts.join(", ") || JSON.stringify(addr);
+  }
+  return String(addr);
+}
+
 export default function SettingsPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
@@ -32,7 +54,7 @@ export default function SettingsPage() {
   const [cageCode, setCageCode] = useState(organization.cage_code ?? "");
   const [certs, setCerts] = useState<string[]>(organization.certifications ?? []);
   const [naicsCodes, setNaicsCodes] = useState((organization.naics_codes ?? []).join(", "));
-  const [address, setAddress] = useState(organization.address ?? "");
+  const [address, setAddress] = useState(formatAddress(organization.address));
 
   // Preferences
   const [geography, setGeography] = useState<string[]>([]);
@@ -206,7 +228,7 @@ export default function SettingsPage() {
         if (data.entity) {
           setCompanyName(data.entity.legalBusinessName ?? companyName);
           setCageCode(data.entity.cageCode ?? cageCode);
-          setAddress(data.entity.physicalAddress ?? address);
+          setAddress(formatAddress(data.entity.physicalAddress) || address);
           setSamRefreshMsg({ kind: "ok", text: "Profile refreshed from SAM.gov" });
         } else {
           setSamRefreshMsg({ kind: "error", text: "No entity found for that UEI" });
@@ -223,7 +245,7 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   return (
@@ -385,7 +407,7 @@ export default function SettingsPage() {
             {organization.plan !== "team" && (
               <a href="https://buy.stripe.com/6oUdR95EN3467WHaGS5wI03" target="_blank" rel="noopener noreferrer"
                 className="px-4 py-2 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors">
-                Upgrade to BD Pro
+                {organization.plan === "bd_pro" ? "Upgrade to Team" : "Upgrade to BD Pro"}
               </a>
             )}
           </div>

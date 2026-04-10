@@ -160,7 +160,7 @@ export function MarketIntelligence() {
 
       {!hasSearched && (
         <div className="text-center text-[#94a3b8] py-16 text-sm">
-          Select a NAICS code and click "Analyze Market" to see spending intelligence from USASpending.gov
+          Select a NAICS code and click &ldquo;Analyze Market&rdquo; to see spending intelligence from USASpending.gov
         </div>
       )}
 
