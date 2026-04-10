@@ -6,20 +6,20 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white text-[#e8edf8]">
-      <nav className="bg-white border-b border-[#1e2535] px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-white text-[#0f172a]">
+      <nav className="bg-white border-b border-[#e5e7eb] px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
+          <span className="font-semibold text-[15px] text-[#0f172a]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
         </Link>
-        <Link href="/" className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">&larr; Back to Home</Link>
+        <Link href="/" className="text-sm text-[#64748b] hover:text-[#0f172a]">&larr; Back to Home</Link>
       </nav>
 
       <main className="max-w-2xl mx-auto px-6 py-16">
         <h1 className="font-['DM_Serif_Display'] text-[32px] text-[#0f172a] mb-2">Terms of Service</h1>
-        <p className="text-sm text-[#4a5a75] mb-10">Last updated: April 5, 2026</p>
+        <p className="text-sm text-[#94a3b8] mb-10">Last updated: April 5, 2026</p>
 
-        <div className="space-y-8 text-[15px] text-[#8b9ab5] leading-relaxed">
+        <div className="space-y-8 text-[15px] text-[#64748b] leading-relaxed">
           <section>
             <h2 className="text-lg font-semibold text-[#0f172a] mb-3">Service Description</h2>
             <p>ContractsIntel is a software-as-a-service (SaaS) platform that helps government contractors find, bid on, and manage federal contract opportunities. The platform provides opportunity matching, AI-powered proposal drafts, compliance monitoring, pipeline tracking, and related tools.</p>
@@ -38,11 +38,11 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-[#0f172a] mb-3">Subscriptions and Billing</h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>All plans include a <strong className="text-[#e8edf8]">14-day free trial</strong>. No credit card is required to start the trial. A payment method is required by Day 7 to continue the trial.</li>
-              <li>Subscriptions are <strong className="text-[#e8edf8]">month-to-month</strong> with no long-term commitment. You may cancel at any time.</li>
+              <li>All plans include a <strong className="text-[#0f172a]">14-day free trial</strong>. No credit card is required to start the trial. A payment method is required by Day 7 to continue the trial.</li>
+              <li>Subscriptions are <strong className="text-[#0f172a]">month-to-month</strong> with no long-term commitment. You may cancel at any time.</li>
               <li>If you cancel before your trial ends, you will not be charged.</li>
               <li>After the trial, subscriptions renew monthly at the rate for your selected plan: Discovery ($499/mo), BD Pro ($999/mo), or Team ($2,499/mo).</li>
-              <li>We reserve the right to modify pricing with <strong className="text-[#e8edf8]">30 days written notice</strong> to active subscribers. Price changes do not affect the current billing period.</li>
+              <li>We reserve the right to modify pricing with <strong className="text-[#0f172a]">30 days written notice</strong> to active subscribers. Price changes do not affect the current billing period.</li>
               <li>Refunds are handled on a case-by-case basis. Contact support@contractsintel.com for refund requests.</li>
             </ul>
           </section>

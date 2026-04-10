@@ -56,63 +56,63 @@ export async function GET(request: NextRequest) {
       .gte("created_at", weekAgoStr);
 
     const html = `
-      <div style="background:#080a0f;padding:32px;font-family:system-ui,-apple-system,sans-serif;">
+      <div style="background:#f8f9fb;padding:32px;font-family:system-ui,-apple-system,sans-serif;">
         <div style="max-width:560px;margin:0 auto;">
-          <h1 style="color:#e8edf8;font-size:20px;margin-bottom:4px;">Weekly Owner Report</h1>
-          <p style="color:#8b9ab5;font-size:14px;margin-bottom:24px;">
+          <h1 style="color:#0f172a;font-size:20px;margin-bottom:4px;">Weekly Owner Report</h1>
+          <p style="color:#64748b;font-size:14px;margin-bottom:24px;">
             ${now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
           </p>
 
-          <div style="background:#0d1018;border:1px solid #1e2535;padding:16px;margin-bottom:16px;">
-            <h2 style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">Growth</h2>
+          <div style="background:#ffffff;border:1px solid #e5e7eb;padding:16px;margin-bottom:16px;">
+            <h2 style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">Growth</h2>
             <table style="width:100%;">
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">New Signups</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newSignups ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">New Signups</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newSignups ?? 0}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">New Leads</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newLeads ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">New Leads</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newLeads ?? 0}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">Conversions</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">Conversions</td>
                 <td style="color:#22c55e;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${conversions ?? 0}</td>
               </tr>
             </table>
           </div>
 
-          <div style="background:#0d1018;border:1px solid #1e2535;padding:16px;margin-bottom:16px;">
-            <h2 style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">Revenue</h2>
+          <div style="background:#ffffff;border:1px solid #e5e7eb;padding:16px;margin-bottom:16px;">
+            <h2 style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">Revenue</h2>
             <table style="width:100%;">
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">MRR</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">MRR</td>
                 <td style="color:#22c55e;font-size:16px;font-family:monospace;text-align:right;padding:4px 0;">$${mrr.toLocaleString()}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">Discovery</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["discovery"] ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">Discovery</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["discovery"] ?? 0}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">BD Pro</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["bd_pro"] ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">BD Pro</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["bd_pro"] ?? 0}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">Team</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["team"] ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">Team</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${planCounts["team"] ?? 0}</td>
               </tr>
             </table>
           </div>
 
-          <div style="background:#0d1018;border:1px solid #1e2535;padding:16px;margin-bottom:16px;">
-            <h2 style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">System Health</h2>
+          <div style="background:#ffffff;border:1px solid #e5e7eb;padding:16px;margin-bottom:16px;">
+            <h2 style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 12px 0;">System Health</h2>
             <table style="width:100%;">
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">Opportunities Scraped</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newOpps ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">Opportunities Scraped</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${newOpps ?? 0}</td>
               </tr>
               <tr>
-                <td style="color:#8b9ab5;font-size:13px;padding:4px 0;">Total Organizations</td>
-                <td style="color:#e8edf8;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${allOrgs?.length ?? 0}</td>
+                <td style="color:#64748b;font-size:13px;padding:4px 0;">Total Organizations</td>
+                <td style="color:#0f172a;font-size:13px;font-family:monospace;text-align:right;padding:4px 0;">${allOrgs?.length ?? 0}</td>
               </tr>
             </table>
           </div>

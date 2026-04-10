@@ -259,7 +259,7 @@ export default function OnboardingSetupPage() {
             className={`px-4 py-2 text-[14px] font-medium rounded-lg border transition-all ${
               activeTab === tab.key
                 ? "bg-[rgba(37,99,235,0.12)] border-[#bfdbfe] text-[#2563eb]"
-                : "border-transparent text-[#8b9ab5] hover:text-[#e8edf8] hover:bg-[#111520]"
+                : "border-transparent text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]"
             }`}>
             {tab.label}
           </button>
@@ -270,32 +270,32 @@ export default function OnboardingSetupPage() {
       {activeTab === "organization" && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-[20px] font-semibold text-[#e8edf8] mb-1">Let&apos;s set up your business profile</h2>
-            <p className="text-[13px] text-[#8b9ab5]">We use this information to match you with relevant contracts.</p>
+            <h2 className="text-[20px] font-semibold text-[#0f172a] mb-1">Let&apos;s set up your business profile</h2>
+            <p className="text-[13px] text-[#64748b]">We use this information to match you with relevant contracts.</p>
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">Company Name *</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">Company Name *</label>
             <input value={companyName} onChange={e => setCompanyName(e.target.value)}
-              className="w-full border border-[#1e2535] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
+              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">UEI Number</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">UEI Number</label>
             <div className="flex gap-2">
               <input value={uei} onChange={e => { setUei(e.target.value); setSamError(""); setSamSuccess(false); }}
                 placeholder="e.g. ZQGGHJH74DW7"
-                className="flex-1 border border-[#1e2535] rounded-lg px-4 py-3 text-[14px] focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 focus:outline-none" />
+                className="flex-1 border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 focus:outline-none" />
               <button onClick={pullFromSam} disabled={pullingSam || !uei || uei.trim().length < 5}
                 className={`px-4 py-2.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 ${
-                  pullingSam ? "bg-[#e5e7eb] text-[#4a5a75]" : "bg-[#4f46e5] text-white hover:bg-[#4338ca]"
+                  pullingSam ? "bg-[#e5e7eb] text-[#94a3b8]" : "bg-[#4f46e5] text-white hover:bg-[#4338ca]"
                 } disabled:opacity-40`}>
                 {pullingSam ? "Pulling..." : "Pull from SAM.gov"}
               </button>
             </div>
             {samSuccess && <p className="text-[13px] text-[#059669] mt-2">✓ Data pulled from SAM.gov</p>}
             {samError && <p className="text-[13px] text-[#dc2626] mt-2">{samError}</p>}
-            <p className="text-[12px] text-[#8b9ab5] mt-1.5">
+            <p className="text-[12px] text-[#64748b] mt-1.5">
               Your Unique Entity ID from SAM.gov registration.
               <a href="https://sam.gov" target="_blank" rel="noopener noreferrer"
                  className="text-[#4f46e5] hover:underline ml-1">
@@ -305,20 +305,20 @@ export default function OnboardingSetupPage() {
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">CAGE Code</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">CAGE Code</label>
             <input value={cageCode} onChange={e => setCageCode(e.target.value)}
-              className="w-full border border-[#1e2535] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
+              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none" />
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">Where is your business based? *</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">Where is your business based? *</label>
             <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 border border-[#1e2535] rounded-lg cursor-pointer hover:bg-[#080a0f]">
+              <label className="flex items-center gap-3 p-3 border border-[#e5e7eb] rounded-lg cursor-pointer hover:bg-[#f8f9fb]">
                 <input type="radio" checked={location === "us"} onChange={() => setLocation("us")} className="w-4 h-4 text-[#2563eb]" />
                 <span className="text-[14px] text-[#c5cde0]">Inside the United States</span>
               </label>
               {location === "us" && (
-                <div className="ml-7 space-y-2 p-3 bg-[#080a0f] rounded-lg">
+                <div className="ml-7 space-y-2 p-3 bg-[#f8f9fb] rounded-lg">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input type="radio" checked={serviceArea === "specific"} onChange={() => setServiceArea("specific")} className="w-4 h-4 text-[#2563eb]" />
                     <span className="text-[14px] text-[#c5cde0]">We serve specific states/regions</span>
@@ -335,12 +335,12 @@ export default function OnboardingSetupPage() {
                     <input type="radio" checked={serviceArea === "nationwide"} onChange={() => setServiceArea("nationwide")} className="w-4 h-4 text-[#2563eb]" />
                     <div>
                       <span className="text-[14px] text-[#c5cde0]">We serve nationwide</span>
-                      <p className="text-[12px] text-[#8b9ab5]">We&apos;ll show contracts from all sources.</p>
+                      <p className="text-[12px] text-[#64748b]">We&apos;ll show contracts from all sources.</p>
                     </div>
                   </label>
                 </div>
               )}
-              <label className="flex items-center gap-3 p-3 border border-[#1e2535] rounded-lg cursor-pointer hover:bg-[#080a0f]">
+              <label className="flex items-center gap-3 p-3 border border-[#e5e7eb] rounded-lg cursor-pointer hover:bg-[#f8f9fb]">
                 <input type="radio" checked={location === "outside"} onChange={() => setLocation("outside")} className="w-4 h-4 text-[#2563eb]" />
                 <span className="text-[14px] text-[#c5cde0]">Outside the United States</span>
               </label>
@@ -353,7 +353,7 @@ export default function OnboardingSetupPage() {
             className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
               tab1Valid
                 ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
-                : "bg-[#e5e7eb] text-[#4a5a75] cursor-not-allowed"
+                : "bg-[#e5e7eb] text-[#94a3b8] cursor-not-allowed"
             }`}>
             {saving ? "Saving..." : "Save and Continue →"}
           </button>
@@ -370,18 +370,18 @@ export default function OnboardingSetupPage() {
       {activeTab === "capabilities" && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-[20px] font-semibold text-[#e8edf8] mb-1">Tell us about your capabilities</h2>
-            <p className="text-[13px] text-[#8b9ab5]">We&apos;ll use this to generate keyword suggestions for contract matching.</p>
+            <h2 className="text-[20px] font-semibold text-[#0f172a] mb-1">Tell us about your capabilities</h2>
+            <p className="text-[13px] text-[#64748b]">We&apos;ll use this to generate keyword suggestions for contract matching.</p>
           </div>
 
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">
               Tell us what government services you provide *
             </label>
-            <p className="text-[12px] text-[#8b9ab5] mb-2">Example: We provide IT support services, cybersecurity assessments, and cloud migration for federal agencies.</p>
+            <p className="text-[12px] text-[#64748b] mb-2">Example: We provide IT support services, cybersecurity assessments, and cloud migration for federal agencies.</p>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={5}
               placeholder="Describe your business services, who you serve, and your specialties..."
-              className="w-full border border-[#1e2535] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none resize-none" />
+              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-[14px] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 focus:outline-none resize-none" />
           </div>
 
           <button onClick={generateKeywords} disabled={generatingKeywords || !description.trim()}
@@ -395,8 +395,8 @@ export default function OnboardingSetupPage() {
 
           {keywords.length > 0 && (
             <div>
-              <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">Select your best-fit keywords *</label>
-              <p className="text-[12px] text-[#8b9ab5] mb-3">Pick 2-5 keywords we&apos;ll use to match you with contracts.</p>
+              <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">Select your best-fit keywords *</label>
+              <p className="text-[12px] text-[#64748b] mb-3">Pick 2-5 keywords we&apos;ll use to match you with contracts.</p>
               <div className="flex flex-wrap gap-2">
                 {keywords.map(kw => {
                   const isSelected = selectedKeywords.includes(kw);
@@ -407,7 +407,7 @@ export default function OnboardingSetupPage() {
                       className={`px-3 py-1.5 text-[13px] rounded-lg border transition-all ${
                         isSelected
                           ? "border-[#059669] text-[#059669] bg-[#ecfdf5]"
-                          : "border-[#1e2535] text-[#8b9ab5] bg-white hover:border-[#2563eb] hover:text-[#2563eb]"
+                          : "border-[#e5e7eb] text-[#64748b] bg-white hover:border-[#2563eb] hover:text-[#2563eb]"
                       }`}>
                       {isSelected ? `× ${kw}` : `+ ${kw}`}
                     </button>
@@ -417,7 +417,7 @@ export default function OnboardingSetupPage() {
               <div className="mt-3 flex items-center gap-2">
                 <input value={manualKeyword} onChange={e => setManualKeyword(e.target.value)}
                   placeholder="Add keyword manually..."
-                  className="border border-[#1e2535] rounded-lg px-3 py-2 text-[13px] focus:border-[#2563eb] focus:outline-none"
+                  className="border border-[#e5e7eb] rounded-lg px-3 py-2 text-[13px] focus:border-[#2563eb] focus:outline-none"
                   onKeyDown={e => {
                     if (e.key === "Enter" && manualKeyword.trim()) {
                       setSelectedKeywords(prev => [...prev, manualKeyword.trim()]);
@@ -435,7 +435,7 @@ export default function OnboardingSetupPage() {
             className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all mt-2 ${
               tab2Valid
                 ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer"
-                : "bg-[#e5e7eb] text-[#4a5a75] cursor-not-allowed"
+                : "bg-[#e5e7eb] text-[#94a3b8] cursor-not-allowed"
             }`}>
             {saving ? "Saving..." : "Next →"}
           </button>
@@ -446,14 +446,14 @@ export default function OnboardingSetupPage() {
       {activeTab === "preferences" && (
         <div className="space-y-8">
           <div>
-            <h2 className="text-[20px] font-semibold text-[#e8edf8] mb-1">Tell us a few final details</h2>
-            <p className="text-[13px] text-[#8b9ab5]">These help us find the best contract matches for your business.</p>
+            <h2 className="text-[20px] font-semibold text-[#0f172a] mb-1">Tell us a few final details</h2>
+            <p className="text-[13px] text-[#64748b]">These help us find the best contract matches for your business.</p>
           </div>
 
           {/* Certifications — rich card buttons */}
           <div>
-            <p className="text-[14px] font-semibold text-[#e8edf8] mb-1">Certifications *</p>
-            <p className="text-[13px] text-[#8b9ab5] mb-3">Select all certifications your business holds.</p>
+            <p className="text-[14px] font-semibold text-[#0f172a] mb-1">Certifications *</p>
+            <p className="text-[13px] text-[#64748b] mb-3">Select all certifications your business holds.</p>
             <div className="space-y-2">
               {[
                 { key: "8(a)", label: "8(a)", desc: "SBA 8(a) Business Development", sel: "bg-[rgba(37,99,235,0.12)] border-[#2563eb] text-[#2563eb]" },
@@ -469,14 +469,14 @@ export default function OnboardingSetupPage() {
                   <button key={cert.key}
                     onClick={() => setCerts(prev => on ? prev.filter(c => c !== cert.key) : [...prev, cert.key])}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-150 text-left w-full ${
-                      on ? cert.sel : "bg-white border-[#1e2535] hover:border-[#2a3548]"
+                      on ? cert.sel : "bg-white border-[#e5e7eb] hover:border-[#d1d5db]"
                     }`}>
-                    <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${on ? "bg-current" : "border-2 border-[#2a3548]"}`}>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${on ? "bg-current" : "border-2 border-[#d1d5db]"}`}>
                       {on && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}><path strokeLinecap="round" d="M5 13l4 4L19 7"/></svg>}
                     </div>
                     <div>
-                      <div className={`text-[14px] font-semibold ${on ? "" : "text-[#e8edf8]"}`}>{cert.label}</div>
-                      <div className={`text-[12px] ${on ? "opacity-75" : "text-[#8b9ab5]"}`}>{cert.desc}</div>
+                      <div className={`text-[14px] font-semibold ${on ? "" : "text-[#0f172a]"}`}>{cert.label}</div>
+                      <div className={`text-[12px] ${on ? "opacity-75" : "text-[#64748b]"}`}>{cert.desc}</div>
                     </div>
                   </button>
                 );
@@ -487,8 +487,8 @@ export default function OnboardingSetupPage() {
 
           {/* NAICS Codes — AI-generated pill selector */}
           <div>
-            <p className="text-[14px] font-semibold text-[#e8edf8] mb-1">NAICS Codes *</p>
-            <p className="text-[13px] text-[#8b9ab5] mb-3">Select the codes that best describe your services. We use these to match you with relevant contracts.</p>
+            <p className="text-[14px] font-semibold text-[#0f172a] mb-1">NAICS Codes *</p>
+            <p className="text-[13px] text-[#64748b] mb-3">Select the codes that best describe your services. We use these to match you with relevant contracts.</p>
 
             {loadingNaics ? (
               <div className="flex items-center gap-2 text-[13px] text-[#4f46e5] py-4">
@@ -505,7 +505,7 @@ export default function OnboardingSetupPage() {
                       className={`px-3 py-2 rounded-lg text-[13px] transition-all duration-150 ${
                         on
                           ? "bg-[#ecfdf5] border-2 border-[#059669] text-[#059669] font-medium"
-                          : "bg-white border border-[#1e2535] text-[#8b9ab5] hover:border-[#4f46e5] hover:text-[#4f46e5]"
+                          : "bg-white border border-[#e5e7eb] text-[#64748b] hover:border-[#4f46e5] hover:text-[#4f46e5]"
                       }`}>
                       <span className="font-mono font-semibold">{item.code}</span>
                       <span className="ml-1.5 text-[12px] opacity-75">— {item.title}</span>
@@ -515,7 +515,7 @@ export default function OnboardingSetupPage() {
                 })}
               </div>
             ) : (
-              <p className="text-[13px] text-[#4a5a75] py-2">Complete Tab 2 first to get AI-generated NAICS suggestions, or add codes manually below.</p>
+              <p className="text-[13px] text-[#94a3b8] py-2">Complete Tab 2 first to get AI-generated NAICS suggestions, or add codes manually below.</p>
             )}
 
             {selectedNaics.length > 0 && <p className="text-[12px] text-[#059669] mt-2 font-medium">{selectedNaics.length} code{selectedNaics.length > 1 ? "s" : ""} selected</p>}
@@ -536,7 +536,7 @@ export default function OnboardingSetupPage() {
                         setManualNaicsCode(""); setShowManualNaics(false);
                       }
                     }}
-                    className="w-[140px] px-3 py-2 text-[14px] border border-[#1e2535] rounded-lg font-mono focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10"
+                    className="w-[140px] px-3 py-2 text-[14px] border border-[#e5e7eb] rounded-lg font-mono focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10"
                     autoFocus />
                   <button onClick={() => {
                     if (manualNaicsCode.length === 6 && !selectedNaics.includes(manualNaicsCode)) {
@@ -547,7 +547,7 @@ export default function OnboardingSetupPage() {
                   }}
                     disabled={manualNaicsCode.length !== 6}
                     className={`px-3 py-2 rounded-lg text-[13px] font-medium ${
-                      manualNaicsCode.length === 6 ? "bg-[#4f46e5] text-white" : "bg-[#e5e7eb] text-[#4a5a75] cursor-not-allowed"
+                      manualNaicsCode.length === 6 ? "bg-[#4f46e5] text-white" : "bg-[#e5e7eb] text-[#94a3b8] cursor-not-allowed"
                     }`}>
                     Add
                   </button>
@@ -558,10 +558,10 @@ export default function OnboardingSetupPage() {
 
           {/* Contract size */}
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-1.5">Contract size preference</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-1.5">Contract size preference</label>
             <div className="flex items-center gap-3">
               <select value={minValue} onChange={e => setMinValue(e.target.value)}
-                className="border border-[#1e2535] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
+                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
                 <option value="">No minimum</option>
                 <option value="25000">$25K</option>
                 <option value="50000">$50K</option>
@@ -570,9 +570,9 @@ export default function OnboardingSetupPage() {
                 <option value="500000">$500K</option>
                 <option value="1000000">$1M</option>
               </select>
-              <span className="text-[13px] text-[#8b9ab5]">to</span>
+              <span className="text-[13px] text-[#64748b]">to</span>
               <select value={maxValue} onChange={e => setMaxValue(e.target.value)}
-                className="border border-[#1e2535] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
+                className="border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-[14px] focus:border-[#4f46e5] focus:outline-none">
                 <option value="">No maximum</option>
                 <option value="100000">$100K</option>
                 <option value="250000">$250K</option>
@@ -586,7 +586,7 @@ export default function OnboardingSetupPage() {
 
           {/* Set-aside preference */}
           <div>
-            <label className="text-[14px] font-semibold text-[#e8edf8] block mb-2">Set-aside preference</label>
+            <label className="text-[14px] font-semibold text-[#0f172a] block mb-2">Set-aside preference</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="radio" checked={setAsidePref === "matching"} onChange={() => setSetAsidePref("matching")} className="w-4 h-4 text-[#4f46e5]" />
@@ -609,7 +609,7 @@ export default function OnboardingSetupPage() {
             className={`px-6 py-3 rounded-xl text-[15px] font-semibold transition-all ${
               matching ? "bg-[#4f46e5] text-white opacity-80" :
               tab3Valid ? "bg-[#4f46e5] text-white hover:bg-[#4338ca] cursor-pointer" :
-              "bg-[#e5e7eb] text-[#4a5a75] cursor-not-allowed"
+              "bg-[#e5e7eb] text-[#94a3b8] cursor-not-allowed"
             }`}>
             {matching ? (
               <span className="flex items-center gap-2">
@@ -625,21 +625,21 @@ export default function OnboardingSetupPage() {
       {showStateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[4px]" onClick={() => setShowStateModal(false)}>
           <div className="bg-white rounded-2xl p-6 w-[480px] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[16px] font-semibold text-[#e8edf8] mb-1">Select states and regions</h3>
-            <p className="text-[13px] text-[#8b9ab5] mb-4">Where can your business perform work?</p>
+            <h3 className="text-[16px] font-semibold text-[#0f172a] mb-1">Select states and regions</h3>
+            <p className="text-[13px] text-[#64748b] mb-4">Where can your business perform work?</p>
             <div className="relative mb-4">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a5a75]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
               <input value={stateSearch} onChange={e => setStateSearch(e.target.value)} placeholder="Search states..."
-                className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb]" />
+                className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb]" />
             </div>
             <div className="flex-1 overflow-y-auto space-y-1">
               {filteredStates.map(s => (
-                <label key={s} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-[#080a0f] cursor-pointer">
+                <label key={s} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-[#f8f9fb] cursor-pointer">
                   <input type="checkbox" checked={selectedStates.includes(s)}
                     onChange={e => setSelectedStates(prev => e.target.checked ? [...prev, s] : prev.filter(x => x !== s))}
-                    className="w-4 h-4 rounded border-[#2a3548] text-[#2563eb] focus:ring-[#2563eb] focus:ring-offset-0" />
+                    className="w-4 h-4 rounded border-[#d1d5db] text-[#2563eb] focus:ring-[#2563eb] focus:ring-offset-0" />
                   <span className="text-[14px] text-[#c5cde0]">{STATE_NAMES[s] || s}</span>
                 </label>
               ))}

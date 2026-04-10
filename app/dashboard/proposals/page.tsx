@@ -127,12 +127,12 @@ export default function ProposalsPage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="rounded-2xl border border-[#1e2535] bg-white p-9 max-w-md text-center shadow-lg">
-            <svg className="w-9 h-9 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="rounded-2xl border border-[#e5e7eb] bg-white p-9 max-w-md text-center shadow-lg">
+            <svg className="w-9 h-9 text-[#94a3b8] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
-            <h2 className="text-[16px] font-semibold text-[#e8edf8] mb-2">AI Proposals — BD Pro Feature</h2>
-            <p className="text-[14px] text-[#8b9ab5] mb-5">Generate tailored proposal drafts with AI. Upgrade to BD Pro to unlock.</p>
+            <h2 className="text-[16px] font-semibold text-[#0f172a] mb-2">AI Proposals — BD Pro Feature</h2>
+            <p className="text-[14px] text-[#64748b] mb-5">Generate tailored proposal drafts with AI. Upgrade to BD Pro to unlock.</p>
             <Link href="/dashboard/settings" className="inline-block bg-[#2563eb] text-white px-7 py-3 rounded-xl text-[14px] font-semibold hover:bg-[#1d4ed8] transition-colors">
               Upgrade to BD Pro
             </Link>
@@ -157,14 +157,14 @@ export default function ProposalsPage() {
       <TrialTierBanner page="proposals" />
 
       {loading ? (
-        <div className="bg-white border border-[#1e2535] rounded-xl p-12 text-center">
-          <div className="animate-pulse text-[#4a5a75]">Loading opportunities...</div>
+        <div className="bg-white border border-[#e5e7eb] rounded-xl p-12 text-center">
+          <div className="animate-pulse text-[#94a3b8]">Loading opportunities...</div>
         </div>
       ) : matches.length === 0 ? (
         <div className="max-w-[400px] mx-auto text-center p-8">
-          <svg className="w-10 h-10 mx-auto mb-3 text-[#4a5a75]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-          <h3 className="text-[16px] font-semibold text-[#e8edf8] mb-2">Ready to generate proposals</h3>
-          <p className="text-[14px] text-[#8b9ab5] mb-5">Mark any contract as &ldquo;Bidding&rdquo; from the dashboard, then come here to generate an AI proposal draft.</p>
+          <svg className="w-10 h-10 mx-auto mb-3 text-[#94a3b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <h3 className="text-[16px] font-semibold text-[#0f172a] mb-2">Ready to generate proposals</h3>
+          <p className="text-[14px] text-[#64748b] mb-5">Mark any contract as &ldquo;Bidding&rdquo; from the dashboard, then come here to generate an AI proposal draft.</p>
           <Link href="/dashboard" className="inline-block px-6 py-2.5 text-[14px] font-semibold text-white rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] transition-colors">
             Browse Contracts
           </Link>
@@ -181,12 +181,12 @@ export default function ProposalsPage() {
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     selectedMatch === m.id
                       ? "border-[#2563eb] bg-[rgba(37,99,235,0.12)] shadow-sm"
-                      : "border-[#1e2535] bg-white hover:border-[#2a3548] hover:shadow-sm"
+                      : "border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:shadow-sm"
                   }`}>
-                  <h3 className="text-[13px] text-[#e8edf8] font-semibold truncate">{opp?.title}</h3>
-                  <p className="text-[11px] text-[#8b9ab5] mt-1 truncate">{opp?.agency}</p>
-                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[#4a5a75]">
-                    <span className="font-semibold text-[#e8edf8]">{formatCurrency(opp?.value_estimate || opp?.estimated_value)}</span>
+                  <h3 className="text-[13px] text-[#0f172a] font-semibold truncate">{opp?.title}</h3>
+                  <p className="text-[11px] text-[#64748b] mt-1 truncate">{opp?.agency}</p>
+                  <div className="flex items-center gap-3 mt-2 text-[11px] text-[#94a3b8]">
+                    <span className="font-semibold text-[#0f172a]">{formatCurrency(opp?.value_estimate || opp?.estimated_value)}</span>
                     <span>Score: {m.match_score}</span>
                   </div>
                 </button>
@@ -197,21 +197,21 @@ export default function ProposalsPage() {
           {/* Right: Proposal Editor */}
           <div className="lg:col-span-2">
             {selectedMatch && selectedOpp ? (
-              <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
+              <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
                 {/* Contract header */}
-                <div className="p-4 border-b border-[#1e2535] bg-[#080a0f]">
-                  <h3 className="text-[14px] font-semibold text-[#e8edf8]">{selectedOpp.title}</h3>
-                  <p className="text-[12px] text-[#8b9ab5] mt-0.5">{selectedOpp.agency} · {selectedOpp.solicitation_number || "No solicitation #"}</p>
+                <div className="p-4 border-b border-[#e5e7eb] bg-[#f8f9fb]">
+                  <h3 className="text-[14px] font-semibold text-[#0f172a]">{selectedOpp.title}</h3>
+                  <p className="text-[12px] text-[#64748b] mt-0.5">{selectedOpp.agency} · {selectedOpp.solicitation_number || "No solicitation #"}</p>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center border-b border-[#1e2535] px-1">
+                <div className="flex items-center border-b border-[#e5e7eb] px-1">
                   {TABS.map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
                       className={`px-4 py-3 text-[13px] font-medium border-b-2 transition-colors ${
                         activeTab === tab
                           ? "border-[#2563eb] text-[#2563eb]"
-                          : "border-transparent text-[#8b9ab5] hover:text-[#e8edf8]"
+                          : "border-transparent text-[#64748b] hover:text-[#0f172a]"
                       }`}>
                       {tab}
                     </button>
@@ -221,7 +221,7 @@ export default function ProposalsPage() {
                 {/* Content */}
                 <div className="p-5 min-h-[400px]">
                   {generating ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-[#4a5a75]">
+                    <div className="flex flex-col items-center justify-center py-16 text-[#94a3b8]">
                       <div className="w-8 h-8 border-2 border-[#2563eb] border-t-transparent rounded-full animate-spin mb-4" />
                       <p className="text-[14px] font-medium">Generating proposal with AI...</p>
                       <p className="text-[12px] mt-1">This takes 15-30 seconds</p>
@@ -240,23 +240,23 @@ export default function ProposalsPage() {
                         value={proposal[activeTab] || ""}
                         onChange={(e) => updateSection(activeTab, e.target.value)}
                         rows={16}
-                        className="w-full text-[14px] text-[#8b9ab5] leading-relaxed p-4 border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-y"
+                        className="w-full text-[14px] text-[#64748b] leading-relaxed p-4 border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-y"
                       />
                       <div className="flex items-center gap-2 mt-3">
                         <button onClick={() => copySection(activeTab)}
                           className={`px-3.5 py-1.5 text-[12px] font-medium border rounded-lg transition-colors ${
-                            copied === activeTab ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#059669]" : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"
+                            copied === activeTab ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#059669]" : "border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db]"
                           }`}>
                           {copied === activeTab ? "Copied!" : "Copy Section"}
                         </button>
                         <button onClick={copyAll}
                           className={`px-3.5 py-1.5 text-[12px] font-medium border rounded-lg transition-colors ${
-                            copied === "all" ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#059669]" : "border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548]"
+                            copied === "all" ? "bg-[#ecfdf5] border-[#a7f3d0] text-[#059669]" : "border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db]"
                           }`}>
                           {copied === "all" ? "Copied All!" : "Copy All Sections"}
                         </button>
                         <button onClick={downloadAsTxt}
-                          className="px-3.5 py-1.5 text-[12px] font-medium border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] rounded-lg">
+                          className="px-3.5 py-1.5 text-[12px] font-medium border border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db] rounded-lg">
                           Download as .txt
                         </button>
                       </div>
@@ -266,9 +266,9 @@ export default function ProposalsPage() {
                       <svg className="w-12 h-12 text-[#d1d5db] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
                         <path strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-[14px] text-[#8b9ab5] mb-4 text-center">Generate an AI proposal draft tailored to this contract</p>
+                      <p className="text-[14px] text-[#64748b] mb-4 text-center">Generate an AI proposal draft tailored to this contract</p>
                       <div className="w-full mb-3">
-                        <label className="block text-[11px] font-medium text-[#8b9ab5] uppercase tracking-wide mb-1.5">
+                        <label className="block text-[11px] font-medium text-[#64748b] uppercase tracking-wide mb-1.5">
                           Custom instructions (optional)
                         </label>
                         <textarea
@@ -276,7 +276,7 @@ export default function ProposalsPage() {
                           onChange={(e) => setCustomInstructions(e.target.value)}
                           rows={3}
                           placeholder="e.g. Focus more on our cybersecurity experience, emphasize our local presence in Virginia..."
-                          className="w-full px-3 py-2 text-[13px] border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+                          className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                         />
                       </div>
                       <button onClick={() => generateDraft(selectedMatch)}
@@ -289,9 +289,9 @@ export default function ProposalsPage() {
 
                 {/* Regenerate with custom instructions */}
                 {proposal && (
-                  <div className="px-5 pb-5 border-t border-[#1e2535] pt-4">
+                  <div className="px-5 pb-5 border-t border-[#e5e7eb] pt-4">
                     <button onClick={() => setShowInstructions(!showInstructions)}
-                      className="text-[12px] text-[#8b9ab5] hover:text-[#e8edf8] font-medium">
+                      className="text-[12px] text-[#64748b] hover:text-[#0f172a] font-medium">
                       {showInstructions ? "Hide" : "Regenerate with custom instructions"}
                     </button>
                     {showInstructions && (
@@ -301,7 +301,7 @@ export default function ProposalsPage() {
                           onChange={(e) => setCustomInstructions(e.target.value)}
                           rows={3}
                           placeholder="e.g. Focus more on our cybersecurity experience, emphasize our local presence in Virginia..."
-                          className="w-full px-3 py-2 text-[13px] border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+                          className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                         />
                         <button onClick={() => generateDraft(selectedMatch)}
                           disabled={generating}
@@ -314,8 +314,8 @@ export default function ProposalsPage() {
                 )}
               </div>
             ) : (
-              <div className="bg-white border border-[#1e2535] rounded-xl p-12 text-center">
-                <p className="text-[14px] text-[#4a5a75]">Select a contract from the left to generate a proposal</p>
+              <div className="bg-white border border-[#e5e7eb] rounded-xl p-12 text-center">
+                <p className="text-[14px] text-[#94a3b8]">Select a contract from the left to generate a proposal</p>
               </div>
             )}
           </div>

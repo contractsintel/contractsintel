@@ -45,19 +45,19 @@ export async function GET(request: NextRequest) {
         const urgencyLabel = days <= 3 ? "URGENT" : days <= 7 ? "Due Soon" : "Upcoming";
 
         const html = `
-          <div style="background:#080a0f;padding:32px;font-family:system-ui,-apple-system,sans-serif;">
+          <div style="background:#f8f9fb;padding:32px;font-family:system-ui,-apple-system,sans-serif;">
             <div style="max-width:560px;margin:0 auto;">
               <div style="border-left:3px solid ${urgencyColor};padding-left:16px;margin-bottom:24px;">
                 <span style="color:${urgencyColor};font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;">${urgencyLabel} — ${days} day${days === 1 ? "" : "s"} remaining</span>
-                <h1 style="color:#e8edf8;font-size:18px;margin:8px 0 4px 0;">Compliance Alert: ${item.title}</h1>
-                <p style="color:#8b9ab5;font-size:14px;margin:0;">${orgName}</p>
+                <h1 style="color:#0f172a;font-size:18px;margin:8px 0 4px 0;">Compliance Alert: ${item.title}</h1>
+                <p style="color:#64748b;font-size:14px;margin:0;">${orgName}</p>
               </div>
-              <div style="background:#0d1018;border:1px solid #1e2535;padding:16px;margin-bottom:16px;">
-                <p style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Category</p>
-                <p style="color:#e8edf8;font-size:14px;margin:0 0 12px 0;">${item.category}</p>
-                <p style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Due Date</p>
-                <p style="color:#e8edf8;font-size:14px;margin:0 0 12px 0;">${new Date(dateStr).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
-                ${item.details ? `<p style="color:#4a5a75;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Details</p><p style="color:#8b9ab5;font-size:13px;margin:0;">${item.details}</p>` : ""}
+              <div style="background:#ffffff;border:1px solid #e5e7eb;padding:16px;margin-bottom:16px;">
+                <p style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Category</p>
+                <p style="color:#0f172a;font-size:14px;margin:0 0 12px 0;">${item.category}</p>
+                <p style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Due Date</p>
+                <p style="color:#0f172a;font-size:14px;margin:0 0 12px 0;">${new Date(dateStr).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</p>
+                ${item.details ? `<p style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 4px 0;">Details</p><p style="color:#64748b;font-size:13px;margin:0;">${item.details}</p>` : ""}
               </div>
               <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.contractsintel.com"}/dashboard/compliance" style="display:inline-block;background:#2563eb;color:white;padding:8px 20px;font-size:13px;text-decoration:none;">View in Dashboard</a>
             </div>

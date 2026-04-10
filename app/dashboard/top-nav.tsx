@@ -43,12 +43,12 @@ export function TopNav({
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1e2535] bg-[#0d1018]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#e5e7eb] bg-[#ffffff]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">
             CI
           </div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">
+          <span className="font-semibold text-[15px] text-[#0f172a]">
             Contracts<span className="text-[#3b82f6]">Intel</span>
           </span>
         </Link>
@@ -57,7 +57,7 @@ export function TopNav({
           {/* Hamburger menu — mobile only */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden w-9 h-9 flex items-center justify-center text-[#8b9ab5] hover:bg-[#1e2535] transition-colors"
+            className="lg:hidden w-9 h-9 flex items-center justify-center text-[#64748b] hover:bg-[#e5e7eb] transition-colors"
           >
             {mobileMenuOpen ? (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -69,29 +69,29 @@ export function TopNav({
               </svg>
             )}
           </button>
-          <span className="text-sm text-[#8b9ab5] hidden md:block" style={{ textTransform: "capitalize" }}>
+          <span className="text-sm text-[#64748b] hidden md:block" style={{ textTransform: "capitalize" }}>
             {companyName}
           </span>
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-8 h-8 bg-[#111520] border border-[#1e2535] flex items-center justify-center text-xs font-medium text-[#e8edf8] hover:border-[#2a3548] transition-colors"
+              className="w-8 h-8 bg-[#f1f5f9] border border-[#e5e7eb] flex items-center justify-center text-xs font-medium text-[#0f172a] hover:border-[#d1d5db] transition-colors"
             >
               {initials}
             </button>
             {dropdownOpen && (
               <>
                 <div className="fixed inset-0" onClick={() => setDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-56 border border-[#1e2535] bg-[#0d1018] shadow-xl z-50">
-                  <div className="px-4 py-3 border-b border-[#1e2535]">
-                    <p className="text-sm text-[#e8edf8]" style={{ textTransform: "capitalize" }}>
+                <div className="absolute right-0 mt-2 w-56 border border-[#e5e7eb] bg-[#ffffff] shadow-xl z-50">
+                  <div className="px-4 py-3 border-b border-[#e5e7eb]">
+                    <p className="text-sm text-[#0f172a]" style={{ textTransform: "capitalize" }}>
                       {userName ?? "User"}
                     </p>
-                    <p className="text-xs text-[#4a5a75]">{userEmail}</p>
+                    <p className="text-xs text-[#94a3b8]">{userEmail}</p>
                   </div>
                   <Link
                     href="/dashboard/settings"
-                    className="block px-4 py-2 text-sm text-[#8b9ab5] hover:bg-[#111520] hover:text-[#e8edf8]"
+                    className="block px-4 py-2 text-sm text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
                     onClick={() => setDropdownOpen(false)}
                   >
                     Settings
@@ -99,7 +99,7 @@ export function TopNav({
                   <button
                     onClick={handleSignOut}
                     disabled={signingOut}
-                    className="flex w-full items-center gap-2 text-left px-4 py-2 text-sm text-[#ef4444] hover:bg-[#111520] disabled:opacity-60"
+                    className="flex w-full items-center gap-2 text-left px-4 py-2 text-sm text-[#ef4444] hover:bg-[#f1f5f9] disabled:opacity-60"
                   >
                     {signingOut && (
                       <span className="w-3 h-3 border-2 border-[#ef4444] border-t-transparent rounded-full animate-spin" />
@@ -118,17 +118,17 @@ export function TopNav({
         <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-[4px]" />
           <div
-            className="absolute left-0 top-0 bottom-0 w-[300px] bg-[#0d1018] border-r border-[#1e2535] shadow-2xl overflow-y-auto"
+            className="absolute left-0 top-0 bottom-0 w-[300px] bg-[#ffffff] border-r border-[#e5e7eb] shadow-2xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             style={{ animation: "slideInLeft 0.2s ease" }}
           >
-            <div className="flex items-center justify-between p-4 border-b border-[#1e2535]">
-              <span className="font-semibold text-[15px] text-[#e8edf8]">
+            <div className="flex items-center justify-between p-4 border-b border-[#e5e7eb]">
+              <span className="font-semibold text-[15px] text-[#0f172a]">
                 Contracts<span className="text-[#3b82f6]">Intel</span>
               </span>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-8 h-8 flex items-center justify-center text-[#8b9ab5]"
+                className="w-8 h-8 flex items-center justify-center text-[#64748b]"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
@@ -141,7 +141,7 @@ export function TopNav({
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-5 py-3 text-[15px] font-medium text-[#8b9ab5] hover:bg-[#111520] hover:text-[#e8edf8] transition-colors"
+                  className="block px-5 py-3 text-[15px] font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] transition-colors"
                   style={{ minHeight: "48px", display: "flex", alignItems: "center" }}
                 >
                   {item.label}

@@ -248,19 +248,19 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
         >
           {/* Step counter */}
           <p
-            className="text-[11px] text-[#4a5a75] mb-3"
+            className="text-[11px] text-[#94a3b8] mb-3"
             style={{ fontFamily: "var(--font-geist-mono, monospace)" }}
           >
             Step {currentStep + 1} of {totalSteps}
           </p>
 
           {/* Title */}
-          <h3 className="text-[16px] font-bold text-[#e8edf8] mb-2">
+          <h3 className="text-[16px] font-bold text-[#0f172a] mb-2">
             {step.title}
           </h3>
 
           {/* Description */}
-          <p className="text-[14px] text-[#8b9ab5] leading-[1.6] mb-5">
+          <p className="text-[14px] text-[#64748b] leading-[1.6] mb-5">
             {step.description}
           </p>
 
@@ -269,7 +269,7 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
             {currentStep > 0 && (
               <button
                 onClick={handleBack}
-                className="text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors"
+                className="text-xs text-[#94a3b8] hover:text-[#64748b] transition-colors"
               >
                 Back
               </button>
@@ -284,14 +284,14 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
           </div>
 
           {step.belowButton && (
-            <p className="text-xs text-[#4a5a75] mt-3">{step.belowButton}</p>
+            <p className="text-xs text-[#94a3b8] mt-3">{step.belowButton}</p>
           )}
 
           {/* Skip */}
           {currentStep < totalSteps - 1 && (
             <button
               onClick={handleSkip}
-              className="text-xs text-[#4a5a75] hover:text-[#8b9ab5] transition-colors mt-3 block"
+              className="text-xs text-[#94a3b8] hover:text-[#64748b] transition-colors mt-3 block"
             >
               Skip Tour
             </button>

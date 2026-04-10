@@ -54,7 +54,7 @@ function scoreColor(score: number): string {
   if (score >= 80) return "text-[#22c55e]";
   if (score >= 60) return "text-[#3b82f6]";
   if (score >= 40) return "text-[#f59e0b]";
-  return "text-[#4a5a75]";
+  return "text-[#94a3b8]";
 }
 
 function recBadge(rec: string) {
@@ -62,7 +62,7 @@ function recBadge(rec: string) {
     bid: "bg-[#ecfdf5] text-[#059669]",
     monitor: "bg-[#fffbeb] text-[#d97706]",
     review: "bg-[#fffbeb] text-[#d97706]",
-    skip: "bg-[#111520] text-[#4a5a75]",
+    skip: "bg-[#f1f5f9] text-[#94a3b8]",
     recompete: "bg-[#fef2f2] text-[#dc2626]",
     recompete_alert: "bg-[#fef2f2] text-[#dc2626]",
   };
@@ -166,22 +166,26 @@ export default function DashboardPage() {
   const loadData = useCallback(async (limit?: number) => {
     const effectiveLimit = limit ?? matchLimit;
     setLoading(true);
-    const { data, count, error } = await supabase
-      .from("opportunity_matches")
-      .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(*)", { count: "exact" })
-      .eq("organization_id", organization.id)
-      .order("match_score", { ascending: false })
-      .range(0, effectiveLimit - 1);
+    // PERF: matches + source sample in parallel.
+    const [matchesRes, sourceSampleRes] = await Promise.all([
+      supabase
+        .from("opportunity_matches")
+        .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(*)", { count: "exact" })
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(0, effectiveLimit - 1),
+      supabase
+        .from("opportunity_matches")
+        .select("opportunities(source)")
+        .eq("organization_id", organization.id)
+        .limit(100),
+    ]);
+    const { data, count, error } = matchesRes;
     if (error) console.error("[dashboard] query error", error.message);
     setMatches(data ?? []);
     setTotalMatchCount(count ?? 0);
 
-    // Load source counts from a small sample (lightweight query — 100 rows)
-    const { data: sourceSample } = await supabase
-      .from("opportunity_matches")
-      .select("opportunities(source)")
-      .eq("organization_id", organization.id)
-      .limit(100);
+    const sourceSample = sourceSampleRes.data;
     if (sourceSample) {
       const counts: Record<string, number> = {};
       const sampleSize = sourceSample.length;
@@ -198,39 +202,41 @@ export default function DashboardPage() {
       setDbSourceCounts(counts);
     }
 
-    const { data: compliance } = await supabase
-      .from("compliance_items")
-      .select("*")
-      .eq("organization_id", organization.id)
-      .lte("due_date", new Date(Date.now() + 7 * 86400000).toISOString())
-      .eq("status", "pending")
-      .limit(5);
-    setComplianceAlerts(compliance ?? []);
-
-    // P1.2: high-severity alert strip — items with severity=high due in 30d
-    const { data: highSev } = await supabase
-      .from("compliance_items")
-      .select("id, title, due_date, severity, category")
-      .eq("organization_id", organization.id)
-      .eq("severity", "high")
-      .lte("due_date", new Date(Date.now() + 30 * 86400000).toISOString())
-      .neq("status", "complete")
-      .neq("status", "passed")
-      .order("due_date", { ascending: true })
-      .limit(5);
-    setHighSeverityAlerts(highSev ?? []);
-
-    // P1.1: 3 most urgent compliance_items by due_date for the right rail
-    const { data: upcoming } = await supabase
-      .from("compliance_items")
-      .select("id, title, due_date, category")
-      .eq("organization_id", organization.id)
-      .neq("status", "complete")
-      .neq("status", "passed")
-      .not("due_date", "is", null)
-      .order("due_date", { ascending: true })
-      .limit(3);
-    setUpcomingComplianceDeadlines(upcoming ?? []);
+    // PERF: run all three compliance queries in parallel (were sequential
+    // before, costing ~3x the round-trip time on a cold cache).
+    const in7Days = new Date(Date.now() + 7 * 86400000).toISOString();
+    const in30Days = new Date(Date.now() + 30 * 86400000).toISOString();
+    const [complianceRes, highSevRes, upcomingRes] = await Promise.all([
+      supabase
+        .from("compliance_items")
+        .select("id, title, due_date, category")
+        .eq("organization_id", organization.id)
+        .lte("due_date", in7Days)
+        .eq("status", "pending")
+        .limit(5),
+      supabase
+        .from("compliance_items")
+        .select("id, title, due_date, severity, category")
+        .eq("organization_id", organization.id)
+        .eq("severity", "high")
+        .lte("due_date", in30Days)
+        .neq("status", "complete")
+        .neq("status", "passed")
+        .order("due_date", { ascending: true })
+        .limit(5),
+      supabase
+        .from("compliance_items")
+        .select("id, title, due_date, category")
+        .eq("organization_id", organization.id)
+        .neq("status", "complete")
+        .neq("status", "passed")
+        .not("due_date", "is", null)
+        .order("due_date", { ascending: true })
+        .limit(3),
+    ]);
+    setComplianceAlerts(complianceRes.data ?? []);
+    setHighSeverityAlerts(highSevRes.data ?? []);
+    setUpcomingComplianceDeadlines(upcomingRes.data ?? []);
 
     setLoading(false);
   }, [organization.id, supabase, matchLimit]);
@@ -509,11 +515,11 @@ export default function DashboardPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[22px] font-medium text-[#e8edf8] tracking-[-0.01em]"
+            <h1 className="text-[22px] font-medium text-[#0f172a] tracking-[-0.01em]"
                 style={{fontFamily: "'DM Sans', sans-serif"}}>
               {greeting}, {displayName}
             </h1>
-            <p className="text-[13px] text-[#8b9ab5] mt-0.5">
+            <p className="text-[13px] text-[#64748b] mt-0.5">
               {today} · {totalMatchCount > 0
                 ? `${totalMatchCount.toLocaleString()} opportunities matched`
                 : "Your first digest arrives tomorrow at 7am"}
@@ -539,7 +545,7 @@ export default function DashboardPage() {
           }}
             disabled={refreshing}
             className={`text-[12px] font-medium px-3 py-1.5 border rounded-lg transition-colors ${
-              refreshing ? "text-[#4a5a75] border-[#1e2535] cursor-wait" : "text-[#4f46e5] hover:text-[#4338ca] border-[#1e2535] hover:border-[#c7d2fe]"
+              refreshing ? "text-[#94a3b8] border-[#e5e7eb] cursor-wait" : "text-[#4f46e5] hover:text-[#4338ca] border-[#e5e7eb] hover:border-[#c7d2fe]"
             }`}>
             {refreshing ? (
               <span className="flex items-center gap-1.5">
@@ -552,20 +558,20 @@ export default function DashboardPage() {
       </div>
       {/* Personalized welcome banner — shows once after onboarding */}
       {showWelcome && totalMatchCount > 0 && (
-        <div className="mb-6 p-5 bg-[#0d1018] border border-[#1e2535] flex items-center justify-between"
+        <div className="mb-6 p-5 bg-[#ffffff] border border-[#e5e7eb] flex items-center justify-between"
              style={{animation: "fadeInUp 0.4s ease both"}}>
           <div>
-            <h2 className="text-[16px] font-semibold text-[#e8edf8]">
+            <h2 className="text-[16px] font-semibold text-[#0f172a]">
               Your personalized matches are ready
             </h2>
-            <p className="text-[14px] text-[#8b9ab5] mt-1">
+            <p className="text-[14px] text-[#64748b] mt-1">
               We scored {totalMatchCount.toLocaleString()} contracts based on your {(organization.certifications || []).join(", ")} certification{(organization.certifications || []).length > 1 ? "s" : ""} and NAICS codes. Your best matches are at the top.
             </p>
           </div>
           <button onClick={async () => {
             setShowWelcome(false);
             await supabase.from("organizations").update({ has_seen_dashboard: true }).eq("id", organization.id);
-          }} className="text-[13px] text-[#8b9ab5] hover:text-[#e8edf8] shrink-0 ml-4">
+          }} className="text-[13px] text-[#64748b] hover:text-[#0f172a] shrink-0 ml-4">
             Dismiss
           </button>
         </div>
@@ -585,8 +591,8 @@ export default function DashboardPage() {
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
-          <div key={stat.label} className={`p-5 bg-[#0d1018] border border-[#1e2535] ${stat.urgent ? "border-l-[3px] border-l-[#ef4444]" : ""}`}>
-            <div className="ci-serif text-[28px] text-[#e8edf8]">{stat.value}</div>
+          <div key={stat.label} className={`p-5 bg-[#ffffff] border border-[#e5e7eb] ${stat.urgent ? "border-l-[3px] border-l-[#ef4444]" : ""}`}>
+            <div className="ci-serif text-[28px] text-[#0f172a]">{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
@@ -594,7 +600,7 @@ export default function DashboardPage() {
 
       {/* D2: ComplianceAlertStrip — only one strip (removed the legacy duplicate) */}
       {!stripDismissed && highSeverityAlerts.length > 0 && (
-        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-[#0d1018] p-4 mb-6 flex items-start gap-3">
+        <div className="border border-[#e5e7eb] border-l-4 border-l-[#f59e0b] bg-[#ffffff] p-4 mb-6 flex items-start gap-3">
           <svg className="w-5 h-5 text-[#f59e0b] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -608,7 +614,7 @@ export default function DashboardPage() {
                 {highSeverityAlerts.length} high-severity compliance item{highSeverityAlerts.length > 1 ? "s" : ""} due within 30 days
               </span>
             </div>
-            <p className="text-xs text-[#8b9ab5] truncate">
+            <p className="text-xs text-[#64748b] truncate">
               {highSeverityAlerts.map((a) => a.title).join(" · ")}
             </p>
           </div>
@@ -621,7 +627,7 @@ export default function DashboardPage() {
           <button
             onClick={dismissHighSevStrip}
             aria-label="Dismiss"
-            className="text-[#4a5a75] hover:text-[#8b9ab5] shrink-0"
+            className="text-[#94a3b8] hover:text-[#64748b] shrink-0"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -637,14 +643,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 mb-6 flex-wrap">
             <select value={filters.source}
               onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
               <option value="">All Types</option>
               <option value="federal">Federal Solicitations</option>
               <option value="recompetes">Recompete Alerts</option>
             </select>
             <select value={filters.urgency}
               onChange={(e) => setFilters((f) => ({...f, urgency: e.target.value as UrgencyFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Deadline</option>
               <option value="week">This Week</option>
               <option value="2weeks">Next 2 Weeks</option>
@@ -652,7 +658,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.valueRange}
               onChange={(e) => setFilters((f) => ({...f, valueRange: e.target.value as ValueFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Value</option>
               <option value="under100k">&lt;$100K</option>
               <option value="100k-500k">$100K–$500K</option>
@@ -661,7 +667,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.sort}
               onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
               <option value="score">Best Match</option>
               <option value="deadline">Deadline</option>
               <option value="value">Value</option>
@@ -670,7 +676,7 @@ export default function DashboardPage() {
             <input type="text" placeholder="Search agency..."
               value={filters.agency}
               onChange={(e) => setFilters((f) => ({...f, agency: e.target.value}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] w-48 focus:outline-none focus:border-[#2563eb]" />
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] w-48 focus:outline-none focus:border-[#2563eb]" />
             {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
               <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
                 className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">
@@ -681,33 +687,33 @@ export default function DashboardPage() {
 
           {/* Opportunity Cards */}
           {loading ? (
-            <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
+            <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
               {[1,2,3,4,5].map(i => (
-                <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#1e2535]">
-                  <div className="w-12 h-12 rounded-full bg-[#111520] animate-pulse" />
+                <div key={i} className="flex items-center gap-4 px-4 py-4 border-b border-[#e5e7eb]">
+                  <div className="w-12 h-12 rounded-full bg-[#f1f5f9] animate-pulse" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-3/5 bg-[#111520] rounded animate-pulse" />
-                    <div className="h-3 w-2/5 bg-[#111520] rounded animate-pulse" />
+                    <div className="h-4 w-3/5 bg-[#f1f5f9] rounded animate-pulse" />
+                    <div className="h-3 w-2/5 bg-[#f1f5f9] rounded animate-pulse" />
                   </div>
-                  <div className="h-4 w-16 bg-[#111520] rounded animate-pulse" />
+                  <div className="h-4 w-16 bg-[#f1f5f9] rounded animate-pulse" />
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 && totalMatchCount === 0 ? (
             /* ── Empty state welcome card — only when truly no matches ── */
-            <div className="border border-[#1e2535] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div className="border border-[#e5e7eb] bg-white rounded-xl p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-[#e8edf8] mb-2">
+                <h2 className="text-xl font-semibold text-[#0f172a] mb-2">
                   Your first digest arrives tomorrow at 7am
                 </h2>
-                <p className="text-sm text-[#8b9ab5] max-w-lg mx-auto">
+                <p className="text-sm text-[#64748b] max-w-lg mx-auto">
                   Every night we scan official federal procurement databases and match opportunities to your certifications. Your first ranked digest will be here by morning.
                 </p>
               </div>
 
               {/* Sample opportunity mockup */}
-              <div className="border border-dashed border-[#1e2535] bg-[#080a0f] rounded-lg p-5 max-w-xl mx-auto mb-8">
-                <div className="text-[10px] text-[#4a5a75] font-medium uppercase tracking-wide mb-3">
+              <div className="border border-dashed border-[#e5e7eb] bg-[#f8f9fb] rounded-lg p-5 max-w-xl mx-auto mb-8">
+                <div className="text-[10px] text-[#94a3b8] font-medium uppercase tracking-wide mb-3">
                   Example
                 </div>
                 <div className="flex items-start gap-4">
@@ -716,14 +722,14 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-[#e8edf8]">
+                      <span className="text-sm font-medium text-[#0f172a]">
                         DoD IT Support Services — Fort Belvoir, VA
                       </span>
                       <span className="px-2 py-0.5 text-[10px] font-mono uppercase border shrink-0 bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/20">
                         bid
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-[#8b9ab5]">
+                    <div className="flex items-center gap-3 text-xs text-[#64748b]">
                       <span>$847,000</span>
                       <span className="text-[#e5e7eb]">|</span>
                       <span>8 days</span>
@@ -736,22 +742,22 @@ export default function DashboardPage() {
 
               {/* "While you wait" action cards */}
               <div className="mb-2">
-                <h3 className="text-xs font-medium uppercase tracking-wide text-[#4a5a75] mb-4 text-center">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-[#94a3b8] mb-4 text-center">
                   While you wait
                 </h3>
                 <div className="grid grid-cols-1 max-w-md mx-auto gap-3">
                   {/* Card 1: Complete profile */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
+                    className="border border-[#e5e7eb] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#94a3b8] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#e8edf8]">Complete your profile</span>
+                      <span className="text-sm font-semibold text-[#0f172a]">Complete your profile</span>
                     </div>
-                    <p className="text-xs text-[#8b9ab5]">
+                    <p className="text-xs text-[#64748b]">
                       Add your UEI, certifications, and NAICS codes
                     </p>
                   </Link>
@@ -759,15 +765,15 @@ export default function DashboardPage() {
                   {/* Card 2: Connect Calendar */}
                   <Link
                     href="/dashboard/settings"
-                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
+                    className="border border-[#e5e7eb] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#94a3b8] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#e8edf8]">Connect Google Calendar</span>
+                      <span className="text-sm font-semibold text-[#0f172a]">Connect Google Calendar</span>
                     </div>
-                    <p className="text-xs text-[#8b9ab5]">
+                    <p className="text-xs text-[#64748b]">
                       Get deadline reminders on your phone
                     </p>
                   </Link>
@@ -776,18 +782,18 @@ export default function DashboardPage() {
                   <button
                     onClick={handleSeedDemo}
                     disabled={seedingDemo}
-                    className="border border-[#1e2535] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group text-left disabled:opacity-50"
+                    className="border border-[#e5e7eb] rounded-xl p-5 hover:border-[#e2e8f0] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] hover:-translate-y-px transition-all duration-200 group text-left disabled:opacity-50"
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-5 h-5 text-[#4a5a75] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-5 h-5 text-[#94a3b8] group-hover:text-[#2563eb] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         <path strokeLinecap="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm font-semibold text-[#e8edf8]">
+                      <span className="text-sm font-semibold text-[#0f172a]">
                         {seedingDemo ? "Loading..." : "Explore with sample data"}
                       </span>
                     </div>
-                    <p className="text-xs text-[#8b9ab5]">
+                    <p className="text-xs text-[#64748b]">
                       See how the dashboard looks with real data
                     </p>
                   </button>
@@ -795,18 +801,18 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="border border-[#1e2535] bg-white rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              <p className="text-[#4a5a75]">No matches for current filters. Try adjusting your filters above.</p>
+            <div className="border border-[#e5e7eb] bg-white rounded-xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <p className="text-[#94a3b8]">No matches for current filters. Try adjusting your filters above.</p>
             </div>
           ) : (
             <div>
               {/* Match count */}
               <div className="flex items-center justify-between px-1 mb-2">
-                <span className="text-[12px] text-[#4a5a75]">
+                <span className="text-[12px] text-[#94a3b8]">
                   Showing {filtered.length} of {totalMatchCount.toLocaleString()} matches
                 </span>
               </div>
-              <div className="bg-white border border-[#1e2535] rounded-xl overflow-hidden">
+              <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
               {filtered.map((match) => {
                 const opp = match.opportunities;
                 if (!opp) return null;
@@ -814,7 +820,7 @@ export default function DashboardPage() {
                 const deadlineColor =
                   days !== null && days <= 3 ? "text-[#ef4444]"
                     : days !== null && days <= 7 ? "text-[#f59e0b]"
-                    : "text-[#8b9ab5]";
+                    : "text-[#64748b]";
                 const isExpanded = expandedCard === match.id;
                 const isArchiving = archiveAnim === match.id;
 
@@ -827,8 +833,8 @@ export default function DashboardPage() {
                   >
                     {/* Compact list row */}
                     <div
-                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#1e2535] cursor-pointer
-                                  transition-colors hover:bg-[#080a0f] group
+                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#e5e7eb] cursor-pointer
+                                  transition-colors hover:bg-[#f8f9fb] group
                                   ${match.bid_recommendation === "bid" ? "border-l-[3px] border-l-[#059669]" :
                                     match.bid_recommendation === "recompete_alert" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
                       onClick={() => setExpandedCard(isExpanded ? null : match.id)}
@@ -838,7 +844,7 @@ export default function DashboardPage() {
                         match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
                         match.match_score >= 60 ? "border-[#2563eb] text-[#2563eb]" :
                         match.match_score >= 40 ? "border-[#d97706] text-[#d97706]" :
-                        "border-[#9ca3af] text-[#4a5a75]"}`}>
+                        "border-[#9ca3af] text-[#94a3b8]"}`}>
                         {match.match_score}
                       </div>
 
@@ -848,21 +854,21 @@ export default function DashboardPage() {
                         onClick={(e) => e.stopPropagation()}
                         className="flex-1 min-w-0 group/title"
                       >
-                        <h3 className="text-[14px] font-semibold text-[#e8edf8] truncate group-hover/title:text-[#3b82f6] transition-colors">{cleanTitle(opp.title)}</h3>
-                        <p className="text-[12px] text-[#8b9ab5] mt-0.5 truncate">{opp.agency}</p>
+                        <h3 className="text-[14px] font-semibold text-[#0f172a] truncate group-hover/title:text-[#3b82f6] transition-colors">{cleanTitle(opp.title)}</h3>
+                        <p className="text-[12px] text-[#64748b] mt-0.5 truncate">{opp.agency}</p>
                       </Link>
 
                       {/* Value */}
                       <div className="w-[88px] text-right shrink-0 leading-none">
-                        <div className="text-[9px] font-semibold text-[#4a5a75] uppercase tracking-wider mb-1">Value</div>
-                        <div className="text-[13px] font-semibold text-[#e8edf8] font-mono">
-                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : <span className="text-[#4a5a75]">Undisclosed</span>}
+                        <div className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Value</div>
+                        <div className="text-[13px] font-semibold text-[#0f172a] font-mono">
+                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : <span className="text-[#94a3b8]">Undisclosed</span>}
                         </div>
                       </div>
 
                       {/* Deadline */}
                       <div className="w-[60px] text-right shrink-0 leading-none">
-                        <div className="text-[9px] font-semibold text-[#4a5a75] uppercase tracking-wider mb-1">Due</div>
+                        <div className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Due</div>
                         <div className={`text-[12px] font-mono ${deadlineColor}`}>
                           {deadlineLabel(opp.response_deadline)}
                         </div>
@@ -880,7 +886,7 @@ export default function DashboardPage() {
                           className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
                             match.user_status === "bidding"
                               ? "bg-[#2563eb] text-white border-[#2563eb]"
-                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#2563eb] hover:text-[#2563eb]"
+                              : "bg-[#ffffff] text-[#64748b] border-[#e5e7eb] hover:border-[#2563eb] hover:text-[#2563eb]"
                           }`}
                         >
                           Bid
@@ -890,7 +896,7 @@ export default function DashboardPage() {
                           className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
                             match.user_status === "tracking"
                               ? "bg-[#22c55e] text-white border-[#22c55e]"
-                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#22c55e] hover:text-[#22c55e]"
+                              : "bg-[#ffffff] text-[#64748b] border-[#e5e7eb] hover:border-[#22c55e] hover:text-[#22c55e]"
                           }`}
                         >
                           Monitor
@@ -899,8 +905,8 @@ export default function DashboardPage() {
                           onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "skipped"); }}
                           className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
                             match.user_status === "skipped"
-                              ? "bg-[#4a5a75] text-white border-[#4a5a75]"
-                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#ef4444] hover:text-[#ef4444]"
+                              ? "bg-[#94a3b8] text-white border-[#94a3b8]"
+                              : "bg-[#ffffff] text-[#64748b] border-[#e5e7eb] hover:border-[#ef4444] hover:text-[#ef4444]"
                           }`}
                         >
                           Skip
@@ -908,7 +914,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Chevron */}
-                      <svg className={`w-4 h-4 text-[#4a5a75] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                      <svg className={`w-4 h-4 text-[#94a3b8] shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                         fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" d="M19 9l-7 7-7-7" />
                       </svg>
@@ -916,21 +922,21 @@ export default function DashboardPage() {
 
                     {/* Expanded section */}
                     {isExpanded && (
-                      <div className="px-5 py-5 pl-[76px] border-b border-[#1e2535] bg-[#fafbfc]"
+                      <div className="px-5 py-5 pl-[76px] border-b border-[#e5e7eb] bg-[#fafbfc]"
                            onClick={(e) => e.stopPropagation()}
                            style={{animation: "fadeInUp 0.15s ease"}}>
 
                           {/* Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            {(opp.set_aside_type || opp.set_aside_description) && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535]">{opp.set_aside_type || opp.set_aside_description}</span>}
-                            {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535] font-mono">NAICS {opp.naics_code}</span>}
-                            {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#111520] text-[#8b9ab5] border border-[#1e2535]">{opp.place_of_performance}</span>}
+                            {(opp.set_aside_type || opp.set_aside_description) && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f1f5f9] text-[#64748b] border border-[#e5e7eb]">{opp.set_aside_type || opp.set_aside_description}</span>}
+                            {opp.naics_code && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f1f5f9] text-[#64748b] border border-[#e5e7eb] font-mono">NAICS {opp.naics_code}</span>}
+                            {opp.place_of_performance && <span className="px-2.5 py-1 text-[11px] rounded-full bg-[#f1f5f9] text-[#64748b] border border-[#e5e7eb]">{opp.place_of_performance}</span>}
                             {sourceBadge(opp.source, match.bid_recommendation)}
                           </div>
 
                           {/* Description */}
                           {opp.description && (
-                            <p className="text-[13px] text-[#8b9ab5] leading-relaxed mb-4 line-clamp-3">
+                            <p className="text-[13px] text-[#64748b] leading-relaxed mb-4 line-clamp-3">
                               {decodeHtml(opp.description.substring(0, 500))}
                             </p>
                           )}
@@ -939,19 +945,19 @@ export default function DashboardPage() {
                           <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-4">
                             {opp.solicitation_number && (
                               <div>
-                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Solicitation</div>
-                                <div className="text-[13px] text-[#e8edf8] font-mono">{opp.solicitation_number}</div>
+                                <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Solicitation</div>
+                                <div className="text-[13px] text-[#0f172a] font-mono">{opp.solicitation_number}</div>
                               </div>
                             )}
                             {getVal(opp) > 0 && (
                               <div>
-                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Estimated Value</div>
-                                <div className="text-[13px] text-[#e8edf8] font-semibold">{formatCurrency(getVal(opp))}</div>
+                                <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Estimated Value</div>
+                                <div className="text-[13px] text-[#0f172a] font-semibold">{formatCurrency(getVal(opp))}</div>
                               </div>
                             )}
                             {opp.response_deadline && (
                               <div>
-                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Response Deadline</div>
+                                <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Response Deadline</div>
                                 <div className={`text-[13px] font-semibold ${deadlineColor}`}>
                                   {new Date(opp.response_deadline).toLocaleDateString()} ({deadlineLabel(opp.response_deadline)})
                                 </div>
@@ -959,19 +965,19 @@ export default function DashboardPage() {
                             )}
                             {opp.place_of_performance && (
                               <div>
-                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Location</div>
-                                <div className="text-[13px] text-[#e8edf8]">{opp.place_of_performance}</div>
+                                <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Location</div>
+                                <div className="text-[13px] text-[#0f172a]">{opp.place_of_performance}</div>
                               </div>
                             )}
                             {opp.posted_date && (
                               <div>
-                                <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Posted</div>
-                                <div className="text-[13px] text-[#e8edf8]">{new Date(opp.posted_date).toLocaleDateString()}</div>
+                                <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Posted</div>
+                                <div className="text-[13px] text-[#0f172a]">{new Date(opp.posted_date).toLocaleDateString()}</div>
                               </div>
                             )}
                             <div>
-                              <div className="text-[11px] text-[#4a5a75] font-medium mb-0.5">Source</div>
-                              <div className="text-[13px] text-[#e8edf8]">{getSourceLabel(opp.source, opp.agency)}</div>
+                              <div className="text-[11px] text-[#94a3b8] font-medium mb-0.5">Source</div>
+                              <div className="text-[13px] text-[#0f172a]">{getSourceLabel(opp.source, opp.agency)}</div>
                             </div>
                           </div>
 
@@ -989,23 +995,23 @@ export default function DashboardPage() {
                                   value={noteText}
                                   onChange={(e) => setNoteText(e.target.value)}
                                   rows={3}
-                                  className="w-full px-3 py-2 text-[13px] border border-[#1e2535] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+                                  className="w-full px-3 py-2 text-[13px] border border-[#e5e7eb] rounded-lg focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
                                   placeholder="Add your notes about this contract..."
                                   autoFocus
                                 />
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => saveNote(match.id)} className="px-3 py-1 text-xs bg-[#2563eb] text-white rounded-lg hover:bg-[#3b82f6]">Save Note</button>
-                                  <button onClick={() => setEditingNote(null)} className="text-xs text-[#94a3b8] hover:text-[#8b9ab5]">Cancel</button>
+                                  <button onClick={() => setEditingNote(null)} className="text-xs text-[#94a3b8] hover:text-[#64748b]">Cancel</button>
                                 </div>
                               </div>
                             ) : match.user_notes ? (
                               <div>
-                                <p className="text-xs text-[#8b9ab5] mb-1">{match.user_notes}</p>
+                                <p className="text-xs text-[#64748b] mb-1">{match.user_notes}</p>
                                 {match.notes_updated_at && <span className="text-[10px] text-[#94a3b8]">Note added {new Date(match.notes_updated_at).toLocaleDateString()}</span>}
                                 <button onClick={() => { setEditingNote(match.id); setNoteText(match.user_notes || ""); }} className="ml-2 text-[10px] text-[#2563eb] hover:text-[#1d4ed8]">Edit</button>
                               </div>
                             ) : (
-                              <button onClick={() => { setEditingNote(match.id); setNoteText(""); }} className="text-xs text-[#94a3b8] hover:text-[#8b9ab5] italic">Add a note...</button>
+                              <button onClick={() => { setEditingNote(match.id); setNoteText(""); }} className="text-xs text-[#94a3b8] hover:text-[#64748b] italic">Add a note...</button>
                             )}
                           </div>
 
@@ -1075,7 +1081,7 @@ export default function DashboardPage() {
                               ) : (
                                 <>
                                   <button onClick={() => updateStatus(match.id, "tracking")}
-                                    className="px-4 py-2 text-[13px] font-medium border border-[#1e2535] text-[#8b9ab5] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
+                                    className="px-4 py-2 text-[13px] font-medium border border-[#e5e7eb] text-[#64748b] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
                                     Track
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "bidding")}
@@ -1083,7 +1089,7 @@ export default function DashboardPage() {
                                     Start Bid
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "skipped")}
-                                    className="px-4 py-2 text-[13px] text-[#4a5a75] hover:text-[#8b9ab5] transition-colors">
+                                    className="px-4 py-2 text-[13px] text-[#94a3b8] hover:text-[#64748b] transition-colors">
                                     Archive
                                   </button>
                                 </>
@@ -1102,7 +1108,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className="px-6 py-2.5 text-sm font-medium border border-[#1e2535] text-[#8b9ab5] bg-white hover:border-[#e2e8f0] hover:text-[#e8edf8] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
+                    className="px-6 py-2.5 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:border-[#e2e8f0] hover:text-[#0f172a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
                   >
                     {loadingMore ? "Loading..." : "Show 50 more"}
                   </button>
@@ -1127,13 +1133,13 @@ export default function DashboardPage() {
               { label: "Lost", key: "lost" },
             ].map((s) => (
               <div key={s.key} className="flex items-center justify-between py-1.5">
-                <span className="text-xs text-[#8b9ab5]">{s.label}</span>
-                <span className="text-xs font-mono text-[#e8edf8]">{pipelineCounts[s.key] ?? 0}</span>
+                <span className="text-xs text-[#64748b]">{s.label}</span>
+                <span className="text-xs font-mono text-[#0f172a]">{pipelineCounts[s.key] ?? 0}</span>
               </div>
             ))}
             <Link
               href="/dashboard/pipeline"
-              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+              className="block mt-3 text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
             >
               View Pipeline →
             </Link>
@@ -1157,13 +1163,13 @@ export default function DashboardPage() {
               <div className="ci-card p-5">
                 <h3 className="ci-section-label mb-3">Compliance Health</h3>
                 <div className="text-3xl font-bold font-mono mb-2" style={{ color }}>{health}%</div>
-                <div className="w-full h-1.5 bg-[#111520] rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${health}%`, backgroundColor: color }} />
                 </div>
                 {complianceAlerts.length > 0 && (
-                  <p className="text-[11px] text-[#8b9ab5] mt-2">{complianceAlerts.length} alert{complianceAlerts.length > 1 ? "s" : ""} due this week</p>
+                  <p className="text-[11px] text-[#64748b] mt-2">{complianceAlerts.length} alert{complianceAlerts.length > 1 ? "s" : ""} due this week</p>
                 )}
-                <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors">
+                <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors">
                   View Compliance →
                 </Link>
               </div>
@@ -1174,20 +1180,20 @@ export default function DashboardPage() {
           <div className="ci-card p-5">
             <h3 className="ci-section-label mb-3">Upcoming Deadlines</h3>
             {upcomingComplianceDeadlines.length === 0 ? (
-              <p className="text-xs text-[#4a5a75]">No upcoming compliance deadlines</p>
+              <p className="text-xs text-[#94a3b8]">No upcoming compliance deadlines</p>
             ) : (
               upcomingComplianceDeadlines.map((c) => {
                 const d = daysUntil(c.due_date);
-                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#8b9ab5]";
+                const color = d !== null && d <= 3 ? "text-[#ef4444]" : d !== null && d <= 7 ? "text-[#f59e0b]" : "text-[#64748b]";
                 return (
                   <div key={c.id} className="flex items-center justify-between py-1.5">
-                    <span className="text-xs text-[#8b9ab5] truncate mr-2">{c.title}</span>
+                    <span className="text-xs text-[#64748b] truncate mr-2">{c.title}</span>
                     <span className={`text-xs font-mono shrink-0 ${color}`}>{deadlineLabel(c.due_date)}</span>
                   </div>
                 );
               })
             )}
-            <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors">
+            <Link href="/dashboard/compliance" className="block mt-3 text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors">
               View Compliance →
             </Link>
           </div>
@@ -1197,7 +1203,7 @@ export default function DashboardPage() {
             const archived = matches.filter((m) => m.user_status === "skipped");
             if (!archived.length) return null;
             return (
-              <div className="border border-[#1e2535] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div className="border border-[#e5e7eb] bg-white p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <button
                   onClick={() => setArchivedOpen(!archivedOpen)}
                   className="w-full flex items-center justify-between"
@@ -1214,7 +1220,7 @@ export default function DashboardPage() {
                     {archived.slice(0, 20).map((m) => (
                       <div key={m.id} className="flex items-center justify-between py-1.5 border-b border-[#f8f9fb] last:border-0 group">
                         <div className="min-w-0 flex-1">
-                          <span className="text-xs text-[#8b9ab5] truncate block">{decodeHtml(m.opportunities?.title || "")}</span>
+                          <span className="text-xs text-[#64748b] truncate block">{decodeHtml(m.opportunities?.title || "")}</span>
                           <span className="text-[10px] text-[#94a3b8]">{m.opportunities?.agency}</span>
                         </div>
                         <button
@@ -1244,7 +1250,7 @@ export default function DashboardPage() {
           {toast.link && (
             <a href={toast.link} className="text-[#93c5fd] underline ml-1">{toast.linkText || "View"}</a>
           )}
-          <button onClick={() => setToast(null)} className="text-[#8b9ab5] hover:text-white ml-2">&times;</button>
+          <button onClick={() => setToast(null)} className="text-[#64748b] hover:text-white ml-2">&times;</button>
         </div>
       )}
 

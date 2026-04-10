@@ -106,30 +106,30 @@ export default function ExpiredPage() {
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2 mb-8">
             <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">CI</div>
-            <span className="font-semibold text-[15px] text-[#e8edf8]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
+            <span className="font-semibold text-[15px] text-[#0f172a]">Contracts<span className="text-[#3b82f6]">Intel</span></span>
           </Link>
           <h1 className="font-['DM_Serif_Display'] text-3xl tracking-[-0.02em] text-[#0f172a] mb-3">Your free trial has ended</h1>
-          <p className="text-[#8b9ab5] text-base max-w-lg mx-auto">
+          <p className="text-[#64748b] text-base max-w-lg mx-auto">
             To continue using ContractsIntel and keep receiving matched opportunities, choose a plan below.
           </p>
         </div>
 
         {usage && usage.used.length > 0 && (
-          <div className="border border-[#1e2535] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-8">
-            <div className="text-sm text-[#8b9ab5] mb-3">
-              During your trial, you used <strong className="text-[#e8edf8]">{usage.used.length + 4}</strong> of 16 products:
+          <div className="border border-[#e5e7eb] bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-8">
+            <div className="text-sm text-[#64748b] mb-3">
+              During your trial, you used <strong className="text-[#0f172a]">{usage.used.length + 4}</strong> of 16 products:
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
               {["Opportunity Intelligence", "Pipeline Tracker", "Compliance Alerts", "Calendar Sync"].map((f) => (
-                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#080a0f] border border-[#1e2535] text-[#8b9ab5]">{f}</span>
+                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b]">{f}</span>
               ))}
               {usage.used.map((f) => (
-                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#080a0f] border border-[#2563eb]/30 text-[#3b82f6]">{f}</span>
+                <span key={f} className="text-[10px] font-mono px-2 py-1 bg-[#f8f9fb] border border-[#2563eb]/30 text-[#3b82f6]">{f}</span>
               ))}
             </div>
             <div className="text-sm">
               Based on your usage, we recommend{" "}
-              <strong className={usage.recommended === "Team" ? "text-[#a78bfa]" : usage.recommended === "BD Pro" ? "text-[#3b82f6]" : "text-[#e8edf8]"}>
+              <strong className={usage.recommended === "Team" ? "text-[#a78bfa]" : usage.recommended === "BD Pro" ? "text-[#3b82f6]" : "text-[#0f172a]"}>
                 {usage.recommended}
               </strong>
               {usage.recommended === "Team" && " — you used Team-exclusive features like CPARS and competitor intelligence."}
@@ -143,17 +143,17 @@ export default function ExpiredPage() {
           {PLANS.map((plan) => (
             <div
               key={plan.tier}
-              className={`border bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${plan.popular ? "border-[#2563eb] ring-1 ring-[#2563eb]" : "border-[#1e2535]"}`}
+              className={`border bg-white p-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${plan.popular ? "border-[#2563eb] ring-1 ring-[#2563eb]" : "border-[#e5e7eb]"}`}
             >
               {plan.popular && (
                 <div className="text-[10px] font-mono uppercase tracking-wider text-[#3b82f6] mb-2">Most Popular</div>
               )}
-              <div className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-1">{plan.name}</div>
-              <div className="text-3xl font-bold tracking-[-0.02em] text-[#0f172a] mb-1">{plan.price}<span className="text-sm text-[#8b9ab5] font-sans">/mo</span></div>
-              <div className="text-xs text-[#8b9ab5] mb-4">Best for: {plan.best}</div>
-              <div className="border-t border-[#1e2535] pt-4 mb-5">
+              <div className="text-xs font-mono uppercase tracking-wider text-[#94a3b8] mb-1">{plan.name}</div>
+              <div className="text-3xl font-bold tracking-[-0.02em] text-[#0f172a] mb-1">{plan.price}<span className="text-sm text-[#64748b] font-sans">/mo</span></div>
+              <div className="text-xs text-[#64748b] mb-4">Best for: {plan.best}</div>
+              <div className="border-t border-[#e5e7eb] pt-4 mb-5">
                 {plan.features.map((f) => (
-                  <div key={f} className="flex items-start gap-2 text-xs text-[#8b9ab5] mb-2">
+                  <div key={f} className="flex items-start gap-2 text-xs text-[#64748b] mb-2">
                     <svg className="w-3.5 h-3.5 text-[#22c55e] mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     {f}
                   </div>
@@ -165,7 +165,7 @@ export default function ExpiredPage() {
                 className={`w-full py-3 text-sm font-medium transition-colors disabled:opacity-50 ${
                   plan.popular
                     ? "bg-[#2563eb] text-white hover:bg-[#3b82f6]"
-                    : "border border-[#2a3548] text-[#e8edf8] hover:border-[#4b5563]"
+                    : "border border-[#d1d5db] text-[#0f172a] hover:border-[#4b5563]"
                 }`}
               >
                 {loading === plan.tier ? "Redirecting..." : `Subscribe to ${plan.name}`}
@@ -175,7 +175,7 @@ export default function ExpiredPage() {
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-[#4a5a75]">
+          <p className="text-sm text-[#94a3b8]">
             Questions? Email <a href="mailto:support@contractsintel.com" className="text-[#3b82f6]">support@contractsintel.com</a>
           </p>
         </div>

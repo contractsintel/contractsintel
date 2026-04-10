@@ -37,7 +37,7 @@ export function TrialTierBanner({ page }: { page: string }) {
       </span>
       <button
         onClick={() => setDismissed(true)}
-        className="ml-4 text-[#4a5a75] hover:text-[#e8edf8] text-base leading-none"
+        className="ml-4 text-[#94a3b8] hover:text-[#0f172a] text-base leading-none"
       >
         &times;
       </button>

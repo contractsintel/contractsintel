@@ -76,7 +76,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardProvider user={userProfile} organization={org}>
-      <div className="ci-dark-scope min-h-screen bg-[#080a0f]">
+      <div className="min-h-screen bg-[#f8f9fb]">
         <TopNav
           companyName={(org.name || "").includes("@") ? (org.name || "").split("@")[0].charAt(0).toUpperCase() + (org.name || "").split("@")[0].slice(1) : (org.name || "").split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
           userEmail={authUser.email ?? ""}

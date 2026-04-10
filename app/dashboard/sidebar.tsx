@@ -88,7 +88,7 @@ function SetupProgressRing({ completed, total }: { completed: number; total: num
   return (
     <Link
       href="/dashboard/get-started"
-      className="flex items-center gap-3 px-5 py-2.5 hover:bg-[#111520] transition-colors rounded-lg mx-2"
+      className="flex items-center gap-3 px-5 py-2.5 hover:bg-[#f1f5f9] transition-colors rounded-lg mx-2"
     >
       <div className="relative shrink-0" style={{ width: size, height: size, filter: "drop-shadow(0 0 6px rgba(37,99,235,0.2))" }}>
         <svg width={size} height={size} className="-rotate-90">
@@ -103,7 +103,7 @@ function SetupProgressRing({ completed, total }: { completed: number; total: num
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#1e2535"
+            stroke="#e5e7eb"
             strokeWidth={strokeWidth}
           />
           <circle
@@ -119,9 +119,9 @@ function SetupProgressRing({ completed, total }: { completed: number; total: num
             style={{ transition: "stroke-dashoffset 0.6s ease" }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold font-mono text-[#e8edf8]">{pctText}%</span>
+        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold font-mono text-[#0f172a]">{pctText}%</span>
       </div>
-      <span className="text-xs text-[#8b9ab5] font-medium">Setup: {completed}/{total}</span>
+      <span className="text-xs text-[#64748b] font-medium">Setup: {completed}/{total}</span>
     </Link>
   );
 }
@@ -144,24 +144,24 @@ function SidebarLink({
       className={`group relative flex items-center gap-3 px-3 py-2 mx-2 rounded-md text-[14px] font-medium transition-all duration-150 ${
         isActive
           ? "text-[#2563eb] font-semibold bg-[rgba(37,99,235,0.12)]"
-          : "text-[#8b9ab5] hover:text-[#e8edf8] hover:bg-[#111520]"
+          : "text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]"
       } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={isLocked ? (e) => e.preventDefault() : undefined}
     >
-      <span className={`${isActive ? "text-[#2563eb]" : "text-[#4a5a75] group-hover:text-[#8b9ab5]"} transition-colors`}>
+      <span className={`${isActive ? "text-[#2563eb]" : "text-[#94a3b8] group-hover:text-[#64748b]"} transition-colors`}>
         {ICONS[item.icon]}
       </span>
       <span>{item.label}</span>
       {isLocked && (
         <>
-          <svg className="w-3 h-3 ml-auto text-[#4a5a75]" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-3 h-3 ml-auto text-[#94a3b8]" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
               clipRule="evenodd"
             />
           </svg>
-          <span className="absolute left-full ml-2 px-2 py-1 text-xs text-[#e8edf8] bg-[#080a0f] border border-[#1e2535] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          <span className="absolute left-full ml-2 px-2 py-1 text-xs text-[#0f172a] bg-[#f8f9fb] border border-[#e5e7eb] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
             {item.teamOnly ? "Upgrade to Team" : "Upgrade to BD Pro"}
           </span>
         </>
@@ -247,7 +247,7 @@ export function Sidebar({ plan }: { plan: string }) {
             className={`group relative flex items-center gap-3 px-3 py-2 mx-2 rounded-md text-[14px] font-medium transition-all ${
               pathname.startsWith("/dashboard/onboarding")
                 ? "text-[#2563eb] font-semibold bg-[rgba(37,99,235,0.12)]"
-                : "text-[#8b9ab5] hover:text-[#e8edf8] hover:bg-[#111520]"
+                : "text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]"
             }`}>
             <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
               <path strokeLinecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
@@ -270,7 +270,7 @@ export function Sidebar({ plan }: { plan: string }) {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-[#1e2535]">
+      <div className="border-t border-[#e5e7eb]">
         {/* Setup progress ring */}
         <SetupProgressRing completed={setupCompleted} total={setupTotal} />
 
@@ -282,7 +282,7 @@ export function Sidebar({ plan }: { plan: string }) {
           {!trial && plan !== "team" && (
             <Link
               href="/dashboard/settings"
-              className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+              className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
             >
               Upgrade
             </Link>

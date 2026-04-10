@@ -84,19 +84,19 @@ export default function AuditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080a0f]">
+    <div className="min-h-screen bg-[#f8f9fb]">
       {/* Nav */}
-      <nav className="border-b border-[#1e2535] bg-[#080a0f]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
+      <nav className="border-b border-[#e5e7eb] bg-[#f8f9fb]/95 backdrop-blur-md px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center text-white text-xs font-mono font-medium">
             CI
           </div>
-          <span className="font-semibold text-[15px] text-[#e8edf8]">
+          <span className="font-semibold text-[15px] text-[#0f172a]">
             Contracts<span className="text-[#3b82f6]">Intel</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm text-[#8b9ab5] hover:text-[#e8edf8]">Sign In</Link>
+          <Link href="/login" className="text-sm text-[#64748b] hover:text-[#0f172a]">Sign In</Link>
           <Link href="/signup" className="text-sm bg-[#2563eb] text-white px-4 py-1.5 hover:bg-[#3b82f6] transition-colors">
             Start Free Trial
           </Link>
@@ -105,8 +105,8 @@ export default function AuditPage() {
 
       <main className="max-w-2xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-serif text-[#e8edf8] mb-3">Free SAM.gov Registration Audit</h1>
-          <p className="text-[#8b9ab5]">
+          <h1 className="text-3xl font-serif text-[#0f172a] mb-3">Free SAM.gov Registration Audit</h1>
+          <p className="text-[#64748b]">
             Enter your UEI to get an instant compliance score and actionable recommendations.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function AuditPage() {
             value={uei}
             onChange={(e) => setUei(e.target.value)}
             placeholder="Enter your UEI (e.g. J7M9HPTGJ1S8)"
-            className="flex-1 bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]"
+            className="flex-1 bg-[#f1f5f9] border border-[#e5e7eb] text-[#0f172a] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]"
           />
           <button
             type="submit"
@@ -138,19 +138,19 @@ export default function AuditPage() {
         {result && (
           <div>
             {/* Score */}
-            <div className="border border-[#1e2535] bg-[#0d1018] p-8 mb-6 text-center">
-              <div className="text-sm text-[#4a5a75] font-mono uppercase tracking-wider mb-2">
+            <div className="border border-[#e5e7eb] bg-[#ffffff] p-8 mb-6 text-center">
+              <div className="text-sm text-[#94a3b8] font-mono uppercase tracking-wider mb-2">
                 SAM Registration Score
               </div>
               <div className={`text-6xl font-bold font-mono ${scoreColor(result.score)}`}>
                 {result.score}
               </div>
-              <div className="w-full max-w-xs mx-auto h-3 bg-[#111520] mt-4">
+              <div className="w-full max-w-xs mx-auto h-3 bg-[#f1f5f9] mt-4">
                 <div className={`h-full ${scoreBg(result.score)} transition-all`} style={{ width: `${result.score}%` }} />
               </div>
               <div className="mt-4">
-                <p className="text-sm text-[#e8edf8]">{result.entity.legalBusinessName}</p>
-                <p className="text-xs text-[#4a5a75] font-mono mt-1">
+                <p className="text-sm text-[#0f172a]">{result.entity.legalBusinessName}</p>
+                <p className="text-xs text-[#94a3b8] font-mono mt-1">
                   UEI: {result.entity.uei}
                   {result.entity.cageCode && ` | CAGE: ${result.entity.cageCode}`}
                 </p>
@@ -158,31 +158,31 @@ export default function AuditPage() {
             </div>
 
             {/* Categories */}
-            <div className="grid grid-cols-2 gap-px bg-[#1e2535] border border-[#1e2535] mb-6">
+            <div className="grid grid-cols-2 gap-px bg-[#e5e7eb] border border-[#e5e7eb] mb-6">
               {result.categories.map((cat) => (
-                <div key={cat.name} className="bg-[#0d1018] p-5">
+                <div key={cat.name} className="bg-[#ffffff] p-5">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-[#8b9ab5]">{cat.name}</span>
+                    <span className="text-xs text-[#64748b]">{cat.name}</span>
                     <span className={`text-lg font-bold font-mono ${scoreColor(cat.score)}`}>
                       {cat.score}
                     </span>
                   </div>
-                  <p className="text-xs text-[#4a5a75]">{cat.details}</p>
+                  <p className="text-xs text-[#94a3b8]">{cat.details}</p>
                 </div>
               ))}
             </div>
 
             {/* Recommendations (blurred) */}
             <div className="relative">
-              <div className={`border border-[#1e2535] bg-[#0d1018] p-6 ${!revealFull ? "filter blur-sm" : ""}`}>
-                <h3 className="text-xs font-mono uppercase tracking-wider text-[#4a5a75] mb-4">
+              <div className={`border border-[#e5e7eb] bg-[#ffffff] p-6 ${!revealFull ? "filter blur-sm" : ""}`}>
+                <h3 className="text-xs font-mono uppercase tracking-wider text-[#94a3b8] mb-4">
                   Recommendations
                 </h3>
                 <div className="space-y-3">
                   {result.recommendations.map((rec, i) => (
                     <div key={i} className="flex gap-3">
                       <span className="text-[#3b82f6] shrink-0">&#8226;</span>
-                      <p className="text-sm text-[#8b9ab5]">{rec}</p>
+                      <p className="text-sm text-[#64748b]">{rec}</p>
                     </div>
                   ))}
                 </div>
@@ -191,11 +191,11 @@ export default function AuditPage() {
               {/* Email capture overlay */}
               {!revealFull && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="border border-[#1e2535] bg-[#0d1018] p-6 max-w-sm w-full text-center">
-                    <h3 className="text-sm font-medium text-[#e8edf8] mb-2">
+                  <div className="border border-[#e5e7eb] bg-[#ffffff] p-6 max-w-sm w-full text-center">
+                    <h3 className="text-sm font-medium text-[#0f172a] mb-2">
                       Get Your Full Report
                     </h3>
-                    <p className="text-xs text-[#8b9ab5] mb-4">
+                    <p className="text-xs text-[#64748b] mb-4">
                       Enter your email to reveal actionable recommendations.
                     </p>
                     {emailSubmitted ? (
@@ -208,7 +208,7 @@ export default function AuditPage() {
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="you@company.com"
                           required
-                          className="flex-1 bg-[#111520] border border-[#1e2535] text-[#e8edf8] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
+                          className="flex-1 bg-[#f1f5f9] border border-[#e5e7eb] text-[#0f172a] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
                         />
                         <button
                           type="submit"
@@ -225,7 +225,7 @@ export default function AuditPage() {
 
             {/* CTA */}
             <div className="mt-8 text-center">
-              <p className="text-sm text-[#8b9ab5] mb-3">
+              <p className="text-sm text-[#64748b] mb-3">
                 Want continuous monitoring and AI-powered contract matching?
               </p>
               <Link

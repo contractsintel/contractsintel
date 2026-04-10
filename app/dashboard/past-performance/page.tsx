@@ -123,12 +123,12 @@ export default function PastPerformancePage() {
     return (
       <div className="relative">
         <div className="absolute inset-0 z-10 flex items-center justify-center">
-          <div className="border border-[#1e2535] bg-white p-8 max-w-md text-center">
-            <svg className="w-12 h-12 text-[#4a5a75] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+          <div className="border border-[#e5e7eb] bg-white p-8 max-w-md text-center">
+            <svg className="w-12 h-12 text-[#94a3b8] mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
             </svg>
             <h2 className="text-lg font-semibold text-[#0f172a] mb-2">Past Performance Builder — BD Pro Feature</h2>
-            <p className="text-sm text-[#8b9ab5] mb-4">
+            <p className="text-sm text-[#64748b] mb-4">
               Build and manage past performance records with AI-generated PPQ narratives.
             </p>
             <Link href="/dashboard/settings" className="inline-block bg-[#2563eb] text-white px-6 py-2 text-sm font-medium hover:bg-[#3b82f6] transition-colors">
@@ -140,10 +140,10 @@ export default function PastPerformancePage() {
           <h1 className="ci-page-title">Past Performance</h1>
           <div className="space-y-3 mt-6">
             {[1,2,3].map(i => (
-              <div key={i} className="border border-[#1e2535] bg-white p-5">
-                <div className="h-3 w-1/2 bg-[#111520] rounded mb-3" />
-                <div className="h-2 w-1/3 bg-[#111520] rounded mb-2" />
-                <div className="h-2 w-2/3 bg-[#111520] rounded" />
+              <div key={i} className="border border-[#e5e7eb] bg-white p-5">
+                <div className="h-3 w-1/2 bg-[#f1f5f9] rounded mb-3" />
+                <div className="h-2 w-1/3 bg-[#f1f5f9] rounded mb-2" />
+                <div className="h-2 w-2/3 bg-[#f1f5f9] rounded" />
               </div>
             ))}
           </div>
@@ -167,24 +167,24 @@ export default function PastPerformancePage() {
       </div>
 
       {loading ? (
-        <div className="text-center text-[#4a5a75] py-12">Loading records...</div>
+        <div className="text-center text-[#94a3b8] py-12">Loading records...</div>
       ) : records.length === 0 ? (
-        <div className="max-w-[480px] mx-auto text-center p-12 border border-[#1e2535] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <svg className="w-12 h-12 mx-auto mb-4 text-[#4a5a75]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-          <div className="text-[18px] font-semibold text-[#e8edf8] mb-2">Your performance library starts here</div>
-          <p className="text-sm text-[#8b9ab5] mb-6">Win a contract in your Pipeline and a performance record is created automatically. Log monthly to build narratives that win future proposals.</p>
+        <div className="max-w-[480px] mx-auto text-center p-12 border border-[#e5e7eb] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <svg className="w-12 h-12 mx-auto mb-4 text-[#94a3b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+          <div className="text-[18px] font-semibold text-[#0f172a] mb-2">Your performance library starts here</div>
+          <p className="text-sm text-[#64748b] mb-6">Win a contract in your Pipeline and a performance record is created automatically. Log monthly to build narratives that win future proposals.</p>
           <Link href="/dashboard/pipeline" className="inline-block px-5 py-2.5 text-sm font-medium text-white bg-[#2563eb] hover:bg-[#1d4ed8] transition-colors">Go to Pipeline</Link>
         </div>
       ) : (
         <div className="space-y-4">
           {records.map((record) => (
-            <div key={record.id} className="border border-[#1e2535] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div key={record.id} className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-sm text-[#e8edf8] font-medium">{record.contract_title}</h3>
-                  <p className="text-xs text-[#8b9ab5] mt-0.5">{record.agency}</p>
+                  <h3 className="text-sm text-[#0f172a] font-medium">{record.contract_title}</h3>
+                  <p className="text-xs text-[#64748b] mt-0.5">{record.agency}</p>
                   {record.contract_number && (
-                    <p className="text-xs text-[#4a5a75] font-mono mt-0.5">{record.contract_number}</p>
+                    <p className="text-xs text-[#94a3b8] font-mono mt-0.5">{record.contract_number}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export default function PastPerformancePage() {
                       setSelectedRecord(record.id);
                       setShowLogModal(true);
                     }}
-                    className="px-3 py-1 text-xs border border-[#1e2535] text-[#8b9ab5] hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors"
+                    className="px-3 py-1 text-xs border border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db] hover:text-[#0f172a] transition-colors"
                   >
                     Log This Month
                   </button>
@@ -208,29 +208,29 @@ export default function PastPerformancePage() {
               </div>
 
               {record.period_of_performance && (
-                <div className="text-xs text-[#4a5a75] mb-2">
+                <div className="text-xs text-[#94a3b8] mb-2">
                   Period: {record.period_of_performance}
                 </div>
               )}
               {record.contract_value && (
-                <div className="text-xs text-[#4a5a75] mb-2">
+                <div className="text-xs text-[#94a3b8] mb-2">
                   Value: ${record.contract_value?.toLocaleString()}
                 </div>
               )}
               {record.description && (
-                <p className="text-xs text-[#8b9ab5] mb-3">{record.description}</p>
+                <p className="text-xs text-[#64748b] mb-3">{record.description}</p>
               )}
 
               {/* Monthly Logs */}
               {record.monthly_logs && record.monthly_logs.length > 0 && (
-                <div className="border-t border-[#1e2535] pt-3 mt-3">
-                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75] mb-2">
+                <div className="border-t border-[#e5e7eb] pt-3 mt-3">
+                  <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-2">
                     Monthly Logs ({record.monthly_logs.length})
                   </h4>
                   <div className="space-y-1">
                     {record.monthly_logs.slice(-3).map((log: any, i: number) => (
-                      <div key={i} className="text-xs text-[#8b9ab5]">
-                        <span className="text-[#4a5a75] font-mono">
+                      <div key={i} className="text-xs text-[#64748b]">
+                        <span className="text-[#94a3b8] font-mono">
                           {new Date(log.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}:
                         </span>{" "}
                         {log.text}
@@ -242,56 +242,56 @@ export default function PastPerformancePage() {
 
               {/* PPQ Narrative Viewer */}
               {ppqRecordId === record.id && ppqNarrative && (
-                <div className="border-t border-[#1e2535] pt-3 mt-3">
+                <div className="border-t border-[#e5e7eb] pt-3 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75]">
+                    <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8]">
                       PPQ Narrative
                     </h4>
                     <div className="flex items-center gap-3">
                       <button
                         onClick={copyNarrative}
-                        className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                        className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
                       >
                         {copied ? "Copied" : "Copy"}
                       </button>
                       <button
                         onClick={downloadNarrative}
-                        className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                        className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
                       >
                         Download
                       </button>
                       <button
                         onClick={() => generatePpq(record.id, true)}
                         disabled={generatingPpq === record.id}
-                        className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors disabled:opacity-50"
+                        className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors disabled:opacity-50"
                       >
                         {generatingPpq === record.id ? "Regenerating..." : "Regenerate"}
                       </button>
                       {Array.isArray(record.ppq_narrative_versions) && record.ppq_narrative_versions.length > 0 && (
                         <button
                           onClick={() => setShowVersionsForId(showVersionsForId === record.id ? null : record.id)}
-                          className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                          className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
                         >
                           {showVersionsForId === record.id ? "Hide" : "View"} previous versions
                         </button>
                       )}
                     </div>
                   </div>
-                  <div className="text-sm text-[#8b9ab5] whitespace-pre-wrap leading-relaxed bg-[#080a0f] p-4 border border-[#1e2535]">
+                  <div className="text-sm text-[#64748b] whitespace-pre-wrap leading-relaxed bg-[#f8f9fb] p-4 border border-[#e5e7eb]">
                     {ppqNarrative}
                   </div>
                   {showVersionsForId === record.id && Array.isArray(record.ppq_narrative_versions) && (
                     <div className="mt-3 space-y-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wide text-[#4a5a75]">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8]">
                         {record.ppq_narrative_versions.length} previous version{record.ppq_narrative_versions.length > 1 ? "s" : ""}
                       </p>
                       {record.ppq_narrative_versions.slice().reverse().map((v: any, i: number) => (
-                        <details key={i} className="border border-[#1e2535] bg-white">
-                          <summary className="cursor-pointer px-3 py-2 text-xs text-[#8b9ab5]">
+                        <details key={i} className="border border-[#e5e7eb] bg-white">
+                          <summary className="cursor-pointer px-3 py-2 text-xs text-[#64748b]">
                             v{record.ppq_narrative_versions.length - i} —{" "}
                             {v.archived_at ? new Date(v.archived_at).toLocaleString() : "older"}
                           </summary>
-                          <div className="px-3 py-2 text-xs text-[#8b9ab5] whitespace-pre-wrap border-t border-[#1e2535] bg-[#080a0f]">
+                          <div className="px-3 py-2 text-xs text-[#64748b] whitespace-pre-wrap border-t border-[#e5e7eb] bg-[#f8f9fb]">
                             {v.narrative}
                           </div>
                         </details>
@@ -301,13 +301,13 @@ export default function PastPerformancePage() {
                 </div>
               )}
               {record.ppq_narrative && ppqRecordId !== record.id && (
-                <div className="border-t border-[#1e2535] pt-3 mt-3">
+                <div className="border-t border-[#e5e7eb] pt-3 mt-3">
                   <button
                     onClick={() => {
                       setPpqRecordId(record.id);
                       setPpqNarrative(record.ppq_narrative);
                     }}
-                    className="text-xs text-[#3b82f6] hover:text-[#e8edf8] transition-colors"
+                    className="text-xs text-[#3b82f6] hover:text-[#0f172a] transition-colors"
                   >
                     View PPQ Narrative
                   </button>
@@ -321,14 +321,14 @@ export default function PastPerformancePage() {
       {/* Log Modal */}
       {showLogModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md border border-[#1e2535] bg-white p-6">
+          <div className="w-full max-w-md border border-[#e5e7eb] bg-white p-6">
             <h2 className="text-lg font-semibold text-[#0f172a] mb-4">Log Monthly Performance</h2>
             <textarea
               value={logText}
               onChange={(e) => setLogText(e.target.value)}
               rows={6}
               placeholder="Describe key accomplishments, deliverables, metrics, and any challenges this month..."
-              className="w-full bg-[#fafafa] border border-[#1e2535] text-[#e8edf8] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
+              className="w-full bg-[#fafafa] border border-[#e5e7eb] text-[#0f172a] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -339,7 +339,7 @@ export default function PastPerformancePage() {
               </button>
               <button
                 onClick={() => { setShowLogModal(false); setLogText(""); }}
-                className="flex-1 border border-[#1e2535] text-[#8b9ab5] py-2 text-sm hover:border-[#2a3548] transition-colors"
+                className="flex-1 border border-[#e5e7eb] text-[#64748b] py-2 text-sm hover:border-[#d1d5db] transition-colors"
               >
                 Cancel
               </button>
