@@ -262,13 +262,21 @@ export default function SearchPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <PageHeader
           title="Search All Contracts"
           subtitle={loading && results.length === 0 ? "Loading opportunities…" : `${total.toLocaleString()} opportunities in database`}
           accentColor="#059669"
         />
-        <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-[#0f172a] font-medium">Contracts</span>
+          <span className="text-[#cbd5e1]">·</span>
+          <Link href="/dashboard/search/grants" className="text-[#3b82f6] hover:underline">Grants</Link>
+          <span className="text-[#cbd5e1]">·</span>
+          <Link href="/dashboard/search/sbir" className="text-[#3b82f6] hover:underline">SBIR / STTR</Link>
+          <span className="text-[#cbd5e1]">·</span>
+          <Link href="/dashboard" className="text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>
+        </div>
       </div>
 
       {/* G02 — Natural-language search */}
