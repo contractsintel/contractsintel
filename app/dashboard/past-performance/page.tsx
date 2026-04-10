@@ -159,7 +159,15 @@ export default function PastPerformancePage() {
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#dc2626"}} />
           <h1 className="ci-page-title">Past Performance</h1>
 </div>
-        <HelpButton page="past-performance" />
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/past-performance/capability"
+            className="text-xs px-3 py-1.5 border border-[#e5e7eb] text-[#0f172a] hover:border-[#d1d5db] transition-colors rounded"
+          >
+            Capability Statement
+          </Link>
+          <HelpButton page="past-performance" />
+        </div>
       </div>
       <InlineGuide page="past-performance" />
       <TrialTierBanner page="past-performance" />
