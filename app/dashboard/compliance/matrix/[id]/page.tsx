@@ -137,7 +137,8 @@ export default function ComplianceMatrixDetailPage({
         </div>
       )}
 
-      <div className="border border-[#e5e7eb] bg-white rounded-xl overflow-hidden">
+      <div className="border border-[#e5e7eb] bg-white rounded-xl overflow-x-auto">
+        <div className="min-w-[720px]">
         <div className="grid grid-cols-12 gap-3 px-4 py-3 bg-[#f8f9fb] text-[10px] font-medium uppercase tracking-wide text-[#64748b]">
           <div className="col-span-1">Section</div>
           <div className="col-span-5">Requirement</div>
@@ -191,6 +192,7 @@ export default function ComplianceMatrixDetailPage({
             </div>
           ))
         )}
+        </div>
       </div>
     </div>
   );

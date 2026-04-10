@@ -184,7 +184,7 @@ export default function CompliancePage() {
           </div>
 
           {/* Category Breakdown */}
-          <div className="grid grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {grouped.map((cat) => {
               const pct = cat.total > 0 ? Math.round((cat.complete / cat.total) * 100) : 0;
               const catColor =
