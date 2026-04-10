@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { translateNLQuery } from "@/lib/nl-search";
+import { checkAndConsumeSearchQuota } from "@/lib/quota";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,22 @@ export async function POST(request: NextRequest) {
     }
     if (prompt.length > 1000) {
       return NextResponse.json({ error: "Prompt too long" }, { status: 400 });
+    }
+
+    // G24: Free-tier daily search quota
+    const quota = await checkAndConsumeSearchQuota(supabase, userRecord.organization_id);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: "Daily search limit reached",
+          quota,
+          upgrade: {
+            message: "You've used all 5 free searches today. Upgrade to Discovery for unlimited searches.",
+            href: "/pricing",
+          },
+        },
+        { status: 429 },
+      );
     }
 
     const filters = await translateNLQuery(prompt);
@@ -103,6 +120,7 @@ export async function POST(request: NextRequest) {
       filters,
       results: data ?? [],
       total: count ?? 0,
+      quota,
     });
   } catch (err: any) {
     console.error("nl-search error:", err);

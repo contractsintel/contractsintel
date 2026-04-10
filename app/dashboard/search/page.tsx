@@ -53,6 +53,32 @@ export default function SearchPage() {
   const [nlActive, setNlActive] = useState(false);
   const [nlRationale, setNlRationale] = useState("");
 
+  // G24 — Free-tier daily search quota
+  const [searchQuota, setSearchQuota] = useState<{
+    limit: number | null;
+    used: number;
+    remaining: number | null;
+    reset_at: string | null;
+    tier: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/quota/search");
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!cancelled) setSearchQuota(j.quota);
+      } catch {
+        /* swallow */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const runNLSearch = async () => {
     const trimmed = nlPrompt.trim();
     if (!trimmed) return;
@@ -66,6 +92,10 @@ export default function SearchPage() {
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
+        if (res.status === 429 && j?.quota) {
+          setSearchQuota(j.quota);
+          throw new Error(j?.upgrade?.message || j?.error || "Daily search limit reached");
+        }
         throw new Error(j?.error || `Search failed (${res.status})`);
       }
       const j = await res.json();
@@ -73,6 +103,7 @@ export default function SearchPage() {
       setTotal(j.total ?? 0);
       setNlRationale(j.filters?.rationale ?? "");
       setNlActive(true);
+      if (j.quota) setSearchQuota(j.quota);
       setLoading(false);
     } catch (e: any) {
       setNlError(e?.message ?? "Search failed");
@@ -242,9 +273,27 @@ export default function SearchPage() {
 
       {/* G02 — Natural-language search */}
       <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 mb-4">
-        <label className="block text-[12px] font-semibold tracking-wide text-[#475569] uppercase mb-2">
-          Describe what you do
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-[12px] font-semibold tracking-wide text-[#475569] uppercase">
+            Describe what you do
+          </label>
+          {/* G24 — Quota meter (free tier only) */}
+          {searchQuota && searchQuota.limit !== null && (
+            <div className="text-[11px] text-[#64748b] flex items-center gap-2">
+              <span className="font-mono">
+                {searchQuota.remaining}/{searchQuota.limit} free searches left today
+              </span>
+              {searchQuota.remaining === 0 && (
+                <a
+                  href="/pricing"
+                  className="px-2 py-0.5 rounded bg-[#fef3c7] text-[#92400e] hover:bg-[#fde68a]"
+                >
+                  Upgrade
+                </a>
+              )}
+            </div>
+          )}
+        </div>
         <div className="flex items-start gap-3">
           <textarea
             value={nlPrompt}
