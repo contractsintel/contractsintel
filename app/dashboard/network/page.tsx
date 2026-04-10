@@ -10,7 +10,7 @@ import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
 import { TEAMING_WEIGHTS } from "@/app/lib/teaming-weights";
 
-type Tab = "opportunities" | "posted" | "sub_awards";
+type Tab = "opportunities" | "posted" | "sub_awards" | "partners";
 
 type SubAward = {
   id: string;
@@ -27,6 +27,24 @@ type SubAward = {
   source_url: string | null;
 };
 
+// G11 Teaming partner directory
+type TeamingPartner = {
+  id: string;
+  name: string;
+  uei: string | null;
+  cage_code: string | null;
+  website: string | null;
+  summary: string | null;
+  naics_codes: string[];
+  set_asides: string[];
+  state: string | null;
+  city: string | null;
+  capabilities: string[];
+  past_agencies: string[];
+  employee_range: string | null;
+  contact_email: string | null;
+};
+
 export default function NetworkPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
@@ -38,6 +56,10 @@ export default function NetworkPage() {
   const [subAwards, setSubAwards] = useState<SubAward[]>([]);
   const [subAwardsLoading, setSubAwardsLoading] = useState(false);
   const [subAwardsError, setSubAwardsError] = useState<string | null>(null);
+  const [partners, setPartners] = useState<TeamingPartner[]>([]);
+  const [partnersLoading, setPartnersLoading] = useState(false);
+  const [partnersError, setPartnersError] = useState<string | null>(null);
+  const [partnerFilters, setPartnerFilters] = useState({ naics: "", set_aside: "", state: "", q: "" });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expressingInterest, setExpressingInterest] = useState<string | null>(null);
@@ -99,6 +121,33 @@ export default function NetworkPage() {
     })();
     return () => { cancelled = true; };
   }, [tab]);
+
+  // G11: teaming partner directory
+  useEffect(() => {
+    if (tab !== "partners") return;
+    let cancelled = false;
+    setPartnersLoading(true);
+    setPartnersError(null);
+    (async () => {
+      try {
+        const params = new URLSearchParams();
+        if (partnerFilters.naics) params.set("naics", partnerFilters.naics);
+        if (partnerFilters.set_aside) params.set("set_aside", partnerFilters.set_aside);
+        if (partnerFilters.state) params.set("state", partnerFilters.state);
+        if (partnerFilters.q) params.set("q", partnerFilters.q);
+        const res = await fetch(`/api/teaming/partners?${params.toString()}`);
+        const j = await res.json();
+        if (cancelled) return;
+        if (!res.ok) setPartnersError(j.error ?? "Failed to load partners");
+        else setPartners(j.partners ?? []);
+      } catch (e: any) {
+        if (!cancelled) setPartnersError(e?.message ?? "Failed to load partners");
+      } finally {
+        if (!cancelled) setPartnersLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tab, partnerFilters]);
 
   const expressInterest = async (opportunityId: string) => {
     setExpressingInterest(opportunityId);
@@ -245,9 +294,137 @@ export default function NetworkPage() {
         >
           Public Sub-Awards
         </button>
+        <button
+          onClick={() => setTab("partners")}
+          data-testid="tab-partners"
+          className={`px-5 py-2.5 text-sm transition-colors border-b-2 ${
+            tab === "partners"
+              ? "text-[#0f172a] border-[#2563eb]"
+              : "text-[#64748b] border-transparent hover:text-[#0f172a]"
+          }`}
+        >
+          Find Partners
+        </button>
       </div>
 
-      {tab === "sub_awards" ? (
+      {tab === "partners" ? (
+        <div data-testid="partners-panel">
+          <p className="text-xs text-[#64748b] mb-4">
+            Directory of registered small-business partners you can team with. Filter by NAICS,
+            set-aside, or state to find primes or subs that fit your next capture.
+          </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <input
+              type="text"
+              placeholder="Search name or summary"
+              value={partnerFilters.q}
+              onChange={(e) => setPartnerFilters((f) => ({ ...f, q: e.target.value }))}
+              className="border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            />
+            <input
+              type="text"
+              placeholder="NAICS"
+              value={partnerFilters.naics}
+              onChange={(e) => setPartnerFilters((f) => ({ ...f, naics: e.target.value }))}
+              className="w-32 border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            />
+            <select
+              value={partnerFilters.set_aside}
+              onChange={(e) => setPartnerFilters((f) => ({ ...f, set_aside: e.target.value }))}
+              className="border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            >
+              <option value="">Any set-aside</option>
+              <option value="8(a)">8(a)</option>
+              <option value="SDVOSB">SDVOSB</option>
+              <option value="WOSB">WOSB</option>
+              <option value="EDWOSB">EDWOSB</option>
+              <option value="HUBZone">HUBZone</option>
+            </select>
+            <input
+              type="text"
+              placeholder="State"
+              maxLength={2}
+              value={partnerFilters.state}
+              onChange={(e) => setPartnerFilters((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
+              className="w-20 border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            />
+          </div>
+          {partnersLoading ? (
+            <div className="text-center text-[#94a3b8] py-12 text-sm">Loading partners...</div>
+          ) : partnersError ? (
+            <div className="text-center text-[#dc2626] py-12 text-sm">{partnersError}</div>
+          ) : partners.length === 0 ? (
+            <div className="border border-[#e5e7eb] bg-white p-12 text-center text-sm text-[#64748b]">
+              No partners match the current filters.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="partner-grid">
+              {partners.map((p) => (
+                <div
+                  key={p.id}
+                  data-testid="partner-card"
+                  className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[#0f172a]">{p.name}</h3>
+                      <p className="text-xs text-[#64748b] mt-1">
+                        {[p.city, p.state].filter(Boolean).join(", ") || "—"}
+                        {p.employee_range ? ` · ${p.employee_range} employees` : ""}
+                      </p>
+                      {p.summary && (
+                        <p className="text-xs text-[#475569] mt-2 line-clamp-2">{p.summary}</p>
+                      )}
+                    </div>
+                    {p.website && (
+                      <a
+                        href={p.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-[#2563eb] hover:underline whitespace-nowrap"
+                      >
+                        Website →
+                      </a>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {p.set_asides.map((sa) => (
+                      <span key={sa} className="text-[10px] font-mono bg-[#eff6ff] text-[#1d4ed8] px-2 py-0.5 rounded">
+                        {sa}
+                      </span>
+                    ))}
+                    {p.naics_codes.map((n) => (
+                      <span key={n} className="text-[10px] font-mono bg-[#f1f5f9] text-[#475569] px-2 py-0.5 rounded">
+                        {n}
+                      </span>
+                    ))}
+                  </div>
+                  {p.capabilities.length > 0 && (
+                    <div className="mt-2 text-[11px] text-[#64748b]">
+                      <span className="uppercase tracking-wide text-[#94a3b8]">Capabilities:</span>{" "}
+                      {p.capabilities.join(", ")}
+                    </div>
+                  )}
+                  {p.past_agencies.length > 0 && (
+                    <div className="mt-1 text-[11px] text-[#64748b]">
+                      <span className="uppercase tracking-wide text-[#94a3b8]">Past agencies:</span>{" "}
+                      {p.past_agencies.join(", ")}
+                    </div>
+                  )}
+                  {p.contact_email && (
+                    <a
+                      href={`mailto:${p.contact_email}`}
+                      className="mt-3 inline-block text-xs text-[#2563eb] hover:underline"
+                    >
+                      {p.contact_email}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : tab === "sub_awards" ? (
         <div>
           <p className="text-xs text-[#64748b] mb-4">
             Public subcontract awards posted under federal prime contracts. Sourced from USAspending /
