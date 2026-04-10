@@ -44,6 +44,8 @@ export default function SearchPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   // G19 — Full-text search inside solicitation body text
   const [ftsMode, setFtsMode] = useState(false);
+  // G01 — SLED level filter (federal/state/local/education or "" for all)
+  const [level, setLevel] = useState<string>("");
   const [offset, setOffset] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
@@ -218,6 +220,10 @@ export default function SearchPage() {
       }
     }
 
+    if (level) {
+      q = q.eq("opportunity_level", level);
+    }
+
     if (sort === "newest") q = q.order("created_at", { ascending: false });
     else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
     else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
@@ -232,11 +238,11 @@ export default function SearchPage() {
     }
     setTotal(count ?? 0);
     setLoading(false);
-  }, [supabase, query, source, sort, offset, ftsMode]);
+  }, [supabase, query, source, sort, offset, ftsMode, level]);
 
   useEffect(() => {
     search(true);
-  }, [query, source, sort, ftsMode]);
+  }, [query, source, sort, ftsMode, level]);
 
   const loadMore = () => {
     const newOffset = offset + PAGE_SIZE;
@@ -365,6 +371,30 @@ export default function SearchPage() {
             <span className="font-semibold text-[#475569]">AI filter:</span> {nlRationale}
           </p>
         )}
+      </div>
+
+      {/* G01 — Level filter chips */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {[
+          { v: "", label: "All levels" },
+          { v: "federal", label: "Federal" },
+          { v: "state", label: "State" },
+          { v: "local", label: "Local" },
+          { v: "education", label: "Education" },
+        ].map((chip) => (
+          <button
+            key={chip.v}
+            type="button"
+            onClick={() => setLevel(chip.v)}
+            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+              level === chip.v
+                ? "bg-[#2563eb] text-white border-[#2563eb]"
+                : "bg-white text-[#475569] border-[#e5e7eb] hover:border-[#cbd5e1]"
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
       </div>
 
       {/* Search bar */}
