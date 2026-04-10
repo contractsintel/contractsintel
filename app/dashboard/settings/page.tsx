@@ -203,7 +203,15 @@ export default function SettingsPage() {
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#6b7280"}} />
           <h1 className="ci-page-title">Settings</h1>
 </div>
-        <HelpButton page="settings" />
+        <div className="flex items-center gap-3">
+          <a
+            href="/dashboard/settings/api-keys"
+            className="text-xs text-[#3b82f6] hover:underline"
+          >
+            API keys →
+          </a>
+          <HelpButton page="settings" />
+        </div>
       </div>
 
       {/* Company Profile */}
