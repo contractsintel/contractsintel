@@ -60,6 +60,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [refreshingSam, setRefreshingSam] = useState(false);
+  const [samRefreshMsg, setSamRefreshMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   // Scraper run data
   const [scraperRuns, setScraperRuns] = useState<any[]>([]);
@@ -160,16 +161,32 @@ export default function SettingsPage() {
   const refreshFromSam = async () => {
     if (!uei) return;
     setRefreshingSam(true);
+    // E2: SAM refresh silently swallowed errors. Surface a toast/banner so
+    // users don't think the button is broken. Use a 20s timeout to cap hangs.
+    setSamRefreshMsg(null);
     try {
-      const res = await fetch(`/api/audit?uei=${uei}`);
-      const data = await res.json();
-      if (data.entity) {
-        setCompanyName(data.entity.legalBusinessName ?? companyName);
-        setCageCode(data.entity.cageCode ?? cageCode);
-        setAddress(data.entity.physicalAddress ?? address);
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 20_000);
+      const res = await fetch(`/api/audit?uei=${uei}`, { signal: ctrl.signal });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        setSamRefreshMsg({ kind: "error", text: `SAM refresh failed (HTTP ${res.status})` });
+      } else {
+        const data = await res.json();
+        if (data.entity) {
+          setCompanyName(data.entity.legalBusinessName ?? companyName);
+          setCageCode(data.entity.cageCode ?? cageCode);
+          setAddress(data.entity.physicalAddress ?? address);
+          setSamRefreshMsg({ kind: "ok", text: "Profile refreshed from SAM.gov" });
+        } else {
+          setSamRefreshMsg({ kind: "error", text: "No entity found for that UEI" });
+        }
       }
-    } catch {
-      // handle error
+    } catch (err: any) {
+      setSamRefreshMsg({
+        kind: "error",
+        text: err?.name === "AbortError" ? "SAM refresh timed out" : "SAM refresh failed",
+      });
     }
     setRefreshingSam(false);
   };
@@ -244,10 +261,24 @@ export default function SettingsPage() {
               {saving ? "Saving..." : saved ? "Saved" : "Save Changes"}
             </button>
             <button onClick={refreshFromSam} disabled={refreshingSam || !uei}
-              className="border border-[#1e2535] text-[#8b9ab5] px-6 py-3 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors disabled:opacity-30">
-              {refreshingSam ? "Refreshing..." : "Refresh from SAM.gov"}
+              className="border border-[#1e2535] text-[#8b9ab5] px-6 py-3 text-sm hover:border-[#2a3548] hover:text-[#e8edf8] transition-colors disabled:opacity-30 flex items-center gap-2">
+              {refreshingSam && (
+                <span className="w-3 h-3 border-2 border-[#8b9ab5] border-t-transparent rounded-full animate-spin" />
+              )}
+              {refreshingSam ? "Refreshing from SAM.gov..." : "Refresh from SAM.gov"}
             </button>
           </div>
+          {samRefreshMsg && (
+            <div
+              className={`text-xs px-3 py-2 border ${
+                samRefreshMsg.kind === "ok"
+                  ? "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]"
+                  : "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444]"
+              }`}
+            >
+              {samRefreshMsg.text}
+            </div>
+          )}
         </div>
       </section>
 

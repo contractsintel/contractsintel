@@ -577,47 +577,24 @@ export default function DashboardPage() {
       {/* Demo Banner */}
       {matches.some((m: any) => m.is_demo) && <DemoBanner />}
 
-      {/* Stats Bar — KPI Row */}
-      <div data-tour="stats-bar" className={`grid grid-cols-2 ${totalValue > 0 ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-3 sm:gap-4 mb-6 sm:mb-8`}>
+      {/* Stats Bar — KPI Row (D1: always show 4th Total Value card) */}
+      <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {[
           { value: totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length), label: "Matches", urgent: false },
-          ...(totalValue > 0 ? [{ value: formatCurrency(totalValue), label: "Total Value", urgent: false }] : []),
+          { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Total Value", urgent: false },
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
         ].map((stat) => (
-          <div key={stat.label} className={`p-5 bg-white border border-[#1e2535] rounded-xl ${stat.urgent ? "border-l-[3px] border-l-[#dc2626]" : ""}`}>
-            <div className="text-[28px] font-medium tracking-tight text-[#e8edf8]" style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>{stat.value}</div>
+          <div key={stat.label} className={`p-5 bg-[#0d1018] border border-[#1e2535] ${stat.urgent ? "border-l-[3px] border-l-[#ef4444]" : ""}`}>
+            <div className="ci-serif text-[28px] text-[#e8edf8]">{stat.value}</div>
             <div className="ci-stat-label mt-2">{stat.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Source Breakdown — removed per design v2 (duplicates filter dropdown) */}
-
-      {/* Compliance Alert */}
-      {complianceAlerts.length > 0 && (
-        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center gap-2 mb-1">
-            <svg className="w-4 h-4 text-[#f59e0b]" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-sm font-medium text-[#f59e0b]">
-              {complianceAlerts.length} compliance item{complianceAlerts.length > 1 ? "s" : ""} due within 7 days
-            </span>
-          </div>
-          <p className="text-xs text-[#8b9ab5]">
-            {complianceAlerts.map((a) => a.title).join(", ")}
-          </p>
-        </div>
-      )}
-
-      {/* P1.2: High-severity compliance alert strip */}
+      {/* D2: ComplianceAlertStrip — only one strip (removed the legacy duplicate) */}
       {!stripDismissed && highSeverityAlerts.length > 0 && (
-        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-white p-4 mb-6 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-start gap-3">
+        <div className="border border-[#1e2535] border-l-4 border-l-[#f59e0b] bg-[#0d1018] p-4 mb-6 flex items-start gap-3">
           <svg className="w-5 h-5 text-[#f59e0b] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -656,24 +633,18 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main Column */}
         <div className="min-w-0 w-full">
-          {/* Filter toggle */}
-          <button onClick={() => setShowFilters(!showFilters)}
-            className="text-[13px] text-[#4f46e5] hover:text-[#4338ca] font-medium mb-4">
-            {showFilters ? "Hide filters" : "⚙ Filter & sort"}
-          </button>
-
-          {/* Filter Bar — single row of compact dropdowns */}
-          {showFilters && <div className="flex items-center gap-2 mb-6 flex-wrap">
+          {/* D3: Horizontal filter bar — always visible, single row of compact controls */}
+          <div className="flex items-center gap-2 mb-6 flex-wrap">
             <select value={filters.source}
               onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
               <option value="">All Types</option>
               <option value="federal">Federal Solicitations</option>
               <option value="recompetes">Recompete Alerts</option>
             </select>
             <select value={filters.urgency}
               onChange={(e) => setFilters((f) => ({...f, urgency: e.target.value as UrgencyFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Deadline</option>
               <option value="week">This Week</option>
               <option value="2weeks">Next 2 Weeks</option>
@@ -681,7 +652,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.valueRange}
               onChange={(e) => setFilters((f) => ({...f, valueRange: e.target.value as ValueFilter}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
               <option value="">Any Value</option>
               <option value="under100k">&lt;$100K</option>
               <option value="100k-500k">$100K–$500K</option>
@@ -690,7 +661,7 @@ export default function DashboardPage() {
             </select>
             <select value={filters.sort}
               onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] focus:outline-none focus:border-[#2563eb]">
+              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] focus:outline-none focus:border-[#2563eb]">
               <option value="score">Best Match</option>
               <option value="deadline">Deadline</option>
               <option value="value">Value</option>
@@ -699,14 +670,14 @@ export default function DashboardPage() {
             <input type="text" placeholder="Search agency..."
               value={filters.agency}
               onChange={(e) => setFilters((f) => ({...f, agency: e.target.value}))}
-              className="h-9 px-3 text-[13px] border border-[#1e2535] rounded-lg bg-white text-[#8b9ab5] w-48 focus:outline-none focus:border-[#2563eb]" />
+              className="h-9 px-3 text-[13px] border border-[#1e2535] bg-[#0d1018] text-[#e8edf8] w-48 focus:outline-none focus:border-[#2563eb]" />
             {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
               <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
                 className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">
                 Clear
               </button>
             )}
-          </div>}
+          </div>
 
           {/* Opportunity Cards */}
           {loading ? (
@@ -902,22 +873,38 @@ export default function DashboardPage() {
                         {match.bid_recommendation}
                       </span>
 
-                      {/* Quick actions — visible on hover */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <div className="relative group/tip">
-                          <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#8b9ab5] hover:bg-[#ecfdf5] hover:text-[#059669] transition-colors">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-                          </button>
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-100 pointer-events-none">Track</span>
-                        </div>
-                        <div className="relative group/tip2">
-                          <button onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-md text-[#8b9ab5] hover:bg-[rgba(37,99,235,0.12)] hover:text-[#2563eb] transition-colors">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                          </button>
-                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-[#111827] text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover/tip2:opacity-100 transition-opacity duration-100 pointer-events-none">Start Bid</span>
-                        </div>
+                      {/* D4: BID / MONITOR / SKIP action buttons — always visible */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
+                          className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
+                            match.user_status === "bidding"
+                              ? "bg-[#2563eb] text-white border-[#2563eb]"
+                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#2563eb] hover:text-[#2563eb]"
+                          }`}
+                        >
+                          Bid
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "tracking"); }}
+                          className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
+                            match.user_status === "tracking"
+                              ? "bg-[#22c55e] text-white border-[#22c55e]"
+                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#22c55e] hover:text-[#22c55e]"
+                          }`}
+                        >
+                          Monitor
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "skipped"); }}
+                          className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${
+                            match.user_status === "skipped"
+                              ? "bg-[#4a5a75] text-white border-[#4a5a75]"
+                              : "bg-[#0d1018] text-[#8b9ab5] border-[#1e2535] hover:border-[#ef4444] hover:text-[#ef4444]"
+                          }`}
+                        >
+                          Skip
+                        </button>
                       </div>
 
                       {/* Chevron */}

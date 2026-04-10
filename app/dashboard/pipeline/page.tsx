@@ -238,18 +238,18 @@ export default function PipelinePage() {
       </div>
       <InlineGuide page="pipeline" />
 
-      {/* Summary Bar */}
-      <div className="flex gap-2 mb-6">
+      {/* D6: Pipeline summary bar — one card per stage with count + total value */}
+      <div className="grid grid-cols-5 gap-3 mb-6">
         {STAGES.map((s) => {
           const items = grouped[s.key] ?? [];
           const total = items.reduce((sum: number, m: any) => sum + (m.opportunities?.estimated_value ?? 0), 0);
           return (
-            <div key={s.key} className="bg-white p-4">
-              <div className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: s.color }}>
+            <div key={s.key} className="border border-[#1e2535] bg-[#0d1018] p-4" style={{ borderLeftWidth: "3px", borderLeftColor: s.color }}>
+              <div className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: s.color }}>
                 {s.label}
               </div>
-              <div className="text-lg font-bold text-[#e8edf8] font-mono">{items.length}</div>
-              <div className="text-xs text-[#4a5a75] font-mono">{formatCurrency(total)}</div>
+              <div className="ci-serif text-[22px] text-[#e8edf8] leading-none">{items.length}</div>
+              <div className="text-[11px] text-[#4a5a75] font-mono mt-1">{formatCurrency(total)}</div>
             </div>
           );
         })}
@@ -260,7 +260,7 @@ export default function PipelinePage() {
       ) : (
         <div className="grid grid-cols-5 gap-3">
           {STAGES.map((stage) => (
-            <div key={stage.key} className="min-h-[400px]">
+            <div key={stage.key} className="min-h-[calc(100vh-320px)] border border-[#1e2535] bg-[#0d1018] p-2">
               <div
                 className={`text-xs font-medium uppercase tracking-wide mb-3 px-2 py-1.5 ${stage.bg} ${stage.text}`}
               >
