@@ -42,6 +42,21 @@ export default function AnalyticsPage() {
       .gte("created_at", cutoff);
 
     // Build agency stats
+    // C2: counting logic was too strict — "bids" only incremented when
+    // pipeline_stage was both set AND not "identified". Many orgs mark
+    // opportunities via user_status (bidding/tracking/won/lost) instead of
+    // advancing pipeline_stage, which produced 0 bids everywhere. Count as
+    // a bid if EITHER column signals that the user has engaged with it.
+    const BID_STATUSES = new Set(["bidding", "submitted", "awarded", "won", "lost"]);
+    const BID_STAGES = new Set([
+      "proposal_draft",
+      "submitted",
+      "awarded",
+      "won",
+      "lost",
+      "bid",
+      "bidding",
+    ]);
     const statsMap: Record<string, AgencyStats> = {};
     (matches ?? []).forEach((m: any) => {
       const agency = m.opportunities?.agency ?? "Unknown";
@@ -49,14 +64,20 @@ export default function AnalyticsPage() {
         statsMap[agency] = { agency, opps_seen: 0, bids: 0, wins: 0, losses: 0, win_rate: 0, total_value: 0 };
       }
       statsMap[agency].opps_seen++;
-      if (m.pipeline_stage && m.pipeline_stage !== "identified") {
-        statsMap[agency].bids++;
-      }
-      if (m.user_status === "won" || m.pipeline_stage === "won") {
+
+      const stage: string | null = m.pipeline_stage ?? null;
+      const userStatus: string | null = m.user_status ?? null;
+
+      const isBid =
+        (userStatus && BID_STATUSES.has(userStatus)) ||
+        (stage && BID_STAGES.has(stage));
+      if (isBid) statsMap[agency].bids++;
+
+      if (userStatus === "won" || stage === "won" || stage === "awarded") {
         statsMap[agency].wins++;
         statsMap[agency].total_value += m.award_amount ?? m.opportunities?.estimated_value ?? 0;
       }
-      if (m.user_status === "lost" || m.pipeline_stage === "lost") {
+      if (userStatus === "lost" || stage === "lost") {
         statsMap[agency].losses++;
       }
     });

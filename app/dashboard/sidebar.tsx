@@ -207,7 +207,7 @@ export function Sidebar({ plan }: { plan: string }) {
 
       // Check if any opportunity has been tracked by this user's org
       const { count: trackedCount } = await supabase
-        .from("user_matches")
+        .from("opportunity_matches")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", organization.id)
         .in("user_status", ["tracking", "bidding", "won", "lost"]);

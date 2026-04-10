@@ -9,6 +9,41 @@
     { "path": "/api/cron/compliance-alerts", "schedule": "0 13 * * *" },
     { "path": "/api/cron/performance-prompts", "schedule": "0 14 1 * *" },
     { "path": "/api/cron/nurture-emails", "schedule": "0 15 * * *" },
-    { "path": "/api/cron/owner-report", "schedule": "0 13 * * 1" }
+    { "path": "/api/cron/owner-report", "schedule": "0 13 * * 1" },
+
+    { "path": "/api/cron/scrape-opportunities", "schedule": "0 */4 * * *" },
+    { "path": "/api/cron/scrape-federal", "schedule": "15 */4 * * *" },
+    { "path": "/api/cron/scrape-grants-full", "schedule": "30 */6 * * *" },
+    { "path": "/api/cron/scrape-sbir", "schedule": "45 */6 * * *" },
+    { "path": "/api/cron/scrape-states", "schedule": "0 */6 * * *" },
+    { "path": "/api/cron/scrape-military", "schedule": "15 */6 * * *" },
+    { "path": "/api/cron/scrape-usaspending-full", "schedule": "30 */8 * * *" },
+    { "path": "/api/cron/scrape-forecasts", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/scrape-bidnet", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/scrape-usaspending-backfill", "schedule": "0 5 * * 0" },
+
+    { "path": "/api/cron/match-opportunities", "schedule": "0 */2 * * *" },
+
+    { "path": "/api/cron/scrape-grants-p1", "schedule": "5 1 * * *" },
+    { "path": "/api/cron/scrape-grants-p2", "schedule": "5 2 * * *" },
+    { "path": "/api/cron/scrape-grants-p3", "schedule": "5 3 * * *" },
+    { "path": "/api/cron/scrape-grants-p4", "schedule": "5 4 * * *" },
+    { "path": "/api/cron/scrape-grants-p5", "schedule": "5 5 * * *" },
+    { "path": "/api/cron/scrape-grants-p6", "schedule": "5 6 * * *" },
+    { "path": "/api/cron/scrape-grants-p7", "schedule": "5 7 * * *" },
+    { "path": "/api/cron/scrape-grants-p8", "schedule": "5 8 * * *" },
+    { "path": "/api/cron/scrape-grants-p9", "schedule": "5 9 * * *" },
+    { "path": "/api/cron/scrape-grants-p10", "schedule": "5 10 * * *" },
+
+    { "path": "/api/cron/scrape-usa-p1", "schedule": "25 0 * * *" },
+    { "path": "/api/cron/scrape-usa-p2", "schedule": "25 1 * * *" },
+    { "path": "/api/cron/scrape-usa-p3", "schedule": "25 2 * * *" },
+    { "path": "/api/cron/scrape-usa-p4", "schedule": "25 3 * * *" },
+    { "path": "/api/cron/scrape-usa-p5", "schedule": "25 4 * * *" },
+    { "path": "/api/cron/scrape-usa-p6", "schedule": "25 5 * * *" },
+    { "path": "/api/cron/scrape-usa-p7", "schedule": "25 6 * * *" },
+    { "path": "/api/cron/scrape-usa-p8", "schedule": "25 7 * * *" },
+    { "path": "/api/cron/scrape-usa-p9", "schedule": "25 8 * * *" },
+    { "path": "/api/cron/scrape-usa-p10", "schedule": "25 9 * * *" }
   ]
 }
