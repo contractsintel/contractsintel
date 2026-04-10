@@ -5,6 +5,7 @@ import { DashboardProvider } from "./context";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import { TourWrapper } from "./tour-wrapper";
+import { CopilotPanel } from "./copilot-panel";
 
 export default async function DashboardLayout({
   children,
@@ -91,6 +92,7 @@ export default async function DashboardLayout({
           </main>
           <TourWrapper />
         </div>
+        <CopilotPanel />
       </div>
     </DashboardProvider>
   );
