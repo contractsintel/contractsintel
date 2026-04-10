@@ -23,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/past-performance", label: "Past Performance", icon: "star", bdProLocked: true, teamOnly: false, tourId: "sidebar-past-performance", color: "#dc2626", lightBg: "#fef2f2" },
   { href: "/dashboard/cpars", label: "CPARS", icon: "cpars_star", bdProLocked: false, teamOnly: true, tourId: "", color: "#e11d48", lightBg: "#fff1f2" },
   { href: "/dashboard/network", label: "Network", icon: "handshake", bdProLocked: false, teamOnly: true, tourId: "", color: "#2563eb", lightBg: "#eff4ff" },
+  { href: "/dashboard/agencies", label: "Agencies", icon: "briefcase", bdProLocked: false, teamOnly: false, tourId: "", color: "#475569", lightBg: "#f1f5f9" },
   { href: "/dashboard/competitors", label: "Competitors", icon: "search", bdProLocked: false, teamOnly: true, tourId: "", color: "#7c3aed", lightBg: "#f5f3ff" },
   { href: "/dashboard/analytics", label: "Analytics", icon: "chart", bdProLocked: false, teamOnly: true, tourId: "", color: "#d97706", lightBg: "#fffbeb" },
   { href: "/dashboard/settings", label: "Settings", icon: "gear", bdProLocked: false, teamOnly: false, tourId: "sidebar-settings", color: "#6b7280", lightBg: "#f1f5f9" },
