@@ -1,0 +1,40 @@
+.contractsintel-save-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.contractsintel-save-btn {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.contractsintel-save-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.contractsintel-save-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.contractsintel-save-btn[data-tone="success"] {
+  background: #059669;
+}
+.contractsintel-save-btn[data-tone="error"] {
+  background: #dc2626;
+}
+.contractsintel-save-btn[data-tone="warn"] {
+  background: #d97706;
+}
