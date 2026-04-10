@@ -14,6 +14,25 @@ const STAGES = [
   { key: "lost", label: "Lost", color: "#dc2626", bg: "bg-[#fef2f2]", text: "text-[#dc2626]" },
 ];
 
+// G08 Shipley-style capture-management gate stages. Users advance matches
+// through the gates and enter gate-review notes; PWin recomputes whenever
+// the gate advances.
+const GATE_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: "g0_prospect",         label: "G0 Prospect" },
+  { key: "g1_qualification",    label: "G1 Qualification" },
+  { key: "g2_pursuit_decision", label: "G2 Pursuit Decision" },
+  { key: "g3_capture",          label: "G3 Capture" },
+  { key: "g4_proposal",         label: "G4 Proposal" },
+  { key: "g5_submission",       label: "G5 Submission" },
+  { key: "g6_award",            label: "G6 Award" },
+];
+function pwinTone(n: number | null | undefined) {
+  if (n == null) return "bg-[#f1f5f9] text-[#64748b]";
+  if (n >= 70) return "bg-[#dcfce7] text-[#059669]";
+  if (n >= 40) return "bg-[#fef9c3] text-[#a16207]";
+  return "bg-[#fee2e2] text-[#dc2626]";
+}
+
 const LOSS_REASONS = [
   "Price too high",
   "Technical score too low",
@@ -55,6 +74,34 @@ export default function PipelinePage() {
   const [wonData, setWonData] = useState({ award_amount: "", contract_number: "", period_months: "12" });
   const [wonError, setWonError] = useState<string | null>(null);
   const [lostData, setLostData] = useState({ loss_reason: LOSS_REASONS[0], loss_notes: "" });
+  // G08 gate review state
+  const [gateNotesOpen, setGateNotesOpen] = useState<Record<string, boolean>>({});
+  const [gateDraft, setGateDraft] = useState<Record<string, string>>({});
+
+  const updateGate = async (
+    matchId: string,
+    patch: { gate_stage?: string | null; gate_notes?: string },
+  ) => {
+    const res = await fetch(`/api/pipeline/${matchId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!res.ok) return;
+    const j = await res.json();
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === matchId
+          ? {
+              ...m,
+              gate_stage: j.match?.gate_stage ?? m.gate_stage,
+              gate_notes: j.match?.gate_notes ?? m.gate_notes,
+              pwin: j.match?.pwin ?? m.pwin,
+            }
+          : m,
+      ),
+    );
+  };
 
   const loadData = useCallback(async () => {
     const { data } = await supabase
@@ -299,6 +346,54 @@ export default function PipelinePage() {
                           </option>
                         ))}
                       </select>
+
+                      {/* G08: gate review controls */}
+                      <div className="mt-2 flex items-center gap-1" data-testid="gate-controls">
+                        <select
+                          data-testid="gate-select"
+                          value={match.gate_stage ?? ""}
+                          onChange={(e) => updateGate(match.id, { gate_stage: e.target.value || null })}
+                          className="flex-1 bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
+                        >
+                          <option value="">Set gate…</option>
+                          {GATE_OPTIONS.map((g) => (
+                            <option key={g.key} value={g.key}>{g.label}</option>
+                          ))}
+                        </select>
+                        <span
+                          data-testid="pwin-badge"
+                          className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${pwinTone(match.pwin)}`}
+                          title="Probability of Win"
+                        >
+                          {match.pwin != null ? `${match.pwin}%` : "PWin"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="gate-notes-toggle"
+                        onClick={() => setGateNotesOpen((m) => ({ ...m, [match.id]: !m[match.id] }))}
+                        className="mt-1 w-full text-[10px] text-[#64748b] text-left hover:text-[#0f172a]"
+                      >
+                        {gateNotesOpen[match.id] ? "▾ Hide notes" : match.gate_notes ? "▸ Gate notes" : "▸ Add gate notes"}
+                      </button>
+                      {gateNotesOpen[match.id] && (
+                        <div className="mt-1 space-y-1">
+                          <textarea
+                            value={gateDraft[match.id] ?? match.gate_notes ?? ""}
+                            onChange={(e) => setGateDraft((d) => ({ ...d, [match.id]: e.target.value }))}
+                            rows={3}
+                            placeholder="Win themes, discriminators, risks…"
+                            className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] text-[10px] px-2 py-1 focus:outline-none focus:border-[#2563eb]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateGate(match.id, { gate_notes: gateDraft[match.id] ?? "" })}
+                            className="w-full bg-[#2563eb] text-white text-[10px] py-1 rounded hover:bg-[#1d4ed8]"
+                          >
+                            Save notes
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
