@@ -46,6 +46,49 @@ export default function SearchPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
 
+  // G02 — Natural-language search state
+  const [nlPrompt, setNlPrompt] = useState("");
+  const [nlLoading, setNlLoading] = useState(false);
+  const [nlError, setNlError] = useState<string | null>(null);
+  const [nlActive, setNlActive] = useState(false);
+  const [nlRationale, setNlRationale] = useState("");
+
+  const runNLSearch = async () => {
+    const trimmed = nlPrompt.trim();
+    if (!trimmed) return;
+    setNlLoading(true);
+    setNlError(null);
+    try {
+      const res = await fetch("/api/opportunities/nl-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: trimmed }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || `Search failed (${res.status})`);
+      }
+      const j = await res.json();
+      setResults(j.results ?? []);
+      setTotal(j.total ?? 0);
+      setNlRationale(j.filters?.rationale ?? "");
+      setNlActive(true);
+      setLoading(false);
+    } catch (e: any) {
+      setNlError(e?.message ?? "Search failed");
+    } finally {
+      setNlLoading(false);
+    }
+  };
+
+  const clearNL = () => {
+    setNlActive(false);
+    setNlPrompt("");
+    setNlRationale("");
+    setNlError(null);
+    search(true);
+  };
+
   // B4: Load distinct source values once on mount, merged with a known set
   // so the dropdown always exposes major sources even before data arrives.
   useEffect(() => {
@@ -195,6 +238,52 @@ export default function SearchPage() {
           accentColor="#059669"
         />
         <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>
+      </div>
+
+      {/* G02 — Natural-language search */}
+      <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 mb-4">
+        <label className="block text-[12px] font-semibold tracking-wide text-[#475569] uppercase mb-2">
+          Describe what you do
+        </label>
+        <div className="flex items-start gap-3">
+          <textarea
+            value={nlPrompt}
+            onChange={(e) => setNlPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) runNLSearch();
+            }}
+            placeholder='e.g. "We are an SDVOSB cybersecurity firm that does penetration testing for the Air Force in Texas, contracts $250K-$5M"'
+            rows={2}
+            className="flex-1 text-[14px] leading-relaxed border-2 border-[#e5e7eb] rounded-lg bg-white px-3 py-2 focus:outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 resize-none"
+          />
+          <div className="flex flex-col gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={runNLSearch}
+              disabled={nlLoading || !nlPrompt.trim()}
+              className="px-4 py-2 text-sm font-semibold text-white bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-[#94a3b8] rounded-lg transition-colors"
+            >
+              {nlLoading ? "Searching…" : "Search with AI"}
+            </button>
+            {nlActive && (
+              <button
+                type="button"
+                onClick={clearNL}
+                className="px-4 py-2 text-xs font-medium text-[#64748b] border border-[#e5e7eb] hover:border-[#cbd5e1] rounded-lg transition-colors"
+              >
+                Clear AI filter
+              </button>
+            )}
+          </div>
+        </div>
+        {nlError && (
+          <p className="mt-2 text-[12px] text-[#ef4444]">{nlError}</p>
+        )}
+        {nlActive && nlRationale && (
+          <p className="mt-2 text-[12px] text-[#64748b]">
+            <span className="font-semibold text-[#475569]">AI filter:</span> {nlRationale}
+          </p>
+        )}
       </div>
 
       {/* Search bar */}
