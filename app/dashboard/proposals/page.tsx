@@ -118,6 +118,47 @@ export default function ProposalsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // G07 Word export — POSTs the current in-memory proposal to
+  // /api/proposals/export which returns a .docx binary we save to disk.
+  const [exporting, setExporting] = useState(false);
+  const downloadAsDocx = async () => {
+    if (!proposal) return;
+    const match = matches.find(m => m.id === selectedMatch);
+    const opp = match?.opportunities;
+    const title = (opp?.title || "Proposal").slice(0, 80);
+    setExporting(true);
+    try {
+      const res = await fetch("/api/proposals/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          company: organization.name,
+          agency: opp?.agency,
+          solicitation: opp?.solicitation_number,
+          sections: {
+            executive_summary: proposal["Executive Summary"] || "",
+            technical_approach: proposal["Technical Approach"] || "",
+            past_performance: proposal["Past Performance"] || "",
+            management_plan: proposal["Management Plan"] || "",
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title.replace(/[^a-zA-Z0-9]/g, "_")}_proposal.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const updateSection = (tab: string, value: string) => {
     if (!proposal) return;
     setProposal({ ...proposal, [tab]: value });
@@ -258,6 +299,11 @@ export default function ProposalsPage() {
                         <button onClick={downloadAsTxt}
                           className="px-3.5 py-1.5 text-[12px] font-medium border border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db] rounded-lg">
                           Download as .txt
+                        </button>
+                        <button onClick={downloadAsDocx} disabled={exporting}
+                          data-testid="export-docx"
+                          className="px-3.5 py-1.5 text-[12px] font-medium rounded-lg bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50">
+                          {exporting ? "Exporting…" : "Export Word (.docx)"}
                         </button>
                       </div>
                     </div>
