@@ -137,7 +137,15 @@ export default function CompliancePage() {
           <div className="w-2 h-2 rounded-full" style={{backgroundColor: "#059669"}} />
           <h1 className="ci-page-title">Compliance Monitor</h1>
 </div>
-        <HelpButton page="compliance" />
+        <div className="flex items-center gap-3">
+          <a
+            href="/dashboard/compliance/matrix"
+            className="text-xs text-[#2563eb] hover:underline"
+          >
+            Compliance matrices →
+          </a>
+          <HelpButton page="compliance" />
+        </div>
       </div>
       <InlineGuide page="compliance" />
 
