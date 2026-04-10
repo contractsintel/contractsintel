@@ -33,6 +33,8 @@ export function DocumentChatPanel() {
     });
   }, [messages, streaming]);
 
+  const [parsing, setParsing] = useState(false);
+
   const handleFile = async (file: File) => {
     setError(null);
     const ext = file.name.split(".").pop()?.toLowerCase();
@@ -49,9 +51,32 @@ export function DocumentChatPanel() {
       setDocumentName(file.name);
       setView("chat");
     } else if (ext === "pdf" || ext === "docx") {
-      setError(
-        `For .${ext} files, please copy the text content and paste it into the text area below. Browser-side ${ext.toUpperCase()} parsing is not yet supported.`,
-      );
+      // Server-side parsing for PDF and DOCX files
+      setParsing(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/documents/parse", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          setError(result.error || "Failed to parse file");
+          return;
+        }
+        setDocumentText(result.text);
+        setDocumentName(
+          result.truncated
+            ? `${file.name} (truncated to 100K chars)`
+            : file.name,
+        );
+        setView("chat");
+      } catch (err: any) {
+        setError(err?.message || "Failed to parse file");
+      } finally {
+        setParsing(false);
+      }
     } else {
       setError("Unsupported file type. Please upload .txt, .pdf, or .docx.");
     }
@@ -254,7 +279,7 @@ export function DocumentChatPanel() {
                   Drop a file here or click to browse
                 </p>
                 <p className="text-[10px] text-[#94a3b8] mt-1">
-                  .txt supported directly. For .pdf/.docx, paste text below.
+                  .pdf, .docx, and .txt supported
                 </p>
                 <input
                   ref={fileInputRef}
@@ -300,6 +325,15 @@ export function DocumentChatPanel() {
                 </button>
               </div>
 
+              {parsing && (
+                <div className="text-[11px] text-[#7c3aed] px-1 flex items-center gap-2">
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Extracting text from document...
+                </div>
+              )}
               {error && (
                 <div className="text-[11px] text-[#dc2626] px-1">{error}</div>
               )}
