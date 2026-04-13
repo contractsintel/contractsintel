@@ -292,7 +292,11 @@ Create the annotated proposal outline now. Map every evaluation criterion and Se
       );
     }
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      timeout: 120_000,
+      maxRetries: 2,
+    });
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,

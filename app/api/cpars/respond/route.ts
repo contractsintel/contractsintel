@@ -52,7 +52,11 @@ export async function POST(request: NextRequest) {
       .eq("organization_id", orgId)
       .limit(5);
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      timeout: 120_000,
+      maxRetries: 2,
+    });
 
     // P3.3: switch tone for Exceptional ratings — generate a thank-you /
     // marketing-asset draft instead of a defensive response.

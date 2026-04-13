@@ -52,7 +52,11 @@ export async function POST(request: NextRequest) {
       .eq("past_performance_id", record_id)
       .order("month_date", { ascending: true });
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      timeout: 120_000,
+      maxRetries: 2,
+    });
 
     const prompt = `Generate a Past Performance Questionnaire (PPQ) narrative for this government contract:
 

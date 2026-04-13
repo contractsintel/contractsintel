@@ -54,7 +54,11 @@ export async function POST(request: NextRequest) {
       .limit(5);
 
     const opp = match.opportunities;
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      timeout: 120_000,
+      maxRetries: 2,
+    });
 
     const systemPrompt = `You are a government contract proposal writer specializing in federal procurement.
 Write professional, compelling proposal sections that align with FAR requirements and evaluation criteria.

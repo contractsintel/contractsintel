@@ -46,7 +46,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     const encounters = competitor.competitor_encounters ?? [];
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      timeout: 120_000,
+      maxRetries: 2,
+    });
 
     const systemPrompt = `You are a government contracting competitive intelligence analyst.
 Provide actionable competitive analysis based on encounter history and known competitor information.

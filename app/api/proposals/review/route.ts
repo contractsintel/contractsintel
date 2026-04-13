@@ -126,52 +126,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Truncate each section to keep prompt size manageable for fast response
+    const truncate = (text: string, max: number) =>
+      text.length > max ? text.substring(0, max) + "..." : text;
+
     const userPrompt = `Review the following proposal draft against the solicitation requirements.
 
 --- OPPORTUNITY ---
 Title: ${opp?.title ?? "N/A"}
 Agency: ${opp?.agency ?? "N/A"}
 Solicitation: ${opp?.solicitation_number ?? "N/A"}
-Description: ${(opp?.full_description || opp?.description || "No description available").substring(0, 6000)}
+Description: ${(opp?.full_description || opp?.description || "No description available").substring(0, 3000)}
 Set-Aside: ${opp?.set_aside_type ?? "None"}${opp?.set_aside_description ? ` — ${opp.set_aside_description}` : ""}
 NAICS: ${opp?.naics_code ?? "N/A"}${opp?.naics_description ? ` — ${opp.naics_description}` : ""}
-Contract Type: ${opp?.contract_type ?? "N/A"}
-Place of Performance: ${opp?.place_of_performance ?? "N/A"}
 ${evaluationContext}
 
 --- PROPOSAL SECTIONS ---
 
 Executive Summary:
-${sections.executive_summary}
+${truncate(sections.executive_summary, 2000)}
 
 Technical Approach:
-${sections.technical_approach}
+${truncate(sections.technical_approach, 2000)}
 
 Past Performance:
-${sections.past_performance}
+${truncate(sections.past_performance, 2000)}
 
 Management Plan:
-${sections.management_plan}
+${truncate(sections.management_plan, 2000)}
 
 --- INSTRUCTIONS ---
-Score each section 0-100 and the proposal overall. Identify compliance gaps referencing specific FAR/DFARS clauses where applicable. Assess win probability as Low, Medium, or High. Provide concrete, actionable improvement suggestions.`;
+Score each section 0-100 and the proposal overall. Identify compliance gaps. Assess win probability as Low, Medium, or High. Provide concrete improvement suggestions.`;
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      timeout: 60_000,
+      maxRetries: 2,
+    });
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    // Use streaming to avoid socket timeout on long-running requests
+    const stream = anthropic.messages.stream({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
+    let assembled = "";
+    for await (const event of stream) {
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "text_delta"
+      ) {
+        assembled += event.delta.text;
+      }
     }
 
-    // Parse JSON from the model response — tolerate markdown fences
-    const cleaned = content.text
+    // Parse JSON from the model response — tolerate markdown fences and truncated output
+    const cleaned = assembled
       .trim()
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/\s*```$/i, "")
@@ -182,7 +194,24 @@ Score each section 0-100 and the proposal overall. Identify compliance gaps refe
       return NextResponse.json({ error: "Failed to parse review" }, { status: 500 });
     }
 
-    const review: PinkTeamReview = JSON.parse(jsonMatch[0]);
+    let review: PinkTeamReview;
+    try {
+      review = JSON.parse(jsonMatch[0]);
+    } catch {
+      // Try to fix common JSON issues (trailing commas, truncated arrays)
+      let fixed = jsonMatch[0]
+        .replace(/,\s*([}\]])/g, "$1") // remove trailing commas
+        .replace(/(["\d])\s*\n\s*"/g, '$1,"') // add missing commas between properties
+        .trim();
+      // If JSON is truncated, try to close it
+      const openBraces = (fixed.match(/\{/g) || []).length;
+      const closeBraces = (fixed.match(/\}/g) || []).length;
+      const openBrackets = (fixed.match(/\[/g) || []).length;
+      const closeBrackets = (fixed.match(/\]/g) || []).length;
+      for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += "]";
+      for (let i = 0; i < openBraces - closeBraces; i++) fixed += "}";
+      review = JSON.parse(fixed);
+    }
 
     // Clamp scores to 0-100 and validate structure
     review.overall_score = Math.max(0, Math.min(100, Math.round(review.overall_score ?? 0)));
@@ -198,9 +227,9 @@ Score each section 0-100 and the proposal overall. Identify compliance gaps refe
       review.win_probability = "Medium";
     }
 
-    return NextResponse.json({ review });
+    return NextResponse.json(review);
   } catch (error) {
-    console.error("Pink team review error:", error);
+    console.error("Proposal Scorer error:", error);
     return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
   }
 }

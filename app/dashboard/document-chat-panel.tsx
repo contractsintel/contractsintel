@@ -196,7 +196,7 @@ export function DocumentChatPanel() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close document chat" : "Open document chat"}
+        aria-label={open ? "Close DocIntel" : "Open DocIntel"}
         className="fixed bottom-6 right-24 z-40 w-14 h-14 rounded-full bg-[#7c3aed] text-white shadow-lg flex items-center justify-center hover:bg-[#6d28d9] transition-colors"
       >
         {open ? (

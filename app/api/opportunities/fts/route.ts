@@ -5,8 +5,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // G19: Full-text search inside solicitation body text (title + solicitation
-// number + description + full_description + response_instructions). Reads the
-// `solicitation_tsv` GIN index added by `20260410_g19_solicitation_fts.sql`.
+// number + description + full_description + response_instructions).
+//
+// Primary: uses `solicitation_tsv` GIN index if available.
+// Fallback: ilike search on title + description if the tsv column hasn't been
+// migrated yet (production may not have it).
 //
 // Usage: GET /api/opportunities/fts?q=zero+trust&limit=25
 export async function GET(request: NextRequest) {
@@ -29,20 +32,57 @@ export async function GET(request: NextRequest) {
     }
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "25"), 100);
 
-    // Build a `plainto_tsquery`-style PostgREST filter. PostgREST exposes
-    // `fts(english).<term>` for to_tsquery and `plfts(english).<term>` for
-    // plainto_tsquery — we use plfts so users can type natural keywords
-    // without having to format & / | / ! operators themselves.
-    const { data, error, count } = await supabase
+    const fields =
+      "id, title, agency, naics_code, solicitation_number, response_deadline, posted_date, estimated_value, full_description, source";
+
+    // Try FTS first (requires solicitation_tsv column)
+    let data: any[] | null = null;
+    let count: number | null = null;
+    let error: any = null;
+
+    const ftsResult = await supabase
       .from("opportunities")
-      .select(
-        "id, title, agency, naics_code, solicitation_number, response_deadline, posted_date, estimated_value, full_description, source",
-        { count: "exact" },
-      )
+      .select(fields, { count: "exact" })
       .textSearch("solicitation_tsv", raw, { type: "plain", config: "english" })
       .or("status.is.null,and(status.neq.expired,status.neq.paused)")
       .order("posted_date", { ascending: false, nullsFirst: false })
       .limit(limit);
+
+    if (ftsResult.error?.message?.includes("does not exist")) {
+      // Fallback: ilike search on title + description
+      const keywords = raw
+        .split(/\s+/)
+        .filter((w) => w.length >= 2)
+        .slice(0, 5);
+
+      if (keywords.length === 0) {
+        return NextResponse.json({
+          count: 0,
+          query: raw,
+          opportunities: [],
+        });
+      }
+
+      const filters = keywords
+        .map((kw) => `title.ilike.%${kw}%,description.ilike.%${kw}%`)
+        .join(",");
+
+      const fallbackResult = await supabase
+        .from("opportunities")
+        .select(fields, { count: "exact" })
+        .or(filters)
+        .or("status.is.null,and(status.neq.expired,status.neq.paused)")
+        .order("posted_date", { ascending: false, nullsFirst: false })
+        .limit(limit);
+
+      data = fallbackResult.data;
+      count = fallbackResult.count;
+      error = fallbackResult.error;
+    } else {
+      data = ftsResult.data;
+      count = ftsResult.count;
+      error = ftsResult.error;
+    }
 
     if (error) {
       console.error("fts query error:", error);
@@ -52,6 +92,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ count, query: raw, opportunities: data ?? [] });
   } catch (err: any) {
     console.error("fts route error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message ?? "Internal error" },
+      { status: 500 },
+    );
   }
 }
