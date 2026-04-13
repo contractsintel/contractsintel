@@ -6,6 +6,15 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED = new Set(["contract", "grant", "sbir", "sttr"]);
 
+// Map type param to source-based filters (fallback when opportunity_type column
+// hasn't been migrated yet)
+const SOURCE_FILTERS: Record<string, { sourcePattern?: string; titlePattern?: string }> = {
+  grant: { sourcePattern: "grants" },
+  sbir: { titlePattern: "SBIR" },
+  sttr: { titlePattern: "STTR" },
+  contract: {},
+};
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -13,14 +22,6 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const { data: userRecord } = await supabase
-      .from("users")
-      .select("organization_id")
-      .eq("auth_id", user.id)
-      .single();
-    if (!userRecord?.organization_id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,24 +33,63 @@ export async function GET(request: NextRequest) {
 
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "50"), 200);
 
-    const { data, error, count } = await supabase
+    const fields =
+      "id, title, agency, source, naics_code, response_deadline, posted_date, estimated_value, sam_url, source_url, full_description";
+
+    // Try with opportunity_type column first
+    const primary = await supabase
       .from("opportunities")
-      .select(
-        "id, title, agency, source, naics_code, opportunity_type, set_aside_type, response_deadline, posted_date, estimated_value, sam_url, source_url, full_description",
-        { count: "exact" },
-      )
+      .select(fields, { count: "exact" })
       .eq("opportunity_type", typeParam)
       .order("posted_date", { ascending: false })
       .limit(limit);
 
+    if (!primary.error) {
+      return NextResponse.json({
+        type: typeParam,
+        count: primary.count,
+        opportunities: primary.data ?? [],
+      });
+    }
+
+    // Fallback: opportunity_type column doesn't exist — filter by source/title
+    const filter = SOURCE_FILTERS[typeParam] ?? {};
+    let q = supabase
+      .from("opportunities")
+      .select(fields, { count: "exact" })
+      .order("posted_date", { ascending: false })
+      .limit(limit);
+
+    if (filter.sourcePattern) {
+      q = q.ilike("source", `%${filter.sourcePattern}%`);
+    } else if (filter.titlePattern) {
+      q = q.or(
+        `title.ilike.%${filter.titlePattern}%,solicitation_number.ilike.%${filter.titlePattern}%`,
+      );
+    } else {
+      // "contract" fallback: exclude grants/sbir/sttr sources
+      q = q
+        .not("source", "ilike", "%grants%")
+        .not("title", "ilike", "%SBIR%")
+        .not("title", "ilike", "%STTR%");
+    }
+
+    const { data, error, count } = await q;
     if (error) {
-      console.error("opportunities by-type error:", error);
+      console.error("opportunities by-type fallback error:", error);
       return NextResponse.json({ error: "Query failed" }, { status: 500 });
     }
 
-    return NextResponse.json({ type: typeParam, count, opportunities: data ?? [] });
+    return NextResponse.json({
+      type: typeParam,
+      count,
+      opportunities: data ?? [],
+    });
   } catch (err: unknown) {
     console.error("opportunities by-type error:", err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Internal error" },
+      { status: 500 },
+    );
   }
 }

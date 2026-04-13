@@ -205,7 +205,7 @@ export default function SearchPage() {
     // only when status is explicitly set, so nulls pass through.
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
+      .select("id, title, agency, source, naics_code, solicitation_number, set_aside_type, set_aside_description, response_deadline, posted_date, estimated_value, description, sam_url, source_url, status, created_at", { count: "exact" })
       .or("status.is.null,and(status.neq.expired,status.neq.paused)");
 
     if (query.trim()) {
@@ -221,7 +221,17 @@ export default function SearchPage() {
     }
 
     if (level) {
-      q = q.eq("opportunity_level", level);
+      // opportunity_level column may not exist yet — filter by source pattern instead
+      const levelSourceMap: Record<string, string[]> = {
+        federal: ["sam_gov", "usaspending", "military_defense", "dla_dibbs", "army_asfi", "navy_neco", "air_force", "marines", "darpa"],
+        state: ["state_local"],
+        local: ["state_local"],
+        education: [],
+      };
+      const sources = levelSourceMap[level];
+      if (sources && sources.length > 0) {
+        q = q.in("source", sources);
+      }
     }
 
     if (sort === "newest") q = q.order("created_at", { ascending: false });

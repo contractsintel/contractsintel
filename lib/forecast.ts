@@ -43,25 +43,65 @@ const MS_PER_MONTH = 1000 * 60 * 60 * 24 * 30;
  */
 export async function listForecasts(filters: ForecastFilters = {}) {
   const supabase = await createClient();
-  let q = supabase
-    .from("forecasts")
-    .select("*")
-    .order("expected_rfp_at", { ascending: true });
 
-  if (filters.agency) q = q.ilike("agency", `%${filters.agency}%`);
-  if (filters.naics) q = q.eq("naics", filters.naics);
+  const allFields =
+    "id, agency, naics, expected_rfp_at, period_end, incumbent, estimated_value, source, confidence, linked_recompete_award_id, notes, created_at";
 
-  if (typeof filters.months_out === "number" && filters.months_out > 0) {
-    const cutoff = new Date(Date.now() + filters.months_out * MS_PER_MONTH);
-    q = q.lte("expected_rfp_at", cutoff.toISOString().slice(0, 10));
+  // Minimal fields that are guaranteed by the base CREATE TABLE in the migration
+  const minimalFields =
+    "id, agency, naics, expected_rfp_at, period_end, incumbent, estimated_value, source, confidence, notes";
+
+  async function buildQuery(fields: string) {
+    let q = supabase
+      .from("forecasts")
+      .select(fields)
+      .order("expected_rfp_at", { ascending: true });
+
+    if (filters.agency) q = q.ilike("agency", `%${filters.agency}%`);
+    if (filters.naics) q = q.eq("naics", filters.naics);
+
+    if (typeof filters.months_out === "number" && filters.months_out > 0) {
+      const cutoff = new Date(Date.now() + filters.months_out * MS_PER_MONTH);
+      q = q.lte("expected_rfp_at", cutoff.toISOString().slice(0, 10));
+    }
+
+    const limit = Math.min(Math.max(filters.limit ?? 50, 1), 200);
+    q = q.limit(limit);
+
+    return q;
   }
 
-  const limit = Math.min(Math.max(filters.limit ?? 50, 1), 200);
-  q = q.limit(limit);
+  // Try full query first
+  const primary = await buildQuery(allFields);
+  if (!primary.error) {
+    return (primary.data ?? []) as ForecastRow[];
+  }
 
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
-  return (data ?? []) as ForecastRow[];
+  console.warn("forecasts primary query failed, trying minimal fields:", primary.error.message);
+
+  // Fallback: try with minimal fields (in case linked_recompete_award_id or
+  // created_at columns don't exist yet)
+  const fallback = await buildQuery(minimalFields);
+  if (!fallback.error) {
+    return (fallback.data ?? []).map((r: Record<string, unknown>) => ({
+      ...r,
+      linked_recompete_award_id: null,
+      created_at: "",
+    })) as ForecastRow[];
+  }
+
+  console.warn("forecasts minimal query also failed:", fallback.error.message);
+
+  // Table may not exist at all — return empty array instead of crashing
+  if (
+    fallback.error.message.includes("does not exist") ||
+    fallback.error.message.includes("relation") ||
+    fallback.error.code === "42P01"
+  ) {
+    return [] as ForecastRow[];
+  }
+
+  throw new Error(fallback.error.message);
 }
 
 /**
@@ -88,41 +128,92 @@ export async function generateForecastsFromPastPerformance(
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: rows, error } = await supabase
+  // Try full column set first, then fall back to fewer columns if some don't
+  // exist in production yet (e.g. naics_code, award_amount, contract_name may
+  // be migration-gated).
+  let rows: Record<string, unknown>[] | null = null;
+
+  const primary = await supabase
     .from("past_performance")
     .select("id, agency, naics_code, period_end, award_amount, contract_name")
     .eq("organization_id", organizationId)
     .gte("period_end", today);
 
-  if (error) throw new Error(error.message);
+  if (!primary.error) {
+    rows = primary.data;
+  } else {
+    console.warn(
+      "past_performance primary query failed, trying minimal:",
+      primary.error.message,
+    );
+    // Fallback: only select columns that are likely to exist
+    const fallback = await supabase
+      .from("past_performance")
+      .select("id, agency, period_end")
+      .eq("organization_id", organizationId)
+      .gte("period_end", today);
+
+    if (!fallback.error) {
+      rows = (fallback.data ?? []).map((r) => ({
+        ...r,
+        naics_code: null,
+        award_amount: null,
+        contract_name: null,
+      }));
+    } else {
+      // Table may not exist — return 0 instead of crashing
+      if (
+        fallback.error.message.includes("does not exist") ||
+        fallback.error.message.includes("relation") ||
+        fallback.error.code === "42P01"
+      ) {
+        return 0;
+      }
+      throw new Error(fallback.error.message);
+    }
+  }
+
   if (!rows || rows.length === 0) return 0;
 
   // Skip awards already projected (linked_recompete_award_id).
-  const awardIds = rows.map((r) => r.id);
-  const { data: existing } = await supabase
+  const awardIds = rows.map((r) => r.id as string);
+
+  // The forecasts table might not exist yet either
+  let linked = new Set<string>();
+  const existingQuery = await supabase
     .from("forecasts")
     .select("linked_recompete_award_id")
     .in("linked_recompete_award_id", awardIds);
-  const linked = new Set(
-    (existing ?? [])
-      .map((e) => e.linked_recompete_award_id)
-      .filter((v): v is string => !!v),
-  );
+
+  if (!existingQuery.error) {
+    linked = new Set(
+      (existingQuery.data ?? [])
+        .map((e) => e.linked_recompete_award_id)
+        .filter((v): v is string => !!v),
+    );
+  } else if (
+    existingQuery.error.message.includes("does not exist") ||
+    existingQuery.error.message.includes("relation") ||
+    existingQuery.error.code === "42P01"
+  ) {
+    // forecasts table doesn't exist — can't insert, return 0
+    return 0;
+  }
 
   const inserts = rows
-    .filter((r) => !linked.has(r.id) && r.agency && r.period_end)
+    .filter((r) => !linked.has(r.id as string) && r.agency && r.period_end)
     .map((r) => {
       const expected = projectExpectedRfpDate(new Date(r.period_end as string));
       return {
         agency: r.agency as string,
-        naics: r.naics_code,
+        naics: r.naics_code as string | null,
         expected_rfp_at: expected.toISOString().slice(0, 10),
-        period_end: r.period_end,
-        incumbent: r.contract_name,
-        estimated_value: r.award_amount,
+        period_end: r.period_end as string,
+        incumbent: r.contract_name as string | null,
+        estimated_value: r.award_amount as number | null,
         source: "tenant_past_performance",
         confidence: 0.7,
-        linked_recompete_award_id: r.id,
+        linked_recompete_award_id: r.id as string,
       };
     });
 
