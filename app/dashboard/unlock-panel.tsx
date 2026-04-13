@@ -32,7 +32,7 @@ export function UnlockButton() {
         .select("id", { count: "exact", head: true })
         .not("naics_code", "is", null)
         .in("source", ["sam_gov", "usaspending"])
-        .eq("status", "active");
+        ;
       setUnlockCount(Math.min(count ?? 0, 9999));
     })();
   }, [isIncomplete]);
@@ -149,7 +149,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
         .select("id", { count: "exact", head: true })
         .eq("naics_code", code)
         .in("source", ["sam_gov", "usaspending"])
-        .eq("status", "active");
+        ;
       total += count ?? 0;
     }
     setNaicsMatchCount(total);
@@ -198,7 +198,7 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
         .select("id", { count: "exact", head: true })
         .ilike("set_aside_type", `%${keyword}%`)
         .in("source", ["sam_gov", "usaspending"])
-        .eq("status", "active");
+        ;
       count += c ?? 0;
     }
     setCertMatchCount(count);

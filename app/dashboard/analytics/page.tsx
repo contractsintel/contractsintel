@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
     // Fetch opportunity matches with opportunity details
     const { data: matches } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(agency, estimated_value)")
+      .select("*, opportunities(*)")
       .eq("organization_id", organization.id)
       .gte("created_at", cutoff);
 

@@ -92,7 +92,7 @@ export default function AgenciesIndexPage() {
           <span className="text-3xl">🏛️</span>
           <h3 className="text-sm font-medium text-gray-900 mt-3">No agencies found</h3>
           <p className="text-xs text-gray-500 mt-2">
-            {query ? "Try a different search term." : "Agency profiles will appear as contract data is ingested."}
+            {q ? "Try a different search term." : "Agency profiles will appear as contract data is ingested."}
           </p>
         </div>
       )}

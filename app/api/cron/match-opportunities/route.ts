@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
         while (true) {
           const { data: opps } = await supabase
             .from("opportunities")
-            .select("id, notice_id, title, agency, naics_code, set_aside_type, value_estimate, source, description, response_deadline")
+            .select("*")
             .eq("naics_code", naics)
             .range(offset, offset + BATCH_SIZE - 1);
 
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
         while (true) {
           const { data: opps } = await supabase
             .from("opportunities")
-            .select("id, notice_id, title, agency, naics_code, set_aside_type, value_estimate, source, description, response_deadline")
+            .select("*")
             .like("naics_code", `${prefix}%`)
             .neq("naics_code", naics)
             .range(offset, offset + BATCH_SIZE - 1);

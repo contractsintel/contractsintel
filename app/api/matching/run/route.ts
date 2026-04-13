@@ -47,9 +47,8 @@ export async function POST(request: NextRequest) {
     if (orgNaics.length > 0) {
       const { data } = await supabaseAdmin
         .from("opportunities")
-        .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+        .select("*")
         .in("naics_code", orgNaics)
-        .eq("status", "active")
         .limit(500);
       if (data) opportunities.push(...data);
     }
@@ -60,9 +59,8 @@ export async function POST(request: NextRequest) {
       for (const prefix of prefixes4) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+          .select("*")
           .like("naics_code", `${prefix}%`)
-          .eq("status", "active")
           .limit(400);
         if (data) opportunities.push(...data);
       }
@@ -74,9 +72,8 @@ export async function POST(request: NextRequest) {
       for (const prefix of prefixes3) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+          .select("*")
           .like("naics_code", `${prefix}%`)
-          .eq("status", "active")
           .limit(300);
         if (data) opportunities.push(...data);
       }
@@ -88,9 +85,8 @@ export async function POST(request: NextRequest) {
         const keyword = cert.toLowerCase().substring(0, 6);
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+          .select("*")
           .ilike("set_aside_type", `%${keyword}%`)
-          .eq("status", "active")
           .limit(300);
         if (data) opportunities.push(...data);
       }
@@ -101,9 +97,8 @@ export async function POST(request: NextRequest) {
       for (const kw of orgKeywords.slice(0, 5)) {
         const { data } = await supabaseAdmin
           .from("opportunities")
-          .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+          .select("*")
           .ilike("title", `%${kw}%`)
-          .eq("status", "active")
           .limit(100);
         if (data) opportunities.push(...data);
       }
@@ -112,9 +107,8 @@ export async function POST(request: NextRequest) {
     // Batch 5: USASpending recompetes (they often have null NAICS)
     const { data: recompeteData } = await supabaseAdmin
       .from("opportunities")
-      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+      .select("*")
       .eq("source", "usaspending")
-      .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(300);
     if (recompeteData) opportunities.push(...recompeteData);
@@ -122,9 +116,8 @@ export async function POST(request: NextRequest) {
     // Batch 6: Recent SAM.gov opportunities
     const { data: recentData } = await supabaseAdmin
       .from("opportunities")
-      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
+      .select("*")
       .eq("source", "sam_gov")
-      .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(300);
     if (recentData) opportunities.push(...recentData);
@@ -134,8 +127,7 @@ export async function POST(request: NextRequest) {
     // The scoring engine will rank them appropriately.
     const { data: allActive } = await supabaseAdmin
       .from("opportunities")
-      .select("id, title, description, naics_code, set_aside_type, set_aside_description, agency, estimated_value, value_estimate, place_of_performance, response_deadline, source, contract_type, notice_type")
-      .eq("status", "active")
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(500);
     if (allActive) opportunities.push(...allActive);

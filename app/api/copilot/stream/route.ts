@@ -143,10 +143,7 @@ async function executeTool(
         .slice(0, 5);
       let q = supabaseAdmin
         .from("opportunities")
-        .select(
-          "id, title, agency, naics_code, estimated_value, value_estimate, response_deadline, source, set_aside_type, place_of_performance, solicitation_number",
-        )
-        .eq("status", "active")
+        .select("*")
         .order("response_deadline", { ascending: true, nullsFirst: false })
         .limit(limit);
 
@@ -179,7 +176,7 @@ async function executeTool(
       let q = supabaseAdmin
         .from("opportunity_matches")
         .select(
-          "match_score, bid_recommendation, user_status, user_notes, recommendation_reasoning, opportunities(id, title, agency, naics_code, estimated_value, value_estimate, response_deadline, source, set_aside_type)",
+          "match_score, bid_recommendation, user_status, user_notes, recommendation_reasoning, opportunities(*)",
         )
         .eq("organization_id", orgId)
         .gte("match_score", minScore)
@@ -235,7 +232,6 @@ async function executeTool(
         .from("opportunities")
         .select("*")
         .ilike("title", `%${titleSearch}%`)
-        .eq("status", "active")
         .limit(3);
 
       if (error) return `Query error: ${error.message}`;
@@ -269,8 +265,7 @@ Description: ${(o.description || o.full_description || "No description available
       // Total active count
       let countQ = supabaseAdmin
         .from("opportunities")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "active");
+        .select("id", { count: "exact", head: true });
       if (naicsCode) countQ = countQ.eq("naics_code", naicsCode);
       const { count: totalActive } = await countQ;
 
@@ -281,7 +276,6 @@ Description: ${(o.description || o.full_description || "No description available
       let agencyQ = supabaseAdmin
         .from("opportunities")
         .select("agency")
-        .eq("status", "active")
         .not("agency", "is", null)
         .limit(2000);
       if (naicsCode) agencyQ = agencyQ.eq("naics_code", naicsCode);
@@ -322,11 +316,8 @@ Description: ${(o.description || o.full_description || "No description available
 
       const { data, error } = await supabaseAdmin
         .from("opportunities")
-        .select(
-          "id, title, agency, naics_code, estimated_value, value_estimate, response_deadline, source, set_aside_type, solicitation_number",
-        )
+        .select("*")
         .ilike("agency", `%${agency}%`)
-        .eq("status", "active")
         .order("response_deadline", { ascending: true, nullsFirst: false })
         .limit(limit);
 
@@ -450,7 +441,7 @@ export async function POST(request: NextRequest) {
     const { data: topMatches } = await supabase
       .from("opportunity_matches")
       .select(
-        "match_score, bid_recommendation, opportunities(title, agency, response_deadline, estimated_value)",
+        "match_score, bid_recommendation, opportunities(*)",
       )
       .eq("organization_id", userRow.organization_id)
       .order("match_score", { ascending: false })

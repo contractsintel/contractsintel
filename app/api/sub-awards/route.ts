@@ -21,10 +21,7 @@ export async function GET(request: NextRequest) {
 
     let q = supabase
       .from("sub_awards")
-      .select(
-        "id, prime_award_id, prime_contractor, sub_vendor, sub_uei, agency, naics_code, description, value, awarded_at, source, source_url",
-        { count: "exact" },
-      )
+      .select("*", { count: "exact" })
       .order("awarded_at", { ascending: false })
       .limit(limit);
 

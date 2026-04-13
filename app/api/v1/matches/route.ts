@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await client
     .from("opportunity_matches")
     .select(
-      "id, match_score, pipeline_stage, user_status, created_at, opportunities(id, title, agency, naics_code, response_deadline, estimated_value, sam_url)",
+      "id, match_score, pipeline_stage, user_status, created_at, opportunities(*)",
       { count: "exact" },
     )
     .eq("organization_id", auth.ctx.organizationId)

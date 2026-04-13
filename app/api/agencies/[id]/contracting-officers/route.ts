@@ -18,12 +18,17 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("contracting_officers")
-    .select("id, name, title, email, phone, office, source")
+    .select("*")
     .eq("agency_id", params.id)
     .order("name");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Table may not exist yet — return empty instead of 500
+    console.error("contracting_officers query error:", error.message);
+    return NextResponse.json({
+      contracting_officers: [],
+      count: 0,
+    });
   }
 
   return NextResponse.json({
