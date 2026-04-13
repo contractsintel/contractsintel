@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   sendSlackNotification,
   sendTeamsNotification,
@@ -8,6 +9,11 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const { webhook_url, platform } = body as {
       webhook_url?: string;

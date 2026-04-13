@@ -1,17 +1,29 @@
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createAuthClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    // Authenticate the caller and derive their org — never trust client-supplied orgId
+    const authSupabase = await createAuthClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { data: userRecord } = await authSupabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+    if (!userRecord?.organization_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const organizationId = userRecord.organization_id;
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-
-    const { organizationId } = await request.json();
-    if (!organizationId) return NextResponse.json({ error: "organizationId required" }, { status: 400 });
 
     // Get org profile
     const { data: org } = await supabaseAdmin

@@ -1,8 +1,8 @@
 // Puppeteer rendering server on Railway
 // Server: https://puppeteer-production-f147.up.railway.app
 
-const PUPPETEER_URL = process.env.PUPPETEER_SERVER_URL || "https://puppeteer-production-f147.up.railway.app";
-const PUPPETEER_TOKEN = process.env.PUPPETEER_AUTH_TOKEN || "ci-puppeteer-2026";
+const PUPPETEER_URL = process.env.PUPPETEER_SERVER_URL ?? "";
+const PUPPETEER_TOKEN = process.env.PUPPETEER_AUTH_TOKEN ?? "";
 
 let _callCount = 0;
 

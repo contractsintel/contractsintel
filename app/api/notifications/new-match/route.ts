@@ -1,14 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createAuthClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 export async function POST(request: NextRequest) {
   try {
-    const { organizationId } = await request.json();
+    // Authenticate caller and derive org
+    const authSupabase = await createAuthClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!organizationId) {
-      return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
-    }
+    const { data: userRecord } = await authSupabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+    if (!userRecord?.organization_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const organizationId = userRecord.organization_id;
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       // Fallback: ilike search on title + description
       const keywords = raw
         .split(/\s+/)
+        .map((w) => w.replace(/[%,.()"'\\]/g, ""))
         .filter((w) => w.length >= 2)
         .slice(0, 5);
 
