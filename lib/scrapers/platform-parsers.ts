@@ -5,7 +5,7 @@ export function parseJaggaer(html: string, state: string, baseUrl: string): Arra
   // Look for: <table> with bid data, <tr> rows with solicitation info
   // Common patterns: class="evenRow"/"oddRow", data-bid-id, td with links to bid details
   // Also look for: div.searchResultRow, span.bidTitle, a[href*="bidDetail"]
-  const results: any[] = [];
+  const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
 
   // Pattern 1: Table rows with alternating classes
   const rowRegex = /<tr[^>]*(?:evenRow|oddRow|data-row|result)[^>]*>([\s\S]*?)<\/tr>/gi;
@@ -45,7 +45,7 @@ export function parseJaggaer(html: string, state: string, baseUrl: string): Arra
 
 export function parseCaleProcure(html: string): Array<{title: string; url: string; agency?: string}> {
   // California CaleProcure
-  const results: any[] = [];
+  const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
   // Look for event/bid listings - CaleProcure uses ASP.NET GridView or similar
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
@@ -73,7 +73,7 @@ export function parseCaleProcure(html: string): Array<{title: string; url: strin
 }
 
 export function parseMyFloridaMarketplace(html: string): Array<{title: string; url: string}> {
-  const results: any[] = [];
+  const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
   // Florida uses a search results table
   const linkRegex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   let match;
@@ -89,7 +89,7 @@ export function parseMyFloridaMarketplace(html: string): Array<{title: string; u
 }
 
 export function parseTxSmartBuy(html: string): Array<{title: string; url: string}> {
-  const results: any[] = [];
+  const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
   // Texas TxSmartBuy SPA renders a table of solicitations
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
@@ -109,7 +109,7 @@ export function parseTxSmartBuy(html: string): Array<{title: string; url: string
 
 export function parseGenericSPA(html: string, baseUrl: string): Array<{title: string; url: string}> {
   // Generic fallback for any SPA - looks for ALL links and table rows with procurement keywords
-  const results: any[] = [];
+  const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
   const keywords = /bid|solicitation|rfp|rfq|procurement|opportunity|contract|tender/i;
 
   // All links

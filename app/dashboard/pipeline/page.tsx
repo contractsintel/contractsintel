@@ -6,6 +6,34 @@ import { useEffect, useState, useCallback } from "react";
 import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
 
+type PipelineOpportunity = {
+  title?: string;
+  agency?: string;
+  estimated_value?: number | null;
+  value_estimate?: number | null;
+  response_deadline?: string | null;
+  naics_code?: string | null;
+  solicitation_number?: string | null;
+  description?: string | null;
+  set_aside?: string | null;
+};
+
+type PipelineMatch = {
+  id: string;
+  match_score: number;
+  pipeline_stage: string;
+  gate_stage?: string | null;
+  gate_notes?: string | null;
+  pwin?: number | null;
+  award_amount?: number | null;
+  contract_number?: string | null;
+  loss_reason?: string | null;
+  loss_notes?: string | null;
+  opportunity_id: string;
+  user_status?: string | null;
+  opportunities?: PipelineOpportunity;
+};
+
 const STAGES = [
   { key: "monitoring", label: "Monitoring", color: "#6b7280", bg: "bg-[#f1f5f9]", text: "text-[#64748b]" },
   { key: "preparing_bid", label: "Preparing Bid", color: "#d97706", bg: "bg-[#fffbeb]", text: "text-[#d97706]" },
@@ -67,7 +95,7 @@ function scoreColor(score: number): string {
 export default function PipelinePage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<PipelineMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [wonModal, setWonModal] = useState<string | null>(null);
   const [lostModal, setLostModal] = useState<string | null>(null);
@@ -136,7 +164,7 @@ export default function PipelinePage() {
 
   const submitWon = async () => {
     if (!wonModal) return;
-    const match = matches.find((m: any) => m.id === wonModal);
+    const match = matches.find((m) => m.id === wonModal);
     const opp = match?.opportunities;
     // P2.1: validate award amount before insert
     const parsed = parseFloat(wonData.award_amount);
@@ -270,7 +298,7 @@ export default function PipelinePage() {
       acc[s.key] = matches.filter((m) => m.pipeline_stage === s.key);
       return acc;
     },
-    {} as Record<string, any[]>
+    {} as Record<string, PipelineMatch[]>
   );
 
   return (
@@ -289,7 +317,7 @@ export default function PipelinePage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {STAGES.map((s) => {
           const items = grouped[s.key] ?? [];
-          const total = items.reduce((sum: number, m: any) => sum + (m.opportunities?.estimated_value ?? 0), 0);
+          const total = items.reduce((sum: number, m: PipelineMatch) => sum + (m.opportunities?.estimated_value ?? 0), 0);
           return (
             <div key={s.key} className="border border-[#e5e7eb] bg-[#ffffff] p-4" style={{ borderLeftWidth: "3px", borderLeftColor: s.color }}>
               <div className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: s.color }}>
@@ -314,7 +342,7 @@ export default function PipelinePage() {
                 {stage.label} ({(grouped[stage.key] ?? []).length})
               </div>
               <div className="space-y-2">
-                {(grouped[stage.key] ?? []).map((match: any) => {
+                {(grouped[stage.key] ?? []).map((match: PipelineMatch) => {
                   const opp = match.opportunities;
                   return (
                     <div
@@ -326,14 +354,14 @@ export default function PipelinePage() {
                       </h4>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-mono text-[#64748b]">
-                          {formatCurrency(opp?.estimated_value)}
+                          {formatCurrency(opp?.estimated_value ?? null)}
                         </span>
                         <span className={`text-xs font-mono font-bold ${scoreColor(match.match_score)}`}>
                           {match.match_score}
                         </span>
                       </div>
                       <div className="text-[10px] text-[#94a3b8] font-mono mb-2">
-                        {daysUntil(opp?.response_deadline)}
+                        {daysUntil(opp?.response_deadline ?? null)}
                       </div>
                       <select
                         value={match.pipeline_stage}

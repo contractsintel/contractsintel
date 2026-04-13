@@ -35,8 +35,8 @@ function urgencyBorder(dueDate: string | null): string {
 export default function CompliancePage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const [items, setItems] = useState<any[]>([]);
-  const [farAlerts, setFarAlerts] = useState<any[]>([]);
+  const [items, setItems] = useState<Record<string, any>[]>([]);
+  const [farAlerts, setFarAlerts] = useState<Record<string, any>[]>([]);
   const [expandedFar, setExpandedFar] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [cmmcCurrent, setCmmcCurrent] = useState<number>(organization.cmmc_current_level ?? 0);

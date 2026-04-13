@@ -19,7 +19,7 @@ export default function ContractsPage() {
   const supabase = createClient();
   const locked = isDiscovery(organization.plan, organization);
 
-  const [contracts, setContracts] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMilestoneModal, setShowMilestoneModal] = useState<string | null>(null);
   const [milestoneData, setMilestoneData] = useState({ title: "", due_date: "" });
@@ -37,7 +37,7 @@ export default function ContractsPage() {
 
     // P1.4: Fetch invoices from the real invoices table and group by contract.
     const contractIds = (data ?? []).map((c) => c.id);
-    const invoicesByContract: Record<string, any[]> = {};
+    const invoicesByContract: Record<string, Record<string, any>[]> = {};
     if (contractIds.length > 0) {
       const { data: invs } = await supabase
         .from("invoices")
@@ -79,7 +79,7 @@ export default function ContractsPage() {
     loadData();
   };
 
-  const flagLatePayment = async (contractId: string, inv: any, contractTitle: string) => {
+  const flagLatePayment = async (contractId: string, inv: Record<string, any>, contractTitle: string) => {
     const submittedDate = inv.submitted_date || "unknown";
     const dueDate = inv.due_date || "unknown";
     const amount = inv.amount ? `$${Number(inv.amount).toLocaleString()}` : "$0";
@@ -235,7 +235,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                     Milestones
                   </h4>
                   <div className="space-y-2">
-                    {contract.milestones.map((ms: any) => (
+                    {contract.milestones.map((ms: Record<string, any>) => (
                       <div key={ms.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 ${
@@ -259,7 +259,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                     Option Periods
                   </h4>
                   <div className="space-y-2">
-                    {contract.option_periods.map((op: any) => (
+                    {contract.option_periods.map((op: Record<string, any>) => (
                       <div key={op.id} className="flex items-center justify-between">
                         <span className="text-xs text-[#0f172a]">{op.label}</span>
                         <div className="flex items-center gap-3">
@@ -294,7 +294,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
                       </tr>
                     </thead>
                     <tbody>
-                      {contract.invoices.map((inv: any) => (
+                      {contract.invoices.map((inv: Record<string, any>) => (
                         <tr key={inv.id} className="border-t border-[#e5e7eb]">
                           <td className="py-2 text-xs text-[#0f172a] font-mono">{inv.invoice_number || inv.number || "—"}</td>
                           <td className="py-2 text-xs text-[#0f172a] font-mono text-right">
@@ -438,7 +438,7 @@ function ContractsCalendarView({
   month,
   setMonth,
 }: {
-  contracts: any[];
+  contracts: Record<string, any>[];
   month: Date;
   setMonth: (d: Date) => void;
 }) {

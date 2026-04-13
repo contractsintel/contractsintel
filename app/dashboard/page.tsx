@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
   const PAGE_SIZE = 50;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Record<string, any>[]>([]);
   const [totalMatchCount, setTotalMatchCount] = useState(0);
   const [matchLimit, setMatchLimit] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -151,9 +151,9 @@ export default function DashboardPage() {
     valueRange: "",
     recommendation: "",
   });
-  const [complianceAlerts, setComplianceAlerts] = useState<any[]>([]);
-  const [highSeverityAlerts, setHighSeverityAlerts] = useState<any[]>([]);
-  const [upcomingComplianceDeadlines, setUpcomingComplianceDeadlines] = useState<any[]>([]);
+  const [complianceAlerts, setComplianceAlerts] = useState<Record<string, any>[]>([]);
+  const [highSeverityAlerts, setHighSeverityAlerts] = useState<Record<string, any>[]>([]);
+  const [upcomingComplianceDeadlines, setUpcomingComplianceDeadlines] = useState<Record<string, any>[]>([]);
   const [stripDismissed, setStripDismissed] = useState(false);
   const [seedingDemo, setSeedingDemo] = useState(false);
   const [dbSourceCounts, setDbSourceCounts] = useState<Record<string, number>>({});
@@ -164,7 +164,7 @@ export default function DashboardPage() {
   // If the user picked "show only matching set-asides" in onboarding, default
   // the recommendation filter to "bid" so they only see strong-fit opportunities.
   useEffect(() => {
-    const pref = (organization.address as any)?.set_aside_preference;
+    const pref = (organization.address as Record<string, any> | null)?.set_aside_preference;
     if (pref === "matching") {
       setFilters(f => f.recommendation ? f : { ...f, recommendation: "bid" });
     }
@@ -197,7 +197,7 @@ export default function DashboardPage() {
       const counts: Record<string, number> = {};
       const sampleSize = sourceSample.length;
       for (const m of sourceSample) {
-        const src = (m as any).opportunities?.source;
+        const src = (m as Record<string, any>).opportunities ? ((m as Record<string, any>).opportunities as Record<string, any>).source : undefined;
         const cat = getSourceCategory(src);
         counts[cat] = (counts[cat] ?? 0) + 1;
       }
@@ -317,7 +317,7 @@ export default function DashboardPage() {
         showToast("Tracking — Added to Pipeline", "#059669", "/dashboard/pipeline", "View in Pipeline");
       } else if (status === "bidding") {
         // Find the opportunity_id for the proposals link
-        const m = matches.find((x: any) => x.id === matchId);
+        const m = matches.find((x) => x.id === matchId);
         const oppId = m?.opportunity_id || "";
         showToast("Preparing Bid — Added to Pipeline", "#2563eb", `/dashboard/proposals?opportunity_id=${oppId}`, "Generate AI Proposal →");
       } else if (status === "skipped") {
@@ -388,7 +388,7 @@ export default function DashboardPage() {
     }
   };
 
-  const getVal = (opp: any) => {
+  const getVal = (opp: Record<string, any> | null) => {
     if (!opp) return 0;
     // B2: widen search across all possible value fields from different scrapers
     const candidates = [
@@ -553,8 +553,8 @@ export default function DashboardPage() {
                 showToast(data?.error || "Matching failed — try again", "#dc2626");
                 setRefreshing(false);
               }
-            } catch (err: any) {
-              showToast(err?.message || "Network error", "#dc2626");
+            } catch (err: unknown) {
+              showToast(err instanceof Error ? err.message : "Network error", "#dc2626");
               setRefreshing(false);
             }
           }}
@@ -596,7 +596,7 @@ export default function DashboardPage() {
       <ProfileBanner />
 
       {/* Demo Banner */}
-      {matches.some((m: any) => m.is_demo) && <DemoBanner />}
+      {matches.some((m) => m.is_demo) && <DemoBanner />}
 
       {/* Stats Bar — KPI Row (D1: always show 4th Total Value card) */}
       <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">

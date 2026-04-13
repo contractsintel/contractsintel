@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 
 const MILITARY_SOURCES = [
   { id: "dla_dibbs", name: "DLA DIBBS", url: "https://www.dibbs.bsm.dla.mil/" },
@@ -57,7 +59,7 @@ function extractTableRows(html: string): string[] {
   return rows;
 }
 
-export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResult> {
+export async function scrapeMilitaryDefense(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -67,7 +69,7 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
 
     for (const target of FETCH_TARGETS) {
       try {
-        console.log(`[military-defense] Fetching ${target.name} (${target.url})...`);
+        logger.info(`[military-defense] Fetching ${target.name} (${target.url})...`);
 
         const res = await fetch(target.url, {
           method: "GET",
@@ -80,14 +82,14 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
         });
 
         if (!res.ok) {
-          console.log(`[military-defense] ${target.name}: HTTP ${res.status} BLOCKED`);
+          logger.info(`[military-defense] ${target.name}: HTTP ${res.status} BLOCKED`);
           sourceResults.push(`${target.id}: BLOCKED (HTTP ${res.status})`);
           continue;
         }
 
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-          console.log(`[military-defense] ${target.name}: Non-HTML response BLOCKED`);
+          logger.info(`[military-defense] ${target.name}: Non-HTML response BLOCKED`);
           sourceResults.push(`${target.id}: BLOCKED (non-HTML)`);
           continue;
         }
@@ -95,7 +97,7 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
         const html = await res.text();
 
         if (html.length < 500) {
-          console.log(`[military-defense] ${target.name}: Empty/minimal response BLOCKED`);
+          logger.info(`[military-defense] ${target.name}: Empty/minimal response BLOCKED`);
           sourceResults.push(`${target.id}: BLOCKED (minimal response)`);
           continue;
         }
@@ -110,7 +112,7 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
         const hasData = procurementLinks.length >= 1 || tableRows.length >= 3;
 
         if (!hasData) {
-          console.log(`[military-defense] ${target.name}: No parseable procurement data BLOCKED`);
+          logger.info(`[military-defense] ${target.name}: No parseable procurement data BLOCKED`);
           sourceResults.push(`${target.id}: BLOCKED (no parseable data)`);
           continue;
         }
@@ -162,17 +164,17 @@ export async function scrapeMilitaryDefense(supabase: any): Promise<ScraperResul
         }
 
         totalFound += sourceOpps;
-        console.log(`[military-defense] ${target.name}: Found ${sourceOpps} items`);
+        logger.info(`[military-defense] ${target.name}: Found ${sourceOpps} items`);
         sourceResults.push(`${target.id}: ${sourceOpps} items`);
       } catch (targetErr) {
         const msg = targetErr instanceof Error ? targetErr.message : String(targetErr);
         const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-        console.log(`[military-defense] ${target.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+        logger.info(`[military-defense] ${target.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
         sourceResults.push(`${target.id}: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
       }
     }
 
-    console.log(`[military-defense] Attempted all ${FETCH_TARGETS.length} sources. Results: ${sourceResults.join(", ")}`);
+    logger.info(`[military-defense] Attempted all ${FETCH_TARGETS.length} sources. Results: ${sourceResults.join(", ")}`);
 
     return {
       source: "military_defense",

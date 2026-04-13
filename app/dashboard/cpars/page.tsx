@@ -42,8 +42,8 @@ export default function CparsPage() {
   // Discovery trial users. Check the raw plan value only.
   const teamTier = isTeam(organization.plan);
 
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [ratings, setRatings] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<Record<string, any>[]>([]);
+  const [ratings, setRatings] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);

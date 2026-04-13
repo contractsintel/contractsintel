@@ -79,15 +79,15 @@ export function CopilotPanel() {
             } else if (event === "error") {
               throw new Error(payload.error ?? "Stream failed");
             }
-          } catch (parseErr: any) {
+          } catch (parseErr: unknown) {
             // Surface JSON parse failures rather than swallowing them.
             if (parseErr instanceof SyntaxError) continue;
             throw parseErr;
           }
         }
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Bid Assist failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Bid Assist failed");
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setStreaming(false);

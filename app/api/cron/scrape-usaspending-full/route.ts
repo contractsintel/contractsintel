@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         signal: AbortSignal.timeout(30000),
       });
 
-      if (!res.ok) { console.log(`USASpending page ${page} error: ${res.status}`); break; }
+      if (!res.ok) { logger.info(`USASpending page ${page} error: ${res.status}`); break; }
 
       const data = await res.json();
       const awards = data.results ?? [];

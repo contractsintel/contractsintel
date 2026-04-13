@@ -36,9 +36,9 @@ export async function GET(request: NextRequest) {
       "id, title, agency, naics_code, solicitation_number, response_deadline, posted_date, estimated_value, full_description, source";
 
     // Try FTS first (requires solicitation_tsv column)
-    let data: any[] | null = null;
+    let data: Record<string, any>[] | null = null;
     let count: number | null = null;
-    let error: any = null;
+    let error: { message: string } | null = null;
 
     const ftsResult = await supabase
       .from("opportunities")
@@ -91,10 +91,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ count, query: raw, opportunities: data ?? [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("fts route error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 },
     );
   }

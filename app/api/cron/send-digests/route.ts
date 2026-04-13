@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       const firstName = users[0].full_name?.split(" ")[0] || org.name;
 
       const opportunityRows = matches
-        .map((m: any) => {
+        .map((m: Record<string, any>) => {
           const opp = m.opportunities;
           if (!opp) return "";
           const deadline = opp.response_deadline
@@ -143,8 +144,8 @@ export async function GET(request: NextRequest) {
             html,
           });
           sent++;
-        } catch (err: any) {
-          errors.push(`${u.email}: ${err?.message || "unknown"}`);
+        } catch (err: unknown) {
+          errors.push(`${u.email}: ${err instanceof Error ? err.message : "unknown"}`);
         }
       }
 
@@ -155,11 +156,12 @@ export async function GET(request: NextRequest) {
 
       if (webhookUrl && webhookPlatform) {
         try {
-          const topMatch = matches[0] as any;
-          const topTitle = (topMatch.opportunities?.title || "Untitled")
+          const topMatch = matches[0] as Record<string, any>;
+          const topOpp = topMatch.opportunities as Record<string, any> | undefined;
+          const topTitle = String(topOpp?.title || "Untitled")
             .replace(/^\[[^\]]*\]\s*/, "")
             .substring(0, 60);
-          const topScore = topMatch.match_score;
+          const topScore = topMatch.match_score as number;
 
           await sendDigestSummary(
             webhookUrl,
@@ -168,15 +170,15 @@ export async function GET(request: NextRequest) {
             topTitle,
             topScore
           );
-        } catch (err: any) {
-          errors.push(`webhook(${org.name}): ${err?.message || "unknown"}`);
+        } catch (err: unknown) {
+          errors.push(`webhook(${org.name}): ${err instanceof Error ? err.message : "unknown"}`);
         }
       }
     }
 
     return NextResponse.json({ success: true, sent, errors: errors.length > 0 ? errors : undefined });
-  } catch (error: any) {
-    console.error("Send digests error:", error);
-    return NextResponse.json({ error: error?.message || "Failed" }, { status: 500 });
+  } catch (error: unknown) {
+    logger.error("Send digests error", { error: error instanceof Error ? error.message : String(error) });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed" }, { status: 500 });
   }
 }

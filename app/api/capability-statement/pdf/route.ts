@@ -294,7 +294,7 @@ async function buildPdf(
 
 // ---------- route handlers ----------
 
-async function handlePdfRequest(supabase: any, organizationId: string) {
+async function handlePdfRequest(supabase: Awaited<ReturnType<typeof createClient>>, organizationId: string) {
   // Fetch org
   const { data: org } = await supabase
     .from("organizations")
@@ -405,10 +405,10 @@ export async function POST(request: NextRequest) {
     }
 
     return handlePdfRequest(supabase, organizationId);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("capability-statement/pdf POST error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 }
     );
   }
@@ -435,10 +435,10 @@ export async function GET(_request: NextRequest) {
     }
 
     return handlePdfRequest(supabase, userRecord.organization_id);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("capability-statement/pdf GET error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 }
     );
   }

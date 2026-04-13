@@ -1,3 +1,12 @@
+export interface Address {
+  street?: string;
+  street2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -5,7 +14,7 @@ export interface Organization {
   cage_code: string | null;
   certifications: string[];
   naics_codes: string[];
-  address: any;
+  address: Address | null;
   plan: string;
   stripe_customer_id: string | null;
   subscription_status: string | null;
@@ -25,7 +34,11 @@ export interface Organization {
   min_contract_value: number;
   max_contract_value: number;
   created_at: string;
-  [key: string]: any;
+  cmmc_current_level: number | null;
+  cmmc_target_level: number | null;
+  cmmc_last_assessment: string | null;
+  notification_preferences: Record<string, any> | null;
+  [key: string]: unknown;
 }
 
 export interface UserProfile {

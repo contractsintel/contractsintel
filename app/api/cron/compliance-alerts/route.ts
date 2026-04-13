@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
             });
             sent++;
           } catch (err) {
-            console.error(`Failed to send compliance alert to ${u.email}:`, err);
+            logger.error(`Failed to send compliance alert to ${u.email}`, { error: err instanceof Error ? err.message : String(err) });
           }
         }
       }
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, sent });
   } catch (error) {
-    console.error("Compliance alerts error:", error);
+    logger.error("Compliance alerts error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to send compliance alerts" }, { status: 500 });
   }
 }

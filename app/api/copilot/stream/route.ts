@@ -123,7 +123,7 @@ const TOOLS: Anthropic.Tool[] = [
 // Execute a tool call against the database
 async function executeTool(
   toolName: string,
-  toolInput: Record<string, unknown>,
+  toolInput: Record<string, any>,
   orgId: string,
 ): Promise<string> {
   const supabaseAdmin = createAdminClient(
@@ -203,7 +203,7 @@ async function executeTool(
         avgScore: 0,
       };
       let scoreSum = 0;
-      data.forEach((m: any) => {
+      data.forEach((m: Record<string, any>) => {
         const s = m.user_status || "new";
         summary.byStatus[s] = (summary.byStatus[s] || 0) + 1;
         scoreSum += m.match_score || 0;
@@ -218,7 +218,7 @@ async function executeTool(
 
       result += data
         .slice(0, 25)
-        .map((m: any, i: number) => {
+        .map((m: Record<string, any>, i: number) => {
           const o = m.opportunities;
           if (!o) return `${i + 1}. [opportunity data unavailable]`;
           const val = o.estimated_value || o.value_estimate;
@@ -288,7 +288,7 @@ Description: ${(o.description || o.full_description || "No description available
       const { data: agencyData } = await agencyQ;
 
       const agencyCounts: Record<string, number> = {};
-      (agencyData || []).forEach((r: any) => {
+      (agencyData || []).forEach((r: Record<string, any>) => {
         if (r.agency) agencyCounts[r.agency] = (agencyCounts[r.agency] || 0) + 1;
       });
       const topAgencies = Object.entries(agencyCounts)
@@ -302,7 +302,7 @@ Description: ${(o.description || o.full_description || "No description available
         result += `By source:\n`;
         // bySource might be an array of {source, count} or might fail — handle gracefully
         if (Array.isArray(bySource)) {
-          bySource.forEach((r: any) => {
+          bySource.forEach((r: Record<string, any>) => {
             result += `  ${r.source || "unknown"}: ${r.count}\n`;
           });
         }
@@ -475,10 +475,11 @@ export async function POST(request: NextRequest) {
     if (topMatches?.length) {
       groundingLines.push("\nTop 5 matches:");
       for (const m of topMatches) {
-        const o: any = (m as any).opportunities;
+        const mRec = m as Record<string, any>;
+        const o = mRec.opportunities as Record<string, any> | undefined;
         if (!o) continue;
         groundingLines.push(
-          `  - [Score ${(m as any).match_score}] ${o.title} · ${o.agency ?? "?"} ${o.estimated_value ? `· $${Number(o.estimated_value).toLocaleString()}` : ""} ${o.response_deadline ? `· due ${new Date(o.response_deadline).toLocaleDateString()}` : ""}`,
+          `  - [Score ${mRec.match_score}] ${o.title} · ${o.agency ?? "?"} ${o.estimated_value ? `· $${Number(o.estimated_value).toLocaleString()}` : ""} ${o.response_deadline ? `· due ${new Date(String(o.response_deadline)).toLocaleDateString()}` : ""}`,
         );
       }
     }
@@ -605,7 +606,7 @@ ${groundingLines.join("\n") || "(no grounding data available)"}`;
             for (const toolBlock of toolUseBlocks) {
               const result = await executeTool(
                 toolBlock.name,
-                toolBlock.input as Record<string, unknown>,
+                toolBlock.input as Record<string, any>,
                 orgId,
               );
               toolResults.push({
@@ -652,12 +653,12 @@ ${groundingLines.join("\n") || "(no grounding data available)"}`;
               })}\n\n`,
             ),
           );
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("copilot stream error:", err);
           controller.enqueue(
             encoder.encode(
               `event: error\ndata: ${JSON.stringify({
-                error: err?.message ?? "Stream failed",
+                error: err instanceof Error ? err.message : "Stream failed",
               })}\n\n`,
             ),
           );
@@ -674,10 +675,10 @@ ${groundingLines.join("\n") || "(no grounding data available)"}`;
         Connection: "keep-alive",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("copilot route error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 },
     );
   }

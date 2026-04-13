@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 
 const SAM_INTERNAL_API = "https://sam.gov/api/prod/sgs/v1/search/";
 const SAM_PUBLIC_API = "https://api.sam.gov/opportunities/v2/search";
@@ -52,7 +54,7 @@ async function fetchInternalApi(page: number, size: number): Promise<{ results: 
   };
 }
 
-export async function scrapeSamGov(supabase: any): Promise<ScraperResult> {
+export async function scrapeSamGov(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -92,7 +94,7 @@ export async function scrapeSamGov(supabase: any): Promise<ScraperResult> {
         if (!error) totalSaved++;
       }
 
-      console.log(`[sam-gov] Page ${page}: ${results.length} results, ${totalSaved} saved (${totalElements} total active)`);
+      logger.info(`[sam-gov] Page ${page}: ${results.length} results, ${totalSaved} saved (${totalElements} total active)`);
       page++;
       if (results.length < PAGE_SIZE) break;
       await new Promise((resolve) => setTimeout(resolve, 500));

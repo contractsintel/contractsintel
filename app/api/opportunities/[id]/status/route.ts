@@ -28,7 +28,7 @@ export async function PATCH(
     const { status, pipeline_stage, award_amount, contract_number, loss_reason, loss_notes } =
       await request.json();
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, any> = {};
     if (status !== undefined) updateData.user_status = status;
     if (pipeline_stage !== undefined) updateData.pipeline_stage = pipeline_stage;
     if (award_amount !== undefined) updateData.award_amount = award_amount;

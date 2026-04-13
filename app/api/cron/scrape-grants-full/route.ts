@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
         signal: AbortSignal.timeout(30000),
       });
 
-      if (!res.ok) { console.log(`Grants.gov error at offset ${offset}: ${res.status}`); break; }
+      if (!res.ok) { logger.info(`Grants.gov error at offset ${offset}: ${res.status}`); break; }
 
       const data = await res.json();
       const opps = data.oppHits ?? [];
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
           });
 
           if (!agencyRes.ok) {
-            console.log(`Grants.gov agency ${agencyCode} error at offset ${agencyOffset}: ${agencyRes.status}`);
+            logger.info(`Grants.gov agency ${agencyCode} error at offset ${agencyOffset}: ${agencyRes.status}`);
             break;
           }
 
@@ -116,7 +117,7 @@ export async function GET(request: NextRequest) {
             if (!error) { totalSaved++; agencySaved++; }
           }
 
-          console.log(`Grants.gov agency ${agencyCode} page ${agencyPageNum}: ${agencyOpps.length} opps fetched (offset ${agencyOffset}, hitCount ${agencyHitCount})`);
+          logger.info(`Grants.gov agency ${agencyCode} page ${agencyPageNum}: ${agencyOpps.length} opps fetched (offset ${agencyOffset}, hitCount ${agencyHitCount})`);
 
           agencyOffset += AGENCY_PER_PAGE;
 
@@ -125,11 +126,11 @@ export async function GET(request: NextRequest) {
         } while (agencyOffset < agencyHitCount);
 
       } catch (agencyErr) {
-        console.log(`Grants.gov agency ${agencyCode} failed at offset ${agencyOffset}: ${agencyErr}`);
+        logger.info(`Grants.gov agency ${agencyCode} failed at offset ${agencyOffset}: ${agencyErr}`);
       }
     }
 
-    console.log(`Grants.gov per-agency queries saved ${agencySaved} additional records`);
+    logger.info(`Grants.gov per-agency queries saved ${agencySaved} additional records`);
 
     return NextResponse.json({ success: true, hitCount, fetched: totalFetched, saved: totalSaved, pagesProcessed: Math.ceil(offset / PER_PAGE), agencySaved });
   } catch (err) {

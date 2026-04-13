@@ -24,8 +24,8 @@ export async function GET(_request: NextRequest) {
     }
     const quota = await getSearchQuota(supabase, userRecord.organization_id);
     return NextResponse.json({ quota });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("quota search GET error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

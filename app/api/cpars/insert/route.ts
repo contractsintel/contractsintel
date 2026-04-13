@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ rating: inserted });
-  } catch (e: any) {
-    console.error("[cpars insert] error", e?.message);
+  } catch (e: unknown) {
+    console.error("[cpars insert] error", e instanceof Error ? e.message : "Unknown error");
     return NextResponse.json({ error: "Insert failed" }, { status: 500 });
   }
 }

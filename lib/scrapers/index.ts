@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { scrapeSamGov } from "./sam-gov";
 import { scrapeUsaspending } from "./usaspending";
 import { scrapeGrantsGov } from "./grants-gov";
@@ -7,6 +8,7 @@ import { scrapeSbirSttr } from "./sbir-sttr";
 import { scrapeForecasts } from "./forecasts";
 import { scrapeSubcontracting } from "./subcontracting";
 import { scrapeFederalCivilian } from "./federal-civilian";
+import type { SupabaseAdmin } from "./types";
 
 export interface ScraperResult {
   source: string;
@@ -18,7 +20,7 @@ export interface ScraperResult {
   completed_at: string;
 }
 
-type ScraperFn = (supabase: any) => Promise<ScraperResult>;
+type ScraperFn = (supabase: SupabaseAdmin) => Promise<ScraperResult>;
 
 const SCRAPER_CATEGORIES: Record<string, ScraperFn[]> = {
   federal: [scrapeSamGov, scrapeUsaspending, scrapeGrantsGov, scrapeFederalCivilian],
@@ -28,7 +30,7 @@ const SCRAPER_CATEGORIES: Record<string, ScraperFn[]> = {
   forecasts: [scrapeForecasts, scrapeSubcontracting],
 };
 
-async function logScraperRun(supabase: any, result: ScraperResult) {
+async function logScraperRun(supabase: SupabaseAdmin, result: ScraperResult) {
   try {
     await supabase.from("scraper_runs").insert({
       source: result.source,
@@ -40,17 +42,17 @@ async function logScraperRun(supabase: any, result: ScraperResult) {
       completed_at: result.completed_at,
     });
   } catch (err) {
-    console.error(`Failed to log scraper run for ${result.source}:`, err);
+    logger.error(`Failed to log scraper run for ${result.source}`, { error: err instanceof Error ? err.message : String(err) });
   }
 }
 
 export async function runScrapersByCategory(
-  supabase: any,
+  supabase: SupabaseAdmin,
   category: string
 ): Promise<ScraperResult[]> {
   const scrapers = SCRAPER_CATEGORIES[category];
   if (!scrapers) {
-    console.error(`Unknown scraper category: ${category}`);
+    logger.error(`Unknown scraper category: ${category}`);
     return [];
   }
 
@@ -80,7 +82,7 @@ export async function runScrapersByCategory(
 }
 
 export async function runAllScrapers(
-  supabase: any,
+  supabase: SupabaseAdmin,
   category?: string
 ): Promise<ScraperResult[]> {
   if (category) {

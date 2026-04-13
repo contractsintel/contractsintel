@@ -69,7 +69,7 @@ export function parseRows(raw: string): ComplianceRow[] {
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
-  let parsed: any;
+  let parsed: Record<string, any>;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
@@ -77,7 +77,7 @@ export function parseRows(raw: string): ComplianceRow[] {
   }
   const rows = Array.isArray(parsed?.rows) ? parsed.rows : [];
   return rows
-    .map((r: any) => ({
+    .map((r: Record<string, any>) => ({
       section: typeof r?.section === "string" ? r.section.slice(0, 32) : "",
       requirement: typeof r?.requirement === "string" ? r.requirement.slice(0, 280) : "",
       evidence_required: typeof r?.evidence_required === "string" ? r.evidence_required.slice(0, 200) : "",

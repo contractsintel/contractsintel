@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 const SAM_API_KEY = process.env.SAM_API_KEY ?? "";
 
@@ -102,6 +103,13 @@ function scoreEntity(entity: SamEntity): {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limit by IP to protect SAM API quota (3 per minute)
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = rateLimit(`audit:${ip}`, 3, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const uei = request.nextUrl.searchParams.get("uei");
   if (!uei) {
     return NextResponse.json({ error: "UEI parameter is required" }, { status: 400 });
@@ -153,8 +161,8 @@ export async function GET(request: NextRequest) {
       businessTypes: (assertion.goodsAndServices?.naicsCode ? [assertion.goodsAndServices.naicsCode] : [])
         .concat(
           (raw.certifications?.farResponses ?? [])
-            .filter((f: any) => f.answerText === "Yes")
-            .map((f: any) => f.provisionId)
+            .filter((f: Record<string, any>) => f.answerText === "Yes")
+            .map((f: Record<string, any>) => f.provisionId)
         ),
       naicsCode: assertion.goodsAndServices?.primaryNaics ?? null,
     };

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -78,14 +79,14 @@ export async function GET(request: NextRequest) {
           });
           sent++;
         } catch (err) {
-          console.error(`Failed to send performance prompt to ${u.email}:`, err);
+          logger.error(`Failed to send performance prompt to ${u.email}`, { error: err instanceof Error ? err.message : String(err) });
         }
       }
     }
 
     return NextResponse.json({ success: true, sent });
   } catch (error) {
-    console.error("Performance prompts error:", error);
+    logger.error("Performance prompts error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to send performance prompts" }, { status: 500 });
   }
 }

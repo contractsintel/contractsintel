@@ -98,10 +98,10 @@ export async function POST(request: NextRequest) {
       truncated,
       original_chars: text.length,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("document parse error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Failed to parse document" },
+      { error: err instanceof Error ? err.message : "Failed to parse document" },
       { status: 500 },
     );
   }

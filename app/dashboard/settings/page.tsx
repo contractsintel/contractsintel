@@ -26,7 +26,7 @@ function formatAddress(addr: unknown): string {
   if (!addr) return "";
   if (typeof addr === "string") return addr;
   if (typeof addr === "object" && addr !== null) {
-    const a = addr as Record<string, unknown>;
+    const a = addr as Record<string, any>;
     // SAM.gov physicalAddress shape: { addressLine1, addressLine2, city, stateOrProvinceCode, zipCode, countryCode }
     // Also handle generic shapes: { street, city, state, zip }
     const parts = [
@@ -89,7 +89,7 @@ export default function SettingsPage() {
   const [samRefreshMsg, setSamRefreshMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   // Scraper run data
-  const [scraperRuns, setScraperRuns] = useState<any[]>([]);
+  const [scraperRuns, setScraperRuns] = useState<Record<string, any>[]>([]);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
 
@@ -176,8 +176,8 @@ export default function SettingsPage() {
       } else {
         setWebhookTestMsg({ kind: "error", text: data.error || "Test failed" });
       }
-    } catch (err: any) {
-      setWebhookTestMsg({ kind: "error", text: err?.message || "Test failed" });
+    } catch (err: unknown) {
+      setWebhookTestMsg({ kind: "error", text: err instanceof Error ? err.message : "Test failed" });
     }
     setTestingWebhook(false);
   };
@@ -234,10 +234,10 @@ export default function SettingsPage() {
           setSamRefreshMsg({ kind: "error", text: "No entity found for that UEI" });
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSamRefreshMsg({
         kind: "error",
-        text: err?.name === "AbortError" ? "SAM refresh timed out" : "SAM refresh failed",
+        text: err instanceof Error && err.name === "AbortError" ? "SAM refresh timed out" : "SAM refresh failed",
       });
     }
     setRefreshingSam(false);
@@ -623,7 +623,7 @@ export default function SettingsPage() {
             <div className="space-y-3">
               <p className="text-xs text-[#94a3b8]">Last updated: {lastRun}</p>
               {sourceGroups.map((group) => {
-                const runs = scraperRuns.filter((r: any) => group.sources.includes(r.source));
+                const runs = scraperRuns.filter((r) => group.sources.includes(r.source as string));
                 const latestRun = runs[0];
                 const status = latestRun ? (latestRun.status === "success" ? "Active" : latestRun.status === "stub" ? "Pending Setup" : "Error") : "Not yet run";
                 const statusColor = latestRun?.status === "success" ? "#22c55e" : latestRun?.status === "stub" ? "#9ca3af" : latestRun ? "#ef4444" : "#9ca3af";

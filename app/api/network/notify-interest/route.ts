@@ -69,8 +69,8 @@ Sign in to ContractsIntel to review the interested party and start the conversat
     });
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.error("[notify-interest] error", e?.message);
+  } catch (e: unknown) {
+    console.error("[notify-interest] error", e instanceof Error ? e.message : "Unknown error");
     // Soft-fail so the dashboard interaction never breaks
     return NextResponse.json({ ok: true, error: "delivery failed" });
   }

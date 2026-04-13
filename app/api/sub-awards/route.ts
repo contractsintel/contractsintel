@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ count, sub_awards: data ?? [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("sub-awards route error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

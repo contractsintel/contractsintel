@@ -32,8 +32,8 @@ export default function ApiKeysPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error ?? "Failed to load");
       setKeys(j.api_keys ?? []);
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,8 @@ export default function ApiKeysPage() {
       setNewKey(j.api_key.raw_key);
       setName("");
       load();
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to create key");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to create key");
     } finally {
       setCreating(false);
     }
@@ -75,8 +75,8 @@ export default function ApiKeysPage() {
         throw new Error(j.error ?? "Failed to revoke");
       }
       load();
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to revoke key");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to revoke key");
     }
   };
 

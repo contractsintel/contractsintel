@@ -31,8 +31,8 @@ export default function CapabilityStatementPage() {
       } else {
         setError(j.error ?? "Failed to load");
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -55,8 +55,8 @@ export default function CapabilityStatementPage() {
         setActive(j.statement);
         setStatements((prev) => [j.statement, ...prev]);
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Generation failed");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setGenerating(false);
     }
@@ -93,8 +93,8 @@ export default function CapabilityStatementPage() {
       a.download = `capability-statement-${Date.now()}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (e: any) {
-      setError(e?.message ?? "PDF download failed");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "PDF download failed");
     } finally {
       setPdfLoading(false);
     }

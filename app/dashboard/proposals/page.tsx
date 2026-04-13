@@ -27,7 +27,7 @@ export default function ProposalsPage() {
   const searchParams = useSearchParams();
   const preselectedOppId = searchParams.get("opportunity_id");
 
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -40,13 +40,13 @@ export default function ProposalsPage() {
 
   // Proposal Scorer state
   const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewResult, setReviewResult] = useState<any | null>(null);
+  const [reviewResult, setReviewResult] = useState<Record<string, any> | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [showReview, setShowReview] = useState(false);
 
   // Outline Generator state
   const [outlineLoading, setOutlineLoading] = useState(false);
-  const [outlineResult, setOutlineResult] = useState<any | null>(null);
+  const [outlineResult, setOutlineResult] = useState<Record<string, any> | null>(null);
   const [outlineError, setOutlineError] = useState<string | null>(null);
   const [showOutline, setShowOutline] = useState(false);
 
@@ -63,7 +63,7 @@ export default function ProposalsPage() {
     setMatches(data ?? []);
     // Auto-select if opportunity_id in URL
     if (preselectedOppId && data) {
-      const found = data.find((m: any) => m.opportunity_id === preselectedOppId);
+      const found = data.find((m: Record<string, any>) => m.opportunity_id === preselectedOppId);
       if (found) setSelectedMatch(found.id);
     }
     setLoading(false);
@@ -91,8 +91,8 @@ export default function ProposalsPage() {
       } else {
         setError(data.error || "Failed to generate proposal. Please try again.");
       }
-    } catch (e: any) {
-      if (e?.name === "AbortError") {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") {
         setError("Generation timed out. Try again.");
       } else {
         setError("Network error. Please try again.");
@@ -126,8 +126,8 @@ export default function ProposalsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setReviewResult(data);
-    } catch (e: any) {
-      setReviewError(e?.message || "Failed to run Proposal Scorer. Please try again.");
+    } catch (e: unknown) {
+      setReviewError(e instanceof Error ? e.message : "Failed to run Proposal Scorer. Please try again.");
     } finally {
       setReviewLoading(false);
     }
@@ -148,8 +148,8 @@ export default function ProposalsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setOutlineResult(data);
-    } catch (e: any) {
-      setOutlineError(e?.message || "Failed to generate outline. Please try again.");
+    } catch (e: unknown) {
+      setOutlineError(e instanceof Error ? e.message : "Failed to generate outline. Please try again.");
     } finally {
       setOutlineLoading(false);
     }
@@ -608,7 +608,7 @@ export default function ProposalsPage() {
                           <div>
                             <h4 className="text-[11px] font-mono font-medium text-[#64748b] uppercase tracking-wide mb-2">Outline</h4>
                             <div className="space-y-3">
-                              {outlineResult.outline.map((section: any, idx: number) => (
+                              {outlineResult.outline.map((section: Record<string, any>, idx: number) => (
                                 <div key={idx} className="border border-[#e5e7eb] rounded-lg p-3">
                                   <h5 className="text-[13px] font-semibold text-[#0f172a] mb-2">
                                     {idx + 1}. {section.title || section.section || `Section ${idx + 1}`}

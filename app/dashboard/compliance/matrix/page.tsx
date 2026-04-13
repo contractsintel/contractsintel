@@ -27,8 +27,8 @@ export default function ComplianceMatrixIndexPage() {
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error ?? "Failed to load");
       setMatrices(j.matrices ?? []);
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -59,8 +59,8 @@ export default function ComplianceMatrixIndexPage() {
       if (j?.matrix?.id) {
         window.location.assign(`/dashboard/compliance/matrix/${j.matrix.id}`);
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to extract");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to extract");
     } finally {
       setCreating(false);
     }

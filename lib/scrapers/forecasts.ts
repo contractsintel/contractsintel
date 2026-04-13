@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 
 // Sources that are JS SPAs requiring browser rendering
@@ -50,7 +52,7 @@ function extractTableRows(html: string): string[] {
   return rows;
 }
 
-export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
+export async function scrapeForecasts(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   let totalFound = 0;
@@ -59,7 +61,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
   for (const source of FORECAST_SOURCES) {
     try {
-      console.log(`[forecasts] Fetching ${source.name} (${source.url})...`);
+      logger.info(`[forecasts] Fetching ${source.name} (${source.url})...`);
 
       const res = await fetch(source.url, {
         method: "GET",
@@ -75,10 +77,10 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         // Try Puppeteer for JS SPA sources that returned non-200
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: HTTP ${res.status}, trying Puppeteer for ${sbUrl}...`);
+          logger.info(`[forecasts] ${source.name}: HTTP ${res.status}, trying Puppeteer for ${sbUrl}...`);
           try {
             const sbHtml = await fetchWithPuppeteer(sbUrl);
-            console.log(`[forecasts] ${source.name}: Puppeteer returned ${sbHtml.length} bytes`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer returned ${sbHtml.length} bytes`);
             // Parse Puppeteer-rendered HTML below by continuing with sbHtml
             // We re-assign to use it in the rest of the loop
             const sbProcLinks = extractLinks(sbHtml, source.url).filter(
@@ -124,7 +126,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             }
             totalFound += sourceOpps;
             if (sourceOpps > 0) {
-              console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items via Puppeteer`);
+              logger.info(`[forecasts] ${source.name}: Found ${sourceOpps} items via Puppeteer`);
               sourceResults.push(`${source.id}: ${sourceOpps} items (Puppeteer)`);
             } else {
               sourceResults.push(`${source.id}: BLOCKED (Puppeteer returned no data)`);
@@ -132,10 +134,10 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             continue;
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
-        console.log(`[forecasts] ${source.name}: HTTP ${res.status} BLOCKED`);
+        logger.info(`[forecasts] ${source.name}: HTTP ${res.status} BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
@@ -163,13 +165,13 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         // Try Puppeteer fallback for known JS SPA sources
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
+          logger.info(`[forecasts] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
           try {
             html = await fetchWithPuppeteer(sbUrl);
-            console.log(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
             await supabase.from("scraper_runs").insert({
               source: source.id,
               status: "error",
@@ -183,7 +185,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             continue;
           }
         } else {
-          console.log(`[forecasts] ${source.name}: ${reason} BLOCKED`);
+          logger.info(`[forecasts] ${source.name}: ${reason} BLOCKED`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -211,10 +213,10 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
         // Try Puppeteer fallback for known JS SPA sources
         if (JS_FORECAST_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_FORECAST_SOURCES[source.id];
-          console.log(`[forecasts] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
+          logger.info(`[forecasts] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
           try {
             html = await fetchWithPuppeteer(sbUrl);
-            console.log(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer returned ${html.length} bytes`);
             procLinks = extractLinks(html, source.url).filter(
               (l) =>
                 /forecast|contract|award|solicit|bid|rfp|rfq|procurement|opportunity|subaward/i.test(l.text) ||
@@ -224,12 +226,12 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
             hasData = procLinks.length >= 1 || tableRows.length >= 3;
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
+            logger.info(`[forecasts] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
 
         if (!hasData) {
-          console.log(`[forecasts] ${source.name}: No parseable forecast data BLOCKED`);
+          logger.info(`[forecasts] ${source.name}: No parseable forecast data BLOCKED`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -289,12 +291,12 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       }
 
       totalFound += sourceOpps;
-      console.log(`[forecasts] ${source.name}: Found ${sourceOpps} items`);
+      logger.info(`[forecasts] ${source.name}: Found ${sourceOpps} items`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[forecasts] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+      logger.info(`[forecasts] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
       await supabase.from("scraper_runs").insert({
         source: source.id,
         status: "error",
@@ -310,7 +312,7 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
 
   // FPDS Atom Feed scraping
   try {
-    console.log(`[forecasts] Fetching FPDS Atom feed...`);
+    logger.info(`[forecasts] Fetching FPDS Atom feed...`);
 
     const fpdsUrl = "https://www.fpds.gov/ezsearch/LATEST?s=FPDS&indexName=awardfull&q=&start=0&length=100";
     const fpdsRes = await fetch(fpdsUrl, {
@@ -382,20 +384,20 @@ export async function scrapeForecasts(supabase: any): Promise<ScraperResult> {
       }
 
       totalFound += fpdsFound;
-      console.log(`[forecasts] FPDS Atom feed: Found ${fpdsFound} entries`);
+      logger.info(`[forecasts] FPDS Atom feed: Found ${fpdsFound} entries`);
       sourceResults.push(`fpds_feed: ${fpdsFound} items`);
     } else {
-      console.log(`[forecasts] FPDS Atom feed: HTTP ${fpdsRes.status}`);
+      logger.info(`[forecasts] FPDS Atom feed: HTTP ${fpdsRes.status}`);
       sourceResults.push(`fpds_feed: BLOCKED (HTTP ${fpdsRes.status})`);
     }
   } catch (fpdsErr) {
     const msg = fpdsErr instanceof Error ? fpdsErr.message : String(fpdsErr);
     const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-    console.log(`[forecasts] FPDS Atom feed: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+    logger.info(`[forecasts] FPDS Atom feed: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
     sourceResults.push(`fpds_feed: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
   }
 
-  console.log(`[forecasts] Results: ${sourceResults.join(", ")}`);
+  logger.info(`[forecasts] Results: ${sourceResults.join(", ")}`);
 
   // Log Puppeteer API usage for budget tracking
   await logPuppeteerUsage(supabase);

@@ -43,8 +43,8 @@ export default function ComplianceMatrixDetailPage({
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error ?? "Failed to load");
       setMatrix(j.matrix);
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -75,8 +75,8 @@ export default function ComplianceMatrixDetailPage({
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error ?? "Failed to save");
       setSavedAt(new Date().toLocaleTimeString());
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to save");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to save");
     } finally {
       setSaving(false);
     }

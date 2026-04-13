@@ -72,8 +72,8 @@ export function DocumentChatPanel() {
             : file.name,
         );
         setView("chat");
-      } catch (err: any) {
-        setError(err?.message || "Failed to parse file");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to parse file");
       } finally {
         setParsing(false);
       }
@@ -173,14 +173,14 @@ export function DocumentChatPanel() {
             } else if (event === "error") {
               throw new Error(payload.error ?? "Stream failed");
             }
-          } catch (parseErr: any) {
+          } catch (parseErr: unknown) {
             if (parseErr instanceof SyntaxError) continue;
             throw parseErr;
           }
         }
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Document chat failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Document chat failed");
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setStreaming(false);

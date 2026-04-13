@@ -157,11 +157,11 @@ ${documentText}
               `event: done\ndata: ${JSON.stringify({ thread_id: resolvedThreadId })}\n\n`,
             ),
           );
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("document chat stream error:", err);
           controller.enqueue(
             encoder.encode(
-              `event: error\ndata: ${JSON.stringify({ error: err?.message ?? "Stream failed" })}\n\n`,
+              `event: error\ndata: ${JSON.stringify({ error: err instanceof Error ? err.message : "Stream failed" })}\n\n`,
             ),
           );
         } finally {
@@ -177,10 +177,10 @@ ${documentText}
         Connection: "keep-alive",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("document chat route error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 },
     );
   }

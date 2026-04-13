@@ -14,7 +14,7 @@ export async function POST() {
     .eq("auth_id", user.id)
     .single();
 
-  const customerId = (userData as any)?.organizations?.stripe_customer_id;
+  const customerId = ((userData as Record<string, any> | null)?.organizations as Record<string, any> | undefined)?.stripe_customer_id;
   if (!customerId) return NextResponse.json({ error: "No subscription found" }, { status: 400 });
 
   const session = await stripe.billingPortal.sessions.create({

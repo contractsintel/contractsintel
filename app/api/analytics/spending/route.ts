@@ -56,7 +56,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchUSASpending(endpoint: string, body: any): Promise<any> {
+interface USASpendingResult {
+  name?: string;
+  amount?: number;
+  count?: number;
+}
+
+interface USASpendingResponse {
+  results?: USASpendingResult[];
+  total_metadata?: { count?: number };
+  hasNext?: boolean;
+}
+
+async function fetchUSASpending(endpoint: string, body: Record<string, any>): Promise<USASpendingResponse> {
   const resp = await fetch(`${USA_SPENDING_API}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -82,7 +94,7 @@ async function getAgencySpending(agency: string | undefined, fiscalYear: number 
 
   return NextResponse.json({
     fiscal_year: fiscalYear,
-    agencies: (data.results || []).map((r: any) => ({
+    agencies: (data.results || []).map((r: USASpendingResult) => ({
       name: r.name,
       amount: r.amount,
       count: r.count,
@@ -121,9 +133,9 @@ async function getNaicsMarketSize(naicsCode: string | undefined, fiscalYear: num
   return NextResponse.json({
     naics_code: naicsCode,
     fiscal_year: fiscalYear,
-    total_spending: (data.results || []).reduce((s: number, r: any) => s + (r.amount || 0), 0),
-    total_awards: (data.results || []).reduce((s: number, r: any) => s + (r.count || 0), 0),
-    top_agencies: (agencyData.results || []).map((r: any) => ({
+    total_spending: (data.results || []).reduce((s: number, r: USASpendingResult) => s + (r.amount || 0), 0),
+    total_awards: (data.results || []).reduce((s: number, r: USASpendingResult) => s + (r.count || 0), 0),
+    top_agencies: (agencyData.results || []).map((r: USASpendingResult) => ({
       name: r.name,
       amount: r.amount,
       count: r.count,
@@ -136,7 +148,7 @@ async function getTopContractors(naicsCode: string | undefined, agency: string |
     return NextResponse.json({ error: "NAICS code required" }, { status: 400 });
   }
 
-  const filters: any = {
+  const filters: Record<string, any> = {
     time_period: [{ start_date: `${fiscalYear - 1}-10-01`, end_date: `${fiscalYear}-09-30` }],
     naics_codes: [naicsCode],
   };
@@ -156,7 +168,7 @@ async function getTopContractors(naicsCode: string | undefined, agency: string |
     naics_code: naicsCode,
     agency: agency || "All",
     fiscal_year: fiscalYear,
-    contractors: (data.results || []).map((r: any, i: number) => ({
+    contractors: (data.results || []).map((r: USASpendingResult, i: number) => ({
       rank: i + 1,
       name: r.name,
       amount: r.amount,
@@ -175,7 +187,7 @@ async function getSpendingTrend(naicsCode: string | undefined, agency: string | 
   const trend = [];
 
   for (const fy of years) {
-    const filters: any = {
+    const filters: Record<string, any> = {
       time_period: [{ start_date: `${fy - 1}-10-01`, end_date: `${fy}-09-30` }],
       naics_codes: [naicsCode],
     };
@@ -191,8 +203,8 @@ async function getSpendingTrend(naicsCode: string | undefined, agency: string | 
         page: 1,
       });
 
-      const totalAmount = (data.results || []).reduce((s: number, r: any) => s + (r.amount || 0), 0);
-      const totalCount = (data.results || []).reduce((s: number, r: any) => s + (r.count || 0), 0);
+      const totalAmount = (data.results || []).reduce((s: number, r: USASpendingResult) => s + (r.amount || 0), 0);
+      const totalCount = (data.results || []).reduce((s: number, r: USASpendingResult) => s + (r.count || 0), 0);
 
       trend.push({
         fiscal_year: fy,
@@ -239,7 +251,7 @@ async function getSetAsideBreakdown(naicsCode: string | undefined, fiscalYear: n
   return NextResponse.json({
     naics_code: naicsCode,
     fiscal_year: fiscalYear,
-    subagencies: (data.results || []).slice(0, 15).map((r: any) => ({
+    subagencies: (data.results || []).slice(0, 15).map((r: USASpendingResult) => ({
       name: r.name,
       amount: r.amount,
       count: r.count,

@@ -36,7 +36,7 @@ const PAGE_SIZE = 20;
 export default function SearchPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Record<string, any>[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -109,8 +109,8 @@ export default function SearchPage() {
       setNlActive(true);
       if (j.quota) setSearchQuota(j.quota);
       setLoading(false);
-    } catch (e: any) {
-      setNlError(e?.message ?? "Search failed");
+    } catch (e: unknown) {
+      setNlError(e instanceof Error ? e.message : "Search failed");
     } finally {
       setNlLoading(false);
     }

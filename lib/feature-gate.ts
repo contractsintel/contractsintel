@@ -79,7 +79,7 @@ const TIER_LEVELS: Record<Tier, number> = {
   team: 2,
 };
 
-export function isTrialActive(org: any): boolean {
+export function isTrialActive(org: { subscription_status?: string | null; trial_ends_at?: string | null } | null): boolean {
   if (!org) return false;
   if (org.subscription_status !== "trialing") return false;
   // If trial_ends_at is not set, treat trialing status as active trial
@@ -99,18 +99,18 @@ export function hasAccess(userTier: Tier | string, requiredTier: Tier): boolean 
   return userLevel >= requiredLevel;
 }
 
-export function isDiscovery(tier: string | undefined, org?: any): boolean {
+export function isDiscovery(tier: string | undefined, org?: { subscription_status?: string | null; trial_ends_at?: string | null }): boolean {
   // During trial, nothing is locked
   if (org && isTrialActive(org)) return false;
   return !tier || tier === "discovery" || tier === "trial";
 }
 
-export function isTeam(tier: string | undefined, org?: any): boolean {
+export function isTeam(tier: string | undefined, org?: { subscription_status?: string | null; trial_ends_at?: string | null }): boolean {
   if (org && isTrialActive(org)) return true; // During trial, Team features are unlocked
   return tier === "team";
 }
 
-export function isBdProOrHigher(tier: string | undefined, org?: any): boolean {
+export function isBdProOrHigher(tier: string | undefined, org?: { subscription_status?: string | null; trial_ends_at?: string | null }): boolean {
   if (org && isTrialActive(org)) return true;
   return tier === "bd_pro" || tier === "team";
 }

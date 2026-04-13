@@ -51,7 +51,7 @@ export async function updateSession(request: NextRequest) {
       .eq("auth_id", user.id)
       .single();
 
-    const org = (userRec as any)?.organizations;
+    const org = (userRec as Record<string, any> | null)?.organizations as Record<string, any> | undefined;
     const orgId = userRec?.organization_id;
 
     if (org) {

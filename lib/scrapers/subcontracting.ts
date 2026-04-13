@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 
 const SUBCONTRACTING_SOURCES = [
   { id: "sba_subnet", name: "SBA SubNet", url: "https://eweb.sba.gov/subnet/" },
@@ -42,7 +44,7 @@ function extractTableRows(html: string): string[] {
   return rows;
 }
 
-export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult> {
+export async function scrapeSubcontracting(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   let totalFound = 0;
@@ -51,7 +53,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
 
   for (const source of SUBCONTRACTING_SOURCES) {
     try {
-      console.log(`[subcontracting] Fetching ${source.name} (${source.url})...`);
+      logger.info(`[subcontracting] Fetching ${source.name} (${source.url})...`);
 
       const res = await fetch(source.url, {
         method: "GET",
@@ -64,7 +66,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
       });
 
       if (!res.ok) {
-        console.log(`[subcontracting] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
+        logger.info(`[subcontracting] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";
@@ -77,7 +79,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
 
       if (html.length < 500 || html.includes("JavaScript is required") || html.includes("enable JavaScript")) {
         const reason = html.length < 500 ? "minimal response" : "requires JavaScript";
-        console.log(`[subcontracting] ${source.name}: ${reason} BLOCKED`);
+        logger.info(`[subcontracting] ${source.name}: ${reason} BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
@@ -101,7 +103,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
       const hasData = procLinks.length >= 1 || tableRows.length >= 3;
 
       if (!hasData) {
-        console.log(`[subcontracting] ${source.name}: No parseable data BLOCKED`);
+        logger.info(`[subcontracting] ${source.name}: No parseable data BLOCKED`);
         await supabase.from("scraper_runs").insert({
           source: source.id,
           status: "error",
@@ -158,12 +160,12 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
       }
 
       totalFound += sourceOpps;
-      console.log(`[subcontracting] ${source.name}: Found ${sourceOpps} items`);
+      logger.info(`[subcontracting] ${source.name}: Found ${sourceOpps} items`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[subcontracting] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+      logger.info(`[subcontracting] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
       await supabase.from("scraper_runs").insert({
         source: source.id,
         status: "error",
@@ -177,7 +179,7 @@ export async function scrapeSubcontracting(supabase: any): Promise<ScraperResult
     }
   }
 
-  console.log(`[subcontracting] Results: ${sourceResults.join(", ")}`);
+  logger.info(`[subcontracting] Results: ${sourceResults.join(", ")}`);
 
   return {
     source: "subcontracting",

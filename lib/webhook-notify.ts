@@ -1,7 +1,7 @@
 // Slack & Teams webhook notification helpers for ContractsIntel
 
 export interface SlackMessage {
-  blocks: Record<string, unknown>[];
+  blocks: Record<string, any>[];
   text?: string; // fallback
 }
 
@@ -9,7 +9,7 @@ export interface TeamsMessage {
   type: "message";
   attachments: {
     contentType: "application/vnd.microsoft.card.adaptive";
-    content: Record<string, unknown>;
+    content: Record<string, any>;
   }[];
 }
 
@@ -54,8 +54,8 @@ export async function sendSlackNotification(
       return { ok: false, error: `Slack responded ${res.status}: ${body}` };
     }
     return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || "Failed to reach Slack webhook" };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to reach Slack webhook" };
   }
 }
 
@@ -148,8 +148,8 @@ export async function sendTeamsNotification(
       return { ok: false, error: `Teams responded ${res.status}: ${body}` };
     }
     return { ok: true };
-  } catch (err: any) {
-    return { ok: false, error: err?.message || "Failed to reach Teams webhook" };
+  } catch (err: unknown) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to reach Teams webhook" };
   }
 }
 

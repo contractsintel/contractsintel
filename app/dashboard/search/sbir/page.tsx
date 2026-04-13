@@ -36,8 +36,8 @@ export default function SbirSttrSearchPage() {
         } else {
           setOpps(j.opportunities ?? []);
         }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Failed to load");
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -1,6 +1,8 @@
 // Puppeteer rendering server on Railway
 // Server: https://puppeteer-production-f147.up.railway.app
 
+import type { SupabaseAdmin } from "./types";
+
 const PUPPETEER_URL = process.env.PUPPETEER_SERVER_URL ?? "";
 const PUPPETEER_TOKEN = process.env.PUPPETEER_AUTH_TOKEN ?? "";
 
@@ -26,7 +28,7 @@ export async function fetchWithPuppeteer(url: string, waitMs: number = 5000): Pr
   return data.html;
 }
 
-export async function logPuppeteerUsage(supabase: any) {
+export async function logPuppeteerUsage(supabase: SupabaseAdmin) {
   if (_callCount > 0) {
     await supabase.from("scraper_runs").insert({
       source: "puppeteer_usage",

@@ -98,7 +98,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
           <div className="border border-[#e5e7eb] bg-white p-6 mb-6">
             <h2 className="text-xs text-[#94a3b8] font-medium uppercase tracking-wide mb-4">Point of Contact</h2>
             <div className="space-y-3">
-              {contacts.map((c: any, i: number) => (
+              {contacts.map((c: Record<string, any>, i: number) => (
                 <div key={i} className="flex items-center gap-4 text-sm">
                   <span className="text-[#0f172a] font-medium">{c.fullName || "Unknown"}</span>
                   {c.title && <span className="text-[#94a3b8]">{c.title}</span>}

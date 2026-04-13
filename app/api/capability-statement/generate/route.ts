@@ -72,9 +72,9 @@ export async function POST(_request: NextRequest) {
     }
 
     return NextResponse.json({ statement: inserted });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("capability statement generate error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }
 
@@ -106,8 +106,8 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: "List failed" }, { status: 500 });
     }
     return NextResponse.json({ statements: data ?? [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("capability statement list error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

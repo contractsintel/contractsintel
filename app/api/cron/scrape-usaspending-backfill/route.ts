@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
         });
 
         if (!res.ok) {
-          console.log(`USASpending page ${page} error: ${res.status}`);
+          logger.info(`USASpending page ${page} error: ${res.status}`);
           break;
         }
 
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
 
         page++;
       } catch (err) {
-        console.log(`USASpending page ${page} fetch error:`, err);
+        logger.info(`USASpending page ${page} fetch error`, { error: err instanceof Error ? err.message : String(err) });
         break;
       }
     }

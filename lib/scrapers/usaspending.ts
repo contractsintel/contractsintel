@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 
 const USASPENDING_API = "https://api.usaspending.gov/api/v2/search/spending_by_award/";
 
@@ -12,7 +14,7 @@ function getToday(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
+export async function scrapeUsaspending(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -27,7 +29,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
     // No artificial cap — fetch until API is exhausted
     const PER_PAGE = 100;
     let page = 1;
-    const allAwards: any[] = [];
+    const allAwards: Record<string, any>[] = [];
     let hasNext = true;
 
     while (hasNext) {
@@ -71,7 +73,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
         const errorText = await res.text().catch(() => "unknown");
         if (allAwards.length > 0) {
           // We got some results already, continue with what we have
-          console.log(`[usaspending] API error on page ${page}, proceeding with ${allAwards.length} results: ${res.status}`);
+          logger.info(`[usaspending] API error on page ${page}, proceeding with ${allAwards.length} results: ${res.status}`);
           break;
         }
         return {
@@ -92,12 +94,12 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
       hasNext = data.hasNext === true;
       page++;
 
-      console.log(`[usaspending] Page ${page - 1}: fetched ${awards.length} awards (total: ${allAwards.length})`);
+      logger.info(`[usaspending] Page ${page - 1}: fetched ${awards.length} awards (total: ${allAwards.length})`);
     }
 
     let upserted = 0;
 
-    for (const award of allAwards) {
+    for (const award of allAwards as Record<string, any>[]) {
       const awardId = award["Award ID"];
       const endDate = award["Period of Performance Current End Date"];
       const incumbent = award["Recipient Name"];
@@ -151,7 +153,7 @@ export async function scrapeUsaspending(supabase: any): Promise<ScraperResult> {
           .limit(50);
 
         if (recompetes?.length) {
-          const matches = recompetes.map((o: any) => ({
+          const matches = recompetes.map((o: Record<string, any>) => ({
             organization_id: org.id,
             opportunity_id: o.id,
             match_score: 70 + Math.floor(Math.random() * 20),

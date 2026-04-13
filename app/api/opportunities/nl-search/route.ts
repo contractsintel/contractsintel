@@ -131,8 +131,8 @@ export async function POST(request: NextRequest) {
       total: count ?? 0,
       quota,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("nl-search error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

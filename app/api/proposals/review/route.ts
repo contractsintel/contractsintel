@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     // Build evaluation context from shred data
     let evaluationContext = "";
     if (shred?.sections) {
-      const s = shred.sections as Record<string, unknown>;
+      const s = shred.sections as Record<string, any>;
       const evalCriteria = Array.isArray(s.evaluation_criteria) ? s.evaluation_criteria : [];
       const sectionM = Array.isArray(s.section_m) ? s.section_m : [];
       const sectionL = Array.isArray(s.section_l) ? s.section_l : [];

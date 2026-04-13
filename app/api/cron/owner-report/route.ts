@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       .select("plan");
 
     const planCounts: Record<string, number> = {};
-    (allOrgs ?? []).forEach((o: any) => {
+    (allOrgs ?? []).forEach((o: Record<string, any>) => {
       planCounts[o.plan] = (planCounts[o.plan] ?? 0) + 1;
     });
 
@@ -129,7 +130,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Owner report error:", error);
+    logger.error("Owner report error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to send owner report" }, { status: 500 });
   }
 }

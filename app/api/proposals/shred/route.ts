@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ shred: data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("rfp shred error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }
 
@@ -132,8 +132,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "List failed" }, { status: 500 });
     }
     return NextResponse.json({ shreds: data ?? [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("rfp shred GET error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

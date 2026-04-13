@@ -43,7 +43,7 @@ export async function PATCH(
     }
 
     const body = await request.json().catch(() => ({}));
-    const update: Record<string, unknown> = {};
+    const update: Record<string, any> = {};
 
     if (body.gate_stage !== undefined) {
       if (body.gate_stage !== null && !GATE_STAGES.includes(body.gate_stage as GateStage)) {

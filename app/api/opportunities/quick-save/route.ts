@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   let opportunityId = existing?.id as string | undefined;
   if (!opportunityId) {
-    const insertPayload: Record<string, unknown> = {
+    const insertPayload: Record<string, any> = {
       title,
       agency,
       solicitation_number: solicitation,

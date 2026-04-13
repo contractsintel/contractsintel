@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 
 const SBIR_API = "https://www.sbir.gov/api/solicitations.json";
@@ -67,13 +69,13 @@ const SBIR_SOURCES = [
 
 export { SBIR_SOURCES };
 
-export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
+export async function scrapeSbirSttr(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
   let apiFound = 0;
   let apiUpserted = 0;
 
   try {
-    console.log(`[sbir-sttr] Attempting SBIR.gov API fetch with 30s timeout...`);
+    logger.info(`[sbir-sttr] Attempting SBIR.gov API fetch with 30s timeout...`);
 
     const res = await fetch(SBIR_API, {
       method: "GET",
@@ -86,13 +88,13 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => "unknown");
-      console.log(`[sbir-sttr] SBIR.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
+      logger.info(`[sbir-sttr] SBIR.gov API returned ${res.status}: ${errorText.substring(0, 200)}`);
       // Don't return early - continue to agency HTML sources below
     } else {
       const data = await res.json();
-      const solicitations: any[] = Array.isArray(data) ? data : (data.solicitations ?? data.results ?? []);
+      const solicitations: Record<string, any>[] = Array.isArray(data) ? data : (data.solicitations ?? data.results ?? []);
 
-      console.log(`[sbir-sttr] Fetched ${solicitations.length} solicitations from SBIR.gov`);
+      logger.info(`[sbir-sttr] Fetched ${solicitations.length} solicitations from SBIR.gov`);
       apiFound = solicitations.length;
 
     for (const sol of solicitations) {
@@ -133,7 +135,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
     const message = err instanceof Error ? err.message : String(err);
     const isTimeout = message.includes("abort") || message.includes("timeout") || message.includes("TimeoutError");
 
-    console.log(`[sbir-sttr] ${isTimeout ? "API timeout" : "Error"}: ${message}`);
+    logger.info(`[sbir-sttr] ${isTimeout ? "API timeout" : "Error"}: ${message}`);
 
     // Even if main API fails, try the individual agency sources below
   }
@@ -146,7 +148,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
 
   for (const source of additionalSources) {
     try {
-      console.log(`[sbir-sttr] Fetching ${source.name} (${source.url})...`);
+      logger.info(`[sbir-sttr] Fetching ${source.name} (${source.url})...`);
 
       const res = await fetch(source.url, {
         method: "GET",
@@ -159,7 +161,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       });
 
       if (!res.ok) {
-        console.log(`[sbir-sttr] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
+        logger.info(`[sbir-sttr] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";
@@ -176,13 +178,13 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         // Try Puppeteer fallback for known JS SPA sources
         if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
-          console.log(`[sbir-sttr] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
+          logger.info(`[sbir-sttr] ${source.name}: ${reason}, trying Puppeteer for ${sbUrl}...`);
           try {
             html = await fetchWithPuppeteer(sbUrl);
-            console.log(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            logger.info(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
+            logger.info(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
             await supabase.from("scraper_runs").insert({
               source: source.id,
               status: "error",
@@ -196,7 +198,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             continue;
           }
         } else {
-          console.log(`[sbir-sttr] ${source.name}: ${reason} BLOCKED`);
+          logger.info(`[sbir-sttr] ${source.name}: ${reason} BLOCKED`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -234,10 +236,10 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
         // Try Puppeteer fallback for known JS SPA sources with no parseable data
         if (JS_SBIR_SOURCES[source.id] && true /* Puppeteer always available */) {
           const sbUrl = JS_SBIR_SOURCES[source.id];
-          console.log(`[sbir-sttr] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
+          logger.info(`[sbir-sttr] ${source.name}: No parseable data, trying Puppeteer for ${sbUrl}...`);
           try {
             html = await fetchWithPuppeteer(sbUrl, 5000);
-            console.log(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            logger.info(`[sbir-sttr] ${source.name}: Puppeteer returned ${html.length} bytes`);
             // Re-parse rendered HTML for solicitation links
             const sbLinkRegex = /<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
             let sbMatch;
@@ -257,12 +259,12 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             }
           } catch (sbErr) {
             const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-            console.log(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
+            logger.info(`[sbir-sttr] ${source.name}: Puppeteer failed: ${sbMsg}`);
           }
         }
 
         if (solLinks.length === 0) {
-          console.log(`[sbir-sttr] ${source.name}: No parseable solicitation data BLOCKED`);
+          logger.info(`[sbir-sttr] ${source.name}: No parseable solicitation data BLOCKED`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -291,7 +293,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
           if (!urlToFetch || urlToFetch === currentUrl) break;
 
           totalPages++;
-          console.log(`[sbir-sttr] ${source.name}: Fetching page ${totalPages} (${urlToFetch})...`);
+          logger.info(`[sbir-sttr] ${source.name}: Fetching page ${totalPages} (${urlToFetch})...`);
 
           try {
             const isJsSource = !!JS_SBIR_SOURCES[source.id];
@@ -310,14 +312,14 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
                 redirect: "follow",
               });
               if (!pageRes.ok) {
-                console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} returned HTTP ${pageRes.status}, stopping pagination`);
+                logger.info(`[sbir-sttr] ${source.name}: Page ${totalPages} returned HTTP ${pageRes.status}, stopping pagination`);
                 break;
               }
               pageHtml = await pageRes.text();
             }
 
             if (pageHtml.length < 200) {
-              console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} too small, stopping pagination`);
+              logger.info(`[sbir-sttr] ${source.name}: Page ${totalPages} too small, stopping pagination`);
               break;
             }
 
@@ -342,21 +344,21 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
             }
 
             if (newLinksCount === 0) {
-              console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} has no solicitation links, stopping pagination`);
+              logger.info(`[sbir-sttr] ${source.name}: Page ${totalPages} has no solicitation links, stopping pagination`);
               break;
             }
 
-            console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} found ${newLinksCount} solicitation links`);
+            logger.info(`[sbir-sttr] ${source.name}: Page ${totalPages} found ${newLinksCount} solicitation links`);
             currentHtml = pageHtml;
             currentUrl = urlToFetch;
           } catch (pageErr) {
-            console.log(`[sbir-sttr] ${source.name}: Page ${totalPages} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+            logger.info(`[sbir-sttr] ${source.name}: Page ${totalPages} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
             break;
           }
         }
 
         if (totalPages > 1) {
-          console.log(`[sbir-sttr] ${source.name}: Fetched ${totalPages} total pages`);
+          logger.info(`[sbir-sttr] ${source.name}: Fetched ${totalPages} total pages`);
         }
       }
 
@@ -383,12 +385,12 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
       }
 
       htmlFound += sourceOpps;
-      console.log(`[sbir-sttr] ${source.name}: Found ${sourceOpps} items across ${totalPages} pages`);
+      logger.info(`[sbir-sttr] ${source.name}: Found ${sourceOpps} items across ${totalPages} pages`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[sbir-sttr] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+      logger.info(`[sbir-sttr] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
       await supabase.from("scraper_runs").insert({
         source: source.id,
         status: "error",
@@ -402,7 +404,7 @@ export async function scrapeSbirSttr(supabase: any): Promise<ScraperResult> {
     }
   }
 
-  console.log(`[sbir-sttr] Agency sources: ${sourceResults.join(", ")}`);
+  logger.info(`[sbir-sttr] Agency sources: ${sourceResults.join(", ")}`);
 
   // Log Puppeteer API usage for budget tracking
   await logPuppeteerUsage(supabase);

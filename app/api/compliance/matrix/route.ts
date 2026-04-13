@@ -69,9 +69,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ matrix: data, row_count: rows.length });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("compliance matrix POST error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }
 
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      matrices: (data ?? []).map((m: any) => ({
+      matrices: (data ?? []).map((m: Record<string, any>) => ({
         id: m.id,
         opportunity_id: m.opportunity_id,
         source_label: m.source_label,
@@ -114,8 +114,8 @@ export async function GET(request: NextRequest) {
         row_count: Array.isArray(m.rows) ? m.rows.length : 0,
       })),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("compliance matrix GET error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

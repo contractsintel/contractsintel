@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const orgStates: string[] = (org.service_states || []).map((s: string) => s.toUpperCase());
     const nationwide = org.serves_nationwide !== false || orgStates.length === 0;
 
-    let opportunities: any[] = [];
+    let opportunities: Record<string, any>[] = [];
 
     // Batch 1: Direct NAICS matches
     if (orgNaics.length > 0) {

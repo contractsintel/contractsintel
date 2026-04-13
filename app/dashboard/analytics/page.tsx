@@ -27,7 +27,7 @@ export default function AnalyticsPage() {
   const teamTier = isTeam(organization.plan);
 
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
-  const [lossAnalyses, setLossAnalyses] = useState<any[]>([]);
+  const [lossAnalyses, setLossAnalyses] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<30 | 90 | 365>(90);
   const [recomputing, setRecomputing] = useState(false);
@@ -63,7 +63,7 @@ export default function AnalyticsPage() {
       "bidding",
     ]);
     const statsMap: Record<string, AgencyStats> = {};
-    (matches ?? []).forEach((m: any) => {
+    (matches ?? []).forEach((m: Record<string, any>) => {
       const agency = m.opportunities?.agency ?? "Unknown";
       if (!statsMap[agency]) {
         statsMap[agency] = { agency, opps_seen: 0, bids: 0, wins: 0, losses: 0, win_rate: 0, total_value: 0 };

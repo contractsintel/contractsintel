@@ -35,9 +35,9 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     return NextResponse.json({ matrix: data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("compliance matrix [id] GET error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }
 
@@ -81,8 +81,8 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
     return NextResponse.json({ matrix: data });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("compliance matrix [id] PATCH error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

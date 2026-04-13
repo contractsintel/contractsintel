@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 
 const GRANTS_GOV_API = "https://apply07.grants.gov/grantsws/rest/opportunities/search";
 
@@ -7,6 +9,8 @@ interface GrantsGovOpportunity {
   opportunityId?: number;
   opportunityNumber?: string;
   opportunityTitle?: string;
+  title?: string;
+  number?: string;
   agencyCode?: string;
   agency?: string;
   closeDateStr?: string;
@@ -47,16 +51,16 @@ const AGENCIES = [
   "NEH", "PAMS", "MCC", "ONDCP", "AC",
 ];
 
-async function upsertOpp(supabase: any, opp: GrantsGovOpportunity, fallbackAgency?: string): Promise<boolean> {
+async function upsertOpp(supabase: SupabaseAdmin, opp: GrantsGovOpportunity, fallbackAgency?: string): Promise<boolean> {
   const oppId = opp.id ?? opp.opportunityId;
   if (!oppId) return false;
 
   const { error } = await supabase.from("opportunities").upsert(
     {
       notice_id: `grants-gov-${oppId}`,
-      title: (opp as any).title ?? opp.opportunityTitle ?? "Untitled Grant",
+      title: opp.title ?? opp.opportunityTitle ?? "Untitled Grant",
       agency: opp.agency ?? opp.agencyCode ?? fallbackAgency ?? "Unknown",
-      solicitation_number: (opp as any).number ?? opp.opportunityNumber ?? String(oppId),
+      solicitation_number: opp.number ?? opp.opportunityNumber ?? String(oppId),
       value_estimate: opp.estimatedTotalFunding ?? opp.awardCeiling ?? null,
       response_deadline: parseDate(opp.closeDate ?? opp.closeDateStr),
       posted_date: parseDate(opp.openDate ?? opp.openDateStr),
@@ -71,7 +75,7 @@ async function upsertOpp(supabase: any, opp: GrantsGovOpportunity, fallbackAgenc
   return !error;
 }
 
-export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
+export async function scrapeGrantsGov(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -106,9 +110,9 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => "unknown");
-        console.log(`[grants-gov] Global query error at offset ${offset}: ${res.status} ${errorText.substring(0, 200)}`);
+        logger.info(`[grants-gov] Global query error at offset ${offset}: ${res.status} ${errorText.substring(0, 200)}`);
         if (totalFetched > 0) {
-          console.log(`[grants-gov] Proceeding with ${totalFetched} results from global query`);
+          logger.info(`[grants-gov] Proceeding with ${totalFetched} results from global query`);
           break;
         }
         return {
@@ -131,13 +135,13 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
         if (await upsertOpp(supabase, opp)) totalSaved++;
       }
 
-      console.log(`[grants-gov] Global: fetched ${opportunities.length} at offset ${offset} (total: ${totalFetched}/${hitCount})`);
+      logger.info(`[grants-gov] Global: fetched ${opportunities.length} at offset ${offset} (total: ${totalFetched}/${hitCount})`);
 
       offset += PER_PAGE;
       if (opportunities.length < PER_PAGE) break;
     } while (offset < hitCount);
 
-    console.log(`[grants-gov] Global query complete: ${totalFetched} fetched, ${totalSaved} saved`);
+    logger.info(`[grants-gov] Global query complete: ${totalFetched} fetched, ${totalSaved} saved`);
 
     // ── Phase 2: Per-agency queries for broader coverage ───────────────
     let agencySaved = 0;
@@ -167,7 +171,7 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
           });
 
           if (!agencyRes.ok) {
-            console.log(`[grants-gov] Agency ${agencyCode} error at offset ${agencyOffset}: ${agencyRes.status}`);
+            logger.info(`[grants-gov] Agency ${agencyCode} error at offset ${agencyOffset}: ${agencyRes.status}`);
             break;
           }
 
@@ -184,21 +188,21 @@ export async function scrapeGrantsGov(supabase: any): Promise<ScraperResult> {
             }
           }
 
-          console.log(`[grants-gov] Agency ${agencyCode} page ${agencyPageNum}: ${agencyOpps.length} opps (offset ${agencyOffset}, hitCount ${agencyHitCount})`);
+          logger.info(`[grants-gov] Agency ${agencyCode} page ${agencyPageNum}: ${agencyOpps.length} opps (offset ${agencyOffset}, hitCount ${agencyHitCount})`);
 
           agencyOffset += PER_PAGE;
           if (agencyOpps.length < PER_PAGE) break;
         } while (agencyOffset < agencyHitCount);
       } catch (agencyErr) {
-        console.log(`[grants-gov] Agency ${agencyCode} failed at offset ${agencyOffset}: ${agencyErr}`);
+        logger.info(`[grants-gov] Agency ${agencyCode} failed at offset ${agencyOffset}: ${agencyErr}`);
       }
 
       // Rate-limit: 1 second pause between agencies
       await sleep(1000);
     }
 
-    console.log(`[grants-gov] Per-agency queries complete: ${agencyFetched} fetched, ${agencySaved} saved`);
-    console.log(`[grants-gov] Total: ${totalFetched} fetched, ${totalSaved} saved`);
+    logger.info(`[grants-gov] Per-agency queries complete: ${agencyFetched} fetched, ${agencySaved} saved`);
+    logger.info(`[grants-gov] Total: ${totalFetched} fetched, ${totalSaved} saved`);
 
     return {
       source: "grants_gov",

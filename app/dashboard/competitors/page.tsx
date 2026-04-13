@@ -18,7 +18,7 @@ export default function CompetitorsPage() {
   // with CPARS / Network / Analytics gate behaviour.
   const teamTier = isTeam(organization.plan);
 
-  const [competitors, setCompetitors] = useState<any[]>([]);
+  const [competitors, setCompetitors] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -197,8 +197,8 @@ export default function CompetitorsPage() {
         <div className="space-y-4">
           {competitors.map((comp) => {
             const encounters = comp.competitor_encounters ?? [];
-            const wins = encounters.filter((e: any) => e.outcome === "win").length;
-            const losses = encounters.filter((e: any) => e.outcome === "loss").length;
+            const wins = encounters.filter((e: Record<string, any>) => e.outcome === "win").length;
+            const losses = encounters.filter((e: Record<string, any>) => e.outcome === "loss").length;
             return (
               <div key={comp.id} className="border border-[#e5e7eb] bg-white">
                 <div className="p-5 border-b border-[#e5e7eb]">
@@ -244,7 +244,7 @@ export default function CompetitorsPage() {
                     <div className="p-5">
                       <h4 className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-3">Encounters</h4>
                       <div className="space-y-2">
-                        {visible.map((enc: any) => (
+                        {visible.map((enc: Record<string, any>) => (
                           <div key={enc.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 ${

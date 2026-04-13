@@ -58,7 +58,7 @@ export function parseFilters(raw: string): NLSearchFilters {
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
-  let parsed: any;
+  let parsed: Record<string, any>;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
@@ -77,12 +77,12 @@ export function parseFilters(raw: string): NLSearchFilters {
   };
 }
 
-function arrayOfStrings(v: any): string[] {
+function arrayOfStrings(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
 }
 
-function numberOrNull(v: any): number | null {
+function numberOrNull(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   return null;
 }

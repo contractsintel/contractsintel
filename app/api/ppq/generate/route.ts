@@ -78,7 +78,7 @@ Contract Value: ${record.award_amount ? `$${record.award_amount.toLocaleString()
 Description: ${record.description ?? "N/A"}
 
 Monthly Performance Logs:
-${(logs ?? []).map((l: any) => `- ${l.month_date}: Deliverables: ${l.deliverables_completed ?? "N/A"}, Issues: ${l.issues ?? "None"}, Feedback: ${l.client_feedback ?? "N/A"}`).join("\n")}
+${(logs ?? []).map((l: Record<string, any>) => `- ${l.month_date}: Deliverables: ${l.deliverables_completed ?? "N/A"}, Issues: ${l.issues ?? "None"}, Feedback: ${l.client_feedback ?? "N/A"}`).join("\n")}
 
 Write a professional PPQ narrative (3-5 paragraphs) that:
 1. Summarizes the scope and complexity of the work

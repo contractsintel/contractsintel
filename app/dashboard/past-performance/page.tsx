@@ -14,7 +14,7 @@ export default function PastPerformancePage() {
   const supabase = createClient();
   const locked = isDiscovery(organization.plan, organization);
 
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLogModal, setShowLogModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function PastPerformancePage() {
         setPpqNarrative(data.narrative);
         // P2.3: when regenerating, push old narrative onto versions array
         if (isRegenerate) {
-          const record = records.find((r: any) => r.id === recordId);
+          const record = records.find((r: Record<string, any>) => r.id === recordId);
           if (record?.ppq_narrative) {
             const existingVersions = Array.isArray(record.ppq_narrative_versions) ? record.ppq_narrative_versions : [];
             const newVersions = [
@@ -236,7 +236,7 @@ export default function PastPerformancePage() {
                     Monthly Logs ({record.monthly_logs.length})
                   </h4>
                   <div className="space-y-1">
-                    {record.monthly_logs.slice(-3).map((log: any, i: number) => (
+                    {record.monthly_logs.slice(-3).map((log: Record<string, any>, i: number) => (
                       <div key={i} className="text-xs text-[#64748b]">
                         <span className="text-[#94a3b8] font-mono">
                           {new Date(log.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}:
@@ -293,7 +293,7 @@ export default function PastPerformancePage() {
                       <p className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8]">
                         {record.ppq_narrative_versions.length} previous version{record.ppq_narrative_versions.length > 1 ? "s" : ""}
                       </p>
-                      {record.ppq_narrative_versions.slice().reverse().map((v: any, i: number) => (
+                      {record.ppq_narrative_versions.slice().reverse().map((v: Record<string, any>, i: number) => (
                         <details key={i} className="border border-[#e5e7eb] bg-white">
                           <summary className="cursor-pointer px-3 py-2 text-xs text-[#64748b]">
                             v{record.ppq_narrative_versions.length - i} —{" "}

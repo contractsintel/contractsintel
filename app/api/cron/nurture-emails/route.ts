@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -131,13 +132,13 @@ export async function GET(request: NextRequest) {
           .update({ nurture_stage: stage + 1 })
           .eq("id", lead.id);
       } catch (err) {
-        console.error(`Failed to send nurture email to ${lead.email}:`, err);
+        logger.error(`Failed to send nurture email to ${lead.email}`, { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
     return NextResponse.json({ success: true, sent });
   } catch (error) {
-    console.error("Nurture emails error:", error);
+    logger.error("Nurture emails error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to send nurture emails" }, { status: 500 });
   }
 }

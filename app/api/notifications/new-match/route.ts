@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const errors: string[] = [];
 
     for (const match of matches) {
-      const opp = (match as any).opportunities;
+      const opp = (match as Record<string, any>).opportunities as Record<string, any> | undefined;
       if (!opp) continue;
 
       const score = match.match_score;

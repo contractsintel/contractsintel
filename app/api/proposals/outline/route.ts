@@ -325,10 +325,10 @@ Create the annotated proposal outline now. Map every evaluation criterion and Se
     const parsed = parseOutlineResponse(block.text);
 
     return NextResponse.json(parsed);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Proposal outline error:", err);
     return NextResponse.json(
-      { error: err?.message ?? "Internal error" },
+      { error: err instanceof Error ? err.message : "Internal error" },
       { status: 500 },
     );
   }
@@ -345,7 +345,7 @@ function parseOutlineResponse(raw: string): OutlineResponse {
     .replace(/\s*```$/i, "")
     .trim();
 
-  let parsed: any;
+  let parsed: Record<string, any>;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
@@ -372,31 +372,31 @@ function parseOutlineResponse(raw: string): OutlineResponse {
   )
     ? parsed.compliance_checklist
         .filter(
-          (c: any) =>
+          (c: Record<string, any>) =>
             c && typeof c.requirement === "string" && typeof c.section === "string",
         )
-        .map((c: any) => ({
-          requirement: c.requirement.slice(0, 300),
-          section: c.section,
-          status: ["required", "recommended", "optional"].includes(c.status)
-            ? c.status
+        .map((c: Record<string, any>) => ({
+          requirement: (c.requirement as string).slice(0, 300),
+          section: c.section as string,
+          status: ["required", "recommended", "optional"].includes(c.status as string)
+            ? (c.status as "required" | "recommended" | "optional")
             : "required",
         }))
     : [];
 
   // Validate page budget
-  const page_budget: PageBudget = normalizePageBudget(parsed?.page_budget, outline);
+  const page_budget: PageBudget = normalizePageBudget(parsed?.page_budget as Record<string, any> | undefined, outline);
 
   return { outline, compliance_checklist, page_budget };
 }
 
-function normalizeSection(s: any): OutlineSection {
+function normalizeSection(s: Record<string, any>): OutlineSection {
   const subsections: OutlineSubsection[] = Array.isArray(s?.subsections)
     ? s.subsections
-        .filter((sub: any) => sub && typeof sub.title === "string")
-        .map((sub: any) => ({
+        .filter((sub: Record<string, any>) => sub && typeof sub.title === "string")
+        .map((sub: Record<string, any>) => ({
           section_number: String(sub.section_number ?? ""),
-          title: sub.title.slice(0, 200),
+          title: String(sub.title).slice(0, 200),
           writing_instructions:
             typeof sub.writing_instructions === "string"
               ? sub.writing_instructions.slice(0, 1000)
@@ -417,23 +417,23 @@ function normalizeSection(s: any): OutlineSection {
         ? s.writing_instructions.slice(0, 2000)
         : "",
     key_themes: Array.isArray(s?.key_themes)
-      ? s.key_themes.filter((t: any): t is string => typeof t === "string")
+      ? (s.key_themes as unknown[]).filter((t: unknown): t is string => typeof t === "string")
       : [],
     evidence_needed: Array.isArray(s?.evidence_needed)
-      ? s.evidence_needed.filter((e: any): e is string => typeof e === "string")
+      ? (s.evidence_needed as unknown[]).filter((e: unknown): e is string => typeof e === "string")
       : [],
     subsections,
   };
 }
 
 function normalizePageBudget(
-  raw: any,
+  raw: Record<string, any> | undefined,
   outline: OutlineSection[],
 ): PageBudget {
   const sections: Record<string, number> = {};
 
   if (raw && typeof raw.sections === "object" && raw.sections !== null) {
-    for (const [key, val] of Object.entries(raw.sections)) {
+    for (const [key, val] of Object.entries(raw.sections as Record<string, any>)) {
       if (typeof val === "number" && val > 0) {
         sections[key] = val;
       }

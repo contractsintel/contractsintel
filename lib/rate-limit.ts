@@ -16,8 +16,8 @@ function prune(windowMs: number) {
   if (now - lastPrune < PRUNE_INTERVAL) return;
   lastPrune = now;
   const cutoff = now - windowMs;
-  for (const [key, entry] of buckets) {
-    entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
+  for (const [key, entry] of Array.from(buckets.entries())) {
+    entry.timestamps = entry.timestamps.filter((t: number) => t > cutoff);
     if (entry.timestamps.length === 0) buckets.delete(key);
   }
 }

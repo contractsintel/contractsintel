@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { runScrapersByCategory } from "@/lib/scrapers";
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Scrape states error:", error);
+    logger.error("Scrape states error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to run state scrapers" }, { status: 500 });
   }
 }

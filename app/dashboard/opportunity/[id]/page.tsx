@@ -29,9 +29,9 @@ export default function OpportunityDetailPage() {
   const oppId = params.id as string;
   const supabase = createClient();
 
-  const [opp, setOpp] = useState<any>(null);
-  const [match, setMatch] = useState<any>(null);
-  const [related, setRelated] = useState<any[]>([]);
+  const [opp, setOpp] = useState<Record<string, any> | null>(null);
+  const [match, setMatch] = useState<Record<string, any> | null>(null);
+  const [related, setRelated] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
   const [noteText, setNoteText] = useState("");
   const [editingNote, setEditingNote] = useState(false);
@@ -40,10 +40,10 @@ export default function OpportunityDetailPage() {
   const [incumbent, setIncumbent] = useState<{
     incumbent: { name: string | null; value: number | null };
     basis: { agency: string | null; naics_code: string | null; set_aside_type: string | null };
-    prior_buys: any[];
+    prior_buys: Record<string, any>[];
   } | null>(null);
   // G05 — RFP decoder state
-  const [shred, setShred] = useState<any>(null);
+  const [shred, setShred] = useState<Record<string, any> | null>(null);
   const [shredLoading, setShredLoading] = useState(false);
   const [shredError, setShredError] = useState<string | null>(null);
 
@@ -131,8 +131,8 @@ export default function OpportunityDetailPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error ?? "Shred failed");
       setShred(j.shred);
-    } catch (e: any) {
-      setShredError(e?.message ?? "Shred failed");
+    } catch (e: unknown) {
+      setShredError(e instanceof Error ? e.message : "Shred failed");
     } finally {
       setShredLoading(false);
     }
@@ -304,7 +304,7 @@ export default function OpportunityDetailPage() {
                   <div className="text-[11px] uppercase tracking-wide text-[#94a3b8]">
                     Similar prior buys ({incumbent.basis.agency || "agency"} · NAICS {incumbent.basis.naics_code || "—"})
                   </div>
-                  {incumbent.prior_buys.map((b: any) => {
+                  {incumbent.prior_buys.map((b: Record<string, any>) => {
                     const v = b.estimated_value ?? b.value_estimate ?? 0;
                     return (
                       <Link
@@ -400,7 +400,7 @@ export default function OpportunityDetailPage() {
                       Deadlines
                     </div>
                     <ul className="list-none space-y-0.5">
-                      {shred.sections.deadlines.map((d: any, i: number) => (
+                      {shred.sections.deadlines.map((d: Record<string, any>, i: number) => (
                         <li key={i} className="font-mono">
                           {d.label}{d.label && d.date ? " · " : ""}{d.date}
                         </li>
@@ -476,7 +476,7 @@ export default function OpportunityDetailPage() {
             <div className="ci-card p-6">
               <h2 className="ci-section-label mb-4">Documents & Attachments</h2>
               <div className="space-y-2">
-                {attachments.map((a: any, i: number) => {
+                {attachments.map((a: Record<string, any>, i: number) => {
                   const isPdf = (a.url || "").toLowerCase().endsWith(".pdf") || (a.name || "").toLowerCase().endsWith(".pdf");
                   const proxyBase = process.env.NEXT_PUBLIC_ATTACHMENT_PROXY_URL || "https://puppeteer-production-f147.up.railway.app";
                   const proxyUrl = `${proxyBase}/proxy-document?url=${encodeURIComponent(a.url)}`;

@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .eq("auth_id", user.id)
     .single();
 
-  const org = (userData as any)?.organizations;
+  const org = (userData as Record<string, any> | null)?.organizations as Record<string, any> | undefined;
   let customerId = org?.stripe_customer_id;
 
   // Create Stripe customer if needed

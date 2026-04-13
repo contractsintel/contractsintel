@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 import {
   parseJaggaer,
@@ -310,7 +312,7 @@ function extractNevadaEproBids(html: string): Array<{ title: string; href: strin
   return bids;
 }
 
-export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
+export async function scrapeStateLocal(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   try {
@@ -323,7 +325,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
       if (!portal) continue;
 
       try {
-        console.log(`[state-local] Fetching ${portal.name} (${portal.url})...`);
+        logger.info(`[state-local] Fetching ${portal.name} (${portal.url})...`);
 
         // AZ needs full browser headers to avoid 403
         const headers: Record<string, string> = portal.state === "AZ"
@@ -345,12 +347,12 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         });
 
         if (!res.ok) {
-          console.log(`[state-local] ${portal.name}: HTTP ${res.status} — will still attempt to parse body`);
+          logger.info(`[state-local] ${portal.name}: HTTP ${res.status} — will still attempt to parse body`);
         }
 
         const contentType = res.headers.get("content-type") || "";
         if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-          console.log(`[state-local] ${portal.name}: Non-HTML response (${contentType}) BLOCKED`);
+          logger.info(`[state-local] ${portal.name}: Non-HTML response (${contentType}) BLOCKED`);
           stateResults.push(`${portal.state}: BLOCKED (non-HTML response)`);
           continue;
         }
@@ -367,18 +369,18 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         if (directFetchBlocked || (JS_STATES.has(portal.state) && html.length < 1000 && !/bid|solicit|rfp|rfq/i.test(html))) {
           if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
             const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
-            console.log(`[state-local] ${portal.name}: Direct fetch insufficient, trying Puppeteer for ${sbUrl}...`);
+            logger.info(`[state-local] ${portal.name}: Direct fetch insufficient, trying Puppeteer for ${sbUrl}...`);
             try {
               html = await fetchWithPuppeteer(sbUrl, 5000);
-              console.log(`[state-local] ${portal.name}: Puppeteer returned ${html.length} bytes`);
+              logger.info(`[state-local] ${portal.name}: Puppeteer returned ${html.length} bytes`);
             } catch (sbErr) {
               const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-              console.log(`[state-local] ${portal.name}: Puppeteer failed: ${sbMsg}`);
+              logger.info(`[state-local] ${portal.name}: Puppeteer failed: ${sbMsg}`);
               stateResults.push(`${portal.state}: BLOCKED (Puppeteer fallback failed)`);
               continue;
             }
           } else if (directFetchBlocked) {
-            console.log(`[state-local] ${portal.name}: Requires JavaScript BLOCKED`);
+            logger.info(`[state-local] ${portal.name}: Requires JavaScript BLOCKED`);
             stateResults.push(`${portal.state}: BLOCKED (requires JavaScript)`);
             continue;
           }
@@ -405,7 +407,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
             if (urlToFetch === currentUrl) break;
 
             pageNum++;
-            console.log(`[state-local] ${portal.name}: Fetching page ${pageNum} (${urlToFetch})...`);
+            logger.info(`[state-local] ${portal.name}: Fetching page ${pageNum} (${urlToFetch})...`);
 
             try {
               const pageRes = await fetch(urlToFetch, {
@@ -419,13 +421,13 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
               });
 
               if (!pageRes.ok) {
-                console.log(`[state-local] ${portal.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
+                logger.info(`[state-local] ${portal.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
                 break;
               }
 
               const pageHtml = await pageRes.text();
               if (pageHtml.length < 200) {
-                console.log(`[state-local] ${portal.name}: Page ${pageNum} too small (${pageHtml.length} bytes), stopping pagination`);
+                logger.info(`[state-local] ${portal.name}: Page ${pageNum} too small (${pageHtml.length} bytes), stopping pagination`);
                 break;
               }
 
@@ -436,22 +438,22 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
               );
 
               if (newRows.length === 0 && newLinks.length === 0) {
-                console.log(`[state-local] ${portal.name}: Page ${pageNum} has no bid data, stopping pagination`);
+                logger.info(`[state-local] ${portal.name}: Page ${pageNum} has no bid data, stopping pagination`);
                 break;
               }
 
-              console.log(`[state-local] ${portal.name}: Page ${pageNum} has ${newRows.length} rows, ${newLinks.length} bid links`);
+              logger.info(`[state-local] ${portal.name}: Page ${pageNum} has ${newRows.length} rows, ${newLinks.length} bid links`);
               allHtmlPages.push(pageHtml);
               currentHtml = pageHtml;
               currentUrl = urlToFetch;
             } catch (pageErr) {
-              console.log(`[state-local] ${portal.name}: Page ${pageNum} fetch error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+              logger.info(`[state-local] ${portal.name}: Page ${pageNum} fetch error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
               break;
             }
           }
 
           if (allHtmlPages.length > 1) {
-            console.log(`[state-local] ${portal.name}: Fetched ${allHtmlPages.length} total pages via free pagination`);
+            logger.info(`[state-local] ${portal.name}: Fetched ${allHtmlPages.length} total pages via free pagination`);
           }
         }
 
@@ -466,20 +468,20 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           if (page1Results.length > 0 || page1BidLinks.length > 0) {
             const paginationUrls = extractPuppeteerPaginationUrls(html, JS_STATE_URLS[portal.state] || portal.url);
             if (paginationUrls.length > 0) {
-              console.log(`[state-local] ${portal.name}: Found ${paginationUrls.length} pagination URLs via Puppeteer, following...`);
+              logger.info(`[state-local] ${portal.name}: Found ${paginationUrls.length} pagination URLs via Puppeteer, following...`);
 
               for (let pi = 0; pi < paginationUrls.length; pi++) {
                 const pageUrl = paginationUrls[pi];
                 const pageNum = pi + 2;
-                console.log(`[state-local] ${portal.name}: Puppeteer fetching page ${pageNum} (${pageUrl})...`);
+                logger.info(`[state-local] ${portal.name}: Puppeteer fetching page ${pageNum} (${pageUrl})...`);
 
                 try {
                   const pageHtml = await fetchWithPuppeteer(pageUrl, 5000);
                   if (pageHtml.length < 200) {
-                    console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} too small, stopping`);
+                    logger.info(`[state-local] ${portal.name}: Puppeteer page ${pageNum} too small, stopping`);
                     break;
                   }
-                  console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} returned ${pageHtml.length} bytes`);
+                  logger.info(`[state-local] ${portal.name}: Puppeteer page ${pageNum} returned ${pageHtml.length} bytes`);
                   allHtmlPages.push(pageHtml);
 
                   // Check for further pagination from this page
@@ -490,7 +492,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
                     }
                   }
                 } catch (sbPageErr) {
-                  console.log(`[state-local] ${portal.name}: Puppeteer page ${pageNum} failed: ${sbPageErr instanceof Error ? sbPageErr.message : String(sbPageErr)}`);
+                  logger.info(`[state-local] ${portal.name}: Puppeteer page ${pageNum} failed: ${sbPageErr instanceof Error ? sbPageErr.message : String(sbPageErr)}`);
                   break;
                 }
               }
@@ -528,7 +530,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         }
 
         if (platformResults.length > 0) {
-          console.log(`[state-local] ${portal.name}: Platform parser found ${platformResults.length} results across ${allHtmlPages.length} pages`);
+          logger.info(`[state-local] ${portal.name}: Platform parser found ${platformResults.length} results across ${allHtmlPages.length} pages`);
         }
 
         // FIX 4: Nevada ePro specific parsing (across all pages)
@@ -537,7 +539,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
           for (const pageHtml of allHtmlPages) {
             nevadaBids.push(...extractNevadaEproBids(pageHtml));
           }
-          console.log(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from ${allHtmlPages.length} pages`);
+          logger.info(`[state-local] Nevada ePro: extracted ${nevadaBids.length} bid refs from ${allHtmlPages.length} pages`);
         }
 
         const hasPlatformResults = platformResults.length >= 1;
@@ -549,7 +551,7 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         const hasNevadaBids = nevadaBids.length >= 1;
 
         if (!hasPlatformResults && !hasTableData && !hasBidLinks && !hasBidTableRows && !hasTdLinks && !hasBidElements && !hasNevadaBids) {
-          console.log(`[state-local] ${portal.name}: No parseable bid data found BLOCKED`);
+          logger.info(`[state-local] ${portal.name}: No parseable bid data found BLOCKED`);
           stateResults.push(`${portal.state}: BLOCKED (no parseable bid data in HTML)`);
           continue;
         }
@@ -723,17 +725,17 @@ export async function scrapeStateLocal(supabase: any): Promise<ScraperResult> {
         }
 
         totalFound += stateOpps;
-        console.log(`[state-local] ${portal.name}: Found ${stateOpps} items across ${allHtmlPages.length} pages (${tableRows.length} table rows, ${bidLinks.length} bid links, ${bidTableRows.length} kw rows, ${tdLinks.length} td links, ${bidElements.length} bid elements${nevadaBids.length ? `, ${nevadaBids.length} NV ePro bids` : ""})`);
+        logger.info(`[state-local] ${portal.name}: Found ${stateOpps} items across ${allHtmlPages.length} pages (${tableRows.length} table rows, ${bidLinks.length} bid links, ${bidTableRows.length} kw rows, ${tdLinks.length} td links, ${bidElements.length} bid elements${nevadaBids.length ? `, ${nevadaBids.length} NV ePro bids` : ""})`);
         stateResults.push(`${portal.state}: ${stateOpps} items found`);
       } catch (stateErr) {
         const msg = stateErr instanceof Error ? stateErr.message : String(stateErr);
         const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-        console.log(`[state-local] ${portal.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
+        logger.info(`[state-local] ${portal.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}`);
         stateResults.push(`${portal.state}: BLOCKED (${isTimeout ? "timeout" : msg.substring(0, 50)})`);
       }
     }
 
-    console.log(`[state-local] Results: ${stateResults.join(", ")}`);
+    logger.info(`[state-local] Results: ${stateResults.join(", ")}`);
 
     // Log Puppeteer API usage for budget tracking
     await logPuppeteerUsage(supabase);

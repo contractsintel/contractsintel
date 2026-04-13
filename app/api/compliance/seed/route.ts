@@ -37,7 +37,7 @@ export async function POST() {
 
     const orgId: string | null =
       profile?.organization_id ??
-      (profile?.organizations as any)?.id ??
+      (profile?.organizations as Record<string, any> | undefined)?.id ??
       null;
     if (!orgId) {
       return NextResponse.json({ error: "no_org" }, { status: 400 });
@@ -61,9 +61,9 @@ export async function POST() {
     };
 
     const certs: string[] =
-      ((profile?.organizations as any)?.certifications as string[] | undefined) ?? [];
+      ((profile?.organizations as Record<string, any> | undefined)?.certifications as string[] | undefined) ?? [];
 
-    const seed: Array<Record<string, unknown>> = [
+    const seed: Array<Record<string, any>> = [
       // SAM.gov
       {
         organization_id: orgId,
@@ -81,7 +81,7 @@ export async function POST() {
         type: "sam_renewal",
         category: "registration",
         title: "Verify UEI and CAGE code on profile",
-        status: (profile?.organizations as any)?.uei ? "complete" : "pending",
+        status: (profile?.organizations as Record<string, any> | undefined)?.uei ? "complete" : "pending",
         due_date: daysFromNow(14),
         details: "Confirm UEI and CAGE match your legal business name on SAM.gov.",
         severity: "medium",
@@ -201,7 +201,7 @@ export async function POST() {
     }
 
     return NextResponse.json({ seeded: true, inserted: seed.length });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message ?? "unknown" }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "unknown" }, { status: 500 });
   }
 }

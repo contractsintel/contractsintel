@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
 
     // Filter to orgs that have NAICS codes
     const activeOrgs = orgs.filter(
-      (o: any) => o.naics_codes && o.naics_codes.length > 0
+      (o: Record<string, any>) => o.naics_codes && o.naics_codes.length > 0
     );
 
     if (!activeOrgs.length) {
@@ -140,13 +141,13 @@ export async function GET(request: NextRequest) {
         .eq("is_demo", false);
 
       const existingIds = new Set(
-        (existingMatches || []).map((m: any) => m.opportunity_id)
+        (existingMatches || []).map((m: Record<string, any>) => m.opportunity_id)
       );
 
       // Find unmatched opportunities with matching NAICS codes
       // Query in batches by NAICS code prefix
       const allNaics = org.naics_codes || [];
-      const unmatchedOpps: any[] = [];
+      const unmatchedOpps: Record<string, any>[] = [];
 
       for (const naics of allNaics) {
         // Exact NAICS match
@@ -220,16 +221,16 @@ export async function GET(request: NextRequest) {
         const batch = matchRecords.slice(i, i + 200);
         const { error } = await supabase
           .from("opportunity_matches")
-          .upsert(batch as any[], {
+          .upsert(batch as Record<string, any>[], {
             onConflict: "organization_id,opportunity_id",
           });
         if (error) {
-          console.error(`Match upsert error for org ${org.id}:`, error.message);
+          logger.error(`Match upsert error for org ${org.id}`, { error: error.message });
         }
       }
 
       totalMatched += matchRecords.length;
-      console.log(
+      logger.info(
         `Matched ${matchRecords.length} opportunities for ${org.name || org.id}`
       );
     }
@@ -240,7 +241,7 @@ export async function GET(request: NextRequest) {
       total_matches_created: totalMatched,
     });
   } catch (error) {
-    console.error("Match opportunities error:", error);
+    logger.error("Match opportunities error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to match opportunities" },
       { status: 500 }

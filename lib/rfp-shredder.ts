@@ -75,20 +75,20 @@ export function parseShred(raw: string, source_hash: string): RfpShredResult {
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
-  let parsed: any;
+  let parsed: Record<string, any>;
   try {
     parsed = JSON.parse(cleaned);
   } catch {
     throw new Error("Model returned non-JSON output");
   }
-  const arr = (v: any): string[] =>
+  const arr = (v: unknown): string[] =>
     Array.isArray(v)
       ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((s) => s.slice(0, 200))
       : [];
   const deadlines: { label: string; date: string }[] = Array.isArray(parsed?.deadlines)
     ? parsed.deadlines
-        .filter((d: any) => d && (typeof d.label === "string" || typeof d.date === "string"))
-        .map((d: any) => ({
+        .filter((d: Record<string, any>) => d && (typeof d.label === "string" || typeof d.date === "string"))
+        .map((d: Record<string, any>) => ({
           label: typeof d.label === "string" ? d.label.slice(0, 120) : "",
           date: typeof d.date === "string" ? d.date.slice(0, 40) : "",
         }))

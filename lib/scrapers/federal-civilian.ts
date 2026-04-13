@@ -1,4 +1,6 @@
+import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
+import type { SupabaseAdmin } from "./types";
 import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
 import { createHash } from "crypto";
 
@@ -126,7 +128,7 @@ function followPagination(html: string, baseUrl: string): string[] {
   return nextUrls;
 }
 
-export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResult> {
+export async function scrapeFederalCivilian(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
 
   let totalFound = 0;
@@ -135,7 +137,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
   for (const source of FEDERAL_CIVILIAN_SOURCES) {
     try {
-      console.log(`[federal-civilian] Fetching ${source.name} (${source.url})...`);
+      logger.info(`[federal-civilian] Fetching ${source.name} (${source.url})...`);
 
       const res = await fetch(source.url, {
         method: "GET",
@@ -148,7 +150,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       });
 
       if (!res.ok) {
-        console.log(`[federal-civilian] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
+        logger.info(`[federal-civilian] ${source.name}: HTTP ${res.status} — will still attempt to parse body`);
       }
 
       const contentType = res.headers.get("content-type") || "";
@@ -164,13 +166,13 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
         // Try Puppeteer fallback for ALL blocked sources
         const pbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
-        console.log(`[federal-civilian] ${source.name}: ${reason}, trying Puppeteer for ${pbUrl}...`);
+        logger.info(`[federal-civilian] ${source.name}: ${reason}, trying Puppeteer for ${pbUrl}...`);
         try {
           html = await fetchWithPuppeteer(pbUrl, 10000);
-          console.log(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
+          logger.info(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
         } catch (pbErr) {
           const pbMsg = pbErr instanceof Error ? pbErr.message : String(pbErr);
-          console.log(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
+          logger.info(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -201,10 +203,10 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
         // Try Puppeteer fallback for ALL sources that returned HTML but no data
         {
           const pbUrl = JS_FEDERAL_SOURCES[source.id] || source.url;
-          console.log(`[federal-civilian] ${source.name}: No parseable data, trying Puppeteer for ${pbUrl}...`);
+          logger.info(`[federal-civilian] ${source.name}: No parseable data, trying Puppeteer for ${pbUrl}...`);
           try {
             html = await fetchWithPuppeteer(pbUrl, 10000);
-            console.log(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
+            logger.info(`[federal-civilian] ${source.name}: Puppeteer returned ${html.length} bytes`);
             allHtmlPages[0] = html;
             // Re-parse with Puppeteer-rendered HTML
             procLinks = extractLinks(html, source.url).filter(
@@ -215,13 +217,13 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             tableRows = extractTableRows(html);
           } catch (pbErr) {
             const pbMsg = pbErr instanceof Error ? pbErr.message : String(pbErr);
-            console.log(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
+            logger.info(`[federal-civilian] ${source.name}: Puppeteer failed: ${pbMsg}`);
           }
         }
 
         // Re-check after Puppeteer attempt
         if (procLinks.length < 1 && tableRows.length < 3) {
-          console.log(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
+          logger.info(`[federal-civilian] ${source.name}: No parseable procurement data BLOCKED`);
           await supabase.from("scraper_runs").insert({
             source: source.id,
             status: "error",
@@ -250,7 +252,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
           if (!urlToFetch || urlToFetch === currentUrl) break;
 
           pageNum++;
-          console.log(`[federal-civilian] ${source.name}: Fetching page ${pageNum} (${urlToFetch})...`);
+          logger.info(`[federal-civilian] ${source.name}: Fetching page ${pageNum} (${urlToFetch})...`);
 
           try {
             const isJsSource = !!JS_FEDERAL_SOURCES[source.id];
@@ -269,14 +271,14 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
                 redirect: "follow",
               });
               if (!pageRes.ok) {
-                console.log(`[federal-civilian] ${source.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
+                logger.info(`[federal-civilian] ${source.name}: Page ${pageNum} returned HTTP ${pageRes.status}, stopping pagination`);
                 break;
               }
               pageHtml = await pageRes.text();
             }
 
             if (pageHtml.length < 200) {
-              console.log(`[federal-civilian] ${source.name}: Page ${pageNum} too small, stopping pagination`);
+              logger.info(`[federal-civilian] ${source.name}: Page ${pageNum} too small, stopping pagination`);
               break;
             }
 
@@ -288,24 +290,24 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
             const newTableRows = extractTableRows(pageHtml);
 
             if (newProcLinks.length === 0 && newTableRows.length === 0) {
-              console.log(`[federal-civilian] ${source.name}: Page ${pageNum} has no procurement data, stopping pagination`);
+              logger.info(`[federal-civilian] ${source.name}: Page ${pageNum} has no procurement data, stopping pagination`);
               break;
             }
 
-            console.log(`[federal-civilian] ${source.name}: Page ${pageNum} has ${newProcLinks.length} links, ${newTableRows.length} rows`);
+            logger.info(`[federal-civilian] ${source.name}: Page ${pageNum} has ${newProcLinks.length} links, ${newTableRows.length} rows`);
             procLinks.push(...newProcLinks);
             tableRows.push(...newTableRows);
             allHtmlPages.push(pageHtml);
             currentHtml = pageHtml;
             currentUrl = urlToFetch;
           } catch (pageErr) {
-            console.log(`[federal-civilian] ${source.name}: Page ${pageNum} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
+            logger.info(`[federal-civilian] ${source.name}: Page ${pageNum} error: ${pageErr instanceof Error ? pageErr.message : String(pageErr)}`);
             break;
           }
         }
 
         if (allHtmlPages.length > 1) {
-          console.log(`[federal-civilian] ${source.name}: Fetched ${allHtmlPages.length} total pages`);
+          logger.info(`[federal-civilian] ${source.name}: Fetched ${allHtmlPages.length} total pages`);
         }
       }
 
@@ -354,12 +356,12 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
       }
 
       totalFound += sourceOpps;
-      console.log(`[federal-civilian] ${source.name}: Found ${sourceOpps} items across ${allHtmlPages.length} pages`);
+      logger.info(`[federal-civilian] ${source.name}: Found ${sourceOpps} items across ${allHtmlPages.length} pages`);
       sourceResults.push(`${source.id}: ${sourceOpps} items`);
     } catch (srcErr) {
       const msg = srcErr instanceof Error ? srcErr.message : String(srcErr);
       const isTimeout = msg.includes("abort") || msg.includes("timeout") || msg.includes("TimeoutError");
-      console.log(`[federal-civilian] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}, retrying with Puppeteer...`);
+      logger.info(`[federal-civilian] ${source.name}: ${isTimeout ? "TIMEOUT" : "ERROR"} - ${msg}, retrying with Puppeteer...`);
 
       // Retry the whole source through Puppeteer on timeout/fetch failure
       try {
@@ -393,15 +395,15 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
 
         if (retryOpps > 0) {
           totalFound += retryOpps;
-          console.log(`[federal-civilian] ${source.name}: Puppeteer retry found ${retryOpps} items`);
+          logger.info(`[federal-civilian] ${source.name}: Puppeteer retry found ${retryOpps} items`);
           sourceResults.push(`${source.id}: ${retryOpps} items (Puppeteer retry)`);
         } else {
-          console.log(`[federal-civilian] ${source.name}: Puppeteer retry returned no data`);
+          logger.info(`[federal-civilian] ${source.name}: Puppeteer retry returned no data`);
           sourceResults.push(`${source.id}: BLOCKED (Puppeteer retry: no data)`);
         }
       } catch (retryErr) {
         const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-        console.log(`[federal-civilian] ${source.name}: Puppeteer retry also failed: ${retryMsg}`);
+        logger.info(`[federal-civilian] ${source.name}: Puppeteer retry also failed: ${retryMsg}`);
         await supabase.from("scraper_runs").insert({
           source: source.id, status: "error", opportunities_found: 0, matches_created: 0,
           error_message: `BLOCKED: ${isTimeout ? "timeout" : msg.substring(0, 50)} + Puppeteer: ${retryMsg.substring(0, 50)}`,
@@ -412,7 +414,7 @@ export async function scrapeFederalCivilian(supabase: any): Promise<ScraperResul
     }
   }
 
-  console.log(`[federal-civilian] Results: ${sourceResults.join(", ")}`);
+  logger.info(`[federal-civilian] Results: ${sourceResults.join(", ")}`);
 
   await logPuppeteerUsage(supabase);
 

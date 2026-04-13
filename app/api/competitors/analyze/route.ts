@@ -74,7 +74,7 @@ NAICS Codes: ${JSON.stringify(competitor.naics_codes ?? [])}
 Notes: ${competitor.notes ?? "None"}
 
 Encounter History (${encounters.length} total):
-${encounters.map((e: any) => `- ${e.opportunity_title ?? "Unknown"}: ${e.outcome ?? "pending"} | Agency: ${e.agency ?? "N/A"} | Value: ${e.value ? "$" + Number(e.value).toLocaleString() : "N/A"}`).join("\n")}
+${encounters.map((e: Record<string, any>) => `- ${e.opportunity_title ?? "Unknown"}: ${e.outcome ?? "pending"} | Agency: ${e.agency ?? "N/A"} | Value: ${e.value ? "$" + Number(e.value).toLocaleString() : "N/A"}`).join("\n")}
 
 Our Organization:
 - Name: ${org?.name}

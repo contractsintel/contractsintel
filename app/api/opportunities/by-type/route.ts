@@ -48,8 +48,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ type: typeParam, count, opportunities: data ?? [] });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("opportunities by-type error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
   }
 }

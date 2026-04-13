@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createAdmin } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (opportunities.length === 0) {
-      console.log("SAM API returned 0 opportunities (API may be down):", lastError?.message);
+      logger.info("SAM API returned 0 opportunities (API may be down)", { error: lastError?.message });
       // Even when SAM is down, run matching against existing unmatched opportunities
       const adminClient = createAdmin(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
           .not("id", "in", `(SELECT opportunity_id FROM opportunity_matches WHERE organization_id = '${org.id}')`)
           .limit(50);
         if (unmatched?.length) {
-          const matches = unmatched.map((o: any) => ({
+          const matches = unmatched.map((o: Record<string, any>) => ({
             organization_id: org.id,
             opportunity_id: o.id,
             match_score: 60 + Math.floor(Math.random() * 30),
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
         .eq("is_demo", true);
 
       if (orgsWithDemo?.length) {
-        const orgIds = Array.from(new Set(orgsWithDemo.map((r: any) => r.organization_id)));
+        const orgIds = Array.from(new Set(orgsWithDemo.map((r: Record<string, any>) => r.organization_id)));
         for (const orgId of orgIds) {
           await cleanupDemoData(adminClient, orgId as string);
         }
@@ -181,7 +182,7 @@ export async function GET(request: NextRequest) {
       upserted,
     });
   } catch (error) {
-    console.error("Scrape opportunities error:", error);
+    logger.error("Scrape opportunities error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to scrape opportunities" }, { status: 500 });
   }
 }

@@ -45,6 +45,21 @@ type TeamingPartner = {
   contact_email: string | null;
 };
 
+type TeamingOpportunity = {
+  id: string;
+  organization_id: string;
+  title: string;
+  description?: string;
+  estimated_value?: number | null;
+  agency?: string;
+  required_certs?: string[];
+  naics_codes?: string[];
+  geography?: string;
+  deadline?: string | null;
+  created_at: string;
+  teaming_matches?: Array<{ id: string; interest_status: string }>;
+};
+
 export default function NetworkPage() {
   const { organization } = useDashboard();
   const supabase = createClient();
@@ -54,8 +69,8 @@ export default function NetworkPage() {
   const teamTier = isTeam(organization.plan);
 
   const [tab, setTab] = useState<Tab>("opportunities");
-  const [opportunities, setOpportunities] = useState<any[]>([]);
-  const [posted, setPosted] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<TeamingOpportunity[]>([]);
+  const [posted, setPosted] = useState<TeamingOpportunity[]>([]);
   const [subAwards, setSubAwards] = useState<SubAward[]>([]);
   const [subAwardsLoading, setSubAwardsLoading] = useState(false);
   const [subAwardsError, setSubAwardsError] = useState<string | null>(null);
@@ -116,8 +131,8 @@ export default function NetworkPage() {
         } else {
           setSubAwards(j.sub_awards ?? []);
         }
-      } catch (e: any) {
-        if (!cancelled) setSubAwardsError(e?.message ?? "Failed to load sub-awards");
+      } catch (e: unknown) {
+        if (!cancelled) setSubAwardsError(e instanceof Error ? e.message : "Failed to load sub-awards");
       } finally {
         if (!cancelled) setSubAwardsLoading(false);
       }
@@ -143,8 +158,8 @@ export default function NetworkPage() {
         if (cancelled) return;
         if (!res.ok) setPartnersError(j.error ?? "Failed to load partners");
         else setPartners(j.partners ?? []);
-      } catch (e: any) {
-        if (!cancelled) setPartnersError(e?.message ?? "Failed to load partners");
+      } catch (e: unknown) {
+        if (!cancelled) setPartnersError(e instanceof Error ? e.message : "Failed to load partners");
       } finally {
         if (!cancelled) setPartnersLoading(false);
       }
@@ -206,7 +221,7 @@ export default function NetworkPage() {
     setSubmitting(false);
   };
 
-  const computeMatchScore = (opp: any): number => {
+  const computeMatchScore = (opp: TeamingOpportunity): number => {
     let score = 0;
     const oppNaics: string[] = opp.naics_codes ?? [];
     const oppCerts: string[] = opp.required_certs ?? [];
@@ -518,7 +533,7 @@ export default function NetworkPage() {
               {opportunities.map((opp) => {
                 const score = computeMatchScore(opp);
                 const alreadyInterested = opp.teaming_matches?.some(
-                  (m: any) => m.interest_status === "interested"
+                  (m: { id: string; interest_status: string }) => m.interest_status === "interested"
                 );
                 return (
                   <div key={opp.id} className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -542,9 +557,9 @@ export default function NetworkPage() {
                               ${Number(opp.estimated_value).toLocaleString()}
                             </span>
                           )}
-                          {opp.naics_codes?.length > 0 && (
+                          {(opp.naics_codes?.length ?? 0) > 0 && (
                             <span className="text-xs font-mono text-[#94a3b8]">
-                              NAICS: {opp.naics_codes.join(", ")}
+                              NAICS: {opp.naics_codes!.join(", ")}
                             </span>
                           )}
                           {opp.deadline && (
@@ -677,7 +692,7 @@ export default function NetworkPage() {
             <div className="space-y-3">
               {posted.map((opp) => {
                 const matchCount = opp.teaming_matches?.filter(
-                  (m: any) => m.interest_status === "interested"
+                  (m: { id: string; interest_status: string }) => m.interest_status === "interested"
                 ).length ?? 0;
                 return (
                   <div key={opp.id} className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
