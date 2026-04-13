@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     .limit(limit);
 
   if (naics) q = q.eq("naics_code", naics);
-  if (agency) q = q.ilike("agency", `%${agency}%`);
+  if (agency) q = q.ilike("agency", `%${agency.replace(/[%,.()"'\\]/g, "")}%`);
   if (since) q = q.gte("posted_date", since);
 
   const { data, error, count } = await q;

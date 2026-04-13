@@ -15,7 +15,7 @@ function parseDate(d: string | null | undefined): string | null {
 export async function GET(request: NextRequest) {
   try {
     const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === "production")
+    if (auth !== `Bearer ${process.env.CRON_SECRET}`)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);

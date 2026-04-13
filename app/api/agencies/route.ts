@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
     )
     .order("total_obligations", { ascending: false, nullsFirst: false });
 
-  if (q) query = query.or(`name.ilike.%${q}%,acronym.ilike.%${q}%`);
+  if (q) {
+    const safe = q.replace(/[%,.()"'\\]/g, "");
+    if (safe) query = query.or(`name.ilike.%${safe}%,acronym.ilike.%${safe}%`);
+  }
   if (parentOnly) query = query.is("parent_agency_id", null);
 
   const { data, error } = await query.limit(50);

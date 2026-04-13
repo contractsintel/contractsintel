@@ -33,7 +33,10 @@ export async function GET(request: NextRequest) {
   if (naics) query = query.contains("naics_codes", [naics]);
   if (setAside) query = query.contains("set_asides", [setAside]);
   if (state) query = query.eq("state", state.toUpperCase());
-  if (q) query = query.or(`name.ilike.%${q}%,summary.ilike.%${q}%`);
+  if (q) {
+    const safe = q.replace(/[%,.()"'\\]/g, "");
+    if (safe) query = query.or(`name.ilike.%${safe}%,summary.ilike.%${safe}%`);
+  }
 
   const { data, error } = await query;
   if (error) {

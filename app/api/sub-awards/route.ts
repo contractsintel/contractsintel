@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (naics) q = q.eq("naics_code", naics);
-    if (agency) q = q.ilike("agency", `%${agency}%`);
+    if (agency) q = q.ilike("agency", `%${agency.replace(/[%,.()"'\\]/g, "")}%`);
 
     const { data, error, count } = await q;
     if (error) {
