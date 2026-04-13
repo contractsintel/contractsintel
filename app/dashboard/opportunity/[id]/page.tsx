@@ -42,7 +42,7 @@ export default function OpportunityDetailPage() {
     basis: { agency: string | null; naics_code: string | null; set_aside_type: string | null };
     prior_buys: any[];
   } | null>(null);
-  // G05 — RFP shredder state
+  // G05 — RFP decoder state
   const [shred, setShred] = useState<any>(null);
   const [shredLoading, setShredLoading] = useState(false);
   const [shredError, setShredError] = useState<string | null>(null);
@@ -326,16 +326,16 @@ export default function OpportunityDetailPage() {
             </div>
           )}
 
-          {/* G05: RFP Shredder */}
+          {/* G05: RFP Decoder */}
           <div className="ci-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="ci-section-label">RFP Shred</h2>
+              <h2 className="ci-section-label">RFP Decode</h2>
               <button
                 onClick={runShred}
                 disabled={shredLoading}
                 className="px-3 py-1.5 text-xs bg-[#2563eb] text-white rounded disabled:opacity-50"
               >
-                {shredLoading ? "Shredding..." : shred ? "Re-shred" : "Shred RFP"}
+                {shredLoading ? "Decoding..." : shred ? "Re-decode" : "Decode RFP"}
               </button>
             </div>
             {shredError && (
@@ -345,7 +345,7 @@ export default function OpportunityDetailPage() {
             )}
             {!shred && !shredLoading && !shredError && (
               <p className="text-[12px] text-[#94a3b8] italic">
-                Run an AI shred to extract Section L instructions, Section M evaluation factors,
+                Run an AI decode to extract Section L instructions, Section M evaluation factors,
                 deadlines, and incumbent hints from this solicitation.
               </p>
             )}

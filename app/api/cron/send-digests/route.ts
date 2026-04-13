@@ -119,9 +119,9 @@ export async function GET(request: NextRequest) {
     <div style="margin-top:20px;padding:16px 20px;background:white;border-radius:10px;border:1px solid #e2e8f0;">
       <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;font-weight:500;">New on ContractsIntel</p>
       <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">
-        <strong style="color:#2563eb;">RFP Document Chat</strong> — Upload any solicitation and ask AI questions about it.
-        <strong style="color:#7c3aed;">Pink-Team Review</strong> — AI scores your proposal draft before submission.
-        <strong style="color:#059669;">Market Intelligence</strong> — USASpending data for your NAICS codes.
+        <strong style="color:#2563eb;">DocIntel</strong> — Upload any solicitation and ask AI questions about it.
+        <strong style="color:#7c3aed;">Proposal Scorer</strong> — AI scores your proposal draft before submission.
+        <strong style="color:#059669;">Spend Lens</strong> — USASpending data for your NAICS codes.
         <a href="${appUrl}/dashboard" style="color:#2563eb;text-decoration:none;font-weight:600;">Try them now →</a>
       </p>
     </div>

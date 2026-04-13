@@ -360,7 +360,7 @@ function MockRfpDocumentChat() {
           </div>
           {/* Chat panel */}
           <div className="flex-1 border border-[#7c3aed]/30 bg-[#faf5ff] p-3 space-y-2">
-            <div className="text-[9px] font-mono text-[#7c3aed] uppercase mb-1">AI Document Chat</div>
+            <div className="text-[9px] font-mono text-[#7c3aed] uppercase mb-1">DocIntel</div>
             <div className="bg-white border border-[#e5e7eb] p-2 text-[10px] text-[#64748b]">
               <span className="text-[#7c3aed] font-medium">You:</span> What are the key evaluation criteria?
             </div>
@@ -380,7 +380,7 @@ function MockRfpDocumentChat() {
   );
 }
 
-function MockPinkTeamReview() {
+function MockProposalScorer() {
   return (
     <div className="border border-[#e5e7eb] bg-white p-4 my-4">
       <div className="text-[10px] font-mono text-[#94a3b8] mb-3 uppercase tracking-wider">
@@ -800,8 +800,8 @@ const ALL_GUIDES: GuideSection[] = [
   },
   {
     num: "17",
-    id: "rfp-document-chat",
-    title: "RFP Document Chat",
+    id: "docintel",
+    title: "DocIntel",
     maxGuideIndex: 17,
     whatItDoes:
       "Upload any RFP, SOW, or solicitation document and have a real-time AI conversation about it. Ask questions like \"What are the evaluation criteria?\", \"Is this set aside for small business?\", or \"Summarize Section L requirements.\" The AI reads the full document and answers with page references so you can verify everything.",
@@ -818,8 +818,8 @@ const ALL_GUIDES: GuideSection[] = [
   },
   {
     num: "18",
-    id: "proposal-pink-team-review",
-    title: "Proposal Pink-Team Review",
+    id: "proposal-scorer",
+    title: "Proposal Scorer",
     maxGuideIndex: 17,
     whatItDoes:
       "Runs an AI-powered pink-team review on your proposal draft before you submit. Scores your overall proposal (0-100), each section individually, and estimates a win probability based on how well you address the evaluation criteria. Flags weaknesses with specific recommendations on what to fix.",
@@ -827,7 +827,7 @@ const ALL_GUIDES: GuideSection[] = [
       "A real pink-team review with consultants costs $5,000-$15,000 and takes a week. Most small contractors skip it entirely and submit proposals with avoidable weaknesses. The AI review catches missing requirements, weak sections, and compliance gaps in under 60 seconds -- giving you time to fix issues before the deadline.",
     howToUseIt: [
       "Go to the Proposals page and open your draft.",
-      "Click Run Pink-Team Review.",
+      "Click Run Proposal Scorer.",
       "Wait 30-60 seconds while the AI evaluates your proposal against the RFP requirements.",
       "Review your overall score and section-by-section breakdown.",
       "Read the flagged weaknesses and specific fix recommendations.",

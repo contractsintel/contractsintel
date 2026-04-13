@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "No RFP shred found. Run the RFP shredder first (POST /api/proposals/shred) before generating an outline.",
+            "No RFP shred found. Run the RFP Decoder first (POST /api/proposals/shred) before generating an outline.",
         },
         { status: 400 },
       );
@@ -242,7 +242,7 @@ Opportunity metadata:
     // ---- Build Claude prompt ----
     const userPrompt = `Generate an annotated proposal outline based on the following RFP analysis and company information.
 
-=== RFP SHRED ===
+=== RFP DECODE ===
 
 Section L (Instructions to Offerors):
 ${shred.section_l.length > 0 ? shred.section_l.map((s, i) => `  L.${i + 1}: ${s}`).join("\n") : "  (none extracted)"}

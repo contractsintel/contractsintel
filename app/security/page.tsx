@@ -78,7 +78,7 @@ export default function SecurityPage() {
             </p>
             <p className="mt-3">
               That means a compromised user in one tenant cannot read another tenant&apos;s opportunities,
-              pipeline, past performance, proposals, compliance matrices, or copilot threads &mdash; the
+              pipeline, past performance, proposals, compliance matrices, or Bid Assist threads &mdash; the
               database itself enforces the boundary.
             </p>
           </section>

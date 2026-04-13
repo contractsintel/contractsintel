@@ -1,6 +1,6 @@
 "use client";
 
-// Document Chat Panel: Floating panel for uploading and analyzing RFP/solicitation
+// DocIntel Panel: Floating panel for uploading and analyzing RFP/solicitation
 // documents via AI. Streams tokens from /api/documents/chat over SSE.
 
 import { useEffect, useRef, useState } from "react";
@@ -187,7 +187,7 @@ export function DocumentChatPanel() {
     }
   };
 
-  // Feature gate: RFP Document Chat is BD Pro+ only (or active trial)
+  // Feature gate: DocIntel is BD Pro+ only (or active trial)
   if (!isBdProOrHigher(organization.plan, organization)) return null;
 
   return (

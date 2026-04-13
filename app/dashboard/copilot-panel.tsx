@@ -87,7 +87,7 @@ export function CopilotPanel() {
         }
       }
     } catch (err: any) {
-      setError(err?.message ?? "Copilot failed");
+      setError(err?.message ?? "Bid Assist failed");
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setStreaming(false);
@@ -100,7 +100,7 @@ export function CopilotPanel() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close copilot" : "Open copilot"}
+        aria-label={open ? "Close Bid Assist" : "Open Bid Assist"}
         className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#2563eb] text-white shadow-lg flex items-center justify-center hover:bg-[#1d4ed8] transition-colors"
       >
         {open ? (
@@ -119,7 +119,7 @@ export function CopilotPanel() {
         <div className="fixed bottom-24 right-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-8rem)] bg-white border border-[#e5e7eb] rounded-2xl shadow-2xl flex flex-col">
           <div className="px-4 py-3 border-b border-[#e5e7eb] flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-[#0f172a]">ContractsIntel Copilot</h3>
+              <h3 className="text-sm font-semibold text-[#0f172a]">Bid Assist</h3>
               <p className="text-[11px] text-[#64748b]">Ask anything about your pipeline</p>
             </div>
             {threadId && (
@@ -140,7 +140,7 @@ export function CopilotPanel() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-xs text-[#94a3b8] text-center mt-12 px-4">
-                <p>Ask the copilot anything about your matched opportunities, compliance status, or proposal prep.</p>
+                <p>Ask Bid Assist anything about your matched opportunities, compliance status, or proposal prep.</p>
                 <p className="mt-2">Try: <em>&ldquo;What&apos;s my best opportunity right now?&rdquo;</em></p>
               </div>
             )}
@@ -182,7 +182,7 @@ export function CopilotPanel() {
                     send();
                   }
                 }}
-                placeholder="Ask the copilot…"
+                placeholder="Ask Bid Assist…"
                 rows={1}
                 className="flex-1 text-xs border border-[#e5e7eb] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#2563eb] resize-none"
               />

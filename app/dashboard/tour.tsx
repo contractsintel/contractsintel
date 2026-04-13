@@ -90,21 +90,21 @@ const ALL_STEPS: TourStep[] = [
     selector: '[data-tour="rfp-chat-button"]',
     title: "Chat with your RFP documents",
     description:
-      "See the purple floating button in the bottom-right corner? That's your RFP Document Chat. Upload any RFP, solicitation, or SOW and ask questions in plain English — 'What are the key requirements?', 'What certifications do I need?', 'Summarize Section L.' It reads the full document so you don't have to.",
+      "See the purple floating button in the bottom-right corner? That's DocIntel. Upload any RFP, solicitation, or SOW and ask questions in plain English — 'What are the key requirements?', 'What certifications do I need?', 'Summarize Section L.' It reads the full document so you don't have to.",
     skipForDiscovery: true,
   },
   {
     selector: '[data-tour="sidebar-proposals"]',
-    title: "Pink-Team Review for your proposals",
+    title: "Proposal Scorer for your proposals",
     description:
-      "After generating a proposal draft, click 'Pink-Team Review' to get an AI-powered evaluation before you submit. It checks your draft against the solicitation requirements, flags gaps in your response, scores each section, and suggests specific improvements — like having a senior reviewer on call 24/7.",
+      "After generating a proposal draft, click 'Proposal Scorer' to get an AI-powered evaluation before you submit. It checks your draft against the solicitation requirements, flags gaps in your response, scores each section, and suggests specific improvements — like having a senior reviewer on call 24/7.",
     skipForDiscovery: true,
   },
   {
     selector: '[data-tour="sidebar-analytics"]',
-    title: "Market Intelligence from USASpending",
+    title: "Spend Lens — USASpending Data",
     description:
-      "On the Analytics page, open the Market Intel tab to see real federal spending data from USASpending.gov. See which agencies are spending the most in your NAICS codes, who the top contractors are, and how contract values are trending. Use this to decide which markets to enter and which agencies to target.",
+      "On the Analytics page, open the Spend Lens tab to see real federal spending data from USASpending.gov. See which agencies are spending the most in your NAICS codes, who the top contractors are, and how contract values are trending. Use this to decide which markets to enter and which agencies to target.",
     skipBelowTeam: true,
   },
   {

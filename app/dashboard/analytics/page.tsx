@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
               onClick={() => setActiveTab("market")}
               className={`px-4 py-1.5 text-[12px] font-medium transition-colors ${activeTab === "market" ? "bg-[#2563eb] text-white" : "text-[#64748b] hover:text-[#0f172a]"}`}
             >
-              Market Intel
+              Spend Lens
             </button>
           </div>
           <select

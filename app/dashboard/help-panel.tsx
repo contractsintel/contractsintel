@@ -46,22 +46,22 @@ const HELP_CONTENT: Record<string, HelpContent> = {
   },
   proposals: {
     title: "Proposals",
-    what: "This page generates AI-written first drafts of your proposal based on the solicitation requirements and your company profile. You can also run a Pink-Team Review to get AI feedback before submitting, and use the Outline Generator to structure your response before writing.",
+    what: "This page generates AI-written first drafts of your proposal based on the solicitation requirements and your company profile. You can also run a Proposal Scorer to get AI feedback before submitting, and use the Outline Generator to structure your response before writing.",
     quickActions: [
       "Generate a new draft",
       "Switch between Technical, Past Performance, and Executive Summary tabs",
       "Copy text to clipboard",
       "Download as a document",
       "Regenerate with specific guidance",
-      "Run a Pink-Team Review on your draft",
+      "Run a Proposal Scorer on your draft",
       "Generate a proposal outline from the solicitation",
     ],
     howItWorks:
-      "When you mark an opportunity as 'Bidding' in your Pipeline, it appears here. Click 'Generate Draft' and the AI reads the full solicitation, analyzes the requirements, and writes three proposal sections tailored to your company's certifications and experience. The draft is a starting point — review it, add your specific details, and polish it before submitting. Once you have a draft, click 'Pink-Team Review' to get an AI evaluation that checks compliance with solicitation requirements, flags missing elements, scores each section, and suggests improvements. Use the Outline Generator before writing to create a structured response skeleton based on the solicitation's evaluation criteria.",
+      "When you mark an opportunity as 'Bidding' in your Pipeline, it appears here. Click 'Generate Draft' and the AI reads the full solicitation, analyzes the requirements, and writes three proposal sections tailored to your company's certifications and experience. The draft is a starting point — review it, add your specific details, and polish it before submitting. Once you have a draft, click 'Proposal Scorer' to get an AI evaluation that checks compliance with solicitation requirements, flags missing elements, scores each section, and suggests improvements. Use the Outline Generator before writing to create a structured response skeleton based on the solicitation's evaluation criteria.",
     tips: [
       "Use the 'Guidance' field when regenerating to give the AI specific instructions, like 'Focus more on our cybersecurity experience' or 'Emphasize our past VA work.'",
       "The AI gets better at writing for your company over time as you build more past performance records.",
-      "Run Pink-Team Review before every submission — it catches compliance gaps that are easy to miss when you've been staring at the same document for hours.",
+      "Run Proposal Scorer before every submission — it catches compliance gaps that are easy to miss when you've been staring at the same document for hours.",
       "Start with the Outline Generator on complex solicitations — it maps the evaluation criteria to sections so you don't miss any requirements.",
     ],
   },
@@ -164,18 +164,18 @@ const HELP_CONTENT: Record<string, HelpContent> = {
   },
   analytics: {
     title: "Analytics",
-    what: "Your Analytics page shows win/loss trends, pipeline value over time, and — on the Market Intel tab — real federal spending data from USASpending.gov broken down by agency, NAICS code, and contractor.",
+    what: "Your Analytics page shows win/loss trends, pipeline value over time, and — on the Spend Lens tab — real federal spending data from USASpending.gov broken down by agency, NAICS code, and contractor.",
     quickActions: [
       "View your win rate trends",
       "Check pipeline value by stage",
-      "Open the Market Intel tab for USASpending data",
+      "Open the Spend Lens tab for USASpending data",
       "See top agencies and contractors in your NAICS codes",
       "Explore spending trends by fiscal year",
     ],
     howItWorks:
-      "The Analytics page pulls from two sources. Your internal data — pipeline history, win/loss records, and proposal outcomes — drives the performance charts. The Market Intel tab pulls real federal spending data from USASpending.gov and maps it to your NAICS codes. You can see which agencies spend the most in your areas, who the top-awarded contractors are, how total contract values are trending, and where there may be growth opportunities. Use this data to decide which markets to prioritize and which agencies to target.",
+      "The Analytics page pulls from two sources. Your internal data — pipeline history, win/loss records, and proposal outcomes — drives the performance charts. The Spend Lens tab pulls real federal spending data from USASpending.gov and maps it to your NAICS codes. You can see which agencies spend the most in your areas, who the top-awarded contractors are, how total contract values are trending, and where there may be growth opportunities. Use this data to decide which markets to prioritize and which agencies to target.",
     tips: [
-      "Check Market Intel before entering a new NAICS code — it shows you the real size of the market and who dominates it.",
+      "Check Spend Lens before entering a new NAICS code — it shows you the real size of the market and who dominates it.",
       "Compare your win rate against the average for your contract size range to see if your capture process needs improvement.",
       "Use the agency breakdown to identify agencies that are spending more each year — growing budgets mean more opportunities.",
     ],

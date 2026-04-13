@@ -38,7 +38,7 @@ export default function ProposalsPage() {
   const [showInstructions, setShowInstructions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pink-Team Review state
+  // Proposal Scorer state
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewResult, setReviewResult] = useState<any | null>(null);
   const [reviewError, setReviewError] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function ProposalsPage() {
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setReviewResult(data);
     } catch (e: any) {
-      setReviewError(e?.message || "Failed to run Pink-Team Review. Please try again.");
+      setReviewError(e?.message || "Failed to run Proposal Scorer. Please try again.");
     } finally {
       setReviewLoading(false);
     }
@@ -372,12 +372,12 @@ export default function ProposalsPage() {
                           {exporting ? "Exporting…" : "Export Word (.docx)"}
                         </button>
                       </div>
-                      {/* Pink-Team Review & Outline buttons */}
+                      {/* Proposal Scorer & Outline buttons */}
                       {bdProAccess && (
                         <div className="flex items-center gap-2 mt-2">
                           <button onClick={runPinkTeamReview} disabled={reviewLoading}
                             className="px-3.5 py-1.5 text-[12px] font-medium rounded-lg border border-[#f59e0b] text-[#92400e] bg-[#fffbeb] hover:bg-[#fef3c7] disabled:opacity-50 transition-colors">
-                            {reviewLoading ? "Reviewing..." : "Pink-Team Review"}
+                            {reviewLoading ? "Reviewing..." : "Proposal Scorer"}
                           </button>
                           <button onClick={generateOutline} disabled={outlineLoading}
                             className="px-3.5 py-1.5 text-[12px] font-medium rounded-lg border border-[#8b5cf6] text-[#5b21b6] bg-[#f5f3ff] hover:bg-[#ede9fe] disabled:opacity-50 transition-colors">
@@ -446,17 +446,17 @@ export default function ProposalsPage() {
                   </div>
                 )}
 
-                {/* Pink-Team Review Panel */}
+                {/* Proposal Scorer Panel */}
                 {showReview && bdProAccess && (
                   <div className="px-5 pb-5 border-t border-[#e5e7eb] pt-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-[14px] font-semibold text-[#0f172a]">Pink-Team Review</h3>
+                      <h3 className="text-[14px] font-semibold text-[#0f172a]">Proposal Scorer</h3>
                       <button onClick={() => setShowReview(false)} className="text-[12px] text-[#64748b] hover:text-[#0f172a]">Close</button>
                     </div>
                     {reviewLoading ? (
                       <div className="flex flex-col items-center justify-center py-10 text-[#94a3b8]">
                         <div className="w-6 h-6 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin mb-3" />
-                        <p className="text-[13px] font-medium">Running Pink-Team Review...</p>
+                        <p className="text-[13px] font-medium">Running Proposal Scorer...</p>
                         <p className="text-[11px] mt-1">Analyzing proposal strengths & weaknesses</p>
                       </div>
                     ) : reviewError ? (

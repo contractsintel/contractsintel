@@ -27,7 +27,7 @@ type PinkTeamReview = {
   recommended_improvements: string[];
 };
 
-const SYSTEM_PROMPT = `You are a senior federal proposal reviewer conducting a Pink Team review. Score the proposal against the solicitation requirements and evaluation criteria. Be specific, actionable, and cite FAR/DFARS where relevant. Focus on compliance gaps and win-probability factors.
+const SYSTEM_PROMPT = `You are a senior federal proposal reviewer conducting a Proposal Scorer review. Score the proposal against the solicitation requirements and evaluation criteria. Be specific, actionable, and cite FAR/DFARS where relevant. Focus on compliance gaps and win-probability factors.
 
 Reply with ONE JSON object matching this schema exactly — no markdown fences, no extra text:
 {
