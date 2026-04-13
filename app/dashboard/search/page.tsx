@@ -144,33 +144,8 @@ export default function SearchPage() {
       "forecasts",
     ];
     setAvailableSources(KNOWN_SOURCES);
-
-    let cancelled = false;
-    (async () => {
-      // PostgREST has no GROUP BY, so we sample a wide page and bucket in JS.
-      const { data } = await supabase
-        .from("opportunities")
-        .select("source")
-        .or("status.is.null,status.neq.expired")
-        .limit(5000);
-      if (cancelled || !data) return;
-      const counts: Record<string, number> = {};
-      for (const r of data) {
-        const s = r.source || "unknown";
-        counts[s] = (counts[s] || 0) + 1;
-      }
-      const top = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 30)
-        .map(([s]) => s);
-      // Merge known + observed, preserving order, deduped.
-      const merged = Array.from(new Set([...top, ...KNOWN_SOURCES]));
-      setAvailableSources(merged);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
+    // Known sources are sufficient — skip the 5000-row sampling query.
+  }, []);
 
   const search = useCallback(async (resetOffset = false) => {
     setLoading(true);
