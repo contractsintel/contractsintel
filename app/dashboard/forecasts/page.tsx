@@ -185,14 +185,23 @@ export default function ForecastsPage() {
 
       {loading && <div className="text-gray-500">Loading forecasts…</div>}
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          {error}
+        <div className="rounded-md border border-gray-200 bg-white p-8 text-center">
+          <span className="text-3xl">📊</span>
+          <h3 className="text-sm font-medium text-gray-900 mt-3">Forecasts coming soon</h3>
+          <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto">
+            Procurement forecasts are generated from your past performance records and USASpending recompete data.
+            Add past performance in your profile to see projected recompetes here.
+          </p>
         </div>
       )}
 
       {!loading && !error && grouped.length === 0 && (
-        <div className="rounded-md border border-gray-200 bg-white p-6 text-center text-gray-600">
-          No forecasted recompetes in this window.
+        <div className="rounded-md border border-gray-200 bg-white p-8 text-center">
+          <span className="text-3xl">📊</span>
+          <h3 className="text-sm font-medium text-gray-900 mt-3">No forecasted recompetes</h3>
+          <p className="text-xs text-gray-500 mt-2 max-w-md mx-auto">
+            Try expanding the horizon or adding past performance records to generate forecasts.
+          </p>
         </div>
       )}
 

@@ -158,7 +158,23 @@ export function MarketIntelligence() {
         </div>
       </div>
 
-      {!hasSearched && (
+      {!hasSearched && naicsCodes.length === 0 && (
+        <div className="text-center py-16">
+          <span className="text-4xl">📊</span>
+          <h3 className="text-sm font-medium text-[#0f172a] mt-4">Add NAICS codes to unlock Spend Lens</h3>
+          <p className="text-xs text-[#64748b] mt-2 max-w-md mx-auto">
+            Market intelligence requires at least one NAICS code. Add your codes in Settings to analyze federal spending trends, top contractors, and buying agencies.
+          </p>
+          <a
+            href="/dashboard/settings"
+            className="inline-block mt-4 text-xs font-medium text-white bg-[#3b82f6] hover:bg-[#2563eb] px-4 py-2 rounded-lg transition-colors"
+          >
+            Add NAICS Codes →
+          </a>
+        </div>
+      )}
+
+      {!hasSearched && naicsCodes.length > 0 && (
         <div className="text-center text-[#94a3b8] py-16 text-sm">
           Select a NAICS code and click &ldquo;Analyze Market&rdquo; to see spending intelligence from USASpending.gov
         </div>

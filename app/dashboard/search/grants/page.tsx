@@ -60,11 +60,13 @@ export default function GrantsSearchPage() {
 
       {loading ? (
         <div className="text-center text-[#94a3b8] py-12 text-sm">Loading grants...</div>
-      ) : error ? (
-        <div className="text-center text-[#dc2626] py-12 text-sm">{error}</div>
-      ) : opps.length === 0 ? (
-        <div className="text-center text-[#94a3b8] py-12 text-sm">
-          No active grants on file. The Grants.gov ingestor will populate this list.
+      ) : error || opps.length === 0 ? (
+        <div className="text-center py-16">
+          <span className="text-4xl">🎓</span>
+          <h3 className="text-sm font-medium text-[#0f172a] mt-4">No grants available yet</h3>
+          <p className="text-xs text-[#64748b] mt-2 max-w-md mx-auto">
+            Grants from Grants.gov will appear here as data is ingested. Check back soon, or search for contracts in the main search.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">

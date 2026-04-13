@@ -80,11 +80,13 @@ export default function SbirSttrSearchPage() {
 
       {loading ? (
         <div className="text-center text-[#94a3b8] py-12 text-sm">Loading {tab.toUpperCase()}...</div>
-      ) : error ? (
-        <div className="text-center text-[#dc2626] py-12 text-sm">{error}</div>
-      ) : opps.length === 0 ? (
-        <div className="text-center text-[#94a3b8] py-12 text-sm">
-          No {tab.toUpperCase()} solicitations on file yet.
+      ) : error || opps.length === 0 ? (
+        <div className="text-center py-16">
+          <span className="text-4xl">🔬</span>
+          <h3 className="text-sm font-medium text-[#0f172a] mt-4">No {tab.toUpperCase()} solicitations yet</h3>
+          <p className="text-xs text-[#64748b] mt-2 max-w-md mx-auto">
+            {tab.toUpperCase()} opportunities from SBIR.gov will appear here as data is ingested. Check back soon.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
