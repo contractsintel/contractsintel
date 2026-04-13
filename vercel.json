@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/", "destination": "/landing.html" }
+  ],
   "functions": {
     "app/api/cron/**": {
       "maxDuration": 300
