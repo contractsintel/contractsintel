@@ -12,10 +12,19 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Scope to caller's org so users can't revoke another org's keys
+  const { data: userRecord } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("auth_id", user.id)
+    .single();
+  if (!userRecord?.organization_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { error } = await supabase
     .from("org_api_keys")
     .update({ revoked_at: new Date().toISOString() })
-    .eq("id", params.id);
+    .eq("id", params.id)
+    .eq("organization_id", userRecord.organization_id);
   if (error) {
     console.error("api keys revoke error:", error);
     return NextResponse.json({ error: "Could not revoke key" }, { status: 500 });

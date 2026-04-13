@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createAuthClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -9,6 +10,11 @@ export const dynamic = "force-dynamic";
 // the dashboard interaction never blocks on email delivery.
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const authSupabase = await createAuthClient();
+    const { data: { user } } = await authSupabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { teaming_opportunity_id } = await request.json();
     if (!teaming_opportunity_id) {
       return NextResponse.json({ error: "teaming_opportunity_id required" }, { status: 400 });
