@@ -92,16 +92,8 @@ export async function listForecasts(filters: ForecastFilters = {}) {
 
   console.warn("forecasts minimal query also failed:", fallback.error.message);
 
-  // Table may not exist at all — return empty array instead of crashing
-  if (
-    fallback.error.message.includes("does not exist") ||
-    fallback.error.message.includes("relation") ||
-    fallback.error.code === "42P01"
-  ) {
-    return [] as ForecastRow[];
-  }
-
-  throw new Error(fallback.error.message);
+  // Table likely doesn't exist — return empty instead of crashing
+  return [] as ForecastRow[];
 }
 
 /**

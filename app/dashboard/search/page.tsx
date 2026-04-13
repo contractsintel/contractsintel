@@ -205,7 +205,7 @@ export default function SearchPage() {
     // only when status is explicitly set, so nulls pass through.
     let q = supabase
       .from("opportunities")
-      .select("id, title, agency, source, naics_code, solicitation_number, set_aside_type, set_aside_description, response_deadline, posted_date, estimated_value, description, sam_url, source_url, status, created_at", { count: "exact" })
+      .select("*", { count: "exact" })
       .or("status.is.null,and(status.neq.expired,status.neq.paused)");
 
     if (query.trim()) {
