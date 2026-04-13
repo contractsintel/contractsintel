@@ -24,7 +24,7 @@ export default function AnalyticsPage() {
   // Do NOT pass `organization` — isTeam(plan, org) returns true during
   // active trials, which incorrectly bypasses the Team-tier gate for
   // Discovery trial users. Check the raw plan value only.
-  const teamTier = isTeam(organization.plan);
+  const teamTier = isTeam(organization.plan, organization);
 
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
   const [lossAnalyses, setLossAnalyses] = useState<Record<string, any>[]>([]);

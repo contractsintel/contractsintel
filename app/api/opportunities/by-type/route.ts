@@ -33,13 +33,10 @@ export async function GET(request: NextRequest) {
 
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "50"), 200);
 
-    const fields =
-      "id, title, agency, source, naics_code, response_deadline, posted_date, estimated_value, sam_url, source_url, full_description";
-
     // Try with opportunity_type column first
     const primary = await supabase
       .from("opportunities")
-      .select(fields, { count: "exact" })
+      .select("*", { count: "exact" })
       .eq("opportunity_type", typeParam)
       .order("posted_date", { ascending: false })
       .limit(limit);
@@ -56,7 +53,7 @@ export async function GET(request: NextRequest) {
     const filter = SOURCE_FILTERS[typeParam] ?? {};
     let q = supabase
       .from("opportunities")
-      .select(fields, { count: "exact" })
+      .select("*", { count: "exact" })
       .order("posted_date", { ascending: false })
       .limit(limit);
 
