@@ -44,7 +44,6 @@ export async function GET(request: NextRequest) {
       .from("opportunities")
       .select(fields, { count: "exact" })
       .textSearch("solicitation_tsv", raw, { type: "plain", config: "english" })
-      .or("status.is.null,and(status.neq.expired,status.neq.paused)")
       .order("posted_date", { ascending: false, nullsFirst: false })
       .limit(limit);
 
@@ -72,7 +71,6 @@ export async function GET(request: NextRequest) {
         .from("opportunities")
         .select(fields, { count: "exact" })
         .or(filters)
-        .or("status.is.null,and(status.neq.expired,status.neq.paused)")
         .order("posted_date", { ascending: false, nullsFirst: false })
         .limit(limit);
 

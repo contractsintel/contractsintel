@@ -65,8 +65,7 @@ export async function POST(request: NextRequest) {
 
     let q = supabase
       .from("opportunities")
-      .select("id, title, agency, source, naics_code, set_aside:set_aside_type, set_aside_description, response_deadline, estimated_value, place_of_performance, sam_url, source_url", { count: "exact" })
-      .or("status.is.null,and(status.neq.expired,status.neq.paused)")
+      .select("*", { count: "exact" })
       .limit(PAGE_SIZE);
 
     // OR-combine keywords across title/description/agency

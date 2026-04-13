@@ -174,14 +174,12 @@ export default function SearchPage() {
       return;
     }
 
-    // B3: Previous neq("status", "expired/paused") excluded rows with NULL
-    // status because `NULL <> 'x'` is NULL (falsy) in SQL. Most opportunities
-    // have no status set, so this returned zero rows. Filter expired/paused
-    // only when status is explicitly set, so nulls pass through.
+    // Load all opportunities — no status filter since the column may not
+    // exist in production yet. The table is already scoped to active data
+    // by the scrapers.
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
-      .or("status.is.null,and(status.neq.expired,status.neq.paused)");
+      .select("*", { count: "exact" });
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
