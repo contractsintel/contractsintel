@@ -421,18 +421,15 @@ export default function DashboardPage() {
         if (filters.urgency === "2weeks" && d > 14) return false;
         if (filters.urgency === "month" && d > 30) return false;
       }
-      // Value filter — include contracts with unknown value (most SAM.gov
-      // listings don't publish estimated value), only exclude when value is
-      // known and out of range.
+      // Value filter — only show contracts with a known value in the selected range.
+      // Contracts with no disclosed value are excluded when filtering by value.
       if (filters.valueRange) {
         const v = getVal(opp);
-        if (v > 0) {
-          if (filters.valueRange === "under100k" && v >= 100000) return false;
-          if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
-          if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
-          if (filters.valueRange === "over1m" && v < 1000000) return false;
-        }
-        // v === 0 means unknown value — include it (don't hide opportunities)
+        if (v <= 0) return false; // Exclude undisclosed when filtering by value
+        if (filters.valueRange === "under100k" && v >= 100000) return false;
+        if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
+        if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
+        if (filters.valueRange === "over1m" && v < 1000000) return false;
       }
       // Recommendation filter
       if (filters.recommendation && m.bid_recommendation !== filters.recommendation) return false;
