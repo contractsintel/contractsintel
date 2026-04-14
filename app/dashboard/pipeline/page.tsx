@@ -138,7 +138,15 @@ export default function PipelinePage() {
       .eq("organization_id", organization.id)
       .not("pipeline_stage", "is", null)
       .order("created_at", { ascending: false });
-    setMatches(data ?? []);
+    // Filter out past-deadline items, but keep won/lost (historical records)
+    const now = new Date().toISOString();
+    const KEEP_STAGES = new Set(["won", "lost", "awarded"]);
+    const filtered = (data ?? []).filter((m: Record<string, any>) => {
+      if (KEEP_STAGES.has(m.pipeline_stage) || KEEP_STAGES.has(m.user_status)) return true;
+      const dl = m.opportunities?.response_deadline;
+      return !dl || dl >= now;
+    });
+    setMatches(filtered);
     setLoading(false);
   }, [organization.id, supabase]);
 

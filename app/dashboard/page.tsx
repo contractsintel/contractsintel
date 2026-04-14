@@ -189,8 +189,14 @@ export default function DashboardPage() {
     ]);
     const { data, count, error } = matchesRes;
     if (error) console.error("[dashboard] query error", error.message);
-    setMatches(data ?? []);
-    setTotalMatchCount(count ?? 0);
+    // Filter out past-deadline opportunities — keep nulls (no deadline) visible
+    const now = new Date().toISOString();
+    const active = (data ?? []).filter((m: Record<string, any>) => {
+      const dl = m.opportunities?.response_deadline;
+      return !dl || dl >= now;
+    });
+    setMatches(active);
+    setTotalMatchCount(active.length);
 
     const sourceSample = sourceSampleRes.data;
     if (sourceSample) {

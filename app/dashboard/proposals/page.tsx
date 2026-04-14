@@ -60,10 +60,16 @@ export default function ProposalsPage() {
       .eq("organization_id", organization.id)
       .eq("user_status", "bidding")
       .order("match_score", { ascending: false });
-    setMatches(data ?? []);
+    // Filter out past-deadline opportunities
+    const propNow = new Date().toISOString();
+    const activeMatches = (data ?? []).filter((m: Record<string, any>) => {
+      const dl = m.opportunities?.response_deadline;
+      return !dl || dl >= propNow;
+    });
+    setMatches(activeMatches);
     // Auto-select if opportunity_id in URL
-    if (preselectedOppId && data) {
-      const found = data.find((m: Record<string, any>) => m.opportunity_id === preselectedOppId);
+    if (preselectedOppId && activeMatches) {
+      const found = activeMatches.find((m: Record<string, any>) => m.opportunity_id === preselectedOppId);
       if (found) setSelectedMatch(found.id);
     }
     setLoading(false);

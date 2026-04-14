@@ -27,11 +27,13 @@ export function UnlockButton() {
     if (!isIncomplete) return;
     const supabase = createClient();
     (async () => {
+      const unlockNow = new Date().toISOString();
       const { count } = await supabase
         .from("opportunities")
         .select("id", { count: "exact", head: true })
         .not("naics_code", "is", null)
         .in("source", ["sam_gov", "usaspending"])
+        .or(`response_deadline.is.null,response_deadline.gte.${unlockNow}`)
         ;
       setUnlockCount(Math.min(count ?? 0, 9999));
     })();

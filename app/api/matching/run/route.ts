@@ -140,6 +140,13 @@ export async function POST(request: NextRequest) {
       return true;
     });
 
+    // Remove past-deadline opportunities — no point matching expired contracts
+    const now = new Date().toISOString();
+    opportunities = opportunities.filter(o => {
+      const dl = o.response_deadline;
+      return !dl || dl >= now;
+    });
+
     // Filter out non-biddable notice types:
     //   (a) Award Notice — contract already awarded
     //   (u) Justification — agency decision memo, not a bid opportunity

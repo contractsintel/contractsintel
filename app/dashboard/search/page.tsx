@@ -177,9 +177,11 @@ export default function SearchPage() {
     // Load all opportunities — no status filter since the column may not
     // exist in production yet. The table is already scoped to active data
     // by the scrapers.
+    const now = new Date().toISOString();
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" });
+      .select("*", { count: "exact" })
+      .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
     if (query.trim()) {
       q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
@@ -232,9 +234,11 @@ export default function SearchPage() {
     setOffset(newOffset);
     // Trigger search with new offset
     const doSearch = async () => {
+      const nowLm = new Date().toISOString();
       let q = supabase
         .from("opportunities")
-        .select("*", { count: "exact" });
+        .select("*", { count: "exact" })
+        .or(`response_deadline.is.null,response_deadline.gte.${nowLm}`);
 
       if (query.trim()) {
         q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);

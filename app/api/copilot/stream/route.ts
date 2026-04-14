@@ -141,9 +141,11 @@ async function executeTool(
         .split(/\s+/)
         .filter((w) => w.length >= 2)
         .slice(0, 5);
+      const now = new Date().toISOString();
       let q = supabaseAdmin
         .from("opportunities")
         .select("*")
+        .or(`response_deadline.is.null,response_deadline.gte.${now}`)
         .order("response_deadline", { ascending: true, nullsFirst: false })
         .limit(limit);
 
@@ -189,23 +191,31 @@ async function executeTool(
 
       const { data, error } = await q;
       if (error) return `Pipeline query error: ${error.message}`;
-      if (!data || data.length === 0)
+      // Filter out past-deadline opportunities (keep won/lost)
+      const pipeNow = new Date().toISOString();
+      const KEEP = new Set(["won", "lost", "awarded"]);
+      const activeData = (data ?? []).filter((m: Record<string, any>) => {
+        if (KEEP.has(m.user_status)) return true;
+        const dl = (m as Record<string, any>).opportunities?.response_deadline;
+        return !dl || dl >= pipeNow;
+      });
+      if (activeData.length === 0)
         return statusFilter !== "all"
           ? `No opportunities with status "${statusFilter}" in your pipeline. Try a different filter or check "all".`
           : "Your pipeline is empty. Run matching from the dashboard to populate it.";
 
       const summary = {
-        total: data.length,
+        total: activeData.length,
         byStatus: {} as Record<string, number>,
         avgScore: 0,
       };
       let scoreSum = 0;
-      data.forEach((m: Record<string, any>) => {
+      activeData.forEach((m: Record<string, any>) => {
         const s = m.user_status || "new";
         summary.byStatus[s] = (summary.byStatus[s] || 0) + 1;
         scoreSum += m.match_score || 0;
       });
-      summary.avgScore = Math.round(scoreSum / data.length);
+      summary.avgScore = Math.round(scoreSum / activeData.length);
 
       const statusLine = Object.entries(summary.byStatus)
         .map(([k, v]) => `${k}: ${v}`)
@@ -213,7 +223,7 @@ async function executeTool(
 
       let result = `Pipeline Summary: ${summary.total} opportunities (${statusLine}) | Avg score: ${summary.avgScore}\n\n`;
 
-      result += data
+      result += activeData
         .slice(0, 25)
         .map((m: Record<string, any>, i: number) => {
           const o = m.opportunities;

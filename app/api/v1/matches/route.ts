@@ -32,5 +32,11 @@ export async function GET(request: NextRequest) {
     console.error("v1 matches error:", error);
     return NextResponse.json({ error: "Query failed" }, { status: 500 });
   }
-  return NextResponse.json({ count, matches: data ?? [] });
+  // Filter out past-deadline opportunities
+  const now = new Date().toISOString();
+  const active = (data ?? []).filter((m: Record<string, any>) => {
+    const dl = m.opportunities?.response_deadline;
+    return !dl || dl >= now;
+  });
+  return NextResponse.json({ count: active.length, matches: active });
 }

@@ -197,10 +197,17 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (unmatchedOpps.length === 0) continue;
+      // Remove past-deadline opportunities before scoring
+      const cronNow = new Date().toISOString();
+      const activeOpps = unmatchedOpps.filter(o => {
+        const dl = o.response_deadline;
+        return !dl || dl >= cronNow;
+      });
+
+      if (activeOpps.length === 0) continue;
 
       // Score and create matches in batches
-      const matchRecords = unmatchedOpps
+      const matchRecords = activeOpps
         .map((opp) => {
           const { score, recommendation, reasoning } = computeScore(opp, org);
           if (score < 20) return null; // skip very low scores

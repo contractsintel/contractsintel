@@ -33,11 +33,13 @@ export async function GET(request: NextRequest) {
 
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "50"), 200);
 
+    const btNow = new Date().toISOString();
     // Try with opportunity_type column first
     const primary = await supabase
       .from("opportunities")
       .select("*", { count: "exact" })
       .eq("opportunity_type", typeParam)
+      .or(`response_deadline.is.null,response_deadline.gte.${btNow}`)
       .order("posted_date", { ascending: false })
       .limit(limit);
 
@@ -54,6 +56,7 @@ export async function GET(request: NextRequest) {
     let q = supabase
       .from("opportunities")
       .select("*", { count: "exact" })
+      .or(`response_deadline.is.null,response_deadline.gte.${btNow}`)
       .order("posted_date", { ascending: false })
       .limit(limit);
 

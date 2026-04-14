@@ -63,9 +63,11 @@ export async function POST(request: NextRequest) {
 
     const filters = await translateNLQuery(prompt);
 
+    const nlNow = new Date().toISOString();
     let q = supabase
       .from("opportunities")
       .select("*", { count: "exact" })
+      .or(`response_deadline.is.null,response_deadline.gte.${nlNow}`)
       .limit(PAGE_SIZE);
 
     // OR-combine keywords across title/description/agency
