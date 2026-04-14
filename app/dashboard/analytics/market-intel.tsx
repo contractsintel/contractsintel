@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useDashboard } from "../context";
+import { AgencyPicker } from "../typeahead";
 
 interface SpendingTrend {
   fiscal_year: number;
@@ -122,20 +123,11 @@ export function MarketIntelligence() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-[220px]">
             <label className="block text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-1">
               Agency (optional)
             </label>
-            <select
-              value={selectedAgency}
-              onChange={(e) => setSelectedAgency(e.target.value)}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-white text-[#0f172a] focus:outline-none focus:border-[#2563eb]"
-            >
-              <option value="">All agencies</option>
-              {["DoD","Army","Navy","Air Force","Marines","Space Force","DHS","VA","HHS","GSA","DOE","DOT","EPA","NASA","USDA","DOJ","DOI","DOL","Commerce","Treasury","State","Education","HUD","SBA","USAID","SSA","OPM","FEMA","CBP","ICE","USCG","FBI","DEA","DISA","DARPA","NGA","USACE","MDA","DHA","NRC","FAA","NOAA","IRS"].map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
+            <AgencyPicker value={selectedAgency} onChange={setSelectedAgency} />
           </div>
           <div>
             <label className="block text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-1">
