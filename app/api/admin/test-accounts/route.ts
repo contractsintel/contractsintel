@@ -281,3 +281,70 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ users, orgs });
 }
+
+// PUT — fix existing test accounts (update profiles/tiers)
+export async function PUT(request: Request) {
+  const authHeader = request.headers.get("authorization")?.replace("Bearer ", "");
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  if (!authHeader) return NextResponse.json({ error: "No token" }, { status: 401 });
+  const { data: { user: caller } } = await admin.auth.getUser(authHeader);
+  if (!caller) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+
+  const results: any[] = [];
+
+  for (const acct of ACCOUNTS) {
+    // Find the user's org
+    const { data: userRec } = await admin
+      .from("users")
+      .select("organization_id")
+      .eq("email", acct.email)
+      .single();
+
+    if (!userRec?.organization_id) {
+      results.push({ email: acct.email, status: "not_found" });
+      continue;
+    }
+
+    const orgId = userRec.organization_id;
+    const trialEnds = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Build update with only valid org columns
+    const orgUpdate: Record<string, any> = {
+      name: acct.companyName,
+      subscription_status: acct.tier === "discovery" ? "trialing" : "active",
+      subscription_tier: acct.tier,
+      trial_ends_at: trialEnds,
+      plan: acct.tier,
+    };
+
+    // Map profile fields to org columns (only valid ones)
+    const validOrgCols = [
+      "uei", "cage_code", "naics_codes", "certifications", "keywords",
+      "entity_description", "serves_nationwide", "service_states",
+      "preferred_agencies", "min_contract_value", "max_contract_value",
+      "onboarding_complete", "setup_wizard_complete",
+      "cmmc_current_level", "cmmc_target_level",
+    ];
+    for (const key of validOrgCols) {
+      if (acct.profile[key] !== undefined) {
+        orgUpdate[key] = acct.profile[key];
+      }
+    }
+
+    const { error: updateErr } = await admin
+      .from("organizations")
+      .update(orgUpdate)
+      .eq("id", orgId);
+
+    if (updateErr) {
+      results.push({ email: acct.email, status: "update_error", error: updateErr.message, orgId });
+    } else {
+      results.push({ email: acct.email, status: "updated", orgId, tier: acct.tier });
+    }
+  }
+
+  return NextResponse.json({ results });
+}
