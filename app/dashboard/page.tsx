@@ -882,14 +882,26 @@ export default function DashboardPage() {
                                     match.bid_recommendation === "recompete_alert" || match.bid_recommendation === "recompete" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
                       onClick={() => setExpandedCard(isExpanded ? null : match.id)}
                     >
-                      {/* Score ring */}
-                      <div className={`ci-score-ring ${
-                        match.match_score >= 80 ? "border-[#059669] text-[#059669]" :
-                        match.match_score >= 60 ? "border-[#2563eb] text-[#2563eb]" :
-                        match.match_score >= 40 ? "border-[#d97706] text-[#d97706]" :
-                        "border-[#9ca3af] text-[#94a3b8]"}`}>
-                        {match.match_score}
-                      </div>
+                      {/* Score ring — show composite when Recommended sort active */}
+                      {(() => {
+                        const raw = match.match_score ?? 0;
+                        let displayScore = raw;
+                        if (filters.sort === "recommended") {
+                          const rev = getVal(opp) > 0 ? 80 : 0;
+                          const d = daysUntil(opp.response_deadline);
+                          const urg = d !== null && d >= 0 ? (d <= 7 ? 100 : d <= 14 ? 70 : d <= 30 ? 40 : 20) : 30;
+                          displayScore = Math.round(raw * 0.6 + rev * 0.2 + urg * 0.2);
+                        }
+                        return (
+                          <div className={`ci-score-ring ${
+                            displayScore >= 80 ? "border-[#059669] text-[#059669]" :
+                            displayScore >= 60 ? "border-[#2563eb] text-[#2563eb]" :
+                            displayScore >= 40 ? "border-[#d97706] text-[#d97706]" :
+                            "border-[#9ca3af] text-[#94a3b8]"}`}>
+                            {displayScore}
+                          </div>
+                        );
+                      })()}
 
                       {/* Title + Agency — clickable to opportunity detail */}
                       <Link
