@@ -120,7 +120,49 @@ export async function POST(request: NextRequest) {
         .then(r => r.data)
     );
 
-    // Batch 7: Broad catch-all for niche accounts
+    // Batch 7: Military / Defense sources
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "military_defense").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
+
+    // Batch 8: State & Local sources
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .like("source", "state_%").order("created_at", { ascending: false }).limit(500)
+        .then(r => r.data)
+    );
+
+    // Batch 9: SBIR / STTR
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "sbir_sttr").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
+
+    // Batch 10: Grants.gov
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "grants_gov").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
+
+    // Batch 11: Subcontracting opportunities
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "subcontracting").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
+
+    // Batch 12: Federal civilian
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "federal_civilian").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
+
+    // Batch 13: Broad catch-all for niche accounts
     fetchPromises.push(
       supabaseAdmin.from("opportunities").select(MATCH_COLS)
         .order("created_at", { ascending: false }).limit(500)
