@@ -547,20 +547,101 @@ export function ProfileBanner() {
 
   if (!isIncomplete) return null;
 
+  return <ProfileBoostBanner />;
+}
+
+/**
+ * Glowing CTA banner encouraging users to complete their profile.
+ * Can be used on any page within the DashboardProvider context.
+ * Shows only when NAICS codes or certifications are missing.
+ */
+export function ProfileBoostBanner({ context }: { context?: string }) {
+  const { organization } = useDashboard();
+  const missingNaics = !organization.naics_codes?.length;
+  const missingCerts = !organization.certifications?.length;
+  const missingUei = !organization.uei;
+
+  if (!missingNaics && !missingCerts) return null;
+
+  const missing: string[] = [];
+  if (missingCerts) missing.push("certifications");
+  if (missingNaics) missing.push("NAICS codes");
+  if (missingUei) missing.push("UEI number");
+  const missingText = missing.join(", ");
+
+  const contextMessages: Record<string, string> = {
+    dashboard: "Your matches are based on limited data. Add more details to see contracts tailored to your exact capabilities.",
+    search: "Search results are generic right now. A complete profile helps surface the contracts most relevant to your business.",
+    pipeline: "Improve your match accuracy and pWin estimates by telling us more about your company.",
+    forecasts: "See more relevant recompete forecasts by adding your NAICS codes and past performance.",
+    agencies: "Discover which agencies are the best fit for your business by completing your profile.",
+    competitors: "Get sharper competitive analysis when we know your full capabilities.",
+  };
+
+  const message = contextMessages[context ?? "dashboard"] ?? contextMessages.dashboard;
+
   return (
-    <div className="mb-4 px-4 py-2.5 bg-gradient-to-r from-[#eff4ff] to-[#f5f3ff] border border-[#e0e7ff] rounded-xl flex items-center justify-between">
-      <span className="text-xs text-[#64748b]">
-        Showing general results. <span className="font-medium text-[#2563eb]">Unlock personalized matches</span> by completing your profile.
-      </span>
-      <button
-        onClick={() => {
-          const btn = document.querySelector("[data-unlock-trigger]") as HTMLElement;
-          btn?.click();
-        }}
-        className="text-xs font-medium text-[#2563eb] hover:text-[#1d4ed8] shrink-0 ml-2"
-      >
-        Complete Profile
-      </button>
+    <div className="profile-boost-banner mb-5 relative overflow-hidden rounded-xl border border-[#818cf8]/30 bg-gradient-to-r from-[#eef2ff] via-[#f5f3ff] to-[#faf5ff] px-5 py-4">
+      {/* Animated glow effect */}
+      <style jsx>{`
+        .profile-boost-banner {
+          box-shadow: 0 0 15px rgba(99, 102, 241, 0.15), 0 0 30px rgba(99, 102, 241, 0.08);
+          animation: profile-glow 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes profile-glow {
+          0% {
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.12), 0 0 25px rgba(99, 102, 241, 0.06);
+            border-color: rgba(129, 140, 248, 0.25);
+          }
+          100% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25), 0 0 45px rgba(99, 102, 241, 0.12);
+            border-color: rgba(129, 140, 248, 0.5);
+          }
+        }
+        .profile-boost-shimmer {
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+          0% { left: -100%; }
+          50% { left: 100%; }
+          100% { left: 100%; }
+        }
+      `}</style>
+      <div className="profile-boost-shimmer pointer-events-none" />
+      <div className="relative flex items-center gap-4">
+        {/* Icon */}
+        <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2L12.09 7.26L18 8.27L14 12.14L14.18 18.02L10 15.77L5.82 18.02L6 12.14L2 8.27L7.91 7.26L10 2Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-[#312e81] leading-tight mb-0.5">
+            Better data = better matches
+          </p>
+          <p className="text-[12px] text-[#4338ca]/80 leading-snug">
+            {message} You&apos;re missing: <span className="font-medium text-[#4338ca]">{missingText}</span>.
+          </p>
+        </div>
+        {/* CTA */}
+        <button
+          onClick={() => {
+            const btn = document.querySelector("[data-unlock-trigger]") as HTMLElement;
+            if (btn) { btn.click(); return; }
+            window.location.href = "/dashboard/settings";
+          }}
+          className="shrink-0 rounded-lg bg-gradient-to-r from-[#6366f1] to-[#7c3aed] px-4 py-2 text-xs font-semibold text-white shadow-md hover:shadow-lg hover:from-[#4f46e5] hover:to-[#6d28d9] transition-all duration-200"
+        >
+          Complete Profile
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "../context";
+import { ProfileBoostBanner } from "../unlock-panel";
 import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
@@ -139,6 +140,7 @@ export default function CompetitorsPage() {
         </div>
       <InlineGuide page="competitors" />
       </div>
+      <ProfileBoostBanner context="competitors" />
 
       {/* Add Form */}
       {showForm && (

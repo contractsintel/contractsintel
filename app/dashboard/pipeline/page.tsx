@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "../context";
+import { ProfileBoostBanner } from "../unlock-panel";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import { HelpButton } from "../help-panel";
@@ -670,6 +671,7 @@ export default function PipelinePage() {
         </div>
       </div>
       <InlineGuide page="pipeline" />
+      <ProfileBoostBanner context="pipeline" />
 
       {/* D6: Pipeline summary bar — one card per stage with count + total value */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">

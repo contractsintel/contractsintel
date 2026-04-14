@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "../context";
+import { ProfileBoostBanner } from "../unlock-panel";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -295,6 +296,8 @@ export default function SearchPage() {
           <Link href="/dashboard" className="text-[#2563eb] hover:text-[#1d4ed8] ci-btn">Back to Matches</Link>
         </div>
       </div>
+
+      <ProfileBoostBanner context="search" />
 
       {/* G02 — Natural-language search */}
       <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 mb-4">

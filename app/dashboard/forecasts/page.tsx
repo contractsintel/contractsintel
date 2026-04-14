@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ProfileBoostBanner } from "../unlock-panel";
 import { InlineGuide } from "../inline-guide";
 
 interface ForecastRow {
@@ -134,6 +135,7 @@ export default function ForecastsPage() {
       </div>
 
       <InlineGuide page="forecasts" />
+      <ProfileBoostBanner context="forecasts" />
 
       {projectMsg && (
         <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">

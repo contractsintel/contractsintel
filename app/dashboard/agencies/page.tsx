@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ProfileBoostBanner } from "../unlock-panel";
 import Link from "next/link";
 
 interface Agency {
@@ -70,6 +71,8 @@ export default function AgenciesIndexPage() {
           recent solicitations.
         </p>
       </div>
+
+      <ProfileBoostBanner context="agencies" />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
