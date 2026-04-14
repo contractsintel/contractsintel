@@ -43,16 +43,34 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Logged in + on dashboard — run checks
+  // Logged in + on dashboard — run subscription checks
+  // PERF: Cache the subscription check in a short-lived cookie (60s) to avoid
+  // hitting the DB on every single navigation. The cookie stores the status and
+  // trial_ends_at so we only query once per minute.
   if (user && pathname.startsWith("/dashboard")) {
-    const { data: userRec } = await supabase
-      .from("users")
-      .select("organization_id, organizations(subscription_status, trial_ends_at)")
-      .eq("auth_id", user.id)
-      .single();
+    let org: Record<string, any> | undefined;
+    const cached = request.cookies.get("ci_sub_cache")?.value;
+    if (cached) {
+      try { org = JSON.parse(cached); } catch { /* re-query */ }
+    }
 
-    const org = (userRec as Record<string, any> | null)?.organizations as Record<string, any> | undefined;
-    const orgId = userRec?.organization_id;
+    if (!org) {
+      const { data: userRec } = await supabase
+        .from("users")
+        .select("organization_id, organizations(subscription_status, trial_ends_at)")
+        .eq("auth_id", user.id)
+        .single();
+
+      org = (userRec as Record<string, any> | null)?.organizations as Record<string, any> | undefined;
+
+      // Cache for 60 seconds
+      if (org) {
+        supabaseResponse.cookies.set("ci_sub_cache", JSON.stringify({
+          subscription_status: org.subscription_status,
+          trial_ends_at: org.trial_ends_at,
+        }), { maxAge: 60, path: "/", httpOnly: true });
+      }
+    }
 
     if (org) {
       const status = org.subscription_status;

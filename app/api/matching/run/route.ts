@@ -41,96 +41,97 @@ export async function POST(request: NextRequest) {
     const orgStates: string[] = (org.service_states || []).map((s: string) => s.toUpperCase());
     const nationwide = org.serves_nationwide !== false || orgStates.length === 0;
 
+    // PERF: Select only columns needed for scoring instead of SELECT *
+    const MATCH_COLS = "id,title,description,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,place_of_performance,source,response_deadline,notice_type,contract_type,agency,created_at" as const;
+
     let opportunities: Record<string, any>[] = [];
+
+    // PERF: Fire ALL fetch queries in parallel instead of sequentially.
+    // Previously 20-30 sequential round-trips (~8-15s), now 1 parallel batch (~1-2s).
+    const fetchPromises: PromiseLike<Record<string, any>[] | null>[] = [];
 
     // Batch 1: Direct NAICS matches
     if (orgNaics.length > 0) {
-      const { data } = await supabaseAdmin
-        .from("opportunities")
-        .select("*")
-        .in("naics_code", orgNaics)
-        .limit(500);
-      if (data) opportunities.push(...data);
+      fetchPromises.push(
+        supabaseAdmin.from("opportunities").select(MATCH_COLS)
+          .in("naics_code", orgNaics).limit(500)
+          .then(r => r.data)
+      );
     }
 
-    // Batch 2a: Partial NAICS matches (same 4-digit family) — raised cap 200→400
+    // Batch 2a: Partial NAICS matches (same 4-digit family)
     if (orgNaics.length > 0) {
       const prefixes4 = Array.from(new Set(orgNaics.map(n => n.substring(0, 4))));
       for (const prefix of prefixes4) {
-        const { data } = await supabaseAdmin
-          .from("opportunities")
-          .select("*")
-          .like("naics_code", `${prefix}%`)
-          .limit(400);
-        if (data) opportunities.push(...data);
+        fetchPromises.push(
+          supabaseAdmin.from("opportunities").select(MATCH_COLS)
+            .like("naics_code", `${prefix}%`).limit(400)
+            .then(r => r.data)
+        );
       }
     }
 
-    // Batch 2b: 3-digit NAICS group matches — previously invisible to fetch
+    // Batch 2b: 3-digit NAICS group matches
     if (orgNaics.length > 0) {
       const prefixes3 = Array.from(new Set(orgNaics.map(n => n.substring(0, 3))));
       for (const prefix of prefixes3) {
-        const { data } = await supabaseAdmin
-          .from("opportunities")
-          .select("*")
-          .like("naics_code", `${prefix}%`)
-          .limit(300);
-        if (data) opportunities.push(...data);
+        fetchPromises.push(
+          supabaseAdmin.from("opportunities").select(MATCH_COLS)
+            .like("naics_code", `${prefix}%`).limit(300)
+            .then(r => r.data)
+        );
       }
     }
 
-    // Batch 3: Set-aside matches — use ALL certs, not just first 3
+    // Batch 3: Set-aside matches — use ALL certs
     if (orgCerts.length > 0) {
       for (const cert of orgCerts) {
         const keyword = cert.toLowerCase().substring(0, 6);
-        const { data } = await supabaseAdmin
-          .from("opportunities")
-          .select("*")
-          .ilike("set_aside_type", `%${keyword}%`)
-          .limit(300);
-        if (data) opportunities.push(...data);
+        fetchPromises.push(
+          supabaseAdmin.from("opportunities").select(MATCH_COLS)
+            .ilike("set_aside_type", `%${keyword}%`).limit(300)
+            .then(r => r.data)
+        );
       }
     }
 
     // Batch 4: Keyword matches in titles
     if (orgKeywords.length > 0) {
       for (const kw of orgKeywords.slice(0, 5)) {
-        const { data } = await supabaseAdmin
-          .from("opportunities")
-          .select("*")
-          .ilike("title", `%${kw}%`)
-          .limit(100);
-        if (data) opportunities.push(...data);
+        fetchPromises.push(
+          supabaseAdmin.from("opportunities").select(MATCH_COLS)
+            .ilike("title", `%${kw}%`).limit(100)
+            .then(r => r.data)
+        );
       }
     }
 
-    // Batch 5: USASpending recompetes (they often have null NAICS)
-    const { data: recompeteData } = await supabaseAdmin
-      .from("opportunities")
-      .select("*")
-      .eq("source", "usaspending")
-      .order("created_at", { ascending: false })
-      .limit(300);
-    if (recompeteData) opportunities.push(...recompeteData);
+    // Batch 5: USASpending recompetes
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "usaspending").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
 
     // Batch 6: Recent SAM.gov opportunities
-    const { data: recentData } = await supabaseAdmin
-      .from("opportunities")
-      .select("*")
-      .eq("source", "sam_gov")
-      .order("created_at", { ascending: false })
-      .limit(300);
-    if (recentData) opportunities.push(...recentData);
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .eq("source", "sam_gov").order("created_at", { ascending: false }).limit(300)
+        .then(r => r.data)
+    );
 
-    // Batch 7: Broad catch-all — fetch ALL active opportunities not yet seen,
-    // so that even accounts with niche NAICS codes still see adjacent opportunities.
-    // The scoring engine will rank them appropriately.
-    const { data: allActive } = await supabaseAdmin
-      .from("opportunities")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (allActive) opportunities.push(...allActive);
+    // Batch 7: Broad catch-all for niche accounts
+    fetchPromises.push(
+      supabaseAdmin.from("opportunities").select(MATCH_COLS)
+        .order("created_at", { ascending: false }).limit(500)
+        .then(r => r.data)
+    );
+
+    // Execute ALL queries in parallel
+    const allResults = await Promise.all(fetchPromises);
+    for (const data of allResults) {
+      if (data) opportunities.push(...data);
+    }
 
     // Deduplicate
     const seen = new Set<string>();

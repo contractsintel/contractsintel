@@ -29,28 +29,30 @@ export default async function DashboardLayout({
   const pathname = headerStore.get("x-pathname") ?? "";
   const onboardingChecked = cookieStore.get("ci_onboarding_checked")?.value === "1";
 
-  // Fetch user profile joined with organization
+  // PERF: Select only the columns needed instead of SELECT *
   const { data: profile } = await supabase
     .from("users")
-    .select("*, organizations(*)")
+    .select("id, auth_id, full_name, organization_id, role, created_at, organizations(id, name, uei, cage_code, certifications, naics_codes, keywords, entity_description, address, plan, subscription_status, subscription_tier, trial_ends_at, stripe_customer_id, created_at, onboarding_complete, has_seen_dashboard, setup_wizard_complete, min_contract_value, max_contract_value, service_states, serves_nationwide, preferred_agencies)")
     .eq("auth_id", authUser.id)
     .single();
 
   // Fallback: try profiles table if users table doesn't exist yet
-  const rawOrg = profile?.organizations ?? {
-    id: profile?.organization_id ?? authUser.id,
-    name: profile?.company_name ?? authUser.email?.split("@")[0] ?? "Company",
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p = profile as Record<string, any> | null;
+  const rawOrg = p?.organizations ?? {
+    id: p?.organization_id ?? authUser.id,
+    name: p?.company_name ?? authUser.email?.split("@")[0] ?? "Company",
     uei: null,
     cage_code: null,
-    certifications: profile?.certifications ?? [],
-    naics_codes: profile?.naics_codes ?? [],
+    certifications: p?.certifications ?? [],
+    naics_codes: p?.naics_codes ?? [],
     address: null,
-    plan: profile?.plan ?? "discovery",
-    subscription_status: profile?.subscription_status ?? null,
-    subscription_tier: profile?.subscription_tier ?? "discovery",
-    trial_ends_at: profile?.trial_ends_at ?? null,
+    plan: p?.plan ?? "discovery",
+    subscription_status: p?.subscription_status ?? null,
+    subscription_tier: p?.subscription_tier ?? "discovery",
+    trial_ends_at: p?.trial_ends_at ?? null,
     stripe_customer_id: null,
-    created_at: profile?.created_at ?? new Date().toISOString(),
+    created_at: p?.created_at ?? new Date().toISOString(),
   };
 
   // Ensure plan field is set from subscription_tier (DB uses subscription_tier, UI uses plan)
@@ -62,10 +64,10 @@ export default async function DashboardLayout({
   const userProfile = {
     id: authUser.id,
     email: authUser.email ?? "",
-    full_name: profile?.full_name ?? authUser.user_metadata?.full_name ?? null,
+    full_name: p?.full_name ?? authUser.user_metadata?.full_name ?? null,
     organization_id: org.id,
-    role: profile?.role ?? "owner",
-    created_at: profile?.created_at ?? new Date().toISOString(),
+    role: p?.role ?? "owner",
+    created_at: p?.created_at ?? new Date().toISOString(),
   };
 
   // P2.5: Redirect users with incomplete onboarding to the wizard, unless

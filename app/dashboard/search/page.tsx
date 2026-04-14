@@ -175,13 +175,12 @@ export default function SearchPage() {
       return;
     }
 
-    // Load all opportunities — no status filter since the column may not
-    // exist in production yet. The table is already scoped to active data
-    // by the scrapers.
+    // PERF: Select only columns needed for display instead of SELECT *
+    const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
     const now = new Date().toISOString();
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
+      .select(SEARCH_COLS, { count: "exact" })
       .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
     if (query.trim()) {
@@ -235,10 +234,11 @@ export default function SearchPage() {
     setOffset(newOffset);
     // Trigger search with new offset
     const doSearch = async () => {
+      const SEARCH_COLS_LM = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
       const nowLm = new Date().toISOString();
       let q = supabase
         .from("opportunities")
-        .select("*", { count: "exact" })
+        .select(SEARCH_COLS_LM, { count: "exact" })
         .or(`response_deadline.is.null,response_deadline.gte.${nowLm}`);
 
       if (query.trim()) {

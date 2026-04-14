@@ -83,11 +83,17 @@ export async function GET() {
       link: "/dashboard/settings",
     });
 
+    // PERF: Fire all 3 count queries in parallel instead of sequentially
+    const [ppResult, capResult, pipeResult] = await Promise.all([
+      supabase.from("past_performance").select("id", { count: "exact", head: true }).eq("organization_id", org.id),
+      supabase.from("capability_statements").select("id", { count: "exact", head: true }).eq("organization_id", org.id),
+      supabase.from("opportunity_matches").select("id", { count: "exact", head: true }).eq("organization_id", org.id).not("pipeline_stage", "is", null),
+    ]);
+    const ppCount = ppResult.count;
+    const capCount = capResult.count;
+    const pipeCount = pipeResult.count;
+
     // 5. Past Performance (0-15)
-    const { count: ppCount } = await supabase
-      .from("past_performance")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", org.id);
     const ppScore = (ppCount ?? 0) >= 3 ? 15 : (ppCount ?? 0) >= 1 ? 8 : 0;
     factors.push({
       label: "Past Performance",
@@ -98,10 +104,6 @@ export async function GET() {
     });
 
     // 6. Capability Statement (0-10)
-    const { count: capCount } = await supabase
-      .from("capability_statements")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", org.id);
     const capScore = (capCount ?? 0) >= 1 ? 10 : 0;
     factors.push({
       label: "Capability Statement",
@@ -112,11 +114,6 @@ export async function GET() {
     });
 
     // 7. Pipeline Activity (0-10)
-    const { count: pipeCount } = await supabase
-      .from("opportunity_matches")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", org.id)
-      .not("pipeline_stage", "is", null);
     const pipeScore = (pipeCount ?? 0) >= 5 ? 10 : (pipeCount ?? 0) >= 1 ? 5 : 0;
     factors.push({
       label: "Pipeline Activity",
