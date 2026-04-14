@@ -283,7 +283,7 @@ export async function GET(request: Request) {
 }
 
 // PUT — fix existing test accounts (update profiles/tiers)
-export async function PUT(request: Request) {
+export async function PATCH(request: Request) {
   const authHeader = request.headers.get("authorization")?.replace("Bearer ", "");
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
