@@ -7,9 +7,9 @@ function getStripe() {
 }
 
 const PRICE_MAP: Record<string, string> = {
-  discovery: "price_1TH7X0EMMzxoqfnR94CLvHHl",
-  bd_pro: "price_1TH7dAEMMzxoqfnR70vzp9iE",
-  team: "price_1TH7hFEMMzxoqfnRWlEI1OM4",
+  discovery: process.env.STRIPE_PRICE_DISCOVERY || "price_1TH7X0EMMzxoqfnR94CLvHHl",
+  bd_pro: process.env.STRIPE_PRICE_BD_PRO || "price_1TH7dAEMMzxoqfnR70vzp9iE",
+  team: process.env.STRIPE_PRICE_TEAM || "price_1TH7hFEMMzxoqfnRWlEI1OM4",
 };
 
 export async function POST(request: Request) {

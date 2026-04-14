@@ -6,8 +6,8 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 
 const PORT = parseInt(process.env.PORT) || 3001;
-const AUTH_TOKEN = process.env.RENDER_AUTH_TOKEN || "ci-puppeteer-2026";
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://qpyskwvhgclrlychhxjk.supabase.co";
+const AUTH_TOKEN = process.env.RENDER_AUTH_TOKEN || "";
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const CAPSOLVER_KEY = process.env.CAPSOLVER_API_KEY || "";
 

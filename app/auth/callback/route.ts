@@ -49,18 +49,21 @@ export async function GET(request: Request) {
   }
 
   // New user from Google OAuth — the DB trigger may have created the org,
-  // but we need to wait for it and ensure everything is set up
-  // Wait briefly for the trigger to fire
-  await new Promise((r) => setTimeout(r, 2000));
-
-  // Check again if trigger created the records
-  const { data: userAfterTrigger } = await admin
-    .from("users")
-    .select("organization_id")
-    .eq("auth_id", user.id)
-    .single();
-
-  let orgId = userAfterTrigger?.organization_id;
+  // but we need to wait for it and ensure everything is set up.
+  // Poll up to 5 times (500ms apart) instead of a single long sleep.
+  let orgId: string | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await new Promise((r) => setTimeout(r, 500));
+    const { data: userAfterTrigger } = await admin
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+    if (userAfterTrigger?.organization_id) {
+      orgId = userAfterTrigger.organization_id;
+      break;
+    }
+  }
 
   if (!orgId) {
     // Trigger didn't fire or failed — create org manually

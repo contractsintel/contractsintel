@@ -49,14 +49,20 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      // Org record is auto-created by trigger — wait briefly then seed demo data
-      // The trigger creates the org, so we need to find it
-      await new Promise((r) => setTimeout(r, 1500)); // Wait for trigger
-      const { data: userRec } = await supabase
-        .from("users")
-        .select("organization_id")
-        .eq("auth_id", data.user.id)
-        .single();
+      // Org record is auto-created by trigger — poll until it appears
+      let userRec: { organization_id: string } | null = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const { data: rec } = await supabase
+          .from("users")
+          .select("organization_id")
+          .eq("auth_id", data.user.id)
+          .single();
+        if (rec?.organization_id) {
+          userRec = rec;
+          break;
+        }
+      }
 
       if (userRec?.organization_id) {
         const orgId = userRec.organization_id;

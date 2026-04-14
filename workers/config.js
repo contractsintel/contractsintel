@@ -2,7 +2,7 @@ require('dotenv').config({ path: '../.env' });
 
 module.exports = {
   supabase: {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qpyskwvhgclrlychhxjk.supabase.co',
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
   resend: {
