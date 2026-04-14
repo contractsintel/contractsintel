@@ -70,17 +70,15 @@ export default async function DashboardLayout({
     created_at: p?.created_at ?? new Date().toISOString(),
   };
 
-  // P2.5: Redirect users with incomplete onboarding to the wizard, unless
-  // they're already on a /dashboard/onboarding route OR the loop-break
-  // cookie says we just checked. Treat null as incomplete.
-  // NOTE: Cookie writes are NOT allowed in Server Components (layout).
-  // The loop-break cookie is now set by the middleware redirect instead.
+  // P2.5: Soft onboarding nudge — show onboarding on FIRST visit only.
+  // Users should never be locked out of the product. The onboarding page
+  // has a "Skip for now" option and the ProfileBoostBanner on every page
+  // continuously encourages profile completion.
+  // Only redirect on the very first dashboard visit (no cookie set yet).
   if (
     org &&
     org.onboarding_complete !== true &&
-    pathname &&
-    !pathname.startsWith("/dashboard/onboarding") &&
-    !pathname.startsWith("/dashboard/get-started") &&
+    pathname === "/dashboard" &&
     !onboardingChecked
   ) {
     redirect("/dashboard/onboarding");

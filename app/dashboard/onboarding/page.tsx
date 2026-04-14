@@ -65,15 +65,28 @@ export default function OnboardingPage() {
     <div className="min-h-[calc(100vh-64px)] bg-white -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-[660px] mx-auto pt-16 pb-24 px-6">
 
-        {/* Title */}
+        {/* Title + Skip */}
         <div style={{animation: "fadeInUp 0.5s ease both"}}>
-          <h1 className="text-[34px] font-bold text-[#0f172a] tracking-[-0.02em] leading-[1.15]"
-              style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>
-            Prepare for your first contracts
-          </h1>
-          <p className="text-[16px] text-[#64748b] mt-3 leading-relaxed">
-            Get the most out of your trial with a few key set up steps.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[34px] font-bold text-[#0f172a] tracking-[-0.02em] leading-[1.15]"
+                  style={{fontFamily: "'DM Serif Display', Georgia, serif"}}>
+                Prepare for your first contracts
+              </h1>
+              <p className="text-[16px] text-[#64748b] mt-3 leading-relaxed">
+                Get the most out of your trial with a few key set up steps.
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                await supabase.from("organizations").update({ onboarding_complete: true }).eq("id", organization.id);
+                window.location.href = "/dashboard";
+              }}
+              className="shrink-0 mt-2 text-[13px] text-[#64748b] hover:text-[#0f172a] font-medium transition-colors"
+            >
+              Skip for now &rarr;
+            </button>
+          </div>
         </div>
 
         {/* Progress bar */}
