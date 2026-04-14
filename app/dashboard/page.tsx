@@ -78,7 +78,7 @@ function recBadge(rec: string) {
   return map[rec] ?? map.skip;
 }
 
-type SortOption = "score" | "deadline" | "value" | "newest";
+type SortOption = "recommended" | "score" | "deadline" | "value" | "newest";
 type SourceFilter = "" | "federal" | "state" | "military" | "sbir" | "grants" | "subcontracting" | "recompetes";
 type UrgencyFilter = "" | "week" | "2weeks" | "month";
 type ValueFilter = "" | "under100k" | "100k-500k" | "500k-1m" | "over1m";
@@ -147,7 +147,7 @@ export default function DashboardPage() {
     setAside: "",
     agency: "",
     minScore: 0,
-    sort: "score",
+    sort: "recommended",
     source: "",
     urgency: "",
     valueRange: "",
@@ -176,7 +176,7 @@ export default function DashboardPage() {
     setLoading(true);
     // PERF: Fetch ALL matches with only the columns needed for display.
     // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
-    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type";
+    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type,incumbent_name,incumbent_value,source_url,solicitation_number,place_of_performance";
     const { data, count, error } = await supabase
       .from("opportunity_matches")
       .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
@@ -438,6 +438,18 @@ export default function DashboardPage() {
       return true;
     })
     .sort((a, b) => {
+      if (filters.sort === "recommended") {
+        // Composite: 60% relevance + 20% revenue intel + 20% urgency
+        const revA = getVal(a.opportunities) > 0 ? 80 : 0;
+        const revB = getVal(b.opportunities) > 0 ? 80 : 0;
+        const dA = daysUntil(a.opportunities?.response_deadline);
+        const dB = daysUntil(b.opportunities?.response_deadline);
+        const urgA = dA !== null && dA >= 0 ? (dA <= 7 ? 100 : dA <= 14 ? 70 : dA <= 30 ? 40 : 20) : 30;
+        const urgB = dB !== null && dB >= 0 ? (dB <= 7 ? 100 : dB <= 14 ? 70 : dB <= 30 ? 40 : 20) : 30;
+        const compA = (a.match_score ?? 0) * 0.6 + revA * 0.2 + urgA * 0.2;
+        const compB = (b.match_score ?? 0) * 0.6 + revB * 0.2 + urgB * 0.2;
+        return compB - compA;
+      }
       if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
       if (filters.sort === "value") {
         const va = getVal(a.opportunities);
@@ -602,10 +614,10 @@ export default function DashboardPage() {
       {/* Stats Bar — KPI Row (D1: always show 4th Total Value card) */}
       <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {[
-          { value: hasActiveFilter ? String(filtered.length) : String(matches.length), label: "Matches", urgent: false },
-          { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Total Value", urgent: false },
-          { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
-          { value: String(topScore), label: "Top Score", urgent: false },
+          {value: String(recCounts.bid ?? 0), label: "Bid-Ready", urgent: false },
+          { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Pipeline Value", urgent: false },
+          { value: String(activeList.filter(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }).length), label: "Closing < 14d", urgent: activeList.some(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }) },
+          { value: String(sourceCounts.recompetes ?? 0), label: "Recompetes", urgent: false },
         ].map((stat) => (
           <div key={stat.label} className={`p-5 bg-[#ffffff] border border-[#e5e7eb] ${stat.urgent ? "border-l-[3px] border-l-[#ef4444]" : ""}`}>
             <div className="ci-serif text-[28px] text-[#0f172a]">{stat.value}</div>
@@ -689,6 +701,7 @@ export default function DashboardPage() {
             <select value={filters.sort}
               onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
               className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
+              <option value="recommended">Recommended</option>
               <option value="score">Best Match</option>
               <option value="deadline">Deadline</option>
               <option value="value">Value</option>
@@ -704,7 +717,7 @@ export default function DashboardPage() {
               ))}
             </select>
             {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
-              <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
+              <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"recommended",source:"",urgency:"",valueRange:"",recommendation:""})}
                 className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">
                 Clear
               </button>
@@ -862,7 +875,7 @@ export default function DashboardPage() {
                       className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#e5e7eb] cursor-pointer
                                   transition-colors hover:bg-[#f8f9fb] group
                                   ${match.bid_recommendation === "bid" ? "border-l-[3px] border-l-[#059669]" :
-                                    match.bid_recommendation === "recompete_alert" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
+                                    match.bid_recommendation === "recompete_alert" || match.bid_recommendation === "recompete" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
                       onClick={() => setExpandedCard(isExpanded ? null : match.id)}
                     >
                       {/* Score ring */}
@@ -882,13 +895,16 @@ export default function DashboardPage() {
                       >
                         <h3 className="text-[14px] font-semibold text-[#0f172a] truncate group-hover/title:text-[#3b82f6] transition-colors">{cleanTitle(opp.title)}</h3>
                         <p className="text-[12px] text-[#64748b] mt-0.5 truncate">{opp.agency}</p>
+                        {opp.incumbent_name && <p className="text-[11px] text-[#d97706] mt-0.5 truncate">⚔ Incumbent: {opp.incumbent_name}</p>}
                       </Link>
 
                       {/* Value */}
                       <div className="w-[88px] text-right shrink-0 leading-none">
                         <div className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Value</div>
-                        <div className="text-[13px] font-semibold text-[#0f172a] font-mono">
-                          {getVal(opp) > 0 ? formatCurrency(getVal(opp)) : <span className="text-[#94a3b8]">Undisclosed</span>}
+                        <div className="text-[13px] font-semibold font-mono">
+                          {getVal(opp) > 0
+                            ? <span className="text-[#0f172a]">{formatCurrency(getVal(opp))}</span>
+                            : <span className="text-[#cbd5e1] text-[12px]">Value TBD</span>}
                         </div>
                       </div>
 
@@ -965,6 +981,25 @@ export default function DashboardPage() {
                             <p className="text-[13px] text-[#64748b] leading-relaxed mb-4 line-clamp-3">
                               {decodeHtml(opp.description.substring(0, 500))}
                             </p>
+                          )}
+
+                          {/* Incumbent Intel — only for recompetes */}
+                          {opp.incumbent_name && (
+                            <div className="p-3 bg-[#fffbeb] border border-[#fde68a] rounded-lg mb-4">
+                              <div className="text-[11px] font-semibold text-[#92400e] uppercase tracking-wide mb-2">Recompete Intelligence</div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <div className="text-[11px] text-[#92400e]/70">Current Incumbent</div>
+                                  <div className="text-[13px] text-[#92400e] font-semibold">{opp.incumbent_name}</div>
+                                </div>
+                                {(opp.incumbent_value || getVal(opp) > 0) && (
+                                  <div>
+                                    <div className="text-[11px] text-[#92400e]/70">Contract Value</div>
+                                    <div className="text-[13px] text-[#92400e] font-semibold">{formatCurrency(opp.incumbent_value || getVal(opp))}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
 
                           {/* Details grid */}

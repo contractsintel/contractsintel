@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const nationwide = org.serves_nationwide !== false || orgStates.length === 0;
 
     // PERF: Select only columns needed for scoring instead of SELECT *
-    const MATCH_COLS = "id,title,description,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,place_of_performance,source,response_deadline,notice_type,contract_type,agency,created_at" as const;
+    const MATCH_COLS = "id,title,description,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,place_of_performance,source,response_deadline,notice_type,contract_type,agency,created_at,incumbent_name,incumbent_value" as const;
 
     let opportunities: Record<string, any>[] = [];
 
@@ -335,6 +335,25 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Recompete boost — applied BEFORE finalScore so the bonus is reflected
+      if (opp.source === "usaspending" && score >= 40) {
+        // Boost recompetes with strong NAICS match + known value/incumbent
+        // These represent real revenue intelligence, not just generic listings
+        const hasNaicsMatch = oppNaics && orgNaics.some((n: string) => n.substring(0, 4) === oppNaics.substring(0, 4));
+        const hasValueIntel = (opp.estimated_value || opp.value_estimate || 0) > 0;
+        const hasIncumbent = !!opp.incumbent_name;
+        if (hasNaicsMatch && hasValueIntel) {
+          score += 10;
+          reasons.push("Recompete alert: expiring contract with known value");
+          if (hasIncumbent) {
+            score += 3;
+            reasons.push(`Current incumbent: ${opp.incumbent_name}`);
+          }
+        } else {
+          reasons.push("Recompete alert: expiring contract");
+        }
+      }
+
       const finalScore = Math.min(Math.max(score, 0), 100);
 
       // Recommendation tiers
@@ -345,7 +364,6 @@ export async function POST(request: NextRequest) {
 
       if (opp.source === "usaspending" && finalScore >= 40) {
         recommendation = "recompete";
-        reasons.push("Recompete alert: expiring contract");
       }
 
       return {
