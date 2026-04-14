@@ -381,9 +381,9 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Filter out matches below 40 (not worth showing) and take top 1000
+    // Filter out matches below 40 (not worth showing) — keep all qualifying matches
     matches.sort((a, b) => b.match_score - a.match_score);
-    const topMatches = matches.filter(m => m.match_score >= 40).slice(0, 1000);
+    const topMatches = matches.filter(m => m.match_score >= 40);
 
     // Delete old matches for this org (clean slate)
     await supabaseAdmin
@@ -404,6 +404,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       matched: topMatches.length,
+      totalScored: matches.length,
       topScore: topMatches[0]?.match_score || 0,
       filteredNonBiddable: filteredCount,
     });

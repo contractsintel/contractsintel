@@ -182,7 +182,7 @@ export default function DashboardPage() {
       .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
-      .limit(2000);
+      .limit(5000);
     if (error) console.error("[dashboard] query error", error.message);
     // Filter out past-deadline opportunities — keep nulls (no deadline) visible
     // USASpending recompetes use response_deadline as period-of-performance end,
