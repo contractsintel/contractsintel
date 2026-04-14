@@ -39,7 +39,7 @@ function formatAddress(addr: unknown): string {
     ]
       .map((p) => String(p).trim())
       .filter(Boolean);
-    return parts.join(", ") || JSON.stringify(addr);
+    return parts.join(", ");
   }
   return String(addr);
 }

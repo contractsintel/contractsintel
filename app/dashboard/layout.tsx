@@ -85,6 +85,8 @@ export default async function DashboardLayout({
     redirect("/dashboard/onboarding");
   }
 
+  const isOnboarding = pathname.startsWith("/dashboard/onboarding");
+
   return (
     <DashboardProvider user={userProfile} organization={org}>
       <div className="min-h-screen bg-[#f8f9fb]">
@@ -95,16 +97,18 @@ export default async function DashboardLayout({
           plan={org.plan}
         />
         <div className="flex pt-16">
-          <div className="hidden lg:block">
-            <Sidebar plan={org.plan} />
-          </div>
-          <main className="flex-1 lg:ml-[240px] p-4 sm:p-6 lg:p-8">
-            <div className="max-w-dashboard mx-auto">{children}</div>
+          {!isOnboarding && (
+            <div className="hidden lg:block">
+              <Sidebar plan={org.plan} />
+            </div>
+          )}
+          <main className={`flex-1 ${isOnboarding ? "p-0" : "lg:ml-[240px] p-4 sm:p-6 lg:p-8"}`}>
+            {isOnboarding ? children : <div className="max-w-dashboard mx-auto">{children}</div>}
           </main>
-          <TourWrapper />
+          {!isOnboarding && <TourWrapper />}
         </div>
-        <DocumentChatPanel />
-        <CopilotPanel />
+        {!isOnboarding && <DocumentChatPanel />}
+        {!isOnboarding && <CopilotPanel />}
       </div>
     </DashboardProvider>
   );

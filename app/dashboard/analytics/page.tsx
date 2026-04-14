@@ -24,8 +24,8 @@ export default function AnalyticsPage() {
   const supabase = createClient();
   // Do NOT pass `organization` — isTeam(plan, org) returns true during
   // active trials, which incorrectly bypasses the Team-tier gate for
-  // Discovery trial users. Check the raw plan value only.
-  const teamTier = isTeam(organization.plan, organization);
+  // Discovery trial users. Check the raw subscription_tier only.
+  const teamTier = isTeam(organization.subscription_tier ?? undefined);
 
   const [agencyStats, setAgencyStats] = useState<AgencyStats[]>([]);
   const [lossAnalyses, setLossAnalyses] = useState<Record<string, any>[]>([]);
