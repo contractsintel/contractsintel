@@ -425,7 +425,7 @@ export default function DashboardPage() {
       // Hide expired and paused contracts from main feed
       if (opp.status === "expired" || opp.status === "paused") return false;
       if (filters.setAside && (opp.set_aside_type || opp.set_aside_description) !== filters.setAside) return false;
-      if (filters.agency && !opp.agency?.toLowerCase().includes(filters.agency.toLowerCase())) return false;
+      if (filters.agency && opp.agency !== filters.agency) return false;
       if (m.match_score < filters.minScore) return false;
       if (filters.source) {
         const cat = getSourceCategory(opp.source, m.bid_recommendation);
@@ -705,10 +705,15 @@ export default function DashboardPage() {
               <option value="value">Value</option>
               <option value="newest">Newest</option>
             </select>
-            <input type="text" placeholder="Search agency..."
+            <select
               value={filters.agency}
               onChange={(e) => setFilters((f) => ({...f, agency: e.target.value}))}
-              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] w-48 focus:outline-none focus:border-[#2563eb]" />
+              className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
+              <option value="">All agencies</option>
+              {Array.from(new Set(matches.map(m => m.opportunities?.agency).filter(Boolean))).sort().map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
             {(filters.source || filters.urgency || filters.valueRange || filters.agency) && (
               <button onClick={() => setFilters({setAside:"",agency:"",minScore:0,sort:"score",source:"",urgency:"",valueRange:"",recommendation:""})}
                 className="text-[13px] text-[#2563eb] hover:text-[#1d4ed8] font-medium">

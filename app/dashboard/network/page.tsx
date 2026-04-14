@@ -341,13 +341,16 @@ export default function NetworkPage() {
               onChange={(e) => setPartnerFilters((f) => ({ ...f, q: e.target.value }))}
               className="border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
             />
-            <input
-              type="text"
-              placeholder="NAICS"
+            <select
               value={partnerFilters.naics}
               onChange={(e) => setPartnerFilters((f) => ({ ...f, naics: e.target.value }))}
-              className="w-32 border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
-            />
+              className="border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            >
+              <option value="">Any NAICS</option>
+              {Array.from(new Set(partners.map(p => p.naics_codes || []).flat().filter(Boolean))).sort().map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
             <select
               value={partnerFilters.set_aside}
               onChange={(e) => setPartnerFilters((f) => ({ ...f, set_aside: e.target.value }))}
@@ -360,14 +363,16 @@ export default function NetworkPage() {
               <option value="EDWOSB">EDWOSB</option>
               <option value="HUBZone">HUBZone</option>
             </select>
-            <input
-              type="text"
-              placeholder="State"
-              maxLength={2}
+            <select
               value={partnerFilters.state}
-              onChange={(e) => setPartnerFilters((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
-              className="w-20 border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
-            />
+              onChange={(e) => setPartnerFilters((f) => ({ ...f, state: e.target.value }))}
+              className="border border-[#e5e7eb] bg-white px-3 py-1.5 text-sm rounded"
+            >
+              <option value="">Any state</option>
+              {["AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","PR","RI","SC","SD","TN","TX","UT","VT","VA","VI","WA","WV","WI","WY"].map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
           {partnersLoading ? (
             <div className="text-center text-[#94a3b8] py-12 text-sm">Loading partners...</div>
@@ -628,32 +633,63 @@ export default function NetworkPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Geography</label>
-                  <input
-                    type="text"
+                  <select
                     value={form.geography}
                     onChange={(e) => setForm((f) => ({ ...f, geography: e.target.value }))}
                     className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
-                  />
+                  >
+                    <option value="">Select state</option>
+                    <option value="Nationwide">Nationwide</option>
+                    {["AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","PR","RI","SC","SD","TN","TX","UT","VT","VA","VI","WA","WV","WI","WY"].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Required Certs (comma-sep)</label>
-                  <input
-                    type="text"
-                    value={form.required_certs}
-                    onChange={(e) => setForm((f) => ({ ...f, required_certs: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
-                    placeholder="8(a), HUBZone, SDVOSB..."
-                  />
+                  <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Required Certs</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["8(a)", "SDVOSB", "WOSB", "EDWOSB", "HUBZone", "Small Business"].map(cert => {
+                      const selected = form.required_certs.split(",").map(s => s.trim()).filter(Boolean).includes(cert);
+                      return (
+                        <button key={cert} type="button"
+                          onClick={() => {
+                            const current = form.required_certs.split(",").map(s => s.trim()).filter(Boolean);
+                            const next = selected ? current.filter(c => c !== cert) : [...current, cert];
+                            setForm(f => ({ ...f, required_certs: next.join(", ") }));
+                          }}
+                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                            selected
+                              ? "bg-[#2563eb] text-white border-[#2563eb]"
+                              : "bg-[#f8f9fb] text-[#64748b] border-[#e5e7eb] hover:border-[#cbd5e1]"
+                          }`}>
+                          {cert}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">NAICS Codes (comma-sep)</label>
-                  <input
-                    type="text"
-                    value={form.naics_codes}
-                    onChange={(e) => setForm((f) => ({ ...f, naics_codes: e.target.value }))}
-                    className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
-                    placeholder="541512, 541519..."
-                  />
+                  <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">NAICS Codes</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(organization.naics_codes ?? []).map((code: string) => {
+                      const selected = form.naics_codes.split(",").map(s => s.trim()).filter(Boolean).includes(code);
+                      return (
+                        <button key={code} type="button"
+                          onClick={() => {
+                            const current = form.naics_codes.split(",").map(s => s.trim()).filter(Boolean);
+                            const next = selected ? current.filter(c => c !== code) : [...current, code];
+                            setForm(f => ({ ...f, naics_codes: next.join(", ") }));
+                          }}
+                          className={`px-3 py-1.5 text-xs font-mono rounded-full border transition-colors ${
+                            selected
+                              ? "bg-[#2563eb] text-white border-[#2563eb]"
+                              : "bg-[#f8f9fb] text-[#64748b] border-[#e5e7eb] hover:border-[#cbd5e1]"
+                          }`}>
+                          {code}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Deadline</label>
