@@ -94,7 +94,7 @@ type FilterState = {
 };
 
 function getSourceCategory(source: string | null | undefined, bidRec?: string): string {
-  if (bidRec === "recompete_alert") return "recompetes";
+  if (bidRec === "recompete_alert" || bidRec === "recompete") return "recompetes";
   if (!source) return "federal";
   if (source.startsWith("state_")) return "state";
   if (["dla_dibbs", "army_asfi", "army_acc", "navy_neco", "air_force", "marines", "disa", "darpa", "dha", "mda", "space_force", "usace", "socom", "dcsa", "military_defense"].includes(source)) return "military";
@@ -175,7 +175,7 @@ export default function DashboardPage() {
     setLoading(true);
     // PERF: Fetch ALL matches with only the columns needed for display.
     // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
-    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type";
+    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,award_amount,total_award_amount,response_deadline,posted_date,source,notice_type,contract_type,status";
     const { data, count, error } = await supabase
       .from("opportunity_matches")
       .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
@@ -361,6 +361,7 @@ export default function DashboardPage() {
       bid: "Bid — Strong match to your profile. Review the solicitation details and prepare a bid.",
       monitor: "Monitor — Worth tracking for future developments and deadline updates.",
       skip: "Low Priority — May not be a strong fit for your current capabilities.",
+      recompete: "Recompete Alert — This contract is expiring and will be re-competed.",
       recompete_alert: "Recompete Alert — This contract is expiring and will be re-competed.",
     };
     return texts[rec] || "Review this opportunity for potential match.";
@@ -439,7 +440,15 @@ export default function DashboardPage() {
     })
     .sort((a, b) => {
       if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
-      if (filters.sort === "value") return (b.opportunities?.estimated_value ?? -1) - (a.opportunities?.estimated_value ?? -1);
+      if (filters.sort === "value") {
+        const va = getVal(a.opportunities);
+        const vb = getVal(b.opportunities);
+        // Push unknowns (0) to the bottom, sort known values descending
+        if (va === 0 && vb === 0) return 0;
+        if (va === 0) return 1;
+        if (vb === 0) return -1;
+        return vb - va;
+      }
       if (filters.sort === "newest") return new Date(b.opportunities?.posted_date ?? 0).getTime() - new Date(a.opportunities?.posted_date ?? 0).getTime();
       if (filters.sort === "deadline") {
         const da = daysUntil(a.opportunities?.response_deadline) ?? 999;
@@ -652,14 +661,14 @@ export default function DashboardPage() {
             <select value={filters.source}
               onChange={(e) => setFilters((f) => ({...f, source: e.target.value as SourceFilter}))}
               className="h-9 px-3 text-[13px] border border-[#e5e7eb] bg-[#ffffff] text-[#0f172a] focus:outline-none focus:border-[#2563eb]">
-              <option value="">All Types</option>
-              <option value="federal">Federal Solicitations</option>
-              <option value="military">Military / Defense</option>
-              <option value="state">State &amp; Local</option>
-              <option value="sbir">SBIR / STTR</option>
-              <option value="grants">Grants</option>
-              <option value="subcontracting">Subcontracting</option>
-              <option value="recompetes">Recompete Alerts</option>
+              <option value="">All Types ({matches.length})</option>
+              <option value="federal">Federal ({sourceCounts.federal ?? 0})</option>
+              <option value="military">Military / Defense ({sourceCounts.military ?? 0})</option>
+              <option value="state">State &amp; Local ({sourceCounts.state ?? 0})</option>
+              <option value="sbir">SBIR / STTR ({sourceCounts.sbir ?? 0})</option>
+              <option value="grants">Grants ({sourceCounts.grants ?? 0})</option>
+              <option value="subcontracting">Subcontracting ({sourceCounts.subcontracting ?? 0})</option>
+              <option value="recompetes">Recompete Alerts ({sourceCounts.recompetes ?? 0})</option>
             </select>
             <select value={filters.urgency}
               onChange={(e) => setFilters((f) => ({...f, urgency: e.target.value as UrgencyFilter}))}
