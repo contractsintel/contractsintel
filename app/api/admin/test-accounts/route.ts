@@ -328,9 +328,10 @@ export async function PATCH(request: Request) {
       "onboarding_complete", "setup_wizard_complete",
       "cmmc_current_level", "cmmc_target_level",
     ];
+    const prof = acct.profile as Record<string, any>;
     for (const key of validOrgCols) {
-      if (acct.profile[key] !== undefined) {
-        orgUpdate[key] = acct.profile[key];
+      if (prof[key] !== undefined) {
+        orgUpdate[key] = prof[key];
       }
     }
 
