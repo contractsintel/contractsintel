@@ -92,11 +92,85 @@ function scoreColor(score: number): string {
   return "text-[#94a3b8]";
 }
 
+function CalendarView({ matches }: { matches: PipelineMatch[] }) {
+  const [month, setMonth] = useState(() => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), 1);
+  });
+
+  const year = month.getFullYear();
+  const mo = month.getMonth();
+  const daysInMonth = new Date(year, mo + 1, 0).getDate();
+  const startDay = new Date(year, mo, 1).getDay();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Group items by deadline date
+  const byDate: Record<string, PipelineMatch[]> = {};
+  matches.forEach((m) => {
+    const dl = m.opportunities?.response_deadline;
+    if (!dl) return;
+    const key = dl.substring(0, 10);
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(m);
+  });
+
+  const prev = () => setMonth(new Date(year, mo - 1, 1));
+  const next = () => setMonth(new Date(year, mo + 1, 1));
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={prev} className="px-3 py-1.5 text-xs border border-[#e5e7eb] text-[#64748b] rounded hover:bg-[#f8f9fb]">&larr; Prev</button>
+        <h2 className="ci-serif text-[18px] text-[#0f172a]">{monthLabel}</h2>
+        <button onClick={next} className="px-3 py-1.5 text-xs border border-[#e5e7eb] text-[#64748b] rounded hover:bg-[#f8f9fb]">Next &rarr;</button>
+      </div>
+      <div className="grid grid-cols-7 gap-px bg-[#e5e7eb] border border-[#e5e7eb] rounded-lg overflow-hidden">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="bg-[#f8f9fb] py-2 text-center text-[10px] font-medium uppercase tracking-wide text-[#94a3b8]">{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`e${i}`} className="bg-[#fafbfc] min-h-[80px]" />;
+          const dateStr = `${year}-${String(mo + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const items = byDate[dateStr] || [];
+          const isToday = new Date(year, mo, day).getTime() === today.getTime();
+          return (
+            <div key={day} className={`bg-white min-h-[80px] p-1 ${isToday ? "ring-2 ring-inset ring-[#2563eb]" : ""}`}>
+              <div className={`text-[11px] font-mono mb-0.5 ${isToday ? "text-[#2563eb] font-bold" : "text-[#64748b]"}`}>{day}</div>
+              {items.slice(0, 3).map((m) => {
+                const stageColor = m.pipeline_stage === "submitted" ? "bg-[#2563eb]" : m.pipeline_stage === "preparing_bid" ? "bg-[#d97706]" : "bg-[#6b7280]";
+                return (
+                  <div key={m.id} className={`${stageColor} text-white text-[9px] px-1 py-0.5 rounded mb-0.5 truncate`} title={m.opportunities?.title || "Untitled"}>
+                    {m.opportunities?.title?.substring(0, 20) || "Untitled"}
+                  </div>
+                );
+              })}
+              {items.length > 3 && <div className="text-[9px] text-[#94a3b8]">+{items.length - 3} more</div>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-[#64748b]">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#6b7280]" /> Monitoring</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#d97706]" /> Preparing Bid</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#2563eb]" /> Submitted</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PipelinePage() {
   const { organization } = useDashboard();
   const supabase = createClient();
   const [matches, setMatches] = useState<PipelineMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"kanban" | "calendar">("kanban");
   const [wonModal, setWonModal] = useState<string | null>(null);
   const [lostModal, setLostModal] = useState<string | null>(null);
   const [wonData, setWonData] = useState({ award_amount: "", contract_number: "", period_months: "12" });
@@ -317,7 +391,23 @@ export default function PipelinePage() {
           <h1 className="ci-page-title">Pipeline</h1>
 <div className="w-10 h-[3px] rounded-full mt-2" style={{backgroundColor: "#d97706"}} />
         </div>
-        <HelpButton page="pipeline" />
+        <div className="flex items-center gap-2">
+          <div className="flex border border-[#e5e7eb] rounded-lg overflow-hidden">
+            <button
+              onClick={() => setView("kanban")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === "kanban" ? "bg-[#2563eb] text-white" : "bg-white text-[#64748b] hover:bg-[#f8f9fb]"}`}
+            >
+              Kanban
+            </button>
+            <button
+              onClick={() => setView("calendar")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === "calendar" ? "bg-[#2563eb] text-white" : "bg-white text-[#64748b] hover:bg-[#f8f9fb]"}`}
+            >
+              Calendar
+            </button>
+          </div>
+          <HelpButton page="pipeline" />
+        </div>
       </div>
       <InlineGuide page="pipeline" />
 
@@ -340,6 +430,8 @@ export default function PipelinePage() {
 
       {loading ? (
         <div className="text-center text-[#94a3b8] py-12">Loading pipeline...</div>
+      ) : view === "calendar" ? (
+        <CalendarView matches={matches} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {STAGES.map((stage) => (

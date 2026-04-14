@@ -46,6 +46,19 @@ export default function OpportunityDetailPage() {
   const [shred, setShred] = useState<Record<string, any> | null>(null);
   const [shredLoading, setShredLoading] = useState(false);
   const [shredError, setShredError] = useState<string | null>(null);
+  // Feature 1: Bid/No-Bid Wizard
+  const [bidWizardOpen, setBidWizardOpen] = useState(false);
+  const [bidScores, setBidScores] = useState<Record<string, number>>({
+    capability_fit: 3, past_performance: 3, pricing_comfort: 3,
+    timeline_feasibility: 3, competition_level: 3, set_aside_match: 3,
+    relationship_strength: 3, resource_availability: 3,
+  });
+  // Feature 2: Pricing Intelligence
+  const [pricingData, setPricingData] = useState<{ awards: Record<string, any>[]; avg: number; min: number; max: number; count: number } | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  // Feature 3: Compliance Checklist
+  const [complianceItems, setComplianceItems] = useState<{ text: string; checked: boolean }[]>([]);
+  const [complianceLoading, setComplianceLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -117,6 +130,117 @@ export default function OpportunityDetailPage() {
       cancelled = true;
     };
   }, [oppId]);
+
+  // Feature 2: Load pricing intelligence from similar contracts
+  const loadPricing = async () => {
+    if (!opp?.naics_code) return;
+    setPricingLoading(true);
+    try {
+      const { data } = await supabase
+        .from("opportunities")
+        .select("title, agency, estimated_value, value_estimate, source, response_deadline")
+        .eq("naics_code", opp.naics_code)
+        .neq("id", oppId)
+        .not("estimated_value", "is", null)
+        .gt("estimated_value", 0)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (data && data.length > 0) {
+        const vals = data.map((d: Record<string, any>) => d.estimated_value || d.value_estimate || 0).filter((v: number) => v > 0);
+        const avg = vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
+        setPricingData({
+          awards: data.slice(0, 8),
+          avg: Math.round(avg),
+          min: Math.min(...vals),
+          max: Math.max(...vals),
+          count: vals.length,
+        });
+      }
+    } catch { /* swallow */ }
+    setPricingLoading(false);
+  };
+
+  // Feature 3: Generate compliance checklist from opportunity description
+  const generateChecklist = async () => {
+    setComplianceLoading(true);
+    const desc = opp?.full_description || opp?.description || "";
+    const instructions = opp?.response_instructions || "";
+    const text = `${desc}\n\n${instructions}`.trim();
+    if (!text || text.length < 50) {
+      setComplianceItems([
+        { text: "Review full solicitation document", checked: false },
+        { text: "Verify SAM.gov registration is active", checked: false },
+        { text: "Confirm NAICS code eligibility", checked: false },
+        { text: "Check set-aside requirements match certifications", checked: false },
+        { text: "Prepare capability statement", checked: false },
+        { text: "Compile past performance references", checked: false },
+        { text: "Develop pricing/cost proposal", checked: false },
+        { text: "Submit before deadline", checked: false },
+      ]);
+      setComplianceLoading(false);
+      return;
+    }
+    // Extract requirements from description using pattern matching
+    const items: { text: string; checked: boolean }[] = [];
+    // Always include base items
+    items.push({ text: "Verify SAM.gov registration is active and current", checked: false });
+    if (opp?.set_aside_type) items.push({ text: `Confirm ${opp.set_aside_type} certification eligibility`, checked: false });
+    if (opp?.naics_code) items.push({ text: `Verify NAICS ${opp.naics_code} is on your SAM.gov profile`, checked: false });
+    items.push({ text: "Review full solicitation documents and amendments", checked: false });
+    // Look for specific requirements in text
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes("past performance") || lowerText.includes("past-performance")) items.push({ text: "Prepare past performance references (minimum 3 relevant contracts)", checked: false });
+    if (lowerText.includes("capability statement")) items.push({ text: "Prepare capability statement tailored to this solicitation", checked: false });
+    if (lowerText.includes("technical") && (lowerText.includes("proposal") || lowerText.includes("approach"))) items.push({ text: "Draft technical approach/proposal volume", checked: false });
+    if (lowerText.includes("pricing") || lowerText.includes("cost proposal") || lowerText.includes("price proposal")) items.push({ text: "Develop detailed pricing/cost proposal", checked: false });
+    if (lowerText.includes("oral presentation")) items.push({ text: "Prepare oral presentation materials", checked: false });
+    if (lowerText.includes("site visit")) items.push({ text: "Attend mandatory site visit", checked: false });
+    if (lowerText.includes("question") && (lowerText.includes("period") || lowerText.includes("deadline"))) items.push({ text: "Submit questions before Q&A deadline", checked: false });
+    if (lowerText.includes("key personnel") || lowerText.includes("resume")) items.push({ text: "Compile key personnel resumes", checked: false });
+    if (lowerText.includes("subcontract")) items.push({ text: "Identify and confirm subcontractor commitments", checked: false });
+    if (lowerText.includes("bond") || lowerText.includes("surety")) items.push({ text: "Obtain required bonding/surety", checked: false });
+    if (lowerText.includes("insurance") || lowerText.includes("liability")) items.push({ text: "Verify insurance requirements are met", checked: false });
+    if (lowerText.includes("clearance") || lowerText.includes("security")) items.push({ text: "Confirm security clearance requirements", checked: false });
+    if (lowerText.includes("wage determination") || lowerText.includes("service contract act")) items.push({ text: "Review applicable wage determination", checked: false });
+    // Always include submission items
+    items.push({ text: "Perform compliance review of all proposal volumes", checked: false });
+    items.push({ text: `Submit proposal before deadline${opp?.response_deadline ? ` (${new Date(opp.response_deadline).toLocaleDateString()})` : ""}`, checked: false });
+    setComplianceItems(items);
+    setComplianceLoading(false);
+  };
+
+  // Feature 5: Win Probability (pWin) Calculator
+  const calculatePwin = (): { score: number; factors: { label: string; value: number; max: number; detail: string }[] } => {
+    if (!opp || !match) return { score: 0, factors: [] };
+    const factors: { label: string; value: number; max: number; detail: string }[] = [];
+    // NAICS Match (0-20)
+    const naicsMatch = opp.naics_code && organization.naics_codes?.includes(opp.naics_code);
+    const naicsPrefix = opp.naics_code && organization.naics_codes?.some((n: string) => n.substring(0, 4) === opp.naics_code?.substring(0, 4));
+    const naicsScore = naicsMatch ? 20 : naicsPrefix ? 12 : 5;
+    factors.push({ label: "NAICS Alignment", value: naicsScore, max: 20, detail: naicsMatch ? "Exact NAICS match" : naicsPrefix ? "Same NAICS family" : "No direct NAICS match" });
+    // Set-Aside Advantage (0-20)
+    const setAside = opp.set_aside_type?.toLowerCase() || "";
+    const orgCerts = (organization.certifications || []).map((c: string) => c.toLowerCase());
+    const setAsideMatch = setAside && orgCerts.some((c: string) => setAside.includes(c) || c.includes(setAside.substring(0, 4)));
+    const setAsideScore = !setAside || setAside.includes("full") ? 10 : setAsideMatch ? 20 : 3;
+    factors.push({ label: "Set-Aside Advantage", value: setAsideScore, max: 20, detail: !setAside || setAside.includes("full") ? "Full & open competition" : setAsideMatch ? "Your certifications match" : "Set-aside doesn't match certs" });
+    // Match Score Proxy (0-20)
+    const matchProxy = Math.round((match.match_score / 100) * 20);
+    factors.push({ label: "AI Match Score", value: matchProxy, max: 20, detail: `${match.match_score}/100 match score` });
+    // Timeline (0-15)
+    const daysLeft = daysUntil(opp.response_deadline);
+    const timeScore = daysLeft === null ? 10 : daysLeft > 30 ? 15 : daysLeft > 14 ? 12 : daysLeft > 7 ? 8 : 3;
+    factors.push({ label: "Timeline Feasibility", value: timeScore, max: 15, detail: daysLeft === null ? "No deadline set" : `${daysLeft} days remaining` });
+    // Competition Estimate (0-15) - based on set-aside narrowing the field
+    const compScore = setAside && !setAside.includes("full") ? 12 : 7;
+    factors.push({ label: "Competition Level", value: compScore, max: 15, detail: setAside && !setAside.includes("full") ? "Reduced competition (set-aside)" : "Open competition expected" });
+    // Value Fit (0-10)
+    const valCalc = opp.estimated_value ?? opp.value_estimate ?? 0;
+    const valFit = valCalc > 0 && valCalc < 10_000_000 ? 8 : valCalc >= 10_000_000 ? 5 : 6;
+    factors.push({ label: "Contract Size Fit", value: valFit, max: 10, detail: valCalc > 0 ? `${formatCurrency(valCalc)} contract` : "Value undisclosed" });
+    const total = factors.reduce((sum, f) => sum + f.value, 0);
+    return { score: total, factors };
+  };
 
   const runShred = async () => {
     if (!oppId) return;
@@ -279,6 +403,68 @@ export default function OpportunityDetailPage() {
               {opp.incumbent_name && <div><span className="text-[#94a3b8]">Incumbent</span><div className="text-[#0f172a] mt-0.5">{opp.incumbent_name}</div></div>}
             </div>
           </div>
+
+          {/* Feature 2: Pricing Intelligence */}
+          {pricingData && (
+            <div className="ci-card p-6">
+              <h2 className="ci-section-label mb-4">Pricing Intelligence</h2>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="p-3 rounded-lg bg-[#f8f9fb] border border-[#e5e7eb] text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">Avg Award</div>
+                  <div className="text-[16px] font-semibold text-[#0f172a]">{formatCurrency(pricingData.avg)}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-[#f8f9fb] border border-[#e5e7eb] text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">Min</div>
+                  <div className="text-[16px] font-semibold text-[#059669]">{formatCurrency(pricingData.min)}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-[#f8f9fb] border border-[#e5e7eb] text-center">
+                  <div className="text-[10px] uppercase tracking-wide text-[#94a3b8] mb-1">Max</div>
+                  <div className="text-[16px] font-semibold text-[#dc2626]">{formatCurrency(pricingData.max)}</div>
+                </div>
+              </div>
+              <div className="text-[11px] text-[#94a3b8] mb-3">Based on {pricingData.count} similar NAICS {opp?.naics_code} awards</div>
+              <div className="space-y-2">
+                {pricingData.awards.map((a, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-[#f1f5f9] last:border-0 text-[12px]">
+                    <div className="min-w-0 flex-1 mr-3">
+                      <div className="text-[#0f172a] truncate">{a.title}</div>
+                      <div className="text-[#94a3b8]">{a.agency}</div>
+                    </div>
+                    <div className="text-[#0f172a] font-mono font-medium shrink-0">{formatCurrency(a.estimated_value || a.value_estimate)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Feature 3: Compliance Checklist */}
+          {complianceItems.length > 0 && (
+            <div className="ci-card p-6">
+              <h2 className="ci-section-label mb-4">Compliance Checklist</h2>
+              <div className="text-[11px] text-[#94a3b8] mb-3">
+                {complianceItems.filter(c => c.checked).length}/{complianceItems.length} items complete
+              </div>
+              <div className="w-full bg-[#f1f5f9] rounded-full h-1.5 mb-4">
+                <div
+                  className="bg-[#2563eb] h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${complianceItems.length > 0 ? (complianceItems.filter(c => c.checked).length / complianceItems.length) * 100 : 0}%` }}
+                />
+              </div>
+              <div className="space-y-2">
+                {complianceItems.map((item, i) => (
+                  <label key={i} className="flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-[#f8f9fb] cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => setComplianceItems(prev => prev.map((c, idx) => idx === i ? { ...c, checked: !c.checked } : c))}
+                      className="mt-0.5 w-4 h-4 rounded border-[#d1d5db] text-[#2563eb] focus:ring-[#2563eb]"
+                    />
+                    <span className={`text-[13px] ${item.checked ? "line-through text-[#94a3b8]" : "text-[#0f172a]"}`}>{item.text}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* G17: Incumbent + prior buys panel */}
           {incumbent && (incumbent.incumbent.name || (incumbent.prior_buys && incumbent.prior_buys.length > 0)) && (
@@ -604,7 +790,69 @@ export default function OpportunityDetailPage() {
                    match.bid_recommendation === "recompete" ? "Recompete Alert" :
                    "Low Priority"}
                 </div>
+
+                {/* Feature 5: pWin Calculator inline */}
+                {(() => {
+                  const pwin = calculatePwin();
+                  if (pwin.score === 0) return null;
+                  return (
+                    <div className="mt-4 pt-4 border-t border-[#e2e8f0]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] uppercase tracking-wide text-[#94a3b8]">Win Probability</span>
+                        <span className={`text-lg font-bold font-mono ${pwin.score >= 70 ? "text-[#059669]" : pwin.score >= 40 ? "text-[#d97706]" : "text-[#dc2626]"}`}>
+                          {pwin.score}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-[#f1f5f9] rounded-full h-2 mb-3">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-500 ${pwin.score >= 70 ? "bg-[#059669]" : pwin.score >= 40 ? "bg-[#d97706]" : "bg-[#dc2626]"}`}
+                          style={{ width: `${pwin.score}%` }}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        {pwin.factors.map((f, i) => (
+                          <div key={i} className="flex items-center justify-between text-[11px]">
+                            <span className="text-[#64748b]">{f.label}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-[#f1f5f9] rounded-full h-1">
+                                <div className="bg-[#2563eb] h-1 rounded-full" style={{ width: `${(f.value / f.max) * 100}%` }} />
+                              </div>
+                              <span className="text-[#0f172a] font-mono w-8 text-right">{f.value}/{f.max}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
+            </div>
+          )}
+
+          {/* Feature Action Buttons */}
+          {match && (
+            <div className="ci-card p-5 space-y-2">
+              <h2 className="ci-section-label mb-3">Decision Tools</h2>
+              <button
+                onClick={() => setBidWizardOpen(true)}
+                className="w-full px-4 py-2.5 text-xs font-medium border border-[#e2e8f0] text-[#475569] hover:border-[#2563eb] hover:text-[#2563eb] hover:bg-[#eff6ff] rounded-lg transition-all"
+              >
+                Bid/No-Bid Wizard
+              </button>
+              <button
+                onClick={loadPricing}
+                disabled={pricingLoading || !opp?.naics_code}
+                className="w-full px-4 py-2.5 text-xs font-medium border border-[#e2e8f0] text-[#475569] hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] rounded-lg transition-all disabled:opacity-50"
+              >
+                {pricingLoading ? "Loading..." : pricingData ? "Refresh Pricing" : "Pricing Intelligence"}
+              </button>
+              <button
+                onClick={generateChecklist}
+                disabled={complianceLoading}
+                className="w-full px-4 py-2.5 text-xs font-medium border border-[#e2e8f0] text-[#475569] hover:border-[#d97706] hover:text-[#d97706] hover:bg-[#fffbeb] rounded-lg transition-all disabled:opacity-50"
+              >
+                {complianceLoading ? "Generating..." : complianceItems.length > 0 ? "Refresh Checklist" : "Compliance Checklist"}
+              </button>
             </div>
           )}
 
@@ -669,6 +917,80 @@ export default function OpportunityDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Feature 1: Bid/No-Bid Decision Wizard Modal */}
+      {bidWizardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setBidWizardOpen(false)}>
+          <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl p-6 m-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-[#0f172a]">Bid/No-Bid Decision Wizard</h2>
+              <button onClick={() => setBidWizardOpen(false)} className="text-[#94a3b8] hover:text-[#0f172a] text-xl leading-none">&times;</button>
+            </div>
+            <p className="text-[12px] text-[#64748b] mb-5">Rate each factor from 1 (poor fit) to 5 (excellent fit). A score of 24+ suggests a strong bid; below 16 suggests no-bid.</p>
+            <div className="space-y-4">
+              {[
+                { key: "capability_fit", label: "Capability Fit", desc: "How well do your capabilities match?" },
+                { key: "past_performance", label: "Past Performance", desc: "Do you have relevant past performance?" },
+                { key: "pricing_comfort", label: "Pricing Comfort", desc: "Can you offer competitive pricing?" },
+                { key: "timeline_feasibility", label: "Timeline Feasibility", desc: "Can you meet the deadline?" },
+                { key: "competition_level", label: "Competition Level", desc: "How favorable is competition? (5=few competitors)" },
+                { key: "set_aside_match", label: "Set-Aside Match", desc: "Do your certs match set-aside?" },
+                { key: "relationship_strength", label: "Agency Relationship", desc: "How strong is your relationship?" },
+                { key: "resource_availability", label: "Resource Availability", desc: "Do you have staff/resources available?" },
+              ].map(({ key, label, desc }) => (
+                <div key={key}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div>
+                      <span className="text-[13px] font-medium text-[#0f172a]">{label}</span>
+                      <span className="text-[11px] text-[#94a3b8] ml-2">{desc}</span>
+                    </div>
+                    <span className="text-[14px] font-mono font-bold text-[#2563eb] w-6 text-right">{bidScores[key]}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    value={bidScores[key]}
+                    onChange={e => setBidScores(prev => ({ ...prev, [key]: parseInt(e.target.value) }))}
+                    className="w-full h-1.5 bg-[#e5e7eb] rounded-full appearance-none cursor-pointer accent-[#2563eb]"
+                  />
+                  <div className="flex justify-between text-[9px] text-[#94a3b8] mt-0.5">
+                    <span>Poor</span><span>Excellent</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {(() => {
+              const total = Object.values(bidScores).reduce((a, b) => a + b, 0);
+              const max = Object.keys(bidScores).length * 5;
+              const pct = Math.round((total / max) * 100);
+              const decision = total >= 32 ? "STRONG BID" : total >= 24 ? "BID" : total >= 16 ? "CONDITIONAL BID" : "NO-BID";
+              const decColor = total >= 32 ? "text-[#059669] bg-[#ecfdf5]" : total >= 24 ? "text-[#2563eb] bg-[#eff6ff]" : total >= 16 ? "text-[#d97706] bg-[#fffbeb]" : "text-[#dc2626] bg-[#fef2f2]";
+              const barColor = total >= 32 ? "bg-[#059669]" : total >= 24 ? "bg-[#2563eb]" : total >= 16 ? "bg-[#d97706]" : "bg-[#dc2626]";
+              return (
+                <div className="mt-6 pt-5 border-t border-[#e5e7eb]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[13px] text-[#64748b]">Score: {total}/{max}</span>
+                    <span className={`px-3 py-1.5 rounded-lg text-sm font-bold ${decColor}`}>{decision}</span>
+                  </div>
+                  <div className="w-full bg-[#f1f5f9] rounded-full h-3">
+                    <div className={`${barColor} h-3 rounded-full transition-all duration-300`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-[#94a3b8] mt-1">
+                    <span>No-Bid</span><span>Conditional</span><span>Bid</span><span>Strong Bid</span>
+                  </div>
+                  <div className="mt-4 text-[12px] text-[#475569]">
+                    {total >= 32 ? "Strong alignment across all factors. Pursue aggressively with dedicated capture team." :
+                     total >= 24 ? "Good overall fit. Proceed with bid preparation and monitor competitive landscape." :
+                     total >= 16 ? "Mixed signals. Consider teaming arrangements or monitor for more favorable terms." :
+                     "Significant gaps in readiness. Recommend no-bid or use as a learning exercise only."}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (

@@ -28,13 +28,18 @@ export type Feature =
   | 'capability_statement_pdf'
   | 'proposal_outline'
   | 'webhook_notifications'
-  | 'market_intelligence';
+  | 'market_intelligence'
+  | 'bid_wizard'
+  | 'pricing_intelligence'
+  | 'compliance_checklist'
+  | 'pwin_calculator'
+  | 'bid_calendar';
 
 const TIER_ACCESS: Record<string, Feature[]> = {
   discovery: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
     'basic_compliance', 'calendar_sync', 'sam_audit',
-    'webhook_notifications'
+    'webhook_notifications', 'compliance_checklist', 'bid_calendar'
   ],
   bd_pro: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
@@ -43,7 +48,8 @@ const TIER_ACCESS: Record<string, Feature[]> = {
     'contract_delivery', 'state_local_monitoring', 'agency_mapping',
     'weekly_report', 'webhook_notifications',
     'rfp_document_chat', 'proposal_pink_team',
-    'capability_statement_pdf', 'proposal_outline'
+    'capability_statement_pdf', 'proposal_outline',
+    'bid_wizard', 'pricing_intelligence', 'pwin_calculator'
   ],
   team: [
     'opportunity_intelligence', 'daily_digest', 'pipeline_tracker',
