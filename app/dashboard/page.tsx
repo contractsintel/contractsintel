@@ -135,7 +135,7 @@ export default function DashboardPage() {
     }
   }, [organization.onboarding_complete]);
 
-  const PAGE_SIZE = 200;
+  const PAGE_SIZE = 50;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
   const [matches, setMatches] = useState<Record<string, any>[]>([]);
   const [totalMatchCount, setTotalMatchCount] = useState(0);
@@ -171,24 +171,17 @@ export default function DashboardPage() {
     }
   }, [organization.address]);
 
-  const loadData = useCallback(async (limit?: number) => {
-    const effectiveLimit = limit ?? matchLimit;
+  const loadData = useCallback(async () => {
     setLoading(true);
-    // PERF: matches + source sample in parallel.
-    const [matchesRes, sourceSampleRes] = await Promise.all([
-      supabase
-        .from("opportunity_matches")
-        .select("id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(*)", { count: "exact" })
-        .eq("organization_id", organization.id)
-        .order("match_score", { ascending: false })
-        .range(0, effectiveLimit - 1),
-      supabase
-        .from("opportunity_matches")
-        .select("opportunities(source)")
-        .eq("organization_id", organization.id)
-        .limit(100),
-    ]);
-    const { data, count, error } = matchesRes;
+    // PERF: Fetch ALL matches with only the columns needed for display.
+    // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
+    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type";
+    const { data, count, error } = await supabase
+      .from("opportunity_matches")
+      .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
+      .eq("organization_id", organization.id)
+      .order("match_score", { ascending: false })
+      .limit(2000);
     if (error) console.error("[dashboard] query error", error.message);
     // Filter out past-deadline opportunities — keep nulls (no deadline) visible
     const now = new Date().toISOString();
@@ -197,24 +190,16 @@ export default function DashboardPage() {
       return !dl || dl >= now;
     });
     setMatches(active);
-    setTotalMatchCount(count ?? active.length);
+    setTotalMatchCount(active.length);
 
-    const sourceSample = sourceSampleRes.data;
-    if (sourceSample) {
-      const counts: Record<string, number> = {};
-      const sampleSize = sourceSample.length;
-      for (const m of sourceSample) {
-        const src = (m as Record<string, any>).opportunities ? ((m as Record<string, any>).opportunities as Record<string, any>).source : undefined;
-        const cat = getSourceCategory(src);
-        counts[cat] = (counts[cat] ?? 0) + 1;
-      }
-      // Extrapolate from sample to total
-      if (sampleSize > 0 && (count ?? 0) > sampleSize) {
-        const ratio = (count ?? 0) / sampleSize;
-        for (const k of Object.keys(counts)) counts[k] = Math.round(counts[k] * ratio);
-      }
-      setDbSourceCounts(counts);
+    // Compute source counts from the full match set (no sampling needed)
+    const counts: Record<string, number> = {};
+    for (const m of active) {
+      const src = (m as Record<string, any>).opportunities?.source;
+      const cat = getSourceCategory(src);
+      counts[cat] = (counts[cat] ?? 0) + 1;
     }
+    setDbSourceCounts(counts);
 
     // PERF: run all three compliance queries in parallel (were sequential
     // before, costing ~3x the round-trip time on a cold cache).
@@ -253,7 +238,7 @@ export default function DashboardPage() {
     setUpcomingComplianceDeadlines(upcomingRes.data ?? []);
 
     setLoading(false);
-  }, [organization.id, supabase, matchLimit]);
+  }, [organization.id, supabase]);
 
   // Restore session-level dismiss for the high-severity strip
   useEffect(() => {
@@ -278,12 +263,8 @@ export default function DashboardPage() {
     setMatchLimit(PAGE_SIZE);
   }, [filters.source, filters.setAside, filters.agency, filters.minScore, filters.urgency, filters.valueRange, filters.recommendation]);
 
-  const handleLoadMore = async () => {
-    const newLimit = matchLimit + PAGE_SIZE;
-    setMatchLimit(newLimit);
-    setLoadingMore(true);
-    await loadData(newLimit);
-    setLoadingMore(false);
+  const handleLoadMore = () => {
+    setMatchLimit(prev => prev + PAGE_SIZE);
   };
 
   const [toast, setToast] = useState<{ message: string; color: string; link?: string; linkText?: string } | null>(null);
@@ -613,7 +594,7 @@ export default function DashboardPage() {
       {/* Stats Bar — KPI Row (D1: always show 4th Total Value card) */}
       <div data-tour="stats-bar" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {[
-          { value: hasActiveFilter ? String(filtered.length) : (totalMatchCount > 0 ? totalMatchCount.toLocaleString() : String(matches.length)), label: "Matches", urgent: false },
+          { value: hasActiveFilter ? String(filtered.length) : String(matches.length), label: "Matches", urgent: false },
           { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Total Value", urgent: false },
           { value: String(urgentCount), label: "Due < 7 days", urgent: urgentCount > 0 },
           { value: String(topScore), label: "Top Score", urgent: false },
@@ -846,11 +827,11 @@ export default function DashboardPage() {
               {/* Match count */}
               <div className="flex items-center justify-between px-1 mb-2">
                 <span className="text-[12px] text-[#94a3b8]">
-                  Showing {filtered.length} of {totalMatchCount.toLocaleString()} matches
+                  Showing {Math.min(matchLimit, filtered.length)} of {filtered.length.toLocaleString()} matches
                 </span>
               </div>
               <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
-              {filtered.map((match) => {
+              {filtered.slice(0, matchLimit).map((match) => {
                 const opp = match.opportunities;
                 if (!opp) return null;
                 const days = daysUntil(opp.response_deadline);
@@ -1140,14 +1121,13 @@ export default function DashboardPage() {
               })}
               </div>
               {/* Load More button */}
-              {matches.length < totalMatchCount && (
+              {matchLimit < filtered.length && (
                 <div className="flex justify-center pt-4">
                   <button
                     onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    className="px-6 py-2.5 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:border-[#e2e8f0] hover:text-[#0f172a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
+                    className="px-6 py-2.5 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:border-[#e2e8f0] hover:text-[#0f172a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200"
                   >
-                    {loadingMore ? "Loading..." : "Load More Matches"}
+                    Load 50 More
                   </button>
                 </div>
               )}
