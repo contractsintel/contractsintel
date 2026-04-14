@@ -443,15 +443,16 @@ export default function DashboardPage() {
     })
     .sort((a, b) => {
       if (filters.sort === "recommended") {
-        // Composite: 60% relevance + 20% revenue intel + 20% urgency
-        const revA = getVal(a.opportunities) > 0 ? 80 : 0;
-        const revB = getVal(b.opportunities) > 0 ? 80 : 0;
-        const dA = daysUntil(a.opportunities?.response_deadline);
-        const dB = daysUntil(b.opportunities?.response_deadline);
-        const urgA = dA !== null && dA >= 0 ? (dA <= 7 ? 100 : dA <= 14 ? 70 : dA <= 30 ? 40 : 20) : 30;
-        const urgB = dB !== null && dB >= 0 ? (dB <= 7 ? 100 : dB <= 14 ? 70 : dB <= 30 ? 40 : 20) : 30;
-        const compA = (a.match_score ?? 0) * 0.6 + revA * 0.2 + urgA * 0.2;
-        const compB = (b.match_score ?? 0) * 0.6 + revB * 0.2 + urgB * 0.2;
+        // Base = match_score (0-100), then add bonus points for actionability:
+        //   +5 if contract value is known (revenue intel)
+        //   +3/+2/+1 for urgency tiers (≤7d / ≤14d / ≤30d)
+        // Capped at 100 so the score ring never exceeds the natural range.
+        const bonusA = (getVal(a.opportunities) > 0 ? 5 : 0)
+          + ((() => { const d = daysUntil(a.opportunities?.response_deadline); return d !== null && d >= 0 ? (d <= 7 ? 3 : d <= 14 ? 2 : d <= 30 ? 1 : 0) : 0; })());
+        const bonusB = (getVal(b.opportunities) > 0 ? 5 : 0)
+          + ((() => { const d = daysUntil(b.opportunities?.response_deadline); return d !== null && d >= 0 ? (d <= 7 ? 3 : d <= 14 ? 2 : d <= 30 ? 1 : 0) : 0; })());
+        const compA = Math.min(100, (a.match_score ?? 0) + bonusA);
+        const compB = Math.min(100, (b.match_score ?? 0) + bonusB);
         return compB - compA;
       }
       if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
@@ -887,10 +888,9 @@ export default function DashboardPage() {
                         const raw = match.match_score ?? 0;
                         let displayScore = raw;
                         if (filters.sort === "recommended") {
-                          const rev = getVal(opp) > 0 ? 80 : 0;
-                          const d = daysUntil(opp.response_deadline);
-                          const urg = d !== null && d >= 0 ? (d <= 7 ? 100 : d <= 14 ? 70 : d <= 30 ? 40 : 20) : 30;
-                          displayScore = Math.round(raw * 0.6 + rev * 0.2 + urg * 0.2);
+                          const bonus = (getVal(opp) > 0 ? 5 : 0)
+                            + ((() => { const d = daysUntil(opp.response_deadline); return d !== null && d >= 0 ? (d <= 7 ? 3 : d <= 14 ? 2 : d <= 30 ? 1 : 0) : 0; })());
+                          displayScore = Math.min(100, raw + bonus);
                         }
                         return (
                           <div className={`ci-score-ring ${
