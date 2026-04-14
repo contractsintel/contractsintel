@@ -185,10 +185,14 @@ export default function DashboardPage() {
       .limit(2000);
     if (error) console.error("[dashboard] query error", error.message);
     // Filter out past-deadline opportunities — keep nulls (no deadline) visible
+    // USASpending recompetes use response_deadline as period-of-performance end,
+    // so we keep them even if that date has passed (they represent recompete opps).
     const now = new Date().toISOString();
     const active = (data ?? []).filter((m: Record<string, any>) => {
       const dl = m.opportunities?.response_deadline;
-      return !dl || dl >= now;
+      if (!dl) return true;
+      if ((m as Record<string, any>).bid_recommendation === "recompete") return true;
+      return dl >= now;
     });
     setMatches(active);
     setTotalMatchCount(active.length);
@@ -197,7 +201,7 @@ export default function DashboardPage() {
     const counts: Record<string, number> = {};
     for (const m of active) {
       const src = (m as Record<string, any>).opportunities?.source;
-      const cat = getSourceCategory(src);
+      const cat = getSourceCategory(src, (m as Record<string, any>).bid_recommendation);
       counts[cat] = (counts[cat] ?? 0) + 1;
     }
     setDbSourceCounts(counts);

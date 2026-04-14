@@ -184,10 +184,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Remove past-deadline opportunities — no point matching expired contracts
+    // Keep USASpending records: their response_deadline is period-of-performance
+    // end date, and expired contracts are exactly what we want for recompete alerts.
     const now = new Date().toISOString();
     opportunities = opportunities.filter(o => {
       const dl = o.response_deadline;
-      return !dl || dl >= now;
+      if (!dl) return true;
+      if (o.source === "usaspending") return true;
+      return dl >= now;
     });
 
     // Filter out non-biddable notice types:
