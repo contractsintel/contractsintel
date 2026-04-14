@@ -98,6 +98,22 @@ export default function ForecastsPage() {
     }
   }, [load]);
 
+  // Fetch all unique agencies/NAICS once on mount for dropdown options
+  const [allAgencies, setAllAgencies] = useState<string[]>([]);
+  const [allNaics, setAllNaics] = useState<string[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/forecasts?limit=500&months_out=36");
+        if (!res.ok) return;
+        const json = await res.json();
+        const fc = json.forecasts || [];
+        setAllAgencies(Array.from(new Set(fc.map((r: ForecastRow) => r.agency).filter(Boolean))).sort() as string[]);
+        setAllNaics(Array.from(new Set(fc.map((r: ForecastRow) => r.naics).filter(Boolean))).sort() as string[]);
+      } catch { /* swallow */ }
+    })();
+  }, []);
+
   const grouped = useMemo(() => {
     const buckets: Record<string, ForecastRow[]> = {};
     for (const r of rows) {
@@ -144,20 +160,26 @@ export default function ForecastsPage() {
       )}
 
       <div className="mb-4 flex flex-wrap gap-3">
-        <input
-          type="text"
+        <select
           value={agencyFilter}
           onChange={(e) => setAgencyFilter(e.target.value)}
-          placeholder="Filter by agency"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-        />
-        <input
-          type="text"
+        >
+          <option value="">All agencies</option>
+          {allAgencies.map(a => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+        <select
           value={naicsFilter}
           onChange={(e) => setNaicsFilter(e.target.value)}
-          placeholder="Filter by NAICS"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-        />
+        >
+          <option value="">All NAICS</option>
+          {allNaics.map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
         <select
           value={monthsOut}
           onChange={(e) => setMonthsOut(Number(e.target.value))}
