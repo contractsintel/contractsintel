@@ -59,60 +59,55 @@ async function fallbackAgenciesFromOpportunities(
 
 // GET /api/agencies?q=CISA → list (optionally filtered by name/acronym)
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const url = new URL(request.url);
-  const q = url.searchParams.get("q")?.trim();
-  const parentOnly = url.searchParams.get("parent_only") === "true";
-
-  // Primary path: query the agencies table directly.
-  let query = supabase
-    .from("agencies")
-    .select(
-      "id, name, acronym, parent_agency_id, description, website, total_obligations, active_opportunities",
-    )
-    .order("total_obligations", { ascending: false, nullsFirst: false });
-
-  if (q) {
-    const safe = q.replace(/[%,.()"'\\]/g, "");
-    if (safe) query = query.or(`name.ilike.%${safe}%,acronym.ilike.%${safe}%`);
-  }
-  if (parentOnly) query = query.is("parent_agency_id", null);
-
-  const { data, error } = await query.limit(50);
-
-  // If the agencies table exists and query succeeded, return normally.
-  if (!error) {
-    return NextResponse.json({
-      agencies: data ?? [],
-      count: data?.length ?? 0,
-    });
-  }
-
-  // Fallback: the agencies table likely doesn't exist yet.
-  // Aggregate distinct agency names from the opportunities table instead.
-  console.warn(
-    `[agencies] Primary query failed (${error.message}), falling back to opportunities table`,
-  );
-
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const url = new URL(request.url);
+    const q = url.searchParams.get("q")?.trim();
+    const parentOnly = url.searchParams.get("parent_only") === "true";
+
+    // Primary path: try agencies table with SELECT * to avoid column mismatch
+    let query = supabase
+      .from("agencies")
+      .select("*")
+      .order("total_obligations", { ascending: false, nullsFirst: false });
+
+    if (q) {
+      const safe = q.replace(/[%,.()"'\\]/g, "");
+      if (safe) query = query.or(`name.ilike.%${safe}%,acronym.ilike.%${safe}%`);
+    }
+    if (parentOnly) query = query.is("parent_agency_id", null);
+
+    const { data, error } = await query.limit(50);
+
+    // If the agencies table exists and query succeeded, return normally.
+    if (!error) {
+      return NextResponse.json({
+        agencies: data ?? [],
+        count: data?.length ?? 0,
+      });
+    }
+
+    // Fallback: the agencies table likely doesn't exist yet.
+    console.warn(
+      `[agencies] Primary query failed (${error.message}), falling back to opportunities table`,
+    );
+
     const agencies = await fallbackAgenciesFromOpportunities(supabase, q);
     return NextResponse.json({
       agencies,
       count: agencies.length,
       _fallback: true,
     });
-  } catch (fbErr) {
-    console.error("[agencies] Fallback also failed:", fbErr);
-    return NextResponse.json(
-      { error: "Unable to load agencies. Please try again later." },
-      { status: 500 },
-    );
+  } catch (err) {
+    console.error("[agencies] Error:", err);
+    // Return empty list instead of 500 so the page doesn't break
+    return NextResponse.json({ agencies: [], count: 0, _fallback: true });
   }
 }
