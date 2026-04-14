@@ -204,8 +204,8 @@ export function ProductTour({ onComplete }: { onComplete?: () => void }) {
       await supabase
         .from("user_preferences")
         .upsert(
-          { user_id: user.id, tour_completed: true },
-          { onConflict: "user_id" }
+          { organization_id: user.organization_id, tour_completed: true },
+          { onConflict: "organization_id" }
         );
     } catch {
       // non-critical

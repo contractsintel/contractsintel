@@ -45,16 +45,29 @@ export async function GET(request: NextRequest) {
 
     const tokens = await tokenRes.json();
 
+    // Look up organization_id for this user
+    const { data: userRec } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", user.id)
+      .single();
+
+    if (!userRec?.organization_id) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.contractsintel.com"}/dashboard/settings?error=no_organization`
+      );
+    }
+
     // Store refresh token in user_preferences
     await supabase
       .from("user_preferences")
       .upsert({
-        user_id: user.id,
+        organization_id: userRec.organization_id,
         google_calendar_refresh_token: tokens.refresh_token ?? null,
         google_calendar_access_token: tokens.access_token,
         google_calendar_token_expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
         google_calendar_connected: true,
-      }, { onConflict: "user_id" });
+      }, { onConflict: "organization_id" });
 
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.contractsintel.com"}/dashboard/settings?calendar=connected`

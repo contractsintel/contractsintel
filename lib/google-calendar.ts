@@ -8,13 +8,13 @@ interface CalendarEvent {
   location?: string;
 }
 
-async function getAccessToken(userId: string): Promise<string | null> {
+async function getAccessToken(orgId: string): Promise<string | null> {
   const supabase = await createClient();
 
   const { data: prefs } = await supabase
     .from("user_preferences")
     .select("google_calendar_access_token, google_calendar_refresh_token, google_calendar_token_expiry")
-    .eq("user_id", userId)
+    .eq("organization_id", orgId)
     .single();
 
   if (!prefs?.google_calendar_refresh_token) return null;
@@ -54,44 +54,33 @@ async function getAccessToken(userId: string): Promise<string | null> {
       google_calendar_access_token: tokens.access_token,
       google_calendar_token_expiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     })
-    .eq("user_id", userId);
+    .eq("organization_id", orgId);
 
   return tokens.access_token;
 }
 
-async function getOrgUserId(orgId: string): Promise<string | null> {
-  const supabase = await createClient();
-
-  // Get the first user for this org who has calendar connected
-  const { data: users } = await supabase
-    .from("users")
-    .select("id")
-    .eq("organization_id", orgId);
-
-  if (!users || users.length === 0) return null;
-
-  for (const u of users) {
-    const { data: prefs } = await supabase
+function hasCalendarConnected(orgId: string): Promise<boolean> {
+  // Used by pushDeadlineToCalendar / removeDeadlineFromCalendar to check
+  // if the org has Google Calendar connected before attempting API calls.
+  return createClient().then(async (supabase) => {
+    const { data } = await supabase
       .from("user_preferences")
       .select("google_calendar_connected")
-      .eq("user_id", u.id)
+      .eq("organization_id", orgId)
       .eq("google_calendar_connected", true)
       .single();
-
-    if (prefs) return u.id;
-  }
-
-  return null;
+    return !!data;
+  });
 }
 
 export async function pushDeadlineToCalendar(
   orgId: string,
   event: CalendarEvent
 ): Promise<string | null> {
-  const userId = await getOrgUserId(orgId);
-  if (!userId) return null;
+  const connected = await hasCalendarConnected(orgId);
+  if (!connected) return null;
 
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(orgId);
   if (!accessToken) return null;
 
   const endDate = event.end ?? event.start;
@@ -140,10 +129,10 @@ export async function removeDeadlineFromCalendar(
   orgId: string,
   eventId: string
 ): Promise<boolean> {
-  const userId = await getOrgUserId(orgId);
-  if (!userId) return false;
+  const connected = await hasCalendarConnected(orgId);
+  if (!connected) return false;
 
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(orgId);
   if (!accessToken) return false;
 
   const res = await fetch(

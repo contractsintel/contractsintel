@@ -950,8 +950,8 @@ export default function GetStartedPage() {
     await supabase
       .from("user_preferences")
       .upsert(
-        { user_id: user.id, default_page: "dashboard" },
-        { onConflict: "user_id" }
+        { organization_id: user.organization_id, default_page: "dashboard" },
+        { onConflict: "organization_id" }
       );
     window.location.href = "/dashboard";
   };

@@ -47,6 +47,17 @@
     { "path": "/api/cron/scrape-usa-p7", "schedule": "25 6 * * *" },
     { "path": "/api/cron/scrape-usa-p8", "schedule": "25 7 * * *" },
     { "path": "/api/cron/scrape-usa-p9", "schedule": "25 8 * * *" },
-    { "path": "/api/cron/scrape-usa-p10", "schedule": "25 9 * * *" }
+    { "path": "/api/cron/scrape-usa-p10", "schedule": "25 9 * * *" },
+
+    { "path": "/api/cron/scrape-usa-p11", "schedule": "25 10 * * *" },
+    { "path": "/api/cron/scrape-usa-p12", "schedule": "25 11 * * *" },
+    { "path": "/api/cron/scrape-usa-p13", "schedule": "25 12 * * *" },
+    { "path": "/api/cron/scrape-usa-p14", "schedule": "25 13 * * *" },
+    { "path": "/api/cron/scrape-usa-p15", "schedule": "25 14 * * *" },
+    { "path": "/api/cron/scrape-usa-p16", "schedule": "25 15 * * *" },
+    { "path": "/api/cron/scrape-usa-p17", "schedule": "25 16 * * *" },
+    { "path": "/api/cron/scrape-usa-p18", "schedule": "25 17 * * *" },
+    { "path": "/api/cron/scrape-usa-p19", "schedule": "25 18 * * *" },
+    { "path": "/api/cron/scrape-usa-p20", "schedule": "25 19 * * *" }
   ]
 }
