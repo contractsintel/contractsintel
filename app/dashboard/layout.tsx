@@ -29,11 +29,11 @@ export default async function DashboardLayout({
   const pathname = headerStore.get("x-pathname") ?? "";
   const onboardingChecked = cookieStore.get("ci_onboarding_checked")?.value === "1";
 
-  // PERF: Select only the columns needed instead of SELECT *
-  // NOTE: There is no `plan` column — it's synthesized from subscription_tier in code below.
+  // Fetch user profile joined with organization — use SELECT * since column
+  // sets differ across environments and a single-row join is already fast.
   const { data: profile } = await supabase
     .from("users")
-    .select("id, auth_id, full_name, organization_id, role, created_at, organizations(id, name, uei, cage_code, certifications, naics_codes, keywords, entity_description, address, subscription_status, subscription_tier, trial_ends_at, stripe_customer_id, created_at, onboarding_complete, has_seen_dashboard, setup_wizard_complete, min_contract_value, max_contract_value, service_states, serves_nationwide, preferred_agencies)")
+    .select("*, organizations(*)")
     .eq("auth_id", authUser.id)
     .single();
 
