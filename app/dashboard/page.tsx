@@ -175,7 +175,7 @@ export default function DashboardPage() {
     setLoading(true);
     // PERF: Fetch ALL matches with only the columns needed for display.
     // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
-    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,set_aside_description,estimated_value,value_estimate,award_amount,total_award_amount,response_deadline,posted_date,source,notice_type,contract_type,status";
+    const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type";
     const { data, count, error } = await supabase
       .from("opportunity_matches")
       .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
