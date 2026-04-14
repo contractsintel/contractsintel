@@ -10,6 +10,7 @@ import { DemoBanner } from "./demo-banner";
 import { InlineGuide } from "./inline-guide";
 import { seedDemoData } from "@/lib/demo-data";
 import { UnlockButton, ProfileBanner } from "./unlock-panel";
+import { ReadinessScore } from "./readiness-score";
 
 function cleanTitle(s: string): string {
   // Remove bracket prefixes and "Recompete: " prefix
@@ -600,6 +601,11 @@ export default function DashboardPage() {
 
       {/* Profile Completion Banner */}
       <ProfileBanner />
+
+      {/* GovCon Readiness Score */}
+      <div className="mb-6">
+        <ReadinessScore compact />
+      </div>
 
       {/* Demo Banner */}
       {matches.some((m) => m.is_demo) && <DemoBanner />}

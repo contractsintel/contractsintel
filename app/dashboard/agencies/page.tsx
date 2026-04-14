@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 interface Agency {
@@ -27,6 +27,19 @@ export default function AgenciesIndexPage() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [parentOnly, setParentOnly] = useState(false);
+  const [spendOpen, setSpendOpen] = useState(true);
+
+  const spendStats = useMemo(() => {
+    if (agencies.length === 0) return null;
+    const totalObligations = agencies.reduce((sum, a) => sum + (a.total_obligations ?? 0), 0);
+    const avgObligations = totalObligations / agencies.length;
+    const withActive = agencies.filter((a) => (a.active_opportunities ?? 0) > 0).length;
+    const top5 = [...agencies]
+      .sort((a, b) => (b.total_obligations ?? 0) - (a.total_obligations ?? 0))
+      .slice(0, 5);
+    const maxObligation = top5[0]?.total_obligations ?? 0;
+    return { totalObligations, avgObligations, withActive, top5, maxObligation };
+  }, [agencies]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,6 +88,79 @@ export default function AgenciesIndexPage() {
           Top-level agencies only
         </label>
       </div>
+
+      {!loading && !error && spendStats && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Spend Intelligence</h2>
+            <button
+              onClick={() => setSpendOpen((v) => !v)}
+              className="text-xs text-[#2563eb] hover:underline"
+            >
+              {spendOpen ? "Hide Spend Intelligence" : "Show Spend Intelligence"}
+            </button>
+          </div>
+          {spendOpen && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="border border-[#e5e7eb] bg-white rounded-xl p-4">
+                  <div style={{ fontSize: 11 }} className="uppercase tracking-wide text-[#94a3b8]">
+                    Total Tracked Obligations
+                  </div>
+                  <div style={{ fontSize: 22 }} className="font-mono text-[#0f172a] mt-1">
+                    {formatCurrency(spendStats.totalObligations)}
+                  </div>
+                </div>
+                <div className="border border-[#e5e7eb] bg-white rounded-xl p-4">
+                  <div style={{ fontSize: 11 }} className="uppercase tracking-wide text-[#94a3b8]">
+                    Avg Obligations / Agency
+                  </div>
+                  <div style={{ fontSize: 22 }} className="font-mono text-[#0f172a] mt-1">
+                    {formatCurrency(spendStats.avgObligations)}
+                  </div>
+                </div>
+                <div className="border border-[#e5e7eb] bg-white rounded-xl p-4">
+                  <div style={{ fontSize: 11 }} className="uppercase tracking-wide text-[#94a3b8]">
+                    Agencies w/ Active Opportunities
+                  </div>
+                  <div style={{ fontSize: 22 }} className="font-mono text-[#0f172a] mt-1">
+                    {spendStats.withActive}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-[#e5e7eb] bg-white rounded-xl p-4">
+                <div style={{ fontSize: 11 }} className="uppercase tracking-wide text-[#94a3b8] mb-3">
+                  Top 5 Agencies by Obligations
+                </div>
+                <div className="space-y-2">
+                  {spendStats.top5.map((a) => {
+                    const pct = spendStats.maxObligation > 0
+                      ? ((a.total_obligations ?? 0) / spendStats.maxObligation) * 100
+                      : 0;
+                    return (
+                      <div key={a.id} className="flex items-center gap-3">
+                        <div className="w-40 shrink-0 text-xs text-[#0f172a] truncate" title={a.name}>
+                          {a.acronym || a.name}
+                        </div>
+                        <div className="flex-1 h-5 bg-gray-100 rounded overflow-hidden">
+                          <div
+                            className="h-full rounded"
+                            style={{ width: `${pct}%`, backgroundColor: "#2563eb" }}
+                          />
+                        </div>
+                        <div className="w-20 shrink-0 text-right text-xs font-mono text-[#0f172a]">
+                          {formatCurrency(a.total_obligations)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading && <div className="text-gray-500">Loading agencies…</div>}
       {error && (

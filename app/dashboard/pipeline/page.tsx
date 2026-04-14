@@ -165,12 +165,266 @@ function CalendarView({ matches }: { matches: PipelineMatch[] }) {
   );
 }
 
+const CAPTURE_PHASES = [
+  "Market Research",
+  "Sources Sought",
+  "Pre-Sol",
+  "RFI",
+  "Draft RFP",
+  "Final RFP",
+] as const;
+
+const CAPTURE_ACTIVITIES = [
+  "Attended industry day",
+  "Submitted RFI response",
+  "Met with contracting officer",
+  "Identified teaming partners",
+  "Reviewed draft SOW/PWS",
+  "Completed competitive analysis",
+  "Built win themes",
+  "Drafted technical approach",
+] as const;
+
+const RELATIONSHIP_LEVELS = ["None", "Low", "Medium", "High"] as const;
+
+type CaptureState = Record<
+  string,
+  {
+    phase: string;
+    activities: Record<string, boolean>;
+    relationship: string;
+    notes: string;
+  }
+>;
+
+function CaptureTrackerView({ matches }: { matches: PipelineMatch[] }) {
+  const captureMatches = matches.filter(
+    (m) => m.pipeline_stage === "monitoring" || m.pipeline_stage === "preparing_bid"
+  );
+
+  const [state, setState] = useState<CaptureState>(() => {
+    const init: CaptureState = {};
+    captureMatches.forEach((m) => {
+      init[m.id] = {
+        phase: CAPTURE_PHASES[0],
+        activities: {},
+        relationship: "None",
+        notes: "",
+      };
+    });
+    return init;
+  });
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const getOrDefault = (id: string) =>
+    state[id] ?? { phase: CAPTURE_PHASES[0], activities: {}, relationship: "None", notes: "" };
+
+  const update = (id: string, patch: Partial<CaptureState[string]>) => {
+    setState((prev) => ({
+      ...prev,
+      [id]: { ...getOrDefault(id), ...patch },
+    }));
+  };
+
+  const toggleActivity = (id: string, activity: string) => {
+    const cur = getOrDefault(id);
+    update(id, {
+      activities: { ...cur.activities, [activity]: !cur.activities[activity] },
+    });
+  };
+
+  const phaseColor = (phase: string) => {
+    const idx = CAPTURE_PHASES.indexOf(phase as (typeof CAPTURE_PHASES)[number]);
+    if (idx <= 1) return "bg-[#f1f5f9] text-[#64748b]";
+    if (idx <= 3) return "bg-[#fffbeb] text-[#d97706]";
+    return "bg-[#eff4ff] text-[#2563eb]";
+  };
+
+  const relationshipColor = (level: string) => {
+    if (level === "High") return "text-[#059669]";
+    if (level === "Medium") return "text-[#d97706]";
+    if (level === "Low") return "text-[#ef4444]";
+    return "text-[#94a3b8]";
+  };
+
+  if (captureMatches.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <div className="text-[#94a3b8] text-sm mb-2">No pre-RFP opportunities to track</div>
+        <div className="text-[#c4c9d4] text-xs">
+          Move opportunities to &quot;Monitoring&quot; or &quot;Preparing Bid&quot; to start capture tracking.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="ci-serif text-[18px] text-[#0f172a]">Pre-RFP Capture Tracker</h2>
+        <p className="text-[11px] text-[#94a3b8] mt-1">
+          Track capture activities for opportunities in Monitoring and Preparing Bid stages.
+        </p>
+      </div>
+      <div className="space-y-3">
+        {captureMatches.map((match) => {
+          const opp = match.opportunities;
+          const data = getOrDefault(match.id);
+          const completedCount = CAPTURE_ACTIVITIES.filter((a) => data.activities[a]).length;
+          const isExpanded = expandedId === match.id;
+
+          return (
+            <div
+              key={match.id}
+              className="border border-[#e5e7eb] bg-white rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden"
+            >
+              {/* Header - always visible */}
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : match.id)}
+                className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-[#fafbfc] transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="text-xs text-[#0f172a] font-medium truncate">
+                      {opp?.title ?? "Untitled"}
+                    </h4>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${phaseColor(data.phase)}`}>
+                      {data.phase}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] text-[#94a3b8]">
+                    <span>{opp?.agency ?? "Unknown Agency"}</span>
+                    <span className="font-mono">{formatCurrency(opp?.estimated_value ?? null)}</span>
+                    <span>
+                      {completedCount}/{CAPTURE_ACTIVITIES.length} activities
+                    </span>
+                    <span className={`font-medium ${relationshipColor(data.relationship)}`}>
+                      Rel: {data.relationship}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-3">
+                  {/* Progress bar */}
+                  <div className="w-16 h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#2563eb] rounded-full transition-all"
+                      style={{ width: `${(completedCount / CAPTURE_ACTIVITIES.length) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#64748b]">{isExpanded ? "▾" : "▸"}</span>
+                </div>
+              </button>
+
+              {/* Expanded content */}
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-[#f1f5f9]">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    {/* Column 1: Phase & Relationship */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] font-medium uppercase tracking-wide text-[#64748b] mb-1">
+                          Capture Phase
+                        </label>
+                        <select
+                          value={data.phase}
+                          onChange={(e) => update(match.id, { phase: e.target.value })}
+                          className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] text-[11px] px-2 py-1.5 rounded focus:outline-none focus:border-[#2563eb]"
+                        >
+                          {CAPTURE_PHASES.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium uppercase tracking-wide text-[#64748b] mb-1">
+                          Relationship Strength
+                        </label>
+                        <div className="flex gap-1">
+                          {RELATIONSHIP_LEVELS.map((level) => (
+                            <button
+                              key={level}
+                              type="button"
+                              onClick={() => update(match.id, { relationship: level })}
+                              className={`flex-1 text-[10px] py-1 rounded border transition-colors ${
+                                data.relationship === level
+                                  ? "bg-[#2563eb] text-white border-[#2563eb]"
+                                  : "bg-white text-[#64748b] border-[#e5e7eb] hover:bg-[#f8f9fb]"
+                              }`}
+                            >
+                              {level}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-medium uppercase tracking-wide text-[#64748b] mb-1">
+                          Notes
+                        </label>
+                        <textarea
+                          value={data.notes}
+                          onChange={(e) => update(match.id, { notes: e.target.value })}
+                          rows={4}
+                          placeholder="Key contacts, intel, strategy notes..."
+                          className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] text-[11px] px-2 py-1.5 rounded focus:outline-none focus:border-[#2563eb] resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Column 2-3: Activity Checklist */}
+                    <div className="md:col-span-2">
+                      <label className="block text-[10px] font-medium uppercase tracking-wide text-[#64748b] mb-2">
+                        Capture Activities
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                        {CAPTURE_ACTIVITIES.map((activity) => {
+                          const checked = !!data.activities[activity];
+                          return (
+                            <button
+                              key={activity}
+                              type="button"
+                              onClick={() => toggleActivity(match.id, activity)}
+                              className={`flex items-center gap-2 text-left px-3 py-2 rounded border transition-colors ${
+                                checked
+                                  ? "bg-[#ecfdf5] border-[#bbf7d0] text-[#059669]"
+                                  : "bg-white border-[#e5e7eb] text-[#64748b] hover:bg-[#f8f9fb]"
+                              }`}
+                            >
+                              <span
+                                className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
+                                  checked
+                                    ? "bg-[#059669] border-[#059669] text-white"
+                                    : "border-[#d1d5db] bg-white"
+                                }`}
+                              >
+                                {checked && "✓"}
+                              </span>
+                              <span className="text-[11px]">{activity}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function PipelinePage() {
   const { organization } = useDashboard();
   const supabase = createClient();
   const [matches, setMatches] = useState<PipelineMatch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "calendar">("kanban");
+  const [view, setView] = useState<"kanban" | "calendar" | "capture">("kanban");
   const [wonModal, setWonModal] = useState<string | null>(null);
   const [lostModal, setLostModal] = useState<string | null>(null);
   const [wonData, setWonData] = useState({ award_amount: "", contract_number: "", period_months: "12" });
@@ -405,6 +659,12 @@ export default function PipelinePage() {
             >
               Calendar
             </button>
+            <button
+              onClick={() => setView("capture")}
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === "capture" ? "bg-[#2563eb] text-white" : "bg-white text-[#64748b] hover:bg-[#f8f9fb]"}`}
+            >
+              Capture
+            </button>
           </div>
           <HelpButton page="pipeline" />
         </div>
@@ -432,6 +692,8 @@ export default function PipelinePage() {
         <div className="text-center text-[#94a3b8] py-12">Loading pipeline...</div>
       ) : view === "calendar" ? (
         <CalendarView matches={matches} />
+      ) : view === "capture" ? (
+        <CaptureTrackerView matches={matches} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {STAGES.map((stage) => (

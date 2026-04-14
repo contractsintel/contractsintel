@@ -140,6 +140,12 @@ export default function CompliancePage() {
 </div>
         <div className="flex items-center gap-3">
           <a
+            href="/dashboard/compliance/certifications"
+            className="text-xs text-[#059669] hover:underline"
+          >
+            Certification advisor →
+          </a>
+          <a
             href="/dashboard/compliance/matrix"
             className="text-xs text-[#2563eb] hover:underline"
           >

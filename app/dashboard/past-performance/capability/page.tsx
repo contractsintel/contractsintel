@@ -19,6 +19,11 @@ export default function CapabilityStatementPage() {
   const [active, setActive] = useState<Statement | null>(null);
   const [copied, setCopied] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [retargetOpen, setRetargetOpen] = useState(false);
+  const [retargeting, setRetargeting] = useState(false);
+  const [retargetAgency, setRetargetAgency] = useState("");
+  const [retargetOpportunity, setRetargetOpportunity] = useState("");
+  const [retargetRequirements, setRetargetRequirements] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -59,6 +64,35 @@ export default function CapabilityStatementPage() {
       setError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const retarget = async () => {
+    setRetargeting(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/capability-statement/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          retarget: {
+            agency: retargetAgency,
+            opportunity: retargetOpportunity,
+            requirements: retargetRequirements,
+          },
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setError(j.error ?? "Retarget failed");
+      } else if (j.statement) {
+        setActive(j.statement);
+        setStatements((prev) => [j.statement, ...prev]);
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Retarget failed");
+    } finally {
+      setRetargeting(false);
     }
   };
 
@@ -126,6 +160,55 @@ export default function CapabilityStatementPage() {
           >
             {generating ? "Generating..." : statements.length > 0 ? "Regenerate" : "Generate"}
           </button>
+        </div>
+        <div className="border-t border-[#f1f5f9] mt-4 pt-4">
+          <button
+            onClick={() => setRetargetOpen((v) => !v)}
+            className="text-xs text-[#64748b] hover:text-[#0f172a] transition-colors"
+          >
+            {retargetOpen ? "Hide retargeting \u25B4" : "Retarget for specific opportunity \u25BE"}
+          </button>
+          {retargetOpen && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="block text-xs text-[#64748b] mb-1">Target Agency</label>
+                <input
+                  type="text"
+                  value={retargetAgency}
+                  onChange={(e) => setRetargetAgency(e.target.value)}
+                  placeholder="e.g. Department of Veterans Affairs"
+                  className="w-full text-sm border border-[#e5e7eb] rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#64748b] mb-1">Target Opportunity / NAICS</label>
+                <input
+                  type="text"
+                  value={retargetOpportunity}
+                  onChange={(e) => setRetargetOpportunity(e.target.value)}
+                  placeholder="e.g. IT Modernization / 541512"
+                  className="w-full text-sm border border-[#e5e7eb] rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#64748b] mb-1">Key Requirements to Emphasize</label>
+                <textarea
+                  value={retargetRequirements}
+                  onChange={(e) => setRetargetRequirements(e.target.value)}
+                  placeholder="e.g. cloud migration, FedRAMP, agile"
+                  rows={2}
+                  className="w-full text-sm border border-[#e5e7eb] rounded px-3 py-2 resize-none"
+                />
+              </div>
+              <button
+                onClick={retarget}
+                disabled={retargeting}
+                className="px-4 py-2 text-sm bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors rounded"
+              >
+                {retargeting ? "Retargeting..." : "Retarget Statement"}
+              </button>
+            </div>
+          )}
         </div>
         {error && <div className="mt-3 text-xs text-[#dc2626]">{error}</div>}
       </div>
