@@ -135,7 +135,7 @@ export default function DashboardPage() {
     }
   }, [organization.onboarding_complete]);
 
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 200;
   const profileIncomplete = !organization.naics_codes?.length || !organization.certifications?.length;
   const [matches, setMatches] = useState<Record<string, any>[]>([]);
   const [totalMatchCount, setTotalMatchCount] = useState(0);
@@ -458,7 +458,7 @@ export default function DashboardPage() {
     })
     .sort((a, b) => {
       if (filters.sort === "score") return (b.match_score ?? 0) - (a.match_score ?? 0);
-      if (filters.sort === "value") return (b.opportunities?.estimated_value ?? 0) - (a.opportunities?.estimated_value ?? 0);
+      if (filters.sort === "value") return (b.opportunities?.estimated_value ?? -1) - (a.opportunities?.estimated_value ?? -1);
       if (filters.sort === "newest") return new Date(b.opportunities?.posted_date ?? 0).getTime() - new Date(a.opportunities?.posted_date ?? 0).getTime();
       if (filters.sort === "deadline") {
         const da = daysUntil(a.opportunities?.response_deadline) ?? 999;
@@ -1147,7 +1147,7 @@ export default function DashboardPage() {
                     disabled={loadingMore}
                     className="px-6 py-2.5 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:border-[#e2e8f0] hover:text-[#0f172a] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] rounded-xl transition-all duration-200 disabled:opacity-50"
                   >
-                    {loadingMore ? "Loading..." : "Show 50 more"}
+                    {loadingMore ? "Loading..." : "Load More Matches"}
                   </button>
                 </div>
               )}
