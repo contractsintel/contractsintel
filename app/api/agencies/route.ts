@@ -13,7 +13,7 @@ async function fallbackAgenciesFromOpportunities(
   supabase: Awaited<ReturnType<typeof createClient>>,
   q?: string | null,
 ) {
-  let query = supabase
+  const query = supabase
     .from("opportunities")
     .select("agency")
     .not("agency", "is", null)

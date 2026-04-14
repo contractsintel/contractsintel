@@ -74,7 +74,7 @@ export async function listForecasts(filters: ForecastFilters = {}) {
   // Try full query first
   const primary = await buildQuery(allFields);
   if (!primary.error) {
-    return (primary.data ?? []) as ForecastRow[];
+    return (primary.data ?? []) as unknown as ForecastRow[];
   }
 
   console.warn("forecasts primary query failed, trying minimal fields:", primary.error.message);
@@ -83,7 +83,7 @@ export async function listForecasts(filters: ForecastFilters = {}) {
   // created_at columns don't exist yet)
   const fallback = await buildQuery(minimalFields);
   if (!fallback.error) {
-    return (fallback.data ?? []).map((r: Record<string, unknown>) => ({
+    return ((fallback.data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
       ...r,
       linked_recompete_award_id: null,
       created_at: "",
