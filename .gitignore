@@ -5,3 +5,5 @@ node_modules/
 workers/node_modules/
 *.tsbuildinfo
 gmail_token.json
+.vercel
+.env*.local
