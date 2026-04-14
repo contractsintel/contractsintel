@@ -177,13 +177,24 @@ export default function DashboardPage() {
     // PERF: Fetch ALL matches with only the columns needed for display.
     // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
     const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type,incumbent_name,incumbent_value,source_url,solicitation_number,place_of_performance";
-    const { data, count, error } = await supabase
-      .from("opportunity_matches")
-      .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`, { count: "exact" })
-      .eq("organization_id", organization.id)
-      .order("match_score", { ascending: false })
-      .limit(5000);
-    if (error) console.error("[dashboard] query error", error.message);
+    // Supabase PostgREST caps at 1000 rows per request. Paginate to get all.
+    const PAGE = 1000;
+    let allData: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const { data: page, error: pgErr } = await supabase
+        .from("opportunity_matches")
+        .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`)
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(offset, offset + PAGE - 1);
+      if (pgErr) { console.error("[dashboard] query error", pgErr.message); break; }
+      allData = allData.concat(page ?? []);
+      hasMore = (page?.length ?? 0) === PAGE;
+      offset += PAGE;
+    }
+    const data = allData;
     // Filter out past-deadline opportunities — keep nulls (no deadline) visible
     // USASpending recompetes use response_deadline as period-of-performance end,
     // so we keep them even if that date has passed (they represent recompete opps).
