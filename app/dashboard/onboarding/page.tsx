@@ -62,7 +62,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-white -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] bg-white">
       <div className="max-w-[660px] mx-auto pt-16 pb-24 px-6">
 
         {/* Title + Skip */}
