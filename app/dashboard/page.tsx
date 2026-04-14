@@ -413,13 +413,18 @@ export default function DashboardPage() {
         const cat = getSourceCategory(opp.source, m.bid_recommendation);
         if (cat !== filters.source) return false;
       }
-      // Urgency filter
+      // Urgency filter — contracts with no deadline are always included
+      // (they're open/ongoing). Only exclude contracts with a known deadline
+      // that falls outside the selected range, or that have already expired.
       if (filters.urgency) {
         const d = daysUntil(opp.response_deadline);
-        if (d === null || d < 0) return false;
-        if (filters.urgency === "week" && d > 7) return false;
-        if (filters.urgency === "2weeks" && d > 14) return false;
-        if (filters.urgency === "month" && d > 30) return false;
+        if (d !== null) {
+          if (d < 0) return false; // expired
+          if (filters.urgency === "week" && d > 7) return false;
+          if (filters.urgency === "2weeks" && d > 14) return false;
+          if (filters.urgency === "month" && d > 30) return false;
+        }
+        // d === null means no deadline — keep it (always available)
       }
       // Value filter — only show contracts with a known value in the selected range.
       // Contracts with no disclosed value are excluded when filtering by value.
