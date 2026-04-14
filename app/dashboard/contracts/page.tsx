@@ -27,6 +27,7 @@ export default function ContractsPage() {
   const [demandLetter, setDemandLetter] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "calendar">("list");
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
+  const [visible, setVisible] = useState(50);
 
   const loadData = useCallback(async () => {
     if (locked) { setLoading(false); return; }
@@ -201,7 +202,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
         <ContractsCalendarView contracts={contracts} month={calendarMonth} setMonth={setCalendarMonth} />
       ) : (
         <div className="space-y-6">
-          {contracts.map((contract) => (
+          {contracts.slice(0, visible).map((contract) => (
             <div key={contract.id} className="border border-[#e5e7eb] bg-white">
               {/* Contract Header */}
               <div className="p-5 border-b border-[#e5e7eb]">
@@ -337,6 +338,16 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
               )}
             </div>
           ))}
+          {contracts.length > 0 && (
+            <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+              <span className="text-xs text-[#94a3b8]">Showing {Math.min(visible, contracts.length)} of {contracts.length} contracts</span>
+              {visible < contracts.length && (
+                <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                  Load 50 More
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

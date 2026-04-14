@@ -203,6 +203,7 @@ function CaptureTrackerView({ matches }: { matches: PipelineMatch[] }) {
     (m) => m.pipeline_stage === "monitoring" || m.pipeline_stage === "preparing_bid"
   );
 
+  const [visible, setVisible] = useState(50);
   const [state, setState] = useState<CaptureState>(() => {
     const init: CaptureState = {};
     captureMatches.forEach((m) => {
@@ -269,7 +270,7 @@ function CaptureTrackerView({ matches }: { matches: PipelineMatch[] }) {
         </p>
       </div>
       <div className="space-y-3">
-        {captureMatches.map((match) => {
+        {captureMatches.slice(0, visible).map((match) => {
           const opp = match.opportunities;
           const data = getOrDefault(match.id);
           const completedCount = CAPTURE_ACTIVITIES.filter((a) => data.activities[a]).length;
@@ -416,6 +417,16 @@ function CaptureTrackerView({ matches }: { matches: PipelineMatch[] }) {
           );
         })}
       </div>
+      {captureMatches.length > 0 && (
+        <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+          <span className="text-xs text-[#94a3b8]">Showing {Math.min(visible, captureMatches.length)} of {captureMatches.length} pipeline items</span>
+          {visible < captureMatches.length && (
+            <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+              Load 50 More
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

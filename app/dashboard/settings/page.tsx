@@ -2,10 +2,11 @@
 
 import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { tierLabel } from "@/lib/feature-gate";
 import { HelpButton } from "../help-panel";
+import { AgencyTypeahead, NaicsTypeahead } from "../typeahead";
 
 const CERTIFICATIONS = ["8(a)", "HUBZone", "WOSB", "EDWOSB", "SDVOSB", "Small Business", "Service-Disabled Veteran"];
 
@@ -304,35 +305,17 @@ export default function SettingsPage() {
               })}
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">NAICS Codes</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {naicsCodes.split(",").map(s => s.trim()).filter(Boolean).map(code => (
-                <span key={code} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-mono bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20 rounded-full">
-                  {code}
-                  <button type="button" onClick={() => {
-                    const updated = naicsCodes.split(",").map(s => s.trim()).filter(s => s && s !== code).join(", ");
-                    setNaicsCodes(updated);
-                  }} className="hover:text-[#dc2626] ml-0.5">&times;</button>
-                </span>
-              ))}
-            </div>
-            <select
-              value=""
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const current = naicsCodes.split(",").map(s => s.trim()).filter(Boolean);
-                if (!current.includes(e.target.value)) {
-                  setNaicsCodes([...current, e.target.value].join(", "));
-                }
-              }}
-              className="w-full bg-white border border-[#e5e7eb] text-[#0f172a] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
-              <option value="">+ Add a NAICS code</option>
-              {["111110","236220","237310","238220","311812","332710","334111","334118","334511","335911","336411","336413","339112","423430","424210","511210","517311","518210","519130","541330","541380","541511","541512","541513","541519","541611","541612","541613","541614","541618","541620","541690","541711","541712","541715","541720","541990","561110","561210","561320","561410","561612","561621","611430","611519","621111","811210","928110"].map(n => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </div>
+          <NaicsTypeahead
+            label="NAICS Codes"
+            selected={naicsCodes.split(",").map(s => s.trim()).filter(Boolean)}
+            onAdd={(code) => {
+              const current = naicsCodes.split(",").map(s => s.trim()).filter(Boolean);
+              if (!current.includes(code)) setNaicsCodes([...current, code].join(", "));
+            }}
+            onRemove={(code) => {
+              setNaicsCodes(naicsCodes.split(",").map(s => s.trim()).filter(s => s && s !== code).join(", "));
+            }}
+          />
           <div>
             <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">Address</label>
             <input type="text" value={address} onChange={(e) => setAddress(e.target.value)}
@@ -395,35 +378,17 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">Preferred Agencies</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {agencies.split(",").map(s => s.trim()).filter(Boolean).map(a => (
-                <span key={a} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-[#2563eb]/10 text-[#2563eb] border border-[#2563eb]/20 rounded-full">
-                  {a}
-                  <button type="button" onClick={() => {
-                    const updated = agencies.split(",").map(s => s.trim()).filter(s => s && s !== a).join(", ");
-                    setAgencies(updated);
-                  }} className="hover:text-[#dc2626] ml-0.5">&times;</button>
-                </span>
-              ))}
-            </div>
-            <select
-              value=""
-              onChange={(e) => {
-                if (!e.target.value) return;
-                const current = agencies.split(",").map(s => s.trim()).filter(Boolean);
-                if (!current.includes(e.target.value)) {
-                  setAgencies([...current, e.target.value].join(", "));
-                }
-              }}
-              className="w-full bg-white border border-[#e5e7eb] text-[#0f172a] px-4 py-3 text-sm focus:outline-none focus:border-[#2563eb]">
-              <option value="">+ Add a preferred agency</option>
-              {["DoD","Army","Navy","Air Force","Marines","Space Force","DHS","VA","HHS","GSA","DOE","DOT","EPA","NASA","USDA","DOJ","DOI","DOL","Commerce","Treasury","State","Education","HUD","SBA","USAID","SSA","OPM","FEMA","CBP","ICE","USCG","FBI","DEA","ATF","DISA","DARPA","NGA","NSA","CIA","DIA","DCSA","SOCOM","USACE","MDA","DHA","NRC","FAA","NOAA","Census","IRS","USCIS"].map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
+          <AgencyTypeahead
+            label="Preferred Agencies"
+            selected={agencies.split(",").map(s => s.trim()).filter(Boolean)}
+            onAdd={(a) => {
+              const current = agencies.split(",").map(s => s.trim()).filter(Boolean);
+              if (!current.includes(a)) setAgencies([...current, a].join(", "));
+            }}
+            onRemove={(a) => {
+              setAgencies(agencies.split(",").map(s => s.trim()).filter(s => s && s !== a).join(", "));
+            }}
+          />
           <div>
             <label className="block text-xs text-[#64748b] mb-1.5 font-medium uppercase tracking-wide">
               Minimum Match Score: {minScore}

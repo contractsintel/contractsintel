@@ -32,7 +32,7 @@ function deadlineLabel(date: string | null): string {
 
 type SortOption = "newest" | "deadline" | "value";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 export default function SearchPage() {
   const { organization } = useDashboard();

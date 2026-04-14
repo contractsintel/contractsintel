@@ -22,16 +22,18 @@ export default function GrantsSearchPage() {
   const [opps, setOpps] = useState<Opp[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(50);
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/opportunities/by-type?type=grant&limit=50");
+        const r = await fetch("/api/opportunities/by-type?type=grant&limit=500");
         const j = await r.json();
         if (!r.ok) {
           setError(j.error ?? "Failed to load");
         } else {
           setOpps(j.opportunities ?? []);
+          setVisible(50);
         }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load");
@@ -69,8 +71,9 @@ export default function GrantsSearchPage() {
           </p>
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {opps.map((o) => (
+          {opps.slice(0, visible).map((o) => (
             <div key={o.id} className="border border-[#e5e7eb] bg-white rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0 flex-1">
@@ -104,6 +107,15 @@ export default function GrantsSearchPage() {
             </div>
           ))}
         </div>
+        <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+          <span className="text-xs text-[#94a3b8]">Showing {Math.min(visible, opps.length)} of {opps.length} grants</span>
+          {visible < opps.length && (
+            <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+              Load 50 More
+            </button>
+          )}
+        </div>
+        </>
       )}
     </div>
   );

@@ -197,7 +197,7 @@ export default function DashboardPage() {
       return !dl || dl >= now;
     });
     setMatches(active);
-    setTotalMatchCount(active.length);
+    setTotalMatchCount(count ?? active.length);
 
     const sourceSample = sourceSampleRes.data;
     if (sourceSample) {

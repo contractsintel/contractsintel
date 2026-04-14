@@ -53,6 +53,7 @@ export default function ForecastsPage() {
   const [agencyFilter, setAgencyFilter] = useState("");
   const [naicsFilter, setNaicsFilter] = useState("");
   const [monthsOut, setMonthsOut] = useState<number>(18);
+  const [visible, setVisible] = useState(50);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,11 +63,12 @@ export default function ForecastsPage() {
       if (agencyFilter) params.set("agency", agencyFilter);
       if (naicsFilter) params.set("naics", naicsFilter);
       params.set("months_out", String(monthsOut));
-      params.set("limit", "100");
+      params.set("limit", "500");
       const res = await fetch(`/api/forecasts?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       setRows(json.forecasts || []);
+      setVisible(50);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load forecasts");
     } finally {
@@ -115,15 +117,16 @@ export default function ForecastsPage() {
   }, []);
 
   const grouped = useMemo(() => {
+    const visibleRows = rows.slice(0, visible);
     const buckets: Record<string, ForecastRow[]> = {};
-    for (const r of rows) {
+    for (const r of visibleRows) {
       const key = formatMonthKey(r.expected_rfp_at);
       (buckets[key] = buckets[key] || []).push(r);
     }
     return Object.keys(buckets)
       .sort()
       .map((key) => ({ key, label: formatMonthLabel(key), items: buckets[key] }));
-  }, [rows]);
+  }, [rows, visible]);
 
   const totalValue = useMemo(
     () => rows.reduce((a, r) => a + (r.estimated_value || 0), 0),
@@ -274,6 +277,17 @@ export default function ForecastsPage() {
           </section>
         ))}
       </div>
+
+      {rows.length > 0 && (
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-6">
+          <span className="text-xs text-gray-500">Showing {Math.min(visible, rows.length)} of {rows.length} forecasts</span>
+          {visible < rows.length && (
+            <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-gray-300 text-gray-600 bg-white hover:text-gray-900 hover:shadow-sm rounded-xl transition-all">
+              Load 50 More
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -29,6 +29,7 @@ export default function AgenciesIndexPage() {
   const [q, setQ] = useState("");
   const [parentOnly, setParentOnly] = useState(false);
   const [spendOpen, setSpendOpen] = useState(true);
+  const [visible, setVisible] = useState(50);
 
   const spendStats = useMemo(() => {
     if (agencies.length === 0) return null;
@@ -188,7 +189,7 @@ export default function AgenciesIndexPage() {
 
       {!loading && !error && agencies.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {agencies.map((a) => (
+          {agencies.slice(0, visible).map((a) => (
             <Link
               key={a.id}
               href={`/dashboard/agencies/${a.id}`}
@@ -214,6 +215,17 @@ export default function AgenciesIndexPage() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {agencies.length > 0 && (
+        <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+          <span className="text-xs text-[#94a3b8]">Showing {Math.min(visible, agencies.length)} of {agencies.length} agencies</span>
+          {visible < agencies.length && (
+            <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+              Load 50 More
+            </button>
+          )}
         </div>
       )}
     </div>

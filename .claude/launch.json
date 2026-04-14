@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "contractsintel-dev",
+      "runtimeExecutable": "node_modules/.bin/next",
+      "runtimeArgs": ["dev", "-p", "3100"],
+      "port": 3100
+    }
+  ]
+}

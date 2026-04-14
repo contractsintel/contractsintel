@@ -80,6 +80,10 @@ export default function NetworkPage() {
   const [partnersLoading, setPartnersLoading] = useState(false);
   const [partnersError, setPartnersError] = useState<string | null>(null);
   const [partnerFilters, setPartnerFilters] = useState({ naics: "", set_aside: "", state: "", q: "" });
+  const [visibleOpps, setVisibleOpps] = useState(50);
+  const [visiblePosted, setVisiblePosted] = useState(50);
+  const [visibleSubs, setVisibleSubs] = useState(50);
+  const [visiblePartners, setVisiblePartners] = useState(50);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [expressingInterest, setExpressingInterest] = useState<string | null>(null);
@@ -104,7 +108,7 @@ export default function NetworkPage() {
         .select("*, teaming_matches(id, interest_status)")
         .neq("organization_id", organization.id)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(500),
       supabase
         .from("teaming_opportunities")
         .select("*, teaming_matches(id, interest_status)")
@@ -125,7 +129,7 @@ export default function NetworkPage() {
     setSubAwardsError(null);
     (async () => {
       try {
-        const res = await fetch("/api/sub-awards?limit=50");
+        const res = await fetch("/api/sub-awards?limit=500");
         const j = await res.json();
         if (cancelled) return;
         if (!res.ok) {
@@ -384,8 +388,9 @@ export default function NetworkPage() {
               No partners match the current filters.
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="partner-grid">
-              {partners.map((p) => (
+              {partners.slice(0, visiblePartners).map((p) => (
                 <div
                   key={p.id}
                   data-testid="partner-card"
@@ -448,6 +453,15 @@ export default function NetworkPage() {
                 </div>
               ))}
             </div>
+            <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+              <span className="text-xs text-[#94a3b8]">Showing {Math.min(visiblePartners, partners.length)} of {partners.length} partners</span>
+              {visiblePartners < partners.length && (
+                <button onClick={() => setVisiblePartners(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                  Load 50 More
+                </button>
+              )}
+            </div>
+            </>
           )}
         </div>
       ) : tab === "sub_awards" ? (
@@ -468,8 +482,9 @@ export default function NetworkPage() {
               </p>
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {subAwards.map((sa) => (
+              {subAwards.slice(0, visibleSubs).map((sa) => (
                 <div
                   key={sa.id}
                   className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
@@ -525,6 +540,15 @@ export default function NetworkPage() {
                 </div>
               ))}
             </div>
+            <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+              <span className="text-xs text-[#94a3b8]">Showing {Math.min(visibleSubs, subAwards.length)} of {subAwards.length} sub-awards</span>
+              {visibleSubs < subAwards.length && (
+                <button onClick={() => setVisibleSubs(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                  Load 50 More
+                </button>
+              )}
+            </div>
+            </>
           )}
         </div>
       ) : loading ? (
@@ -537,8 +561,9 @@ export default function NetworkPage() {
               <p className="text-sm text-[#64748b]">New teaming opportunities matching your profile will appear here.</p>
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {opportunities.map((opp) => {
+              {opportunities.slice(0, visibleOpps).map((opp) => {
                 const score = computeMatchScore(opp);
                 const alreadyInterested = opp.teaming_matches?.some(
                   (m: { id: string; interest_status: string }) => m.interest_status === "interested"
@@ -595,6 +620,15 @@ export default function NetworkPage() {
                 );
               })}
             </div>
+            <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+              <span className="text-xs text-[#94a3b8]">Showing {Math.min(visibleOpps, opportunities.length)} of {opportunities.length} opportunities</span>
+              {visibleOpps < opportunities.length && (
+                <button onClick={() => setVisibleOpps(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                  Load 50 More
+                </button>
+              )}
+            </div>
+            </>
           )}
         </div>
       ) : (
@@ -723,8 +757,9 @@ export default function NetworkPage() {
               <p className="text-sm text-[#64748b]">Post your first teaming opportunity above.</p>
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {posted.map((opp) => {
+              {posted.slice(0, visiblePosted).map((opp) => {
                 const matchCount = opp.teaming_matches?.filter(
                   (m: { id: string; interest_status: string }) => m.interest_status === "interested"
                 ).length ?? 0;
@@ -757,6 +792,15 @@ export default function NetworkPage() {
                 );
               })}
             </div>
+            <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+              <span className="text-xs text-[#94a3b8]">Showing {Math.min(visiblePosted, posted.length)} of {posted.length} posted opportunities</span>
+              {visiblePosted < posted.length && (
+                <button onClick={() => setVisiblePosted(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                  Load 50 More
+                </button>
+              )}
+            </div>
+            </>
           )}
         </div>
       )}

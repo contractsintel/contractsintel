@@ -38,6 +38,7 @@ export default function ProposalsPage() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [showInstructions, setShowInstructions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible] = useState(50);
 
   // Proposal Scorer state
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -289,7 +290,7 @@ export default function ProposalsPage() {
           {/* Left: Opportunity List */}
           <div className="lg:col-span-1 space-y-2">
             <h2 className="ci-section-label mb-3">Active Bids ({matches.length})</h2>
-            {matches.map((m) => {
+            {matches.slice(0, visible).map((m) => {
               const opp = m.opportunities;
               return (
                 <button key={m.id} onClick={() => { setSelectedMatch(m.id); setProposal(null); setError(null); setReviewResult(null); setReviewError(null); setShowReview(false); setOutlineResult(null); setOutlineError(null); setShowOutline(false); }}
@@ -307,6 +308,16 @@ export default function ProposalsPage() {
                 </button>
               );
             })}
+            {matches.length > 0 && (
+              <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] mt-4">
+                <span className="text-xs text-[#94a3b8]">Showing {Math.min(visible, matches.length)} of {matches.length} proposals</span>
+                {visible < matches.length && (
+                  <button onClick={() => setVisible(v => v + 50)} className="px-5 py-2 text-sm font-medium border border-[#e5e7eb] text-[#64748b] bg-white hover:text-[#0f172a] hover:shadow-sm rounded-xl transition-all">
+                    Load 50 More
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Proposal Editor */}
