@@ -541,44 +541,70 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
 
 // Banner for incomplete profile (shown above opportunity feed)
 export function ProfileBanner() {
-  const { organization } = useDashboard();
-  const isIncomplete =
-    !organization.naics_codes?.length || !organization.certifications?.length;
-
-  if (!isIncomplete) return null;
-
   return <ProfileBoostBanner />;
 }
 
 /**
- * Glowing CTA banner encouraging users to complete their profile.
- * Can be used on any page within the DashboardProvider context.
- * Shows only when NAICS codes or certifications are missing.
+ * Glowing CTA banner encouraging users to enrich their profile.
+ * Always visible — computes a profile completeness score and shows
+ * actionable tips to improve matches. Only hides if every single
+ * field is filled (which is rare).
  */
 export function ProfileBoostBanner({ context }: { context?: string }) {
   const { organization } = useDashboard();
-  const missingNaics = !organization.naics_codes?.length;
-  const missingCerts = !organization.certifications?.length;
-  const missingUei = !organization.uei;
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!missingNaics && !missingCerts) return null;
+  // Compute what the user can still add
+  const gaps: { label: string; weight: number }[] = [];
+  if (!organization.naics_codes?.length) gaps.push({ label: "NAICS codes", weight: 20 });
+  if (!organization.certifications?.length) gaps.push({ label: "certifications", weight: 20 });
+  if (!organization.uei) gaps.push({ label: "UEI number", weight: 15 });
+  if (!organization.cage_code) gaps.push({ label: "CAGE code", weight: 10 });
+  if (!organization.entity_description) gaps.push({ label: "business description", weight: 10 });
+  if (!organization.keywords?.length) gaps.push({ label: "capability keywords", weight: 10 });
+  if (!organization.address?.state) gaps.push({ label: "service area", weight: 5 });
+  if (!organization.preferred_agencies?.length) gaps.push({ label: "preferred agencies", weight: 5 });
+  if (organization.min_contract_value === 0 && organization.max_contract_value >= 99999999) gaps.push({ label: "contract value range", weight: 5 });
 
-  const missing: string[] = [];
-  if (missingCerts) missing.push("certifications");
-  if (missingNaics) missing.push("NAICS codes");
-  if (missingUei) missing.push("UEI number");
-  const missingText = missing.join(", ");
+  const maxScore = 100;
+  const lostScore = gaps.reduce((sum, g) => sum + g.weight, 0);
+  const completeness = Math.max(0, maxScore - lostScore);
 
-  const contextMessages: Record<string, string> = {
-    dashboard: "Your matches are based on limited data. Add more details to see contracts tailored to your exact capabilities.",
-    search: "Search results are generic right now. A complete profile helps surface the contracts most relevant to your business.",
-    pipeline: "Improve your match accuracy and pWin estimates by telling us more about your company.",
-    forecasts: "See more relevant recompete forecasts by adding your NAICS codes and past performance.",
-    agencies: "Discover which agencies are the best fit for your business by completing your profile.",
-    competitors: "Get sharper competitive analysis when we know your full capabilities.",
+  // Fully complete — hide
+  if (gaps.length === 0 || dismissed) return null;
+
+  // Show top 3 most impactful gaps
+  const topGaps = gaps.slice(0, 3).map((g) => g.label);
+  const topGapsText = topGaps.join(", ");
+
+  const contextMessages: Record<string, { headline: string; body: string }> = {
+    dashboard: {
+      headline: "Boost your match quality",
+      body: "The more we know about your business, the better we can match you to contracts. Add more profile details to increase your match scores and find higher-value opportunities.",
+    },
+    search: {
+      headline: "Get smarter search results",
+      body: "A richer profile helps our AI surface the most relevant contracts first. Add details to see opportunities tailored to your exact capabilities.",
+    },
+    pipeline: {
+      headline: "Improve your win probability",
+      body: "Your pWin estimates and match scores improve with more profile data. Better data means better bid/no-bid decisions and more accurate forecasting.",
+    },
+    forecasts: {
+      headline: "See forecasts that matter to you",
+      body: "Add your NAICS codes and past performance to see recompete forecasts aligned with your capabilities and agency relationships.",
+    },
+    agencies: {
+      headline: "Find your best-fit agencies",
+      body: "Complete your profile so we can rank agencies by how well they align with your certifications, NAICS codes, and past work.",
+    },
+    competitors: {
+      headline: "Sharpen your competitive edge",
+      body: "The more we know about your capabilities, the better we can analyze where you stand against competitors and identify your differentiators.",
+    },
   };
 
-  const message = contextMessages[context ?? "dashboard"] ?? contextMessages.dashboard;
+  const msg = contextMessages[context ?? "dashboard"] ?? contextMessages.dashboard;
 
   return (
     <div className="profile-boost-banner mb-5 relative overflow-hidden rounded-xl border border-[#818cf8]/30 bg-gradient-to-r from-[#eef2ff] via-[#f5f3ff] to-[#faf5ff] px-5 py-4">
@@ -615,32 +641,39 @@ export function ProfileBoostBanner({ context }: { context?: string }) {
       `}</style>
       <div className="profile-boost-shimmer pointer-events-none" />
       <div className="relative flex items-center gap-4">
-        {/* Icon */}
-        <div className="hidden sm:flex shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] items-center justify-center">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 2L12.09 7.26L18 8.27L14 12.14L14.18 18.02L10 15.77L5.82 18.02L6 12.14L2 8.27L7.91 7.26L10 2Z" fill="white" opacity="0.9"/>
-          </svg>
+        {/* Icon + completeness ring */}
+        <div className="hidden sm:flex shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] items-center justify-center relative">
+          <span className="text-white font-bold text-[13px]">{completeness}%</span>
         </div>
         {/* Content */}
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-[#312e81] leading-tight mb-0.5">
-            Better data = better matches
+            {msg.headline}
           </p>
           <p className="text-[12px] text-[#4338ca]/80 leading-snug">
-            {message} You&apos;re missing: <span className="font-medium text-[#4338ca]">{missingText}</span>.
+            {msg.body} Try adding: <span className="font-medium text-[#4338ca]">{topGapsText}</span>.
           </p>
         </div>
-        {/* CTA */}
-        <button
-          onClick={() => {
-            const btn = document.querySelector("[data-unlock-trigger]") as HTMLElement;
-            if (btn) { btn.click(); return; }
-            window.location.href = "/dashboard/settings";
-          }}
-          className="shrink-0 rounded-lg bg-gradient-to-r from-[#6366f1] to-[#7c3aed] px-4 py-2 text-xs font-semibold text-white shadow-md hover:shadow-lg hover:from-[#4f46e5] hover:to-[#6d28d9] transition-all duration-200"
-        >
-          Complete Profile
-        </button>
+        {/* CTA + dismiss */}
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            onClick={() => {
+              const btn = document.querySelector("[data-unlock-trigger]") as HTMLElement;
+              if (btn) { btn.click(); return; }
+              window.location.href = "/dashboard/settings";
+            }}
+            className="rounded-lg bg-gradient-to-r from-[#6366f1] to-[#7c3aed] px-4 py-2 text-xs font-semibold text-white shadow-md hover:shadow-lg hover:from-[#4f46e5] hover:to-[#6d28d9] transition-all duration-200"
+          >
+            Improve Profile
+          </button>
+          <button
+            onClick={() => setDismissed(true)}
+            className="text-[#818cf8] hover:text-[#6366f1] transition-colors p-1"
+            title="Dismiss"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   );
