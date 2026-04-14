@@ -226,7 +226,6 @@ export async function POST(request: Request) {
         subscription_status: acct.tier === "discovery" ? "trialing" : "active",
         subscription_tier: acct.tier,
         trial_ends_at: trialEnds,
-        plan: acct.tier,
         ...acct.profile,
       };
       await admin.from("organizations").update(orgUpdate).eq("id", orgId);
@@ -317,7 +316,6 @@ export async function PATCH(request: Request) {
       subscription_status: acct.tier === "discovery" ? "trialing" : "active",
       subscription_tier: acct.tier,
       trial_ends_at: trialEnds,
-      plan: acct.tier,
     };
 
     // Map profile fields to org columns (only valid ones)
