@@ -8,6 +8,7 @@ import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 const RATING_CATEGORIES = ["Quality", "Schedule", "Cost Control", "Management", "Small Business"];
 const RATING_VALUES = ["Exceptional", "Very Good", "Satisfactory", "Marginal", "Unsatisfactory"];
@@ -162,6 +163,7 @@ export default function CparsPage() {
         <HelpButton page="cpars" />
       </div>
       <InlineGuide page="cpars" />
+      <ProfileBoostBanner context="dashboard" />
 
       {/* Add Rating Form */}
       <div className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 function formatCurrency(n: number | null): string {
   if (!n) return "$0";
@@ -169,6 +170,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
       </div>
       <InlineGuide page="contracts" />
       <TrialTierBanner page="contracts" />
+      <ProfileBoostBanner context="dashboard" />
 
       {/* View toggle */}
       <div className="flex items-center gap-2 mb-5">

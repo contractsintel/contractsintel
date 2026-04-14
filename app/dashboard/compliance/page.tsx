@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useCallback } from "react";
 import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 const CATEGORIES = [
   { key: "registration", label: "SAM.gov Registration", icon: "S" },
@@ -155,6 +156,7 @@ export default function CompliancePage() {
         </div>
       </div>
       <InlineGuide page="compliance" />
+      <ProfileBoostBanner context="dashboard" />
 
       {loading ? (
         <div className="text-center text-[#94a3b8] py-12">Loading compliance data...</div>

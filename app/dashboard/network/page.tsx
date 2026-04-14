@@ -8,6 +8,7 @@ import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 import { TEAMING_WEIGHTS } from "@/app/lib/teaming-weights";
 
 type Tab = "opportunities" | "posted" | "sub_awards" | "partners";
@@ -279,6 +280,7 @@ export default function NetworkPage() {
         <HelpButton page="network" />
       </div>
       <InlineGuide page="network" />
+      <ProfileBoostBanner context="competitors" />
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-[#e5e7eb] mb-6">

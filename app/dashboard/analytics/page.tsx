@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { InlineGuide } from "../inline-guide";
 import { MarketIntelligence } from "./market-intel";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 interface AgencyStats {
   agency: string;
@@ -226,6 +227,7 @@ export default function AnalyticsPage() {
           </button>
         </div>
       </div>
+      <ProfileBoostBanner context="dashboard" />
 
       {activeTab === "market" ? (
         <MarketIntelligence />

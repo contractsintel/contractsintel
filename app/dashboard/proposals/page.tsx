@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 const TABS = ["Executive Summary", "Technical Approach", "Past Performance", "Management Plan"] as const;
 type Tab = (typeof TABS)[number];
@@ -268,6 +269,7 @@ export default function ProposalsPage() {
       </div>
       <InlineGuide page="proposals" />
       <TrialTierBanner page="proposals" />
+      <ProfileBoostBanner context="pipeline" />
 
       {loading ? (
         <div className="bg-white border border-[#e5e7eb] rounded-xl p-12 text-center">

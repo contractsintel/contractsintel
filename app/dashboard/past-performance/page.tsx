@@ -8,6 +8,7 @@ import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
 import { InlineGuide } from "../inline-guide";
+import { ProfileBoostBanner } from "../unlock-panel";
 
 export default function PastPerformancePage() {
   const { organization } = useDashboard();
@@ -171,6 +172,7 @@ export default function PastPerformancePage() {
       </div>
       <InlineGuide page="past-performance" />
       <TrialTierBanner page="past-performance" />
+      <ProfileBoostBanner context="dashboard" />
       <div style={{display:'none'}}>
       </div>
 

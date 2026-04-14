@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "../../context";
+import { ProfileBoostBanner } from "../../unlock-panel";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -54,7 +55,7 @@ export default function OpportunityDetailPage() {
     relationship_strength: 3, resource_availability: 3,
   });
   // Feature 2: Pricing Intelligence
-  const [pricingData, setPricingData] = useState<{ awards: Record<string, any>[]; avg: number; min: number; max: number; count: number } | null>(null);
+  const [pricingData, setPricingData] = useState<{ awards: Record<string, any>[]; avg: number; min: number; max: number; count: number; matchBasis?: string } | null>(null);
   const [pricingLoading, setPricingLoading] = useState(false);
   // Feature 3: Compliance Checklist
   const [complianceItems, setComplianceItems] = useState<{ text: string; checked: boolean }[]>([]);
@@ -133,18 +134,42 @@ export default function OpportunityDetailPage() {
 
   // Feature 2: Load pricing intelligence from similar contracts
   const loadPricing = async () => {
-    if (!opp?.naics_code) return;
+    if (!opp) return;
     setPricingLoading(true);
     try {
-      const { data } = await supabase
-        .from("opportunities")
-        .select("title, agency, estimated_value, value_estimate, source, response_deadline")
-        .eq("naics_code", opp.naics_code)
-        .neq("id", oppId)
-        .not("estimated_value", "is", null)
-        .gt("estimated_value", 0)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // Try NAICS match first, then fall back to agency match
+      let data: Record<string, any>[] | null = null;
+      let matchBasis = "";
+
+      if (opp.naics_code) {
+        const res = await supabase
+          .from("opportunities")
+          .select("title, agency, estimated_value, value_estimate, source, response_deadline, naics_code")
+          .eq("naics_code", opp.naics_code)
+          .neq("id", oppId)
+          .not("estimated_value", "is", null)
+          .gt("estimated_value", 0)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        data = res.data;
+        matchBasis = `NAICS ${opp.naics_code}`;
+      }
+
+      // Fallback: match by agency if no NAICS or no results
+      if ((!data || data.length === 0) && opp.agency) {
+        const res = await supabase
+          .from("opportunities")
+          .select("title, agency, estimated_value, value_estimate, source, response_deadline, naics_code")
+          .eq("agency", opp.agency)
+          .neq("id", oppId)
+          .not("estimated_value", "is", null)
+          .gt("estimated_value", 0)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        data = res.data;
+        matchBasis = `${opp.agency} agency`;
+      }
+
       if (data && data.length > 0) {
         const vals = data.map((d: Record<string, any>) => d.estimated_value || d.value_estimate || 0).filter((v: number) => v > 0);
         const avg = vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
@@ -154,7 +179,10 @@ export default function OpportunityDetailPage() {
           min: Math.min(...vals),
           max: Math.max(...vals),
           count: vals.length,
+          matchBasis,
         });
+      } else {
+        setPricingData({ awards: [], avg: 0, min: 0, max: 0, count: 0, matchBasis: "no matches found" });
       }
     } catch { /* swallow */ }
     setPricingLoading(false);
@@ -342,6 +370,8 @@ export default function OpportunityDetailPage() {
       {/* Back link */}
       <Link href="/dashboard" className="text-sm text-[#2563eb] hover:text-[#1d4ed8] mb-4 inline-block">&larr; Back to matches</Link>
 
+      <ProfileBoostBanner context="dashboard" />
+
       {/* Header */}
       <div className="ci-card p-6 mb-6">
         <div className="flex items-start gap-4">
@@ -422,7 +452,7 @@ export default function OpportunityDetailPage() {
                   <div className="text-[16px] font-semibold text-[#dc2626]">{formatCurrency(pricingData.max)}</div>
                 </div>
               </div>
-              <div className="text-[11px] text-[#94a3b8] mb-3">Based on {pricingData.count} similar NAICS {opp?.naics_code} awards</div>
+              <div className="text-[11px] text-[#94a3b8] mb-3">Based on {pricingData.count} similar {pricingData.matchBasis || `NAICS ${opp?.naics_code}`} awards</div>
               <div className="space-y-2">
                 {pricingData.awards.map((a, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-[#f1f5f9] last:border-0 text-[12px]">
@@ -841,7 +871,7 @@ export default function OpportunityDetailPage() {
               </button>
               <button
                 onClick={loadPricing}
-                disabled={pricingLoading || !opp?.naics_code}
+                disabled={pricingLoading}
                 className="w-full px-4 py-2.5 text-xs font-medium border border-[#e2e8f0] text-[#475569] hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] rounded-lg transition-all disabled:opacity-50"
               >
                 {pricingLoading ? "Loading..." : pricingData ? "Refresh Pricing" : "Pricing Intelligence"}
