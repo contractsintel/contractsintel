@@ -615,12 +615,16 @@ export default function NetworkPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Agency</label>
-                  <input
-                    type="text"
+                  <select
                     value={form.agency}
                     onChange={(e) => setForm((f) => ({ ...f, agency: e.target.value }))}
                     className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb]"
-                  />
+                  >
+                    <option value="">Select agency</option>
+                    {["DoD","Army","Navy","Air Force","Marines","Space Force","DHS","VA","HHS","GSA","DOE","DOT","EPA","NASA","USDA","DOJ","DOI","DOL","Commerce","Treasury","State","Education","HUD","SBA","USAID","SSA","OPM","FEMA","CBP","ICE","USCG","FBI","DEA","DISA","DARPA","NGA","USACE","MDA","DHA","NRC","FAA","NOAA","IRS"].map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-[#64748b] mb-1 font-medium uppercase tracking-wide">Estimated Value</label>

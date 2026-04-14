@@ -172,23 +172,29 @@ export default function CapabilityStatementPage() {
             <div className="mt-3 space-y-3">
               <div>
                 <label className="block text-xs text-[#64748b] mb-1">Target Agency</label>
-                <input
-                  type="text"
+                <select
                   value={retargetAgency}
                   onChange={(e) => setRetargetAgency(e.target.value)}
-                  placeholder="e.g. Department of Veterans Affairs"
                   className="w-full text-sm border border-[#e5e7eb] rounded px-3 py-2"
-                />
+                >
+                  <option value="">Select agency</option>
+                  {["DoD","Army","Navy","Air Force","Marines","Space Force","DHS","VA","HHS","GSA","DOE","DOT","EPA","NASA","USDA","DOJ","DOI","DOL","Commerce","Treasury","State","Education","HUD","SBA","USAID","SSA","OPM","FEMA","CBP","ICE","USCG","FBI","DEA","DISA","DARPA","NGA","USACE","MDA","DHA","NRC","FAA","NOAA","IRS"].map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="block text-xs text-[#64748b] mb-1">Target Opportunity / NAICS</label>
-                <input
-                  type="text"
+                <label className="block text-xs text-[#64748b] mb-1">Target NAICS</label>
+                <select
                   value={retargetOpportunity}
                   onChange={(e) => setRetargetOpportunity(e.target.value)}
-                  placeholder="e.g. IT Modernization / 541512"
                   className="w-full text-sm border border-[#e5e7eb] rounded px-3 py-2"
-                />
+                >
+                  <option value="">Select NAICS code</option>
+                  {["111110","236220","237310","238220","334111","334118","334511","335911","336411","336413","423430","511210","517311","518210","519130","541330","541380","541511","541512","541513","541519","541611","541612","541613","541614","541618","541620","541690","541711","541712","541715","541720","541990","561110","561210","561320","561410","561612","561621","611430","611519","621111","811210","928110"].map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-[#64748b] mb-1">Key Requirements to Emphasize</label>
