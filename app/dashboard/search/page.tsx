@@ -191,75 +191,75 @@ export default function SearchPage() {
     // PERF: Use count:"estimated" — exact count on 168k rows adds 5+ seconds
     const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
     const now = new Date().toISOString();
-    let q = supabase
-      .from("opportunities")
-      .select(SEARCH_COLS, { count: "estimated" })
-      .or(`response_deadline.is.null,response_deadline.gte.${now}`);
+
+    let data: Record<string, any>[] | null = null;
+    let count: number | null = null;
+    let qErr: { message: string; code?: string } | null = null;
 
     if (debouncedQuery.trim()) {
-      // PERF: Use GIN-indexed solicitation_tsv column instead of ILIKE (10s → <500ms)
-      // The tsvector includes title(A), solicitation_number(A), description(B)
-      q = q.textSearch("solicitation_tsv", debouncedQuery.trim(), {
-        type: "websearch",
-        config: "english",
+      // PERF: Use server-side RPC for text search — forces GIN index usage,
+      // bypasses PostgREST query planner choosing wrong index (95ms vs 8s+ timeout)
+      const { data: rpcData, error: rpcErr } = await supabase.rpc("search_opportunities", {
+        search_query: debouncedQuery.trim(),
+        row_limit: PAGE_SIZE,
+        row_offset: effectiveOffset,
       });
-    }
-
-    if (source) {
-      if (source === "state_local") {
-        q = q.like("source", "state_%");
+      if (!rpcErr && rpcData) {
+        data = rpcData;
+        count = rpcData.length >= PAGE_SIZE ? effectiveOffset + PAGE_SIZE + 1 : effectiveOffset + rpcData.length;
       } else {
-        q = q.eq("source", source);
+        // Fallback to ILIKE if RPC fails (function may not exist yet)
+        console.warn("[search] RPC fallback to ILIKE:", rpcErr?.message);
+        let fallbackQ = supabase
+          .from("opportunities")
+          .select(SEARCH_COLS, { count: "estimated" })
+          .or(`response_deadline.is.null,response_deadline.gte.${now}`)
+          .or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
+        if (source) {
+          if (source === "state_local") fallbackQ = fallbackQ.like("source", "state_%");
+          else fallbackQ = fallbackQ.eq("source", source);
+        }
+        if (sort === "newest") fallbackQ = fallbackQ.order("created_at", { ascending: false });
+        else if (sort === "deadline") fallbackQ = fallbackQ.order("response_deadline", { ascending: true, nullsFirst: false });
+        else if (sort === "value") fallbackQ = fallbackQ.order("estimated_value", { ascending: false, nullsFirst: false });
+        fallbackQ = fallbackQ.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
+        const fb = await fallbackQ;
+        data = fb.data;
+        count = fb.count;
+        qErr = fb.error;
       }
-    }
+    } else {
+      // No search query — browse mode with sorting
+      let q = supabase
+        .from("opportunities")
+        .select(SEARCH_COLS, { count: "estimated" })
+        .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
-    if (level) {
-      // opportunity_level column may not exist yet — filter by source pattern instead
-      const levelSourceMap: Record<string, string[]> = {
-        federal: ["sam_gov", "usaspending", "military_defense", "dla_dibbs", "army_asfi", "navy_neco", "air_force", "marines", "darpa"],
-        state: ["state_local"],
-        local: ["state_local"],
-        education: [],
-      };
-      const sources = levelSourceMap[level];
-      if (sources && sources.length > 0) {
-        q = q.in("source", sources);
+      if (source) {
+        if (source === "state_local") q = q.like("source", "state_%");
+        else q = q.eq("source", source);
       }
-    }
 
-    // PERF: When textSearch is active, skip ORDER BY to let Postgres use the
-    // GIN index.  ORDER BY created_at forces an index-scan on the created_at
-    // B-tree which filters >60k rows and times out on Nano instances.
-    if (!debouncedQuery.trim()) {
+      if (level) {
+        const levelSourceMap: Record<string, string[]> = {
+          federal: ["sam_gov", "usaspending", "military_defense", "dla_dibbs", "army_asfi", "navy_neco", "air_force", "marines", "darpa"],
+          state: ["state_local"],
+          local: ["state_local"],
+          education: [],
+        };
+        const sources = levelSourceMap[level];
+        if (sources && sources.length > 0) q = q.in("source", sources);
+      }
+
       if (sort === "newest") q = q.order("created_at", { ascending: false });
       else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
       else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
-    }
 
-    q = q.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
-
-    let { data, count, error: qErr } = await q;
-
-    // If textSearch failed (column missing OR statement timeout), fall back to ILIKE
-    if (qErr && debouncedQuery.trim() && (qErr.message?.includes("does not exist") || qErr.message?.includes("statement timeout"))) {
-      console.warn("[search] textSearch fallback to ILIKE:", qErr.message);
-      let fallbackQ = supabase
-        .from("opportunities")
-        .select(SEARCH_COLS, { count: "estimated" })
-        .or(`response_deadline.is.null,response_deadline.gte.${now}`)
-        .or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
-      if (source) {
-        if (source === "state_local") fallbackQ = fallbackQ.like("source", "state_%");
-        else fallbackQ = fallbackQ.eq("source", source);
-      }
-      if (sort === "newest") fallbackQ = fallbackQ.order("created_at", { ascending: false });
-      else if (sort === "deadline") fallbackQ = fallbackQ.order("response_deadline", { ascending: true, nullsFirst: false });
-      else if (sort === "value") fallbackQ = fallbackQ.order("estimated_value", { ascending: false, nullsFirst: false });
-      fallbackQ = fallbackQ.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
-      const fb = await fallbackQ;
-      data = fb.data;
-      count = fb.count;
-      qErr = fb.error;
+      q = q.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
+      const result = await q;
+      data = result.data;
+      count = result.count;
+      qErr = result.error;
     }
 
     if (qErr) {
@@ -302,6 +302,19 @@ export default function SearchPage() {
     setOffset(newOffset);
     // Trigger search with new offset
     const doSearch = async () => {
+      if (debouncedQuery.trim()) {
+        // PERF: Use RPC for text search (same as main search)
+        const { data, error: rpcErr } = await supabase.rpc("search_opportunities", {
+          search_query: debouncedQuery.trim(),
+          row_limit: PAGE_SIZE,
+          row_offset: newOffset,
+        });
+        if (!rpcErr && data) {
+          setResults((prev) => [...prev, ...data]);
+          return;
+        }
+      }
+      // Browse mode or RPC fallback
       const SEARCH_COLS_LM = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
       const nowLm = new Date().toISOString();
       let q = supabase
@@ -309,25 +322,13 @@ export default function SearchPage() {
         .select(SEARCH_COLS_LM, { count: "estimated" })
         .or(`response_deadline.is.null,response_deadline.gte.${nowLm}`);
 
-      if (debouncedQuery.trim()) {
-        q = q.textSearch("solicitation_tsv", debouncedQuery.trim(), {
-          type: "websearch",
-          config: "english",
-        });
-      }
       if (source) {
-        if (source === "state_local") {
-          q = q.like("source", "state_%");
-        } else {
-          q = q.eq("source", source);
-        }
+        if (source === "state_local") q = q.like("source", "state_%");
+        else q = q.eq("source", source);
       }
-      // PERF: Skip ORDER BY during textSearch to let GIN index be used
-      if (!debouncedQuery.trim()) {
-        if (sort === "newest") q = q.order("created_at", { ascending: false });
-        else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
-        else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
-      }
+      if (sort === "newest") q = q.order("created_at", { ascending: false });
+      else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
+      else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
 
       q = q.range(newOffset, newOffset + PAGE_SIZE - 1);
       const { data, error: qErr } = await q;
