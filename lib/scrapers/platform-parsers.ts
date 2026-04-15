@@ -88,9 +88,9 @@ export function parseMyFloridaMarketplace(html: string): Array<{title: string; u
   return results;
 }
 
-export function parseTxSmartBuy(html: string): Array<{title: string; url: string}> {
+export function parseTxSmartBuy(html: string): Array<{title: string; url: string; solicitation_number?: string}> {
   const results: Array<{title: string; url: string; agency?: string; deadline?: string; solicitation_number?: string}> = [];
-  // Texas TxSmartBuy SPA renders a table of solicitations
+  // Texas ESBD renders solicitations with direct links at /esbd/{SOLICITATION-ID}
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   let match;
   while ((match = rowRegex.exec(html)) !== null) {
@@ -99,9 +99,91 @@ export function parseTxSmartBuy(html: string): Array<{title: string; url: string
     if (linkMatch) {
       const title = linkMatch[2].replace(/<[^>]+>/g, "").trim();
       if (title.length > 5) {
-        const url = linkMatch[1].startsWith("http") ? linkMatch[1] : `https://www.txsmartbuy.com${linkMatch[1]}`;
-        results.push({ title, url });
+        let url = linkMatch[1];
+        // Ensure we have the correct direct-link base URL
+        if (!url.startsWith("http")) {
+          url = `https://www.txsmartbuy.gov${url.startsWith("/") ? "" : "/"}${url}`;
+        }
+        // Extract solicitation number from /esbd/{ID} pattern
+        const solMatch = url.match(/\/esbd\/([^/?#]+)/);
+        results.push({ title, url, solicitation_number: solMatch?.[1] });
       }
+    }
+  }
+  // Also look for direct /esbd/ links anywhere in the page
+  const esbdRegex = /<a[^>]*href="(\/esbd\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  while ((match = esbdRegex.exec(html)) !== null) {
+    const title = match[2].replace(/<[^>]+>/g, "").trim();
+    const url = `https://www.txsmartbuy.gov${match[1]}`;
+    const solMatch = match[1].match(/\/esbd\/([^/?#]+)/);
+    if (title.length > 5 && !results.some(r => r.url === url)) {
+      results.push({ title, url, solicitation_number: solMatch?.[1] });
+    }
+  }
+  return results;
+}
+
+export function parsePennsylvania(html: string): Array<{title: string; url: string; solicitation_number?: string}> {
+  // Pennsylvania eMarketplace — clean ?SID={numeric_id} pattern
+  const results: Array<{title: string; url: string; solicitation_number?: string}> = [];
+  // Look for links to Solicitations.aspx?SID=
+  const sidRegex = /<a[^>]*href="([^"]*Solicitations\.aspx\?SID=([0-9]+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = sidRegex.exec(html)) !== null) {
+    const sid = match[2];
+    const title = match[3].replace(/<[^>]+>/g, "").trim();
+    const url = `https://www.emarketplace.state.pa.us/Solicitations.aspx?SID=${sid}`;
+    if (title.length > 3 && !results.some(r => r.url === url)) {
+      results.push({ title, url, solicitation_number: sid });
+    }
+  }
+  // Also scan table rows for solicitation numbers with links
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  while ((match = rowRegex.exec(html)) !== null) {
+    const row = match[1];
+    const linkInRow = row.match(/href="[^"]*SID=([0-9]+)/i);
+    if (linkInRow) {
+      const sid = linkInRow[1];
+      const tds = (row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || []).map(td => td.replace(/<[^>]+>/g, "").trim());
+      const title = tds.find(t => t.length > 10) || tds.join(" | ");
+      const url = `https://www.emarketplace.state.pa.us/Solicitations.aspx?SID=${sid}`;
+      if (title && !results.some(r => r.url === url)) {
+        results.push({ title, url, solicitation_number: sid });
+      }
+    }
+  }
+  return results;
+}
+
+export function parseWestVirginia(html: string): Array<{title: string; url: string}> {
+  // West Virginia — static HTML pages at /Bids/FY{YEAR}/BO{YYYYMMDD}.html
+  const results: Array<{title: string; url: string}> = [];
+  const linkRegex = /<a[^>]*href="([^"]*(?:FY\d{4}|BO\d{8})[^"]*\.html?)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const href = match[1];
+    const title = match[2].replace(/<[^>]+>/g, "").trim();
+    const url = href.startsWith("http") ? href : `https://www.state.wv.us/admin/purchase/Bids/${href.replace(/^\.?\/?/, "")}`;
+    if (title.length > 3 && !results.some(r => r.url === url)) {
+      results.push({ title, url });
+    }
+  }
+  return results;
+}
+
+export function parseBidNetDirect(html: string): Array<{title: string; url: string; solicitation_number?: string}> {
+  // BidNet Direct — used by Idaho, Denver, Maricopa County, etc.
+  // URL pattern: /public/supplier/solicitations/statewide/{ID}/abstract
+  const results: Array<{title: string; url: string; solicitation_number?: string}> = [];
+  const linkRegex = /<a[^>]*href="([^"]*(?:solicitations|solicitation)[^"]*\/(\d+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const href = match[1];
+    const id = match[2];
+    const title = match[3].replace(/<[^>]+>/g, "").trim();
+    const url = href.startsWith("http") ? href : `https://www.bidnetdirect.com${href}`;
+    if (title.length > 3 && !results.some(r => r.url === url)) {
+      results.push({ title, url, solicitation_number: id });
     }
   }
   return results;

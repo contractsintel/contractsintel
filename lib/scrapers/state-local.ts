@@ -7,122 +7,155 @@ import {
   parseCaleProcure,
   parseMyFloridaMarketplace,
   parseTxSmartBuy,
+  parsePennsylvania,
+  parseWestVirginia,
+  parseBidNetDirect,
   parseGenericSPA,
 } from "./platform-parsers";
 
 // States whose procurement portals are JS SPAs requiring browser rendering
 const JS_STATES = new Set([
-  "CA", "TX", "FL", "CO", "MD", "MI", "KY", "KS", "MO", "AK",
-  "AZ", "NH", "DC", "TN", "AR", "NC", "LA", "MT", "PR", "SD", "WV", "HI",
+  "CA", "FL", "CO", "MD", "MI", "KY", "KS", "MO", "AK",
+  "AZ", "NH", "DC", "TN", "AR", "NC", "MT", "SD", "HI",
+  "AL", "NJ", "NV", "MA", "OR", "DE", "VI",
 ]);
 
 // JS SPA URLs that differ from the default portal URL
 const JS_STATE_URLS: Record<string, string> = {
-  CA: "https://caleprocure.ca.gov/pages/Events-BS3/event-search.aspx",
-  TX: "https://www.txsmartbuy.com/sp",
+  CA: "https://caleprocure.ca.gov/pages/public-search.aspx",
   FL: "https://vendor.myfloridamarketplace.com/search/bids",
-  CO: "https://bids.coloradovssc.com/",
-  MD: "https://emaryland.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml",
-  MI: "https://sigma.michigan.gov/webapp/PRDVSS2X1/AltSelfService",
-  KY: "https://emars.ky.gov/online/vss/AltSelfService",
+  CO: "https://bid.coloradovsb.org/",
+  MD: "https://emma.maryland.gov/page.aspx/en/rfp/request_browse_public",
+  MI: "https://sigma.michigan.gov/",
+  KY: "https://emars.ky.gov/",
   KS: "https://supplier.sok.ks.gov/psc/sokfssprd/SUPPLIER/ERP/h/?tab=SOK_EBID",
-  MO: "https://www.moolb.mo.gov/MOSCEnterprise/solicitationSearch.html",
-  AK: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService",
-  AZ: "https://spo.az.gov/contracts-and-solicitations",
-  NH: "https://apps.das.nh.gov/bidscontracts/",
-  DC: "https://ocp.dc.gov/page/solicitations",
-  TN: "https://tn.gov/generalservices/procurement/central-procurement-office--cpo-/solicitations.html",
-  AR: "https://www.arkansas.gov/dfa/procurement/",
-  NC: "https://www.ips.state.nc.us/",
-  LA: "https://wwwprd.doa.louisiana.gov/osp/lapac/pubmain.asp",
-  MT: "https://svc.mt.gov/gsd/OneStop/",
-  PR: "https://www.asg.pr.gov/",
-  SD: "https://bop.sd.gov/",
-  WV: "https://state.wv.gov/admin/purchase/",
-  HI: "https://hands.hawaii.gov/",
+  MO: "https://missouribuys.mo.gov/",
+  AK: "https://oppm.doa.alaska.gov/",
+  AZ: "https://app.az.gov/",
+  NH: "https://das.nh.gov/purchasing/bids/",
+  DC: "https://contracts.ocp.dc.gov/solicitations/search",
+  TN: "https://www.tn.gov/generalservices/procurement.html",
+  AR: "https://arbuy.arkansas.gov/bso/view/search/external/advancedSearchBid.xhtml",
+  NC: "https://eprocurement.nc.gov/",
+  MT: "https://vendorportal.mt.gov/",
+  SD: "https://bids.sd.gov/",
+  HI: "https://hands.ehawaii.gov/hands/opportunities",
+  AL: "https://alabamabuys.gov/page.aspx/en/rfp/request_browse_public",
+  NJ: "https://www.njstart.gov/bso/view/search/external/advancedSearchBid.xhtml",
+  NV: "https://nevadaepro.com/bso/view/search/external/advancedSearchBid.xhtml",
+  MA: "https://www.commbuys.com/bso/view/search/external/advancedSearchBid.xhtml",
+  OR: "https://oregonbuys.gov/bso/view/search/external/advancedSearchBid.xhtml",
+  DE: "https://mmp.delaware.gov/Bids/",
+  VI: "https://gvibuy.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml",
 };
 
-// Platform-specific parsers for JS SPA states
+// Platform-specific parsers — used for both JS SPA and non-JS states
 const STATE_PARSERS: Record<string, (html: string) => any[]> = {
-  CA: (html) => parseCaleProcure(html),
+  // --- TIER 1: Known direct-link patterns ---
   TX: (html) => parseTxSmartBuy(html),
+  PA: (html) => parsePennsylvania(html),
+  WV: (html) => parseWestVirginia(html),
+  ID: (html) => parseBidNetDirect(html),
+  // --- Periscope S2G / BidSync states — same platform, same parser ---
+  CA: (html) => parseCaleProcure(html),
   FL: (html) => parseMyFloridaMarketplace(html),
-  MD: (html) => parseJaggaer(html, "MD", "https://emaryland.buyspeed.com"),
+  MD: (html) => parseJaggaer(html, "MD", "https://emma.maryland.gov"),
   MI: (html) => parseJaggaer(html, "MI", "https://sigma.michigan.gov"),
   KY: (html) => parseJaggaer(html, "KY", "https://emars.ky.gov"),
-  AK: (html) => parseJaggaer(html, "AK", "https://iris-vss.state.ak.us"),
-  CO: (html) => parseJaggaer(html, "CO", "https://bids.coloradovssc.com"),
+  AK: (html) => parseGenericSPA(html, "https://oppm.doa.alaska.gov"),
+  CO: (html) => parseJaggaer(html, "CO", "https://bid.coloradovsb.org"),
+  AR: (html) => parseJaggaer(html, "AR", "https://arbuy.arkansas.gov"),
+  NJ: (html) => parseJaggaer(html, "NJ", "https://www.njstart.gov"),
+  NV: (html) => parseJaggaer(html, "NV", "https://nevadaepro.com"),
+  MA: (html) => parseJaggaer(html, "MA", "https://www.commbuys.com"),
+  OR: (html) => parseJaggaer(html, "OR", "https://oregonbuys.gov"),
+  VI: (html) => parseJaggaer(html, "VI", "https://gvibuy.buyspeed.com"),
+  SC: (html) => parseGenericSPA(html, "https://scbo.sc.gov"),
+  // --- Infor/IonWave states ---
+  AL: (html) => parseGenericSPA(html, "https://alabamabuys.gov"),
+  AZ: (html) => parseGenericSPA(html, "https://app.az.gov"),
+  // --- Other platforms ---
+  VA: (html) => parseGenericSPA(html, "https://eva.virginia.gov"),
+  GA: (html) => parseGenericSPA(html, "https://ssl.doas.state.ga.us"),
+  IA: (html) => parseGenericSPA(html, "https://bidopportunities.iowa.gov"),
+  LA: (html) => parseGenericSPA(html, "https://wwwcfprd.doa.louisiana.gov"),
+  MS: (html) => parseGenericSPA(html, "https://www.ms.gov"),
+  WI: (html) => parseGenericSPA(html, "https://vendornet.wi.gov"),
+  WY: (html) => parseGenericSPA(html, "https://ai.wyo.gov"),
   KS: (html) => parseGenericSPA(html, "https://supplier.sok.ks.gov"),
-  MO: (html) => parseGenericSPA(html, "https://www.moolb.mo.gov"),
-  AZ: (html) => parseGenericSPA(html, "https://spo.az.gov"),
-  NH: (html) => parseGenericSPA(html, "https://apps.das.nh.gov"),
-  DC: (html) => parseGenericSPA(html, "https://ocp.dc.gov"),
-  TN: (html) => parseGenericSPA(html, "https://tn.gov"),
-  AR: (html) => parseGenericSPA(html, "https://www.arkansas.gov"),
-  NC: (html) => parseGenericSPA(html, "https://www.ips.state.nc.us"),
-  LA: (html) => parseGenericSPA(html, "https://wwwprd.doa.louisiana.gov"),
-  MT: (html) => parseGenericSPA(html, "https://svc.mt.gov"),
-  PR: (html) => parseGenericSPA(html, "https://www.asg.pr.gov"),
-  SD: (html) => parseGenericSPA(html, "https://bop.sd.gov"),
-  WV: (html) => parseGenericSPA(html, "https://state.wv.gov"),
-  HI: (html) => parseGenericSPA(html, "https://hands.hawaii.gov"),
+  MO: (html) => parseGenericSPA(html, "https://missouribuys.mo.gov"),
+  NH: (html) => parseGenericSPA(html, "https://das.nh.gov"),
+  DC: (html) => parseGenericSPA(html, "https://contracts.ocp.dc.gov"),
+  TN: (html) => parseGenericSPA(html, "https://www.tn.gov"),
+  NC: (html) => parseGenericSPA(html, "https://eprocurement.nc.gov"),
+  MT: (html) => parseGenericSPA(html, "https://vendorportal.mt.gov"),
+  SD: (html) => parseGenericSPA(html, "https://bids.sd.gov"),
+  HI: (html) => parseGenericSPA(html, "https://hands.ehawaii.gov"),
+  DE: (html) => parseGenericSPA(html, "https://mmp.delaware.gov"),
+  IN: (html) => parseGenericSPA(html, "https://www.in.gov"),
+  PR: (html) => parseGenericSPA(html, "https://asg.pr.gov"),
 };
 
 const STATE_PORTALS = [
-  { state: "AL", name: "Alabama", url: "https://purchasing.alabama.gov/" },
-  { state: "AK", name: "Alaska", url: "https://iris-vss.state.ak.us/webapp/PRDVSS1X1/AltSelfService" },
-  { state: "AZ", name: "Arizona", url: "https://spo.az.gov/contracts-and-solicitations" },
-  { state: "AR", name: "Arkansas", url: "https://www.arkansas.gov/dfa/procurement/" },
-  { state: "CA", name: "California", url: "https://caleprocure.ca.gov/" },
-  { state: "CO", name: "Colorado", url: "https://bids.coloradovssc.com/" },
-  { state: "CT", name: "Connecticut", url: "https://portal.ct.gov/DAS/Procurement/" },
-  { state: "DE", name: "Delaware", url: "https://contracts.delaware.gov/" },
-  { state: "FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/" },
-  { state: "GA", name: "Georgia", url: "https://ssl.doas.state.ga.us/gpr/" },
-  { state: "HI", name: "Hawaii", url: "https://hands.hawaii.gov/" },
-  { state: "ID", name: "Idaho", url: "https://purchasing.idaho.gov/" },
-  { state: "IL", name: "Illinois", url: "https://www.bidbuy.illinois.gov/" },
-  { state: "IN", name: "Indiana", url: "https://www.in.gov/idoa/procurement/" },
+  // --- TIER 1: EASY — verified public access, direct links possible ---
+  { state: "TX", name: "Texas", url: "https://www.txsmartbuy.gov/esbd" },
+  { state: "PA", name: "Pennsylvania", url: "https://www.emarketplace.state.pa.us/Search.aspx" },
+  { state: "WV", name: "West Virginia", url: "https://www.state.wv.us/admin/purchase/Bids/" },
+  { state: "ID", name: "Idaho", url: "https://www.bidnetdirect.com/idaho" },
+  { state: "IN", name: "Indiana", url: "https://www.in.gov/idoa/procurement/current-business-opportunities/" },
+  { state: "PR", name: "Puerto Rico", url: "https://asg.pr.gov/indice" },
+
+  // --- TIER 2: MEDIUM — public access, needs Playwright or AJAX handling ---
+  { state: "VA", name: "Virginia", url: "https://eva.virginia.gov/" },
+  { state: "OR", name: "Oregon", url: "https://oregonbuys.gov/" },
+  { state: "DE", name: "Delaware", url: "https://mmp.delaware.gov/Bids/" },
+  { state: "GA", name: "Georgia", url: "https://ssl.doas.state.ga.us/PRSapp/" },
   { state: "IA", name: "Iowa", url: "https://bidopportunities.iowa.gov/" },
+  { state: "LA", name: "Louisiana", url: "https://wwwcfprd.doa.louisiana.gov/OSP/LaPAC/PubMain.cfm" },
+  { state: "MS", name: "Mississippi", url: "https://www.ms.gov/dfa/contract_bid_search/" },
+  { state: "WI", name: "Wisconsin", url: "https://vendornet.wi.gov/" },
+  { state: "WY", name: "Wyoming", url: "https://ai.wyo.gov/divisions/general-services/purchasing" },
+  { state: "SC", name: "South Carolina", url: "https://scbo.sc.gov/" },
+
+  // --- TIER 3: HARD — captcha, login walls, SPAs ---
+  { state: "AL", name: "Alabama", url: "https://alabamabuys.gov/" },
+  { state: "AK", name: "Alaska", url: "https://oppm.doa.alaska.gov/" },
+  { state: "AZ", name: "Arizona", url: "https://app.az.gov/" },
+  { state: "AR", name: "Arkansas", url: "https://arbuy.arkansas.gov/bso/view/search/external/advancedSearchBid.xhtml" },
+  { state: "CA", name: "California", url: "https://caleprocure.ca.gov/pages/public-search.aspx" },
+  { state: "CO", name: "Colorado", url: "https://bid.coloradovsb.org/" },
+  { state: "CT", name: "Connecticut", url: "https://biznet.ct.gov/SCP_Search/" },
+  { state: "FL", name: "Florida", url: "https://vendor.myfloridamarketplace.com/" },
+  { state: "HI", name: "Hawaii", url: "https://hands.ehawaii.gov/hands/opportunities" },
+  { state: "IL", name: "Illinois", url: "https://www.bidbuy.illinois.gov/bso/" },
   { state: "KS", name: "Kansas", url: "https://supplier.sok.ks.gov/" },
   { state: "KY", name: "Kentucky", url: "https://emars.ky.gov/" },
-  { state: "LA", name: "Louisiana", url: "https://wwwprd.doa.louisiana.gov/osp/lapac/pubmain.asp" },
   { state: "ME", name: "Maine", url: "https://www.maine.gov/purchases/" },
-  { state: "MD", name: "Maryland", url: "https://emaryland.buyspeed.com/" },
-  { state: "MA", name: "Massachusetts", url: "https://www.commbuys.com/" },
+  { state: "MD", name: "Maryland", url: "https://emma.maryland.gov/" },
+  { state: "MA", name: "Massachusetts", url: "https://www.commbuys.com/bso/view/search/external/advancedSearchBid.xhtml" },
   { state: "MI", name: "Michigan", url: "https://sigma.michigan.gov/" },
   { state: "MN", name: "Minnesota", url: "https://mn.gov/admin/osp/" },
-  { state: "MS", name: "Mississippi", url: "https://www.ms.gov/dfa/contract_bid_search/" },
-  { state: "MO", name: "Missouri", url: "https://www.moolb.mo.gov/" },
-  { state: "MT", name: "Montana", url: "https://svc.mt.gov/gsd/OneStop/" },
-  { state: "NE", name: "Nebraska", url: "https://das.nebraska.gov/materiel/purchasing.html" },
+  { state: "MO", name: "Missouri", url: "https://missouribuys.mo.gov/" },
+  { state: "MT", name: "Montana", url: "https://vendorportal.mt.gov/" },
+  { state: "NE", name: "Nebraska", url: "https://das.nebraska.gov/materiel/bidopps.html" },
   { state: "NV", name: "Nevada", url: "https://nevadaepro.com/bso/view/search/external/advancedSearchBid.xhtml" },
-  { state: "NH", name: "New Hampshire", url: "https://apps.das.nh.gov/bidscontracts/" },
+  { state: "NH", name: "New Hampshire", url: "https://das.nh.gov/purchasing/bids/" },
   { state: "NJ", name: "New Jersey", url: "https://www.njstart.gov/" },
   { state: "NM", name: "New Mexico", url: "https://www.generalservices.state.nm.us/" },
-  { state: "NY", name: "New York", url: "https://ogs.ny.gov/procurement" },
-  { state: "NC", name: "North Carolina", url: "https://www.ips.state.nc.us/" },
-  { state: "ND", name: "North Dakota", url: "https://www.nd.gov/omb/agency/procurement/" },
+  { state: "NY", name: "New York", url: "https://www.nyscr.ny.gov/home/contracts" },
+  { state: "NC", name: "North Carolina", url: "https://eprocurement.nc.gov/" },
+  { state: "ND", name: "North Dakota", url: "https://www.omb.nd.gov/ndbuys" },
   { state: "OH", name: "Ohio", url: "https://procure.ohio.gov/" },
   { state: "OK", name: "Oklahoma", url: "https://oklahoma.gov/omes/services/purchasing.html" },
-  { state: "OR", name: "Oregon", url: "https://orpin.oregon.gov/open.dll/welcome" },
-  { state: "PA", name: "Pennsylvania", url: "https://www.emarketplace.state.pa.us/" },
-  { state: "RI", name: "Rhode Island", url: "https://www.ridop.ri.gov/" },
-  { state: "SC", name: "South Carolina", url: "https://procurement.sc.gov/" },
-  { state: "SD", name: "South Dakota", url: "https://bop.sd.gov/" },
-  { state: "TN", name: "Tennessee", url: "https://tn.gov/generalservices/procurement/central-procurement-office--cpo-/solicitations.html" },
-  { state: "TX", name: "Texas", url: "https://www.txsmartbuy.com/" },
-  { state: "UT", name: "Utah", url: "https://purchasing.utah.gov/" },
-  { state: "VT", name: "Vermont", url: "https://bgs.vermont.gov/purchasing-contracting" },
-  { state: "VA", name: "Virginia", url: "https://eva.virginia.gov/" },
-  { state: "WA", name: "Washington", url: "https://fortress.wa.gov/ga/webs/" },
-  { state: "WV", name: "West Virginia", url: "https://state.wv.gov/admin/purchase/" },
-  { state: "WI", name: "Wisconsin", url: "https://vendornet.wi.gov/" },
-  { state: "WY", name: "Wyoming", url: "https://sites.google.com/wyo.gov/procurement/" },
-  { state: "DC", name: "District of Columbia", url: "https://ocp.dc.gov/page/solicitations" },
-  { state: "PR", name: "Puerto Rico", url: "https://www.asg.pr.gov/" },
-  { state: "GU", name: "Guam", url: "https://www.guamopa.com/" },
-  { state: "VI", name: "US Virgin Islands", url: "https://dpp.vi.gov/" },
+  { state: "RI", name: "Rhode Island", url: "https://www.ridop.ri.gov/vendor-resources/all-solicitations" },
+  { state: "SD", name: "South Dakota", url: "https://bids.sd.gov/" },
+  { state: "TN", name: "Tennessee", url: "https://www.tn.gov/generalservices/procurement.html" },
+  { state: "UT", name: "Utah", url: "https://bids.utah.gov/" },
+  { state: "VT", name: "Vermont", url: "https://bgs.vermont.gov/purchasing/active-bids" },
+  { state: "WA", name: "Washington", url: "https://pr-webs-vendor.des.wa.gov/Home/Opportunities" },
+  { state: "DC", name: "District of Columbia", url: "https://contracts.ocp.dc.gov/solicitations/search" },
+  { state: "GU", name: "Guam", url: "https://doa.guam.gov/procurement-policy-office/" },
+  { state: "VI", name: "US Virgin Islands", url: "https://gvibuy.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml" },
   { state: "AS", name: "American Samoa", url: "https://www.americansamoa.gov/procurement" },
 ];
 
@@ -559,26 +592,74 @@ export async function scrapeStateLocal(supabase: SupabaseAdmin): Promise<Scraper
         // Extract opportunities from all sources
         let stateOpps = 0;
 
-        // Platform-specific parsed results
+        // Helper: check if a URL is a real direct link (not the portal homepage)
+        const isDirectLink = (url: string): boolean => {
+          if (!url || !url.startsWith("http")) return false;
+          // Reject URLs that are just the portal base URL (homepage = dead end)
+          const portalBase = portal.url.replace(/\/+$/, "");
+          const candidateBase = url.replace(/\/+$/, "");
+          if (candidateBase === portalBase) return false;
+          // Reject very short URLs that are likely just domain homepages
+          try {
+            const parsed = new URL(url);
+            if (parsed.pathname === "/" || parsed.pathname === "") return false;
+          } catch { return false; }
+          return true;
+        };
+
+        // Helper: try to resolve a href into a full direct URL
+        const resolveUrl = (href: string): string | null => {
+          if (!href) return null;
+          const full = href.startsWith("http") ? href : (() => {
+            try { return new URL(href, portal.url).toString(); } catch { return null; }
+          })();
+          if (!full) return null;
+          return isDirectLink(full) ? full : null;
+        };
+
+        // Upsert helper: only stores opportunities with verified direct links
+        const upsertOpp = async (opts: {
+          noticeId: string;
+          title: string;
+          agency?: string;
+          solNumber?: string;
+          deadline?: string;
+          sourceUrl: string;
+          description: string;
+        }) => {
+          const { error } = await supabase.from("opportunities").upsert(
+            {
+              notice_id: opts.noticeId,
+              title: `[${portal.state}] ${opts.title.substring(0, 200)}`,
+              agency: opts.agency || `${portal.name} State Procurement`,
+              solicitation_number: opts.solNumber || undefined,
+              response_deadline: opts.deadline || undefined,
+              source: `state_${portal.state.toLowerCase()}`,
+              source_url: opts.sourceUrl,
+              description: opts.description,
+              last_seen_at: new Date().toISOString(),
+            },
+            { onConflict: "notice_id" }
+          );
+          if (!error) { stateOpps++; totalUpserted++; }
+        };
+
+        // Platform-specific parsed results (these already have URLs from parsed <a> tags)
         if (hasPlatformResults) {
           for (let i = 0; i < platformResults.length; i++) {
             const item = platformResults[i];
+            const directUrl = resolveUrl(item.url);
+            if (!directUrl) continue; // SKIP: no direct link = don't store dead-end
             const noticeId = `state-${portal.state}-platform-${i}-${Date.now()}`;
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${item.title.substring(0, 200)}`,
-                agency: item.agency || `${portal.name} State Procurement`,
-                solicitation_number: item.solicitation_number || undefined,
-                response_deadline: item.deadline || undefined,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: item.url,
-                description: item.title,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) { stateOpps++; totalUpserted++; }
+            await upsertOpp({
+              noticeId,
+              title: item.title,
+              agency: item.agency,
+              solNumber: item.solicitation_number,
+              deadline: item.deadline,
+              sourceUrl: directUrl,
+              description: item.title,
+            });
           }
         }
 
@@ -586,142 +667,61 @@ export async function scrapeStateLocal(supabase: SupabaseAdmin): Promise<Scraper
         if (hasNevadaBids) {
           for (let i = 0; i < nevadaBids.length; i++) {
             const bid = nevadaBids[i];
-            const noticeId = `state-NV-epro-${bid.refNumber || i}-${Date.now()}`;
             const fullUrl = bid.href
               ? (bid.href.startsWith("http") ? bid.href : `https://nevadaepro.com${bid.href}`)
-              : portal.url;
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[NV] ${bid.title.substring(0, 200)}`,
-                agency: "Nevada State Procurement",
-                solicitation_number: bid.refNumber || undefined,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: fullUrl,
-                description: bid.title,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) { stateOpps++; totalUpserted++; }
+              : null;
+            if (!fullUrl || !isDirectLink(fullUrl)) continue; // SKIP: no direct link
+            const noticeId = `state-NV-epro-${bid.refNumber || i}-${Date.now()}`;
+            await upsertOpp({
+              noticeId,
+              title: bid.title,
+              agency: "Nevada State Procurement",
+              solNumber: bid.refNumber,
+              sourceUrl: fullUrl,
+              description: bid.title,
+            });
           }
         }
 
-        if (hasTableData) {
-          // Use table rows as opportunities
-          for (let i = 0; i < tableRows.length; i++) {
-            const row = tableRows[i];
-            const noticeId = `state-${portal.state}-table-${i}-${Date.now()}`;
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${row.substring(0, 200)}`,
-                agency: `${portal.name} State Procurement`,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: portal.url,
-                description: row,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) {
-              stateOpps++;
-              totalUpserted++;
-            }
-          }
-        }
-
+        // Bid links extracted from <a> tags — these have real hrefs
         if (hasBidLinks) {
           for (let i = 0; i < bidLinks.length; i++) {
             const link = bidLinks[i];
+            const directUrl = resolveUrl(link.href);
+            if (!directUrl) continue; // SKIP: no direct link
             const noticeId = `state-${portal.state}-link-${i}-${Date.now()}`;
-            const fullUrl = link.href.startsWith("http")
-              ? link.href
-              : new URL(link.href, portal.url).toString();
-
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${link.text.substring(0, 200)}`,
-                agency: `${portal.name} State Procurement`,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: fullUrl,
-                description: link.text,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) {
-              stateOpps++;
-              totalUpserted++;
-            }
+            await upsertOpp({
+              noticeId,
+              title: link.text,
+              sourceUrl: directUrl,
+              description: link.text,
+            });
           }
         }
 
-        // FIX 5: Broader parsing - keyword-matching table rows
-        if (hasBidTableRows) {
-          for (let i = 0; i < bidTableRows.length; i++) {
-            const row = bidTableRows[i];
-            const noticeId = `state-${portal.state}-bidrow-${i}-${Date.now()}`;
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${row.substring(0, 200)}`,
-                agency: `${portal.name} State Procurement`,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: portal.url,
-                description: row,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) { stateOpps++; totalUpserted++; }
-          }
-        }
-
-        // FIX 5: Links inside <td> elements pointing to bid detail pages
+        // Links inside <td> elements pointing to bid detail pages
         if (hasTdLinks) {
           for (let i = 0; i < tdLinks.length; i++) {
             const link = tdLinks[i];
+            const directUrl = resolveUrl(link.href);
+            if (!directUrl) continue; // SKIP: no direct link
             const noticeId = `state-${portal.state}-tdlink-${i}-${Date.now()}`;
-            const fullUrl = link.href.startsWith("http")
-              ? link.href
-              : new URL(link.href, portal.url).toString();
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${link.text.substring(0, 200)}`,
-                agency: `${portal.name} State Procurement`,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: fullUrl,
-                description: link.text,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) { stateOpps++; totalUpserted++; }
+            await upsertOpp({
+              noticeId,
+              title: link.text,
+              sourceUrl: directUrl,
+              description: link.text,
+            });
           }
         }
 
-        // FIX 5: Div/li elements with bid-related class names
-        if (hasBidElements) {
-          for (let i = 0; i < bidElements.length; i++) {
-            const elem = bidElements[i];
-            const noticeId = `state-${portal.state}-bidel-${i}-${Date.now()}`;
-            const { error } = await supabase.from("opportunities").upsert(
-              {
-                notice_id: noticeId,
-                title: `[${portal.state}] ${elem.substring(0, 200)}`,
-                agency: `${portal.name} State Procurement`,
-                source: `state_${portal.state.toLowerCase()}`,
-                source_url: portal.url,
-                description: elem,
-                last_seen_at: new Date().toISOString(),
-              },
-              { onConflict: "notice_id" }
-            );
-            if (!error) { stateOpps++; totalUpserted++; }
-          }
+        // REMOVED: table rows, bid table rows, and bid elements that stored portal.url
+        // These created dead-end links. Only store opportunities with verified direct URLs.
+        if (hasTableData && stateOpps === 0) {
+          logger.info(`[state-local] ${portal.name}: Had ${tableRows.length} table rows but no direct links — skipping to avoid dead-end URLs`);
+        }
+        if (hasBidElements && stateOpps === 0) {
+          logger.info(`[state-local] ${portal.name}: Had ${bidElements.length} bid elements but no direct links — skipping`);
         }
 
         totalFound += stateOpps;
