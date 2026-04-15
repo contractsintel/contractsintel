@@ -49,6 +49,8 @@ export default function SearchPage() {
   const [ftsMode, setFtsMode] = useState(false);
   // G01 — SLED level filter (federal/state/local/education or "" for all)
   const [level, setLevel] = useState<string>("");
+  // State/territory filter for state & local opportunities
+  const [stateFilter, setStateFilter] = useState<string>("");
   const [offset, setOffset] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [availableSources, setAvailableSources] = useState<string[]>([]);
@@ -232,8 +234,18 @@ export default function SearchPage() {
           local: ["state_local"],
           education: [],
         };
-        const sources = levelSourceMap[level];
-        if (sources && sources.length > 0) q = q.in("source", sources);
+        if (level === "state" || level === "local") {
+          // Both "state" and "local" filter to state_* sources
+          q = q.like("source", "state_%");
+        } else {
+          const sources = levelSourceMap[level];
+          if (sources && sources.length > 0) q = q.in("source", sources);
+        }
+      }
+
+      // State/territory filter — filters by source column (e.g. state_tx, state_ca)
+      if (stateFilter) {
+        q = q.eq("source", `state_${stateFilter.toLowerCase()}`);
       }
 
       if (sort === "newest") q = q.order("created_at", { ascending: false });
@@ -276,11 +288,11 @@ export default function SearchPage() {
     }
     setTotal(count ?? 0);
     setLoading(false);
-  }, [supabase, debouncedQuery, source, sort, offset, ftsMode, level, organization.id]);
+  }, [supabase, debouncedQuery, source, sort, offset, ftsMode, level, stateFilter, organization.id]);
 
   useEffect(() => {
     search(true);
-  }, [debouncedQuery, source, sort, ftsMode, level]);
+  }, [debouncedQuery, source, sort, ftsMode, level, stateFilter]);
 
   const loadMore = () => {
     const newOffset = offset + PAGE_SIZE;
@@ -493,6 +505,21 @@ export default function SearchPage() {
           <option value="newest">Newest</option>
           <option value="deadline">Deadline soonest</option>
           <option value="value">Highest value</option>
+        </select>
+        <select
+          value={stateFilter}
+          onChange={(e) => { setStateFilter(e.target.value); if (e.target.value && level !== "state" && level !== "local") setLevel("state"); }}
+          className="h-12 bg-white border border-[#e5e7eb] text-[#64748b] text-[14px] px-3 rounded-xl focus:outline-none focus:border-[#2563eb]"
+        >
+          <option value="">All States</option>
+          {[
+            "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+            "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+            "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+            "VA","WA","WV","WI","WY","DC","PR","GU","VI","AS",
+          ].map((st) => (
+            <option key={st} value={st}>{st}</option>
+          ))}
         </select>
         <label className="inline-flex items-center gap-2 h-12 px-3 text-[12px] text-[#475569] bg-white border border-[#e5e7eb] rounded-xl cursor-pointer hover:border-[#cbd5e1]">
           <input
