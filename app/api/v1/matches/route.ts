@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     .from("opportunity_matches")
     .select(
       "id, match_score, pipeline_stage, user_status, created_at, opportunities(*)",
-      { count: "exact" },
+      { count: "estimated" },
     )
     .eq("organization_id", auth.ctx.organizationId)
     .gte("match_score", minScore)

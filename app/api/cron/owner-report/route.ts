@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // New signups this week
     const { count: newSignups } = await supabase
       .from("organizations")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .gte("created_at", weekAgoStr);
 
     // Total orgs by plan
@@ -40,20 +40,20 @@ export async function GET(request: NextRequest) {
     // Conversions this week (plan changed from discovery)
     const { count: conversions } = await supabase
       .from("organizations")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .neq("plan", "discovery")
       .gte("created_at", weekAgoStr);
 
     // New leads this week
     const { count: newLeads } = await supabase
       .from("leads")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .gte("created_at", weekAgoStr);
 
     // Opportunities scraped this week
     const { count: newOpps } = await supabase
       .from("opportunities")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .gte("created_at", weekAgoStr);
 
     const html = `

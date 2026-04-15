@@ -903,14 +903,14 @@ export default function GetStartedPage() {
     // Check if any opportunity has been tracked
     const { count: trackedCount } = await supabase
       .from("opportunity_matches")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .eq("organization_id", organization.id)
       .in("user_status", ["tracking", "bidding"]);
 
     // Check proposals
     const { count: proposalCount } = await supabase
       .from("proposal_drafts")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .eq("organization_id", organization.id);
 
     setChecklist({

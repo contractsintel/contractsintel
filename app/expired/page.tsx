@@ -74,13 +74,13 @@ export default function ExpiredPage() {
 
       // Check BD Pro features
       for (const f of BD_PRO_FEATURES) {
-        const { count } = await supabase.from(f.table).select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+        const { count } = await supabase.from(f.table).select("id", { count: "estimated", head: true }).eq("organization_id", orgId);
         if (count && count > 0) { used.push(f.label); usedBdPro = true; }
       }
 
       // Check Team features
       for (const f of TEAM_FEATURES_LIST) {
-        const { count } = await supabase.from(f.table).select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+        const { count } = await supabase.from(f.table).select("id", { count: "estimated", head: true }).eq("organization_id", orgId);
         if (count && count > 0) { used.push(f.label); usedTeam = true; }
       }
 

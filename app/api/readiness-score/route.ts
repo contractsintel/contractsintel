@@ -85,9 +85,9 @@ export async function GET() {
 
     // PERF: Fire all 3 count queries in parallel instead of sequentially
     const [ppResult, capResult, pipeResult] = await Promise.all([
-      supabase.from("past_performance").select("id", { count: "exact", head: true }).eq("organization_id", org.id),
-      supabase.from("capability_statements").select("id", { count: "exact", head: true }).eq("organization_id", org.id),
-      supabase.from("opportunity_matches").select("id", { count: "exact", head: true }).eq("organization_id", org.id).not("pipeline_stage", "is", null),
+      supabase.from("past_performance").select("id", { count: "estimated", head: true }).eq("organization_id", org.id),
+      supabase.from("capability_statements").select("id", { count: "estimated", head: true }).eq("organization_id", org.id),
+      supabase.from("opportunity_matches").select("id", { count: "estimated", head: true }).eq("organization_id", org.id).not("pipeline_stage", "is", null),
     ]);
     const ppCount = ppResult.count;
     const capCount = capResult.count;

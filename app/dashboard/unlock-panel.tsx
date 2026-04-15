@@ -30,7 +30,7 @@ export function UnlockButton() {
       const unlockNow = new Date().toISOString();
       const { count } = await supabase
         .from("opportunities")
-        .select("id", { count: "exact", head: true })
+        .select("id", { count: "estimated", head: true })
         .not("naics_code", "is", null)
         .in("source", ["sam_gov", "usaspending"])
         .or(`response_deadline.is.null,response_deadline.gte.${unlockNow}`)
@@ -144,16 +144,17 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
   // Count matches for selected NAICS
   const countNaicsMatches = useCallback(async (codes: string[]) => {
     if (!codes.length) { setNaicsMatchCount(0); return; }
-    let total = 0;
-    for (const code of codes.slice(0, 5)) {
-      const { count } = await supabase
-        .from("opportunities")
-        .select("id", { count: "exact", head: true })
-        .eq("naics_code", code)
-        .in("source", ["sam_gov", "usaspending"])
-        ;
-      total += count ?? 0;
-    }
+    // PERF: run counts in parallel with estimated counts
+    const results = await Promise.all(
+      codes.slice(0, 5).map(code =>
+        supabase
+          .from("opportunities")
+          .select("id", { count: "estimated", head: true })
+          .eq("naics_code", code)
+          .in("source", ["sam_gov", "usaspending"])
+      )
+    );
+    const total = results.reduce((sum, r) => sum + (r.count ?? 0), 0);
     setNaicsMatchCount(total);
   }, [supabase]);
 
@@ -191,18 +192,18 @@ function UnlockPanel({ onClose, unlockCount }: { onClose: () => void; unlockCoun
       .eq("id", organization.id);
     setSaving(false);
 
-    // Count set-aside matches
-    let count = 0;
-    for (const cert of selectedCerts) {
-      const keyword = cert.toLowerCase().substring(0, 4);
-      const { count: c } = await supabase
-        .from("opportunities")
-        .select("id", { count: "exact", head: true })
-        .ilike("set_aside_type", `%${keyword}%`)
-        .in("source", ["sam_gov", "usaspending"])
-        ;
-      count += c ?? 0;
-    }
+    // PERF: Count set-aside matches in parallel with estimated counts
+    const certResults = await Promise.all(
+      selectedCerts.map(cert => {
+        const keyword = cert.toLowerCase().substring(0, 4);
+        return supabase
+          .from("opportunities")
+          .select("id", { count: "estimated", head: true })
+          .ilike("set_aside_type", `%${keyword}%`)
+          .in("source", ["sam_gov", "usaspending"]);
+      })
+    );
+    const count = certResults.reduce((sum, r) => sum + (r.count ?? 0), 0);
     setCertMatchCount(count);
     setCompletedSteps((s) => s.includes(2) ? s : [...s, 2]);
     setCelebration(`+${count.toLocaleString()} set-aside matches unlocked!`);

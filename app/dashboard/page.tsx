@@ -246,28 +246,21 @@ export default function DashboardPage() {
 
     setLoading(false);
 
-    // PERF: Background-fetch remaining pages AFTER first render.
-    // The user sees top matches instantly; rest streams in behind the scenes.
+    // PERF: Background-fetch ONE additional page (cap at 2000 total).
+    // The dashboard sorts by match_score desc, so the top matches are already
+    // in the first page. Fetching ALL rows (3000+) caused 3.5s+ of extra
+    // network time with no UX benefit — users never scroll past ~200.
     const totalRows = (firstPage as any)?.length ?? 0;
     if (totalRows === 1000) {
-      // There might be more pages — fetch them in background
-      let bgOffset = 1000;
-      let bgHasMore = true;
-      let bgAll = [...firstActive];
-      while (bgHasMore) {
-        const { data: bgPage, error: bgErr } = await supabase
-          .from("opportunity_matches")
-          .select(SELECT_COLS)
-          .eq("organization_id", organization.id)
-          .order("match_score", { ascending: false })
-          .range(bgOffset, bgOffset + 999);
-        if (bgErr || !bgPage?.length) break;
+      const { data: bgPage } = await supabase
+        .from("opportunity_matches")
+        .select(SELECT_COLS)
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(1000, 1999);
+      if (bgPage?.length) {
         const bgActive = filterActive(bgPage);
-        bgAll = bgAll.concat(bgActive);
-        bgHasMore = bgPage.length === 1000;
-        bgOffset += 1000;
-      }
-      if (bgAll.length > firstActive.length) {
+        const bgAll = [...firstActive, ...bgActive];
         setMatches(bgAll);
         setTotalMatchCount(bgAll.length);
         // Update source counts with full data

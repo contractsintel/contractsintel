@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     .from("opportunities")
     .select(
       "id, title, agency, naics_code, solicitation_number, posted_date, response_deadline, estimated_value, source, sam_url",
-      { count: "exact" },
+      { count: "estimated" },
     )
     .or(`response_deadline.is.null,response_deadline.gte.${now}`)
     .order("posted_date", { ascending: false, nullsFirst: false })

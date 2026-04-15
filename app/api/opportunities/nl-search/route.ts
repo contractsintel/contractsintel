@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const nlNow = new Date().toISOString();
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
+      .select("*", { count: "estimated" })
       .or(`response_deadline.is.null,response_deadline.gte.${nlNow}`)
       .limit(PAGE_SIZE);
 

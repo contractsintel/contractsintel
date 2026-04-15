@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Try with opportunity_type column first
     const primary = await supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
+      .select("*", { count: "estimated" })
       .eq("opportunity_type", typeParam)
       .or(`response_deadline.is.null,response_deadline.gte.${btNow}`)
       .order("posted_date", { ascending: false })
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const filter = SOURCE_FILTERS[typeParam] ?? {};
     let q = supabase
       .from("opportunities")
-      .select("*", { count: "exact" })
+      .select("*", { count: "estimated" })
       .or(`response_deadline.is.null,response_deadline.gte.${btNow}`)
       .order("posted_date", { ascending: false })
       .limit(limit);

@@ -108,17 +108,22 @@ export default function SettingsPage() {
         // scraper_runs table may not exist yet
       }
 
-      // Fetch opportunity counts per source
+      // PERF: Fetch opportunity counts per source in parallel with estimated counts
+      // (was sequential exact counts — 9 round trips × ~600ms each = 6s)
       try {
         const sources = ["sam_gov", "usaspending", "grants_gov", "state_local", "military_defense", "sbir_sttr", "forecasts", "federal_civilian", "fpds_feed"];
+        const results = await Promise.all(
+          sources.map(src =>
+            supabase
+              .from("opportunities")
+              .select("id", { count: "estimated", head: true })
+              .eq("source", src)
+          )
+        );
         const counts: Record<string, number> = {};
-        for (const src of sources) {
-          const { count } = await supabase
-            .from("opportunities")
-            .select("id", { count: "exact", head: true })
-            .eq("source", src);
-          counts[src] = count ?? 0;
-        }
+        sources.forEach((src, i) => {
+          counts[src] = results[i].count ?? 0;
+        });
         setSourceCounts(counts);
       } catch {
         // opportunities table may not exist yet

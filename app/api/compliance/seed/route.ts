@@ -46,7 +46,7 @@ export async function POST() {
     // Idempotency: if any items exist, noop
     const { count } = await supabase
       .from("compliance_items")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .eq("organization_id", orgId)
       .neq("category", "far_change");
     if ((count ?? 0) > 0) {
