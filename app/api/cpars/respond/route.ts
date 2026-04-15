@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
     // Fetch organization details
     const { data: org } = await supabase
       .from("organizations")
-      .select("*")
+      .select("id, name")
       .eq("id", orgId)
       .single();
 
-    // Fetch performance logs for this contract
+    // Fetch past performance for context
     const { data: perfLogs } = await supabase
       .from("past_performance")
-      .select("*")
+      .select("id, contract_title, contract_name, agency, contract_number, contract_value, award_amount, description")
       .eq("organization_id", orgId)
       .limit(5);
 

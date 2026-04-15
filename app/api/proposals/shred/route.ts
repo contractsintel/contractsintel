@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!text && opportunityId) {
       const { data: opp } = await supabase
         .from("opportunities")
-        .select("*")
+        .select("id, title, agency, naics_code, full_description, description, response_instructions")
         .eq("id", opportunityId)
         .single();
       if (opp) {

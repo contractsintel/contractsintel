@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Fetch record — scoped to user's org
     const { data: record } = await supabase
       .from("past_performance")
-      .select("*")
+      .select("id, contract_name, contract_title, agency, contract_number, period_start, period_end, award_amount, contract_value, description")
       .eq("id", record_id)
       .eq("organization_id", orgId)
       .single();
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
     // Fetch org — scoped to user's org
     const { data: org } = await supabase
       .from("organizations")
-      .select("*")
+      .select("id, name")
       .eq("id", orgId)
       .single();
 
     // Fetch performance logs for this record
     const { data: logs } = await supabase
       .from("performance_logs")
-      .select("*")
+      .select("id, month_date, deliverables_completed, issues, client_feedback")
       .eq("past_performance_id", record_id)
       .order("month_date", { ascending: true });
 

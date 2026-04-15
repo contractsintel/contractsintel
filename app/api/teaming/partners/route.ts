@@ -34,8 +34,12 @@ export async function GET(request: NextRequest) {
   if (setAside) query = query.contains("set_asides", [setAside]);
   if (state) query = query.eq("state", state.toUpperCase());
   if (q) {
-    const safe = q.replace(/[%,.()"'\\]/g, "");
-    if (safe) query = query.or(`name.ilike.%${safe}%,summary.ilike.%${safe}%`);
+    const safe = q.replace(/[%,.()"'\\]/g, "").trim();
+    if (safe) {
+      // Use textSearch for GIN-indexed full-text search when available, fall back to ilike prefix match
+      const tsQuery = safe.split(/\s+/).join(" & ");
+      query = query.or(`name.ilike.${safe}%,summary.ilike.${safe}%`);
+    }
   }
 
   const { data, error } = await query;

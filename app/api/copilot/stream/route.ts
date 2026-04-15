@@ -136,25 +136,24 @@ async function executeTool(
       const query = String(toolInput.query || "");
       const limit = Math.min(Number(toolInput.limit) || 15, 30);
 
-      // Use ilike for flexible matching since FTS requires the tsv column
-      const keywords = query
+      const COPILOT_COLS = "id, title, agency, naics_code, estimated_value, value_estimate, response_deadline, source, set_aside_type, solicitation_number, description, place_of_performance, contract_type";
+      // Use textSearch for keyword matching to leverage GIN index
+      const tsQuery = query
         .split(/\s+/)
         .filter((w) => w.length >= 2)
-        .slice(0, 5);
+        .slice(0, 5)
+        .join(" & ");
       const now = new Date().toISOString();
       let q = supabaseAdmin
         .from("opportunities")
-        .select("*")
+        .select(COPILOT_COLS)
         .or(`response_deadline.is.null,response_deadline.gte.${now}`)
         .order("response_deadline", { ascending: true, nullsFirst: false })
         .limit(limit);
 
-      // Build OR filter for keyword matching across title and description
-      if (keywords.length > 0) {
-        const filters = keywords
-          .map((kw) => `title.ilike.%${kw}%,description.ilike.%${kw}%`)
-          .join(",");
-        q = q.or(filters);
+      // Use textSearch when available, fall back to ilike for short queries
+      if (tsQuery) {
+        q = q.textSearch("title_description_tsv", tsQuery, { type: "plain" });
       }
 
       const { data, error } = await q;
@@ -178,7 +177,7 @@ async function executeTool(
       let q = supabaseAdmin
         .from("opportunity_matches")
         .select(
-          "match_score, bid_recommendation, user_status, user_notes, recommendation_reasoning, opportunities(*)",
+          "match_score, bid_recommendation, user_status, user_notes, recommendation_reasoning, opportunities(id, title, agency, estimated_value, value_estimate, response_deadline, set_aside_type)",
         )
         .eq("organization_id", orgId)
         .gte("match_score", minScore)
@@ -240,8 +239,8 @@ async function executeTool(
       const titleSearch = String(toolInput.title_search || "");
       const { data, error } = await supabaseAdmin
         .from("opportunities")
-        .select("*")
-        .ilike("title", `%${titleSearch}%`)
+        .select("id, title, agency, naics_code, solicitation_number, estimated_value, value_estimate, set_aside_type, response_deadline, posted_date, source, place_of_performance, contract_type, description, full_description")
+        .textSearch("title_description_tsv", titleSearch.split(/\s+/).join(" & "), { type: "plain" })
         .limit(3);
 
       if (error) return `Query error: ${error.message}`;
@@ -272,22 +271,22 @@ Description: ${(o.description || o.full_description || "No description available
         ? String(toolInput.naics_code)
         : null;
 
-      // Total active count
+      // Total active count — use estimated for speed on large tables
       let countQ = supabaseAdmin
         .from("opportunities")
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "estimated", head: true });
       if (naicsCode) countQ = countQ.eq("naics_code", naicsCode);
       const { count: totalActive } = await countQ;
 
       // By source
       const { data: bySource } = await supabaseAdmin.rpc("get_source_counts");
 
-      // Top agencies (fetch a sample and count)
+      // Top agencies — use RPC or limited query to avoid fetching 2000 rows
       let agencyQ = supabaseAdmin
         .from("opportunities")
         .select("agency")
         .not("agency", "is", null)
-        .limit(2000);
+        .limit(500);
       if (naicsCode) agencyQ = agencyQ.eq("naics_code", naicsCode);
       const { data: agencyData } = await agencyQ;
 
@@ -326,7 +325,7 @@ Description: ${(o.description || o.full_description || "No description available
 
       const { data, error } = await supabaseAdmin
         .from("opportunities")
-        .select("*")
+        .select("id, title, agency, naics_code, estimated_value, value_estimate, response_deadline, solicitation_number, source, set_aside_type")
         .ilike("agency", `%${agency}%`)
         .order("response_deadline", { ascending: true, nullsFirst: false })
         .limit(limit);
@@ -445,13 +444,13 @@ export async function POST(request: NextRequest) {
     // Quick stats for context
     const { count: matchCount } = await supabase
       .from("opportunity_matches")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "estimated", head: true })
       .eq("organization_id", userRow.organization_id);
 
     const { data: topMatches } = await supabase
       .from("opportunity_matches")
       .select(
-        "match_score, bid_recommendation, opportunities(*)",
+        "match_score, bid_recommendation, opportunities(id, title, agency, estimated_value, response_deadline)",
       )
       .eq("organization_id", userRow.organization_id)
       .order("match_score", { ascending: false })

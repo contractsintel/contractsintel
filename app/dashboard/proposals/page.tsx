@@ -58,7 +58,7 @@ export default function ProposalsPage() {
     if (locked) { setLoading(false); return; }
     const { data } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("id, opportunity_id, match_score, user_status, opportunities(id, title, agency, solicitation_number, description, full_description, set_aside_type, set_aside_description, naics_code, naics_description, estimated_value, value_estimate, place_of_performance, contract_type, response_deadline, response_instructions)")
       .eq("organization_id", organization.id)
       .eq("user_status", "bidding")
       .order("match_score", { ascending: false });

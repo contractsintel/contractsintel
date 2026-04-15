@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Fetch the match — scoped to user's org
     const { data: match } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("id, opportunity_id, match_score, opportunities(id, title, agency, solicitation_number, description, full_description, set_aside_type, set_aside_description, naics_code, naics_description, estimated_value, value_estimate, place_of_performance, contract_type)")
       .eq("id", match_id)
       .eq("organization_id", orgId)
       .single();
@@ -51,18 +51,18 @@ export async function POST(request: NextRequest) {
     // Fetch organization details — scoped to user's org
     const { data: org } = await supabase
       .from("organizations")
-      .select("*")
+      .select("id, name, uei, cage_code, naics_codes, certifications, entity_description, keywords")
       .eq("id", orgId)
       .single();
 
     // Fetch past performance — scoped to user's org
     const { data: pastPerf } = await supabase
       .from("past_performance")
-      .select("*")
+      .select("id, contract_title, contract_name, agency, contract_number, contract_value, award_amount, period_of_performance, description")
       .eq("organization_id", orgId)
       .limit(5);
 
-    const opp = match.opportunities;
+    const opp = match.opportunities as Record<string, any> | null;
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY!,
       timeout: 120_000,

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Get org profile
     const { data: org } = await supabaseAdmin
       .from("organizations")
-      .select("*")
+      .select("id, name, naics_codes, certifications, keywords, min_contract_value, max_contract_value, service_states, serves_nationwide")
       .eq("id", organizationId)
       .single();
     if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });

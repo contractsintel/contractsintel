@@ -44,7 +44,7 @@ export async function POST(_request: NextRequest) {
 
     const { data: pastPerf } = await supabase
       .from("past_performance")
-      .select("*")
+      .select("id, contract_title, contract_name, agency, contract_number, contract_value, award_amount, period_of_performance, description")
       .eq("organization_id", userRecord.organization_id)
       .order("created_at", { ascending: false })
       .limit(20);

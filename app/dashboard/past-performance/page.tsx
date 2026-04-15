@@ -30,7 +30,7 @@ export default function PastPerformancePage() {
     if (locked) { setLoading(false); return; }
     const { data } = await supabase
       .from("past_performance")
-      .select("*")
+      .select("id, contract_title, contract_name, agency, contract_number, contract_value, award_amount, period_of_performance, description, monthly_logs, ppq_narrative, ppq_narrative_versions, created_at")
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false });
     setRecords(data ?? []);

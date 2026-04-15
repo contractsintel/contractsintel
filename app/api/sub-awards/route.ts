@@ -21,12 +21,12 @@ export async function GET(request: NextRequest) {
 
     let q = supabase
       .from("sub_awards")
-      .select("*", { count: "exact" })
+      .select("id, prime_award_id, prime_contractor, sub_vendor, sub_uei, agency, naics_code, description, value, awarded_at, source, source_url", { count: "estimated" })
       .order("awarded_at", { ascending: false })
       .limit(limit);
 
     if (naics) q = q.eq("naics_code", naics);
-    if (agency) q = q.ilike("agency", `%${agency.replace(/[%,.()"'\\]/g, "")}%`);
+    if (agency) q = q.textSearch("agency", agency.replace(/[%,.()"'\\]/g, "").split(/\s+/).join(" & "), { type: "plain" });
 
     const { data, error, count } = await q;
     if (error) {

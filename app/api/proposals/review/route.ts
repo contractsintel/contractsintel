@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Fetch the match — scoped to user's org
     const { data: match } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("id, opportunity_id, match_score, opportunities(id, title, agency, solicitation_number, description, full_description, set_aside_type, set_aside_description, naics_code, naics_description)")
       .eq("id", match_id)
       .eq("organization_id", orgId)
       .single();
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Match not found" }, { status: 404 });
     }
 
-    const opp = match.opportunities;
+    const opp = match.opportunities as Record<string, any> | null;
 
     // Fetch the most recent RFP shred for this opportunity (if any)
     const { data: shred } = await supabase

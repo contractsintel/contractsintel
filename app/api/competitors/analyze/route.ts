@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Fetch competitor scoped to org
     const { data: competitor } = await supabase
       .from("competitors")
-      .select("*, competitor_encounters(*)")
+      .select("id, name, uei, certifications, naics_codes, notes, competitor_encounters(id, opportunity_title, outcome, agency, value)")
       .eq("id", competitor_id)
       .eq("organization_id", orgId)
       .single();
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Fetch org details
     const { data: org } = await supabase
       .from("organizations")
-      .select("*")
+      .select("id, name, certifications, naics_codes")
       .eq("id", orgId)
       .single();
 
