@@ -188,15 +188,21 @@ export default function SearchPage() {
     }
 
     // PERF: Select only columns needed for display instead of SELECT *
+    // PERF: Use count:"estimated" — exact count on 168k rows adds 5+ seconds
     const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
     const now = new Date().toISOString();
     let q = supabase
       .from("opportunities")
-      .select(SEARCH_COLS, { count: "exact" })
+      .select(SEARCH_COLS, { count: "estimated" })
       .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
     if (debouncedQuery.trim()) {
-      q = q.or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
+      // PERF: Use GIN-indexed solicitation_tsv column instead of ILIKE (10s → <500ms)
+      // The tsvector includes title(A), solicitation_number(A), description(B)
+      q = q.textSearch("solicitation_tsv", debouncedQuery.trim(), {
+        type: "websearch",
+        config: "english",
+      });
     }
 
     if (source) {
@@ -227,13 +233,36 @@ export default function SearchPage() {
 
     q = q.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
 
-    const { data, count, error: qErr } = await q;
+    let { data, count, error: qErr } = await q;
+
+    // If textSearch failed (solicitation_tsv column missing), fall back to ILIKE
+    if (qErr && debouncedQuery.trim() && qErr.message?.includes("does not exist")) {
+      console.warn("[search] textSearch fallback to ILIKE:", qErr.message);
+      let fallbackQ = supabase
+        .from("opportunities")
+        .select(SEARCH_COLS, { count: "estimated" })
+        .or(`response_deadline.is.null,response_deadline.gte.${now}`)
+        .or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
+      if (source) {
+        if (source === "state_local") fallbackQ = fallbackQ.like("source", "state_%");
+        else fallbackQ = fallbackQ.eq("source", source);
+      }
+      if (sort === "newest") fallbackQ = fallbackQ.order("created_at", { ascending: false });
+      else if (sort === "deadline") fallbackQ = fallbackQ.order("response_deadline", { ascending: true, nullsFirst: false });
+      else if (sort === "value") fallbackQ = fallbackQ.order("estimated_value", { ascending: false, nullsFirst: false });
+      fallbackQ = fallbackQ.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
+      const fb = await fallbackQ;
+      data = fb.data;
+      count = fb.count;
+      qErr = fb.error;
+    }
+
     if (qErr) {
       console.error("[search] Supabase query error:", qErr.message, qErr.code);
       // Fallback: try querying through opportunity_matches joined with opportunities
       const fallback = await supabase
         .from("opportunity_matches")
-        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "exact" })
+        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "estimated" })
         .eq("organization_id", organization.id)
         .order("match_score", { ascending: false })
         .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
@@ -272,11 +301,14 @@ export default function SearchPage() {
       const nowLm = new Date().toISOString();
       let q = supabase
         .from("opportunities")
-        .select(SEARCH_COLS_LM, { count: "exact" })
+        .select(SEARCH_COLS_LM, { count: "estimated" })
         .or(`response_deadline.is.null,response_deadline.gte.${nowLm}`);
 
       if (debouncedQuery.trim()) {
-        q = q.or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
+        q = q.textSearch("solicitation_tsv", debouncedQuery.trim(), {
+          type: "websearch",
+          config: "english",
+        });
       }
       if (source) {
         if (source === "state_local") {

@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const ftsNow = new Date().toISOString();
     const ftsResult = await supabase
       .from("opportunities")
-      .select(fields, { count: "exact" })
+      .select(fields, { count: "estimated" })
       .textSearch("solicitation_tsv", raw, { type: "plain", config: "english" })
       .or(`response_deadline.is.null,response_deadline.gte.${ftsNow}`)
       .order("posted_date", { ascending: false, nullsFirst: false })
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
       const fallbackResult = await supabase
         .from("opportunities")
-        .select(fields, { count: "exact" })
+        .select(fields, { count: "estimated" })
         .or(filters)
         .or(`response_deadline.is.null,response_deadline.gte.${ftsNow}`)
         .order("posted_date", { ascending: false, nullsFirst: false })

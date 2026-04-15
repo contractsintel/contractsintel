@@ -191,7 +191,7 @@ export default function DashboardPage() {
     // Then background-fetch remaining pages without blocking the render.
     const { data: firstPage, error: pgErr } = await supabase
       .from("opportunity_matches")
-      .select(SELECT_COLS, { count: "exact" })
+      .select(SELECT_COLS, { count: "estimated" })
       .eq("organization_id", organization.id)
       .order("match_score", { ascending: false })
       .range(0, 999);
