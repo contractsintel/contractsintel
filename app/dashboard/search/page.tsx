@@ -197,36 +197,21 @@ export default function SearchPage() {
     let qErr: { message: string; code?: string } | null = null;
 
     if (debouncedQuery.trim()) {
-      // PERF: Use server-side RPC for text search — forces GIN index usage,
-      // bypasses PostgREST query planner choosing wrong index (95ms vs 8s+ timeout)
-      const { data: rpcData, error: rpcErr } = await supabase.rpc("search_opportunities", {
-        search_query: debouncedQuery.trim(),
-        row_limit: PAGE_SIZE,
-        row_offset: effectiveOffset,
-      });
-      if (!rpcErr && rpcData) {
-        data = rpcData;
-        count = rpcData.length >= PAGE_SIZE ? effectiveOffset + PAGE_SIZE + 1 : effectiveOffset + rpcData.length;
-      } else {
-        // Fallback to ILIKE if RPC fails (function may not exist yet)
-        console.warn("[search] RPC fallback to ILIKE:", rpcErr?.message);
-        let fallbackQ = supabase
-          .from("opportunities")
-          .select(SEARCH_COLS, { count: "estimated" })
-          .or(`response_deadline.is.null,response_deadline.gte.${now}`)
-          .or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
-        if (source) {
-          if (source === "state_local") fallbackQ = fallbackQ.like("source", "state_%");
-          else fallbackQ = fallbackQ.eq("source", source);
+      // PERF: Route search through our API endpoint (Vercel→Supabase is cloud-to-cloud,
+      // much faster than browser→Supabase direct connection on Nano tier)
+      try {
+        const r = await fetch(`/api/opportunities/search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=${PAGE_SIZE}&offset=${effectiveOffset}`);
+        const j = await r.json();
+        if (r.ok) {
+          data = j.results ?? [];
+          count = j.count ?? data!.length;
+        } else {
+          console.warn("[search] API error:", j.error);
+          qErr = { message: j.error || "Search failed" };
         }
-        if (sort === "newest") fallbackQ = fallbackQ.order("created_at", { ascending: false });
-        else if (sort === "deadline") fallbackQ = fallbackQ.order("response_deadline", { ascending: true, nullsFirst: false });
-        else if (sort === "value") fallbackQ = fallbackQ.order("estimated_value", { ascending: false, nullsFirst: false });
-        fallbackQ = fallbackQ.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
-        const fb = await fallbackQ;
-        data = fb.data;
-        count = fb.count;
-        qErr = fb.error;
+      } catch (err) {
+        console.warn("[search] API fetch failed:", err);
+        qErr = { message: "Network error" };
       }
     } else {
       // No search query — browse mode with sorting
@@ -303,16 +288,15 @@ export default function SearchPage() {
     // Trigger search with new offset
     const doSearch = async () => {
       if (debouncedQuery.trim()) {
-        // PERF: Use RPC for text search (same as main search)
-        const { data, error: rpcErr } = await supabase.rpc("search_opportunities", {
-          search_query: debouncedQuery.trim(),
-          row_limit: PAGE_SIZE,
-          row_offset: newOffset,
-        });
-        if (!rpcErr && data) {
-          setResults((prev) => [...prev, ...data]);
-          return;
-        }
+        // PERF: Use API route for text search (same as main search)
+        try {
+          const r = await fetch(`/api/opportunities/search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=${PAGE_SIZE}&offset=${newOffset}`);
+          if (r.ok) {
+            const j = await r.json();
+            setResults((prev) => [...prev, ...(j.results ?? [])]);
+            return;
+          }
+        } catch { /* fall through to browse query */ }
       }
       // Browse mode or RPC fallback
       const SEARCH_COLS_LM = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
