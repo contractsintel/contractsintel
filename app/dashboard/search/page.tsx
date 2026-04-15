@@ -215,7 +215,29 @@ export default function SearchPage() {
 
     q = q.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
 
-    const { data, count } = await q;
+    const { data, count, error: qErr } = await q;
+    if (qErr) {
+      console.error("[search] Supabase query error:", qErr.message, qErr.code);
+      // Fallback: try querying through opportunity_matches joined with opportunities
+      const fallback = await supabase
+        .from("opportunity_matches")
+        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "exact" })
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
+      const fallbackResults = (fallback.data ?? []).map((m: Record<string, any>) => ({
+        ...(m.opportunities ?? {}),
+        _match_score: m.match_score,
+      }));
+      if (resetOffset) {
+        setResults(fallbackResults);
+      } else {
+        setResults((prev) => [...prev, ...fallbackResults]);
+      }
+      setTotal(fallback.count ?? 0);
+      setLoading(false);
+      return;
+    }
     if (resetOffset) {
       setResults(data ?? []);
     } else {
@@ -223,7 +245,7 @@ export default function SearchPage() {
     }
     setTotal(count ?? 0);
     setLoading(false);
-  }, [supabase, query, source, sort, offset, ftsMode, level]);
+  }, [supabase, query, source, sort, offset, ftsMode, level, organization.id]);
 
   useEffect(() => {
     search(true);

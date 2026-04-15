@@ -42,20 +42,30 @@ export default function CompetitorsPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const [addError, setAddError] = useState<string | null>(null);
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
     setSubmitting(true);
-    await supabase.from("competitors").insert({
-      organization_id: organization.id,
-      name: form.name,
-      uei: form.uei || null,
-      notes: form.notes || null,
-    });
-    setForm({ name: "", uei: "", notes: "" });
-    setShowForm(false);
-    setSubmitting(false);
-    loadData();
+    setAddError(null);
+    try {
+      const { error } = await supabase.from("competitors").insert({
+        organization_id: organization.id,
+        name: form.name,
+        uei: form.uei || null,
+        notes: form.notes || null,
+      });
+      if (error) throw error;
+      setForm({ name: "", uei: "", notes: "" });
+      setShowForm(false);
+      loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to add competitor";
+      console.error("[competitors] add error:", msg);
+      setAddError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const analyzeCompetitor = async (competitorId: string) => {
@@ -176,6 +186,9 @@ export default function CompetitorsPage() {
                 className="w-full bg-[#f8f9fb] border border-[#e5e7eb] text-[#0f172a] px-4 py-2 text-sm focus:outline-none focus:border-[#2563eb] resize-none"
               />
             </div>
+            {addError && (
+              <p className="text-[13px] text-[#dc2626] mb-2">{addError}</p>
+            )}
             <button
               type="submit"
               disabled={submitting || !form.name}

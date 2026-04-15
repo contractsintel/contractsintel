@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "No RFP shred found. Run the RFP Decoder first (POST /api/proposals/shred) before generating an outline.",
+            "No RFP analysis found. Please run the \"Decode RFP\" tool on the opportunity detail page first, then retry the outline.",
         },
         { status: 400 },
       );
