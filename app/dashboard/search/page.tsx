@@ -227,16 +227,21 @@ export default function SearchPage() {
       }
     }
 
-    if (sort === "newest") q = q.order("created_at", { ascending: false });
-    else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
-    else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
+    // PERF: When textSearch is active, skip ORDER BY to let Postgres use the
+    // GIN index.  ORDER BY created_at forces an index-scan on the created_at
+    // B-tree which filters >60k rows and times out on Nano instances.
+    if (!debouncedQuery.trim()) {
+      if (sort === "newest") q = q.order("created_at", { ascending: false });
+      else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
+      else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
+    }
 
     q = q.range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
 
     let { data, count, error: qErr } = await q;
 
-    // If textSearch failed (solicitation_tsv column missing), fall back to ILIKE
-    if (qErr && debouncedQuery.trim() && qErr.message?.includes("does not exist")) {
+    // If textSearch failed (column missing OR statement timeout), fall back to ILIKE
+    if (qErr && debouncedQuery.trim() && (qErr.message?.includes("does not exist") || qErr.message?.includes("statement timeout"))) {
       console.warn("[search] textSearch fallback to ILIKE:", qErr.message);
       let fallbackQ = supabase
         .from("opportunities")
@@ -317,9 +322,12 @@ export default function SearchPage() {
           q = q.eq("source", source);
         }
       }
-      if (sort === "newest") q = q.order("created_at", { ascending: false });
-      else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
-      else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
+      // PERF: Skip ORDER BY during textSearch to let GIN index be used
+      if (!debouncedQuery.trim()) {
+        if (sort === "newest") q = q.order("created_at", { ascending: false });
+        else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
+        else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
+      }
 
       q = q.range(newOffset, newOffset + PAGE_SIZE - 1);
       const { data, error: qErr } = await q;
