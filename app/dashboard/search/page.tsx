@@ -202,7 +202,13 @@ export default function SearchPage() {
       // PERF: Route search through our API endpoint (Vercel→Supabase is cloud-to-cloud,
       // much faster than browser→Supabase direct connection on Nano tier)
       try {
-        const r = await fetch(`/api/opportunities/search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=${PAGE_SIZE}&offset=${effectiveOffset}`);
+        const searchParams = new URLSearchParams({ q: debouncedQuery.trim(), limit: String(PAGE_SIZE), offset: String(effectiveOffset) });
+        if (stateFilter) searchParams.set("state", stateFilter.toLowerCase());
+        else if (level === "state" || level === "local") searchParams.set("source_like", "state_%");
+        else if (level === "federal") searchParams.set("source_in", "sam_gov,usaspending,military_defense,dla_dibbs,army_asfi,navy_neco,air_force,marines,darpa");
+        if (source && source !== "state_local") searchParams.set("source", source);
+        else if (source === "state_local") searchParams.set("source_like", "state_%");
+        const r = await fetch(`/api/opportunities/search?${searchParams.toString()}`);
         const j = await r.json();
         if (r.ok) {
           data = j.results ?? [];
@@ -306,7 +312,13 @@ export default function SearchPage() {
       if (debouncedQuery.trim()) {
         // PERF: Use API route for text search (same as main search)
         try {
-          const r = await fetch(`/api/opportunities/search?q=${encodeURIComponent(debouncedQuery.trim())}&limit=${PAGE_SIZE}&offset=${newOffset}`);
+          const lmParams = new URLSearchParams({ q: debouncedQuery.trim(), limit: String(PAGE_SIZE), offset: String(newOffset) });
+          if (stateFilter) lmParams.set("state", stateFilter.toLowerCase());
+          else if (level === "state" || level === "local") lmParams.set("source_like", "state_%");
+          else if (level === "federal") lmParams.set("source_in", "sam_gov,usaspending,military_defense,dla_dibbs,army_asfi,navy_neco,air_force,marines,darpa");
+          if (source && source !== "state_local") lmParams.set("source", source);
+          else if (source === "state_local") lmParams.set("source_like", "state_%");
+          const r = await fetch(`/api/opportunities/search?${lmParams.toString()}`);
           if (r.ok) {
             const j = await r.json();
             setResults((prev) => [...prev, ...(j.results ?? [])]);

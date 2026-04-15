@@ -23,6 +23,35 @@ export async function GET(request: NextRequest) {
     }
     const limit = Math.min(Number(url.searchParams.get("limit") ?? "50"), 100);
     const offset = Math.max(Number(url.searchParams.get("offset") ?? "0"), 0);
+    const stateParam = url.searchParams.get("state");
+    const sourceParam = url.searchParams.get("source");
+    const sourceLikeParam = url.searchParams.get("source_like");
+    const sourceInParam = url.searchParams.get("source_in");
+
+    // If filters are present, use a filtered query instead of the RPC
+    const hasFilters = stateParam || sourceParam || sourceLikeParam || sourceInParam;
+
+    if (hasFilters) {
+      let query = supabase
+        .from("opportunities")
+        .select("id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at", { count: "estimated" })
+        .or(`title.ilike.%${q}%,agency.ilike.%${q}%,solicitation_number.ilike.%${q}%,description.ilike.%${q}%`);
+
+      if (stateParam) query = query.eq("source", `state_${stateParam}`);
+      else if (sourceParam) query = query.eq("source", sourceParam);
+
+      if (sourceLikeParam) query = query.like("source", sourceLikeParam);
+      if (sourceInParam) query = query.in("source", sourceInParam.split(","));
+
+      query = query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+      const { data, error, count } = await query;
+
+      if (error) {
+        console.error("filtered search error:", error);
+        return NextResponse.json({ error: "Search failed" }, { status: 500 });
+      }
+      return NextResponse.json({ results: data ?? [], count: count ?? (data?.length ?? 0), query: q });
+    }
 
     const { data, error } = await supabase.rpc("search_opportunities", {
       search_query: q,
