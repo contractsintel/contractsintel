@@ -75,7 +75,7 @@ export default async function Image() {
         <div style={{ display: "flex", gap: 32 }}>
           {[
             { label: "$700B", sub: "Annual contracts" },
-            { label: "45,000+", sub: "Active opportunities" },
+            { label: "55,000+", sub: "Federal, state & local opportunities" },
             { label: "22", sub: "Integrated products" },
           ].map((stat) => (
             <div
