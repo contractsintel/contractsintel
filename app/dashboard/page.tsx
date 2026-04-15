@@ -2,7 +2,7 @@
 
 import { useDashboard } from "./context";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HelpButton } from "./help-panel";
@@ -174,51 +174,42 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    // PERF: Fetch ALL matches with only the columns needed for display.
-    // Using specific opportunity columns instead of opportunities(*) cuts payload ~10x.
+    // PERF: Fetch matches with only the columns needed for display.
     const OPP_COLS = "id,title,agency,naics_code,set_aside_type,estimated_value,value_estimate,response_deadline,posted_date,source,notice_type,contract_type,incumbent_name,incumbent_value,source_url,solicitation_number,place_of_performance";
-    // Supabase PostgREST caps at 1000 rows per request. Paginate to get all.
-    const PAGE = 1000;
-    let allData: any[] = [];
-    let offset = 0;
-    let hasMore = true;
-    while (hasMore) {
-      const { data: page, error: pgErr } = await supabase
-        .from("opportunity_matches")
-        .select(`id, organization_id, opportunity_id, match_score, bid_recommendation, recommendation_reasoning, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`)
-        .eq("organization_id", organization.id)
-        .order("match_score", { ascending: false })
-        .range(offset, offset + PAGE - 1);
-      if (pgErr) { console.error("[dashboard] query error", pgErr.message); break; }
-      allData = allData.concat(page ?? []);
-      hasMore = (page?.length ?? 0) === PAGE;
-      offset += PAGE;
-    }
-    const data = allData;
-    // Filter out past-deadline opportunities — keep nulls (no deadline) visible
-    // USASpending recompetes use response_deadline as period-of-performance end,
-    // so we keep them even if that date has passed (they represent recompete opps).
-    const now = new Date().toISOString();
-    const active = (data ?? []).filter((m: Record<string, any>) => {
-      const dl = m.opportunities?.response_deadline;
-      if (!dl) return true;
-      if ((m as Record<string, any>).bid_recommendation === "recompete") return true;
-      return dl >= now;
-    });
-    setMatches(active);
-    setTotalMatchCount(active.length);
+    const SELECT_COLS = `id, opportunity_id, match_score, bid_recommendation, user_status, pipeline_stage, is_demo, created_at, opportunities(${OPP_COLS})`;
 
-    // Compute source counts from the full match set (no sampling needed)
+    const now = new Date().toISOString();
+    const filterActive = (data: any[]) =>
+      data.filter((m: Record<string, any>) => {
+        const dl = m.opportunities?.response_deadline;
+        if (!dl) return true;
+        if (m.bid_recommendation === "recompete") return true;
+        return dl >= now;
+      });
+
+    // PERF: Fetch first page (1000 rows) immediately so the UI renders fast.
+    // Then background-fetch remaining pages without blocking the render.
+    const { data: firstPage, error: pgErr } = await supabase
+      .from("opportunity_matches")
+      .select(SELECT_COLS, { count: "exact" })
+      .eq("organization_id", organization.id)
+      .order("match_score", { ascending: false })
+      .range(0, 999);
+    if (pgErr) { console.error("[dashboard] query error", pgErr.message); }
+    const firstActive = filterActive(firstPage ?? []);
+    setMatches(firstActive);
+    setTotalMatchCount(firstActive.length);
+
+    // Compute source counts from the first page
     const counts: Record<string, number> = {};
-    for (const m of active) {
+    for (const m of firstActive) {
       const src = (m as Record<string, any>).opportunities?.source;
       const cat = getSourceCategory(src, (m as Record<string, any>).bid_recommendation);
       counts[cat] = (counts[cat] ?? 0) + 1;
     }
     setDbSourceCounts(counts);
 
-    // PERF: run all three compliance queries in parallel (were sequential
-    // before, costing ~3x the round-trip time on a cold cache).
+    // PERF: run compliance queries in parallel with the rest
     const in7Days = new Date(Date.now() + 7 * 86400000).toISOString();
     const in30Days = new Date(Date.now() + 30 * 86400000).toISOString();
     const [complianceRes, highSevRes, upcomingRes] = await Promise.all([
@@ -254,6 +245,41 @@ export default function DashboardPage() {
     setUpcomingComplianceDeadlines(upcomingRes.data ?? []);
 
     setLoading(false);
+
+    // PERF: Background-fetch remaining pages AFTER first render.
+    // The user sees top matches instantly; rest streams in behind the scenes.
+    const totalRows = (firstPage as any)?.length ?? 0;
+    if (totalRows === 1000) {
+      // There might be more pages — fetch them in background
+      let bgOffset = 1000;
+      let bgHasMore = true;
+      let bgAll = [...firstActive];
+      while (bgHasMore) {
+        const { data: bgPage, error: bgErr } = await supabase
+          .from("opportunity_matches")
+          .select(SELECT_COLS)
+          .eq("organization_id", organization.id)
+          .order("match_score", { ascending: false })
+          .range(bgOffset, bgOffset + 999);
+        if (bgErr || !bgPage?.length) break;
+        const bgActive = filterActive(bgPage);
+        bgAll = bgAll.concat(bgActive);
+        bgHasMore = bgPage.length === 1000;
+        bgOffset += 1000;
+      }
+      if (bgAll.length > firstActive.length) {
+        setMatches(bgAll);
+        setTotalMatchCount(bgAll.length);
+        // Update source counts with full data
+        const fullCounts: Record<string, number> = {};
+        for (const m of bgAll) {
+          const src = (m as Record<string, any>).opportunities?.source;
+          const cat = getSourceCategory(src, (m as Record<string, any>).bid_recommendation);
+          fullCounts[cat] = (fullCounts[cat] ?? 0) + 1;
+        }
+        setDbSourceCounts(fullCounts);
+      }
+    }
   }, [organization.id, supabase]);
 
   // Restore session-level dismiss for the high-severity strip
@@ -415,8 +441,9 @@ export default function DashboardPage() {
     return 0;
   };
 
-  // Filter and sort
-  const filtered = matches
+  // PERF: Memoize filter+sort — only recompute when matches or filters change,
+  // not on every render (saves O(n log n) sort on 3000+ items).
+  const filtered = useMemo(() => matches
     .filter((m) => {
       const opp = m.opportunities;
       if (!opp) return false;
@@ -483,32 +510,37 @@ export default function DashboardPage() {
         return da - db;
       }
       return 0;
-    });
+    }), [matches, filters]);
 
   const hasActiveFilter = !!(filters.source || filters.urgency || filters.valueRange || filters.agency || filters.setAside || filters.recommendation || filters.minScore > 0);
 
-  // Recommendation counts
-  const recCounts = matches.reduce(
+  // PERF: Memoize all derived data so it only recomputes when matches change.
+  const recCounts = useMemo(() => matches.reduce(
     (acc, m) => {
       const rec = m.bid_recommendation || "skip";
       acc[rec] = (acc[rec] ?? 0) + 1;
       return acc;
     },
     {} as Record<string, number>
-  );
+  ), [matches]);
 
   // Stats — computed from the FILTERED list so they update when filters change
-  const activeList = filtered;
-  const totalValue = activeList.reduce((s, m) => s + getVal(m.opportunities), 0);
-  const urgentCount = activeList.filter((m) => {
-    const d = daysUntil(m.opportunities?.response_deadline);
-    return d !== null && d >= 0 && d <= 7;
-  }).length;
-  const topScore = activeList.length ? Math.max(...activeList.map((m) => m.match_score ?? 0)) : 0;
+  const { totalValue, urgentCount, topScore } = useMemo(() => {
+    let tv = 0;
+    let uc = 0;
+    let ts = 0;
+    for (const m of filtered) {
+      tv += getVal(m.opportunities);
+      const d = daysUntil(m.opportunities?.response_deadline);
+      if (d !== null && d >= 0 && d <= 7) uc++;
+      const s = m.match_score ?? 0;
+      if (s > ts) ts = s;
+    }
+    return { totalValue: tv, urgentCount: uc, topScore: ts };
+  }, [filtered]);
 
-  // Pipeline summary — prefer pipeline_stage column when present, fall back
-  // to user_status mapping for legacy rows.
-  const pipelineCounts = matches.reduce(
+  // Pipeline summary
+  const pipelineCounts = useMemo(() => matches.reduce(
     (acc, m) => {
       const stageMap: Record<string, string> = { tracking: "monitoring", bidding: "preparing_bid", new: "new", skipped: "skipped" };
       const stage = m.pipeline_stage ?? stageMap[m.user_status ?? "new"] ?? (m.user_status ?? "new");
@@ -516,21 +548,21 @@ export default function DashboardPage() {
       return acc;
     },
     {} as Record<string, number>
-  );
+  ), [matches]);
 
-  // Source breakdown counts (use DB counts when available, fall back to page-level)
-  const pageCounts = matches.reduce(
+  // Source breakdown counts
+  const pageCounts = useMemo(() => matches.reduce(
     (acc, m) => {
       const cat = getSourceCategory(m.opportunities?.source, m.bid_recommendation);
       acc[cat] = (acc[cat] ?? 0) + 1;
       return acc;
     },
     {} as Record<string, number>
-  );
+  ), [matches]);
   const sourceCounts = Object.keys(dbSourceCounts).length > 0 ? dbSourceCounts : pageCounts;
 
   // Unique filters
-  const setAsides = Array.from(new Set(matches.map((m) => m.opportunities?.set_aside_type || m.opportunities?.set_aside_description).filter(Boolean)));
+  const setAsides = useMemo(() => Array.from(new Set(matches.map((m) => m.opportunities?.set_aside_type || m.opportunities?.set_aside_description).filter(Boolean))), [matches]);
 
   // Greeting
   const hour = new Date().getHours();
@@ -632,7 +664,7 @@ export default function DashboardPage() {
         {[
           {value: String(recCounts.bid ?? 0), label: "Bid-Ready", urgent: false },
           { value: totalValue > 0 ? formatCurrency(totalValue) : "—", label: "Pipeline Value", urgent: false },
-          { value: String(activeList.filter(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }).length), label: "Closing < 14d", urgent: activeList.some(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }) },
+          { value: String(filtered.filter(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }).length), label: "Closing < 14d", urgent: filtered.some(m => { const d = daysUntil(m.opportunities?.response_deadline); return d !== null && d >= 0 && d <= 14; }) },
           { value: String(sourceCounts.recompetes ?? 0), label: "Recompetes", urgent: false },
         ].map((stat) => (
           <div key={stat.label} className={`p-5 bg-[#ffffff] border border-[#e5e7eb] ${stat.urgent ? "border-l-[3px] border-l-[#ef4444]" : ""}`}>

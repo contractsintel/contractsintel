@@ -3,7 +3,7 @@
 import { useDashboard } from "../context";
 import { ProfileBoostBanner } from "../unlock-panel";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { PageHeader } from "../page-header";
 import { htmlToPlainText } from "@/app/lib/html";
@@ -41,6 +41,8 @@ export default function SearchPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [source, setSource] = useState<string>("");
   const [sort, setSort] = useState<SortOption>("newest");
   // G19 — Full-text search inside solicitation body text
@@ -83,6 +85,16 @@ export default function SearchPage() {
       cancelled = true;
     };
   }, []);
+
+  // PERF: Debounce search input — wait 350ms after last keystroke before firing query.
+  // Typing "cloud computing" no longer fires 15 separate queries.
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
 
   const runNLSearch = async () => {
     const trimmed = nlPrompt.trim();
@@ -156,9 +168,9 @@ export default function SearchPage() {
     // G19 — When the "Search inside solicitation PDFs" checkbox is on and the
     // user has typed a query, route through the FTS endpoint instead of
     // PostgREST ilike. Skip pagination — the API caps at 100 already.
-    if (ftsMode && query.trim()) {
+    if (ftsMode && debouncedQuery.trim()) {
       try {
-        const r = await fetch(`/api/opportunities/fts?q=${encodeURIComponent(query.trim())}&limit=100`);
+        const r = await fetch(`/api/opportunities/fts?q=${encodeURIComponent(debouncedQuery.trim())}&limit=100`);
         const j = await r.json();
         if (r.ok) {
           setResults(j.opportunities ?? []);
@@ -183,8 +195,8 @@ export default function SearchPage() {
       .select(SEARCH_COLS, { count: "exact" })
       .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
-    if (query.trim()) {
-      q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
+    if (debouncedQuery.trim()) {
+      q = q.or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
     }
 
     if (source) {
@@ -245,11 +257,11 @@ export default function SearchPage() {
     }
     setTotal(count ?? 0);
     setLoading(false);
-  }, [supabase, query, source, sort, offset, ftsMode, level, organization.id]);
+  }, [supabase, debouncedQuery, source, sort, offset, ftsMode, level, organization.id]);
 
   useEffect(() => {
     search(true);
-  }, [query, source, sort, ftsMode, level]);
+  }, [debouncedQuery, source, sort, ftsMode, level]);
 
   const loadMore = () => {
     const newOffset = offset + PAGE_SIZE;
@@ -263,8 +275,8 @@ export default function SearchPage() {
         .select(SEARCH_COLS_LM, { count: "exact" })
         .or(`response_deadline.is.null,response_deadline.gte.${nowLm}`);
 
-      if (query.trim()) {
-        q = q.or(`title.ilike.%${query.trim()}%,agency.ilike.%${query.trim()}%,solicitation_number.ilike.%${query.trim()}%`);
+      if (debouncedQuery.trim()) {
+        q = q.or(`title.ilike.%${debouncedQuery.trim()}%,agency.ilike.%${debouncedQuery.trim()}%,solicitation_number.ilike.%${debouncedQuery.trim()}%`);
       }
       if (source) {
         if (source === "state_local") {
