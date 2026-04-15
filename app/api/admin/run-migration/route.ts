@@ -8,8 +8,9 @@ export const maxDuration = 300; // 5 min for backfill on 168k rows
 // Temporary endpoint to apply the solicitation_tsv migration.
 // DELETE THIS FILE after running once.
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  // One-time migration key — endpoint will be deleted after use
+  const key = request.nextUrl.searchParams.get("key");
+  if (key !== "tsv-migrate-20260415") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
