@@ -227,7 +227,10 @@ export default function SearchPage() {
         else q = q.eq("source", source);
       }
 
-      if (level) {
+      // State/territory filter — more specific than level, so apply first and skip level LIKE
+      if (stateFilter) {
+        q = q.eq("source", `state_${stateFilter.toLowerCase()}`);
+      } else if (level) {
         const levelSourceMap: Record<string, string[]> = {
           federal: ["sam_gov", "usaspending", "military_defense", "dla_dibbs", "army_asfi", "navy_neco", "air_force", "marines", "darpa"],
           state: ["state_local"],
@@ -235,17 +238,11 @@ export default function SearchPage() {
           education: [],
         };
         if (level === "state" || level === "local") {
-          // Both "state" and "local" filter to state_* sources
           q = q.like("source", "state_%");
         } else {
           const sources = levelSourceMap[level];
           if (sources && sources.length > 0) q = q.in("source", sources);
         }
-      }
-
-      // State/territory filter — filters by source column (e.g. state_tx, state_ca)
-      if (stateFilter) {
-        q = q.eq("source", `state_${stateFilter.toLowerCase()}`);
       }
 
       if (sort === "newest") q = q.order("created_at", { ascending: false });
@@ -262,22 +259,29 @@ export default function SearchPage() {
     if (qErr) {
       console.error("[search] Supabase query error:", qErr.message, qErr.code);
       // Fallback: try querying through opportunity_matches joined with opportunities
-      const fallback = await supabase
-        .from("opportunity_matches")
-        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "estimated" })
-        .eq("organization_id", organization.id)
-        .order("match_score", { ascending: false })
-        .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
-      const fallbackResults = (fallback.data ?? []).map((m: Record<string, any>) => ({
-        ...(m.opportunities ?? {}),
-        _match_score: m.match_score,
-      }));
-      if (resetOffset) {
-        setResults(fallbackResults);
+      // Only use fallback when no specific filters are active (otherwise results would be wrong)
+      if (!stateFilter && !level && !source) {
+        const fallback = await supabase
+          .from("opportunity_matches")
+          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "estimated" })
+          .eq("organization_id", organization.id)
+          .order("match_score", { ascending: false })
+          .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
+        const fallbackResults = (fallback.data ?? []).map((m: Record<string, any>) => ({
+          ...(m.opportunities ?? {}),
+          _match_score: m.match_score,
+        }));
+        if (resetOffset) {
+          setResults(fallbackResults);
+        } else {
+          setResults((prev) => [...prev, ...fallbackResults]);
+        }
+        setTotal(fallback.count ?? 0);
       } else {
-        setResults((prev) => [...prev, ...fallbackResults]);
+        // Filters active but query timed out — show empty rather than wrong results
+        if (resetOffset) setResults([]);
+        setTotal(0);
       }
-      setTotal(fallback.count ?? 0);
       setLoading(false);
       return;
     }
