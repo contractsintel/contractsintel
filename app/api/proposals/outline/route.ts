@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       const { data: opp } = await supabase
         .from("opportunities")
         .select(
-          "title, agency, solicitation_number, naics_code, set_aside, estimated_value, place_of_performance, description",
+          "title, agency, solicitation_number, naics_code, set_aside_type, estimated_value, place_of_performance, description",
         )
         .eq("id", opportunityId)
         .single();
@@ -241,7 +241,7 @@ Opportunity metadata:
 - Agency: ${opp.agency}
 - Solicitation: ${opp.solicitation_number ?? "N/A"}
 - NAICS: ${opp.naics_code ?? "N/A"}
-- Set-Aside: ${opp.set_aside ?? "Full & Open"}
+- Set-Aside: ${opp.set_aside_type ?? "Full & Open"}
 - Estimated Value: ${opp.estimated_value ? `$${opp.estimated_value.toLocaleString()}` : "N/A"}
 - Place of Performance: ${opp.place_of_performance ?? "N/A"}
 - Description: ${(opp.description ?? "").substring(0, 2000)}`;

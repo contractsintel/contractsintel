@@ -176,7 +176,7 @@ export default function SearchPage() {
     }
 
     // PERF: Select only columns needed for display instead of SELECT *
-    const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
+    const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
     const now = new Date().toISOString();
     let q = supabase
       .from("opportunities")
@@ -221,7 +221,7 @@ export default function SearchPage() {
       // Fallback: try querying through opportunity_matches joined with opportunities
       const fallback = await supabase
         .from("opportunity_matches")
-        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "exact" })
+        .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "exact" })
         .eq("organization_id", organization.id)
         .order("match_score", { ascending: false })
         .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
@@ -256,7 +256,7 @@ export default function SearchPage() {
     setOffset(newOffset);
     // Trigger search with new offset
     const doSearch = async () => {
-      const SEARCH_COLS_LM = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
+      const SEARCH_COLS_LM = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
       const nowLm = new Date().toISOString();
       let q = supabase
         .from("opportunities")
@@ -283,7 +283,7 @@ export default function SearchPage() {
         // Fallback: query through opportunity_matches (same as main search)
         const fallback = await supabase
           .from("opportunity_matches")
-          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)")
+          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)")
           .eq("organization_id", organization.id)
           .order("match_score", { ascending: false })
           .range(newOffset, newOffset + PAGE_SIZE - 1);
@@ -522,7 +522,7 @@ export default function SearchPage() {
                 {expandedId === opp.id && (
                   <div className="px-4 pb-3 border-t border-[#e5e7eb] pt-3 space-y-2">
                     <div className="flex flex-wrap gap-1.5">
-                      {opp.set_aside && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b]">{opp.set_aside}</span>}
+                      {opp.set_aside_type && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b]">{opp.set_aside_type}</span>}
                       {opp.naics_code && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b] font-mono">NAICS {opp.naics_code}</span>}
                       {opp.place_of_performance && <span className="rounded-full px-2 py-0.5 text-[10px] bg-[#f8f9fb] border border-[#e5e7eb] text-[#64748b]">{opp.place_of_performance}</span>}
                     </div>
