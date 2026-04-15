@@ -747,6 +747,79 @@ app.get("/render", async (req, res) => {
   }
 });
 
+// Render with interactions — load page, optionally click a button/submit search, then return HTML
+app.get("/render-interact", async (req, res) => {
+  if (!authCheck(req, res)) return;
+
+  const url = req.query.url;
+  const wait = parseInt(req.query.wait) || 5000;
+  const clickSelector = req.query.click; // CSS selector to click after page load
+  const postClickWait = parseInt(req.query.postClickWait) || 5000;
+
+  if (!url) return res.status(400).json({ error: "url parameter required" });
+
+  let context = null;
+  try {
+    const result = await getPage();
+    context = result.context;
+    const page = result.page;
+
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await solveCaptchaIfPresent(page);
+    await new Promise((r) => setTimeout(r, wait));
+
+    // Click a button if specified (e.g. search button on Jaggaer platforms)
+    if (clickSelector) {
+      try {
+        await page.waitForSelector(clickSelector, { timeout: 5000 });
+        await page.click(clickSelector);
+        await new Promise((r) => setTimeout(r, postClickWait));
+      } catch (clickErr) {
+        // Try common search button selectors as fallback
+        const fallbackSelectors = [
+          'input[type="submit"][value*="earch"]',
+          'button[type="submit"]',
+          'input[name="search"]',
+          'a.search-button',
+          '#searchButton',
+          '.btn-search',
+          'input[value="Search"]',
+          'input[value="Go"]',
+        ];
+        let clicked = false;
+        for (const sel of fallbackSelectors) {
+          try {
+            const el = await page.$(sel);
+            if (el) {
+              await el.click();
+              await new Promise((r) => setTimeout(r, postClickWait));
+              clicked = true;
+              break;
+            }
+          } catch {}
+        }
+        if (!clicked) {
+          // As last resort, try clicking any visible search/submit button
+          try {
+            await page.evaluate(() => {
+              const btns = [...document.querySelectorAll('input[type="submit"], button[type="submit"], input[value="Search"], input[value="Go"]')];
+              if (btns.length > 0) btns[0].click();
+            });
+            await new Promise((r) => setTimeout(r, postClickWait));
+          } catch {}
+        }
+      }
+    }
+
+    const html = await page.content();
+    res.json({ success: true, url, html, length: html.length });
+  } catch (err) {
+    res.status(500).json({ success: false, url, error: err.message });
+  } finally {
+    if (context) await context.close().catch(() => {});
+  }
+});
+
 app.post("/render-batch", async (req, res) => {
   if (!authCheck(req, res)) return;
 

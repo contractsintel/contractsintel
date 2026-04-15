@@ -1,7 +1,7 @@
 import { logger } from "@/lib/logger";
 import type { ScraperResult } from "./index";
 import type { SupabaseAdmin } from "./types";
-import { fetchWithPuppeteer, logPuppeteerUsage } from "./puppeteer";
+import { fetchWithPuppeteer, fetchWithPuppeteerInteract, logPuppeteerUsage } from "./puppeteer";
 import {
   parseJaggaer,
   parseCaleProcure,
@@ -47,6 +47,32 @@ const JS_STATE_URLS: Record<string, string> = {
   OR: "https://oregonbuys.gov/bso/view/search/external/advancedSearchBid.xhtml",
   DE: "https://mmp.delaware.gov/Bids/",
   VI: "https://gvibuy.buyspeed.com/bso/view/search/external/advancedSearchBid.xhtml",
+};
+
+// States that need search form interaction (click search button) to show results
+// These are Jaggaer/BuySpeed, Infor/IonWave, and similar SPAs where loading the page alone shows no bids
+const INTERACT_STATES: Record<string, string> = {
+  // Jaggaer/BuySpeed — click the search button on advanced search form
+  NJ: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  NV: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  MA: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  OR: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  AR: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  VI: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  KY: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  CO: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  MD: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  MI: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  AK: 'input[type="submit"][value*="earch"], button[type="submit"], input[value="Search"]',
+  // Infor/IonWave
+  AL: 'input[type="submit"][value*="earch"], button[type="submit"], a.search-button',
+  // Other SPAs that show empty on load
+  IL: 'input[type="submit"][value*="earch"], button[type="submit"]',
+  KS: 'input[type="submit"][value*="earch"], button[type="submit"]',
+  MO: 'input[type="submit"][value*="earch"], button[type="submit"]',
+  DC: 'button[type="submit"], input[type="submit"]',
+  NC: 'input[type="submit"][value*="earch"], button[type="submit"]',
+  MT: 'input[type="submit"][value*="earch"], button[type="submit"]',
 };
 
 // Platform-specific parsers — used for both JS SPA and non-JS states
@@ -402,20 +428,63 @@ export async function scrapeStateLocal(supabase: SupabaseAdmin): Promise<Scraper
         if (directFetchBlocked || (JS_STATES.has(portal.state) && html.length < 1000 && !/bid|solicit|rfp|rfq/i.test(html))) {
           if (JS_STATES.has(portal.state) && true /* Puppeteer always available */) {
             const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
-            logger.info(`[state-local] ${portal.name}: Direct fetch insufficient, trying Puppeteer for ${sbUrl}...`);
-            try {
-              html = await fetchWithPuppeteer(sbUrl, 5000);
-              logger.info(`[state-local] ${portal.name}: Puppeteer returned ${html.length} bytes`);
-            } catch (sbErr) {
-              const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
-              logger.info(`[state-local] ${portal.name}: Puppeteer failed: ${sbMsg}`);
-              stateResults.push(`${portal.state}: BLOCKED (Puppeteer fallback failed)`);
-              continue;
+            const interactSelector = INTERACT_STATES[portal.state];
+            if (interactSelector) {
+              // This state needs search form interaction to show results
+              logger.info(`[state-local] ${portal.name}: Using Puppeteer interact (click search) for ${sbUrl}...`);
+              try {
+                html = await fetchWithPuppeteerInteract(sbUrl, interactSelector, 5000, 8000);
+                logger.info(`[state-local] ${portal.name}: Puppeteer interact returned ${html.length} bytes`);
+              } catch (sbErr) {
+                const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+                logger.info(`[state-local] ${portal.name}: Puppeteer interact failed: ${sbMsg}, trying plain render...`);
+                try {
+                  html = await fetchWithPuppeteer(sbUrl, 5000);
+                  logger.info(`[state-local] ${portal.name}: Puppeteer plain returned ${html.length} bytes`);
+                } catch (sbErr2) {
+                  const sbMsg2 = sbErr2 instanceof Error ? sbErr2.message : String(sbErr2);
+                  logger.info(`[state-local] ${portal.name}: Puppeteer plain also failed: ${sbMsg2}`);
+                  stateResults.push(`${portal.state}: BLOCKED (Puppeteer fallback failed)`);
+                  continue;
+                }
+              }
+            } else {
+              logger.info(`[state-local] ${portal.name}: Direct fetch insufficient, trying Puppeteer for ${sbUrl}...`);
+              try {
+                html = await fetchWithPuppeteer(sbUrl, 5000);
+                logger.info(`[state-local] ${portal.name}: Puppeteer returned ${html.length} bytes`);
+              } catch (sbErr) {
+                const sbMsg = sbErr instanceof Error ? sbErr.message : String(sbErr);
+                logger.info(`[state-local] ${portal.name}: Puppeteer failed: ${sbMsg}`);
+                stateResults.push(`${portal.state}: BLOCKED (Puppeteer fallback failed)`);
+                continue;
+              }
             }
           } else if (directFetchBlocked) {
             logger.info(`[state-local] ${portal.name}: Requires JavaScript BLOCKED`);
             stateResults.push(`${portal.state}: BLOCKED (requires JavaScript)`);
             continue;
+          }
+        }
+
+        // For states that need interaction but weren't blocked above (direct fetch returned HTML but no bids)
+        if (!directFetchBlocked && INTERACT_STATES[portal.state] && JS_STATES.has(portal.state)) {
+          const parser = STATE_PARSERS[portal.state];
+          const quickCheck = parser ? parser(html) : [];
+          const quickLinks = extractLinks(html).filter(
+            (l) => /bid|rfp|rfq|solicit|procurement|contract/i.test(l.text) || /bid|rfp|rfq|solicit|procurement/i.test(l.href)
+          );
+          if (quickCheck.length === 0 && quickLinks.length < 3) {
+            // Direct fetch got HTML but no bid data — need interaction
+            const sbUrl = JS_STATE_URLS[portal.state] || portal.url;
+            const interactSelector = INTERACT_STATES[portal.state];
+            logger.info(`[state-local] ${portal.name}: Direct HTML has no bids, trying Puppeteer interact for ${sbUrl}...`);
+            try {
+              html = await fetchWithPuppeteerInteract(sbUrl, interactSelector, 5000, 8000);
+              logger.info(`[state-local] ${portal.name}: Puppeteer interact returned ${html.length} bytes`);
+            } catch (err) {
+              logger.info(`[state-local] ${portal.name}: Puppeteer interact failed: ${err instanceof Error ? err.message : String(err)}`);
+            }
           }
         }
 

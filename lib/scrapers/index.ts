@@ -4,6 +4,7 @@ import { scrapeUsaspending } from "./usaspending";
 import { scrapeGrantsGov } from "./grants-gov";
 import { scrapeMilitaryDefense } from "./military-defense";
 import { scrapeStateLocal } from "./state-local";
+import { scrapeBidNetDirect } from "./bidnet-scraper";
 import { scrapeSbirSttr } from "./sbir-sttr";
 import { scrapeForecasts } from "./forecasts";
 import { scrapeSubcontracting } from "./subcontracting";
@@ -25,7 +26,7 @@ type ScraperFn = (supabase: SupabaseAdmin) => Promise<ScraperResult>;
 const SCRAPER_CATEGORIES: Record<string, ScraperFn[]> = {
   federal: [scrapeSamGov, scrapeUsaspending, scrapeGrantsGov, scrapeFederalCivilian],
   military: [scrapeMilitaryDefense],
-  states: [scrapeStateLocal],
+  states: [scrapeBidNetDirect, scrapeStateLocal],
   sbir: [scrapeSbirSttr],
   forecasts: [scrapeForecasts, scrapeSubcontracting],
 };
