@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const batchSize = 2000;
-  const maxBatches = 120; // 120 * 2000 = 240k max
+  const batchSize = 500;
+  const maxBatches = 500; // 500 * 500 = 250k max
   let totalUpdated = 0;
   const errors: string[] = [];
 
