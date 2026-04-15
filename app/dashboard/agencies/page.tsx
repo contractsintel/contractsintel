@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfileBoostBanner } from "../unlock-panel";
 import Link from "next/link";
 
@@ -27,9 +27,16 @@ export default function AgenciesIndexPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [parentOnly, setParentOnly] = useState(false);
   const [spendOpen, setSpendOpen] = useState(true);
   const [visible, setVisible] = useState(50);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setDebouncedQ(q), 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [q]);
 
   const spendStats = useMemo(() => {
     if (agencies.length === 0) return null;
@@ -48,7 +55,7 @@ export default function AgenciesIndexPage() {
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (q) params.set("q", q);
+      if (debouncedQ) params.set("q", debouncedQ);
       if (parentOnly) params.set("parent_only", "true");
       const res = await fetch(`/api/agencies?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -59,7 +66,7 @@ export default function AgenciesIndexPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, parentOnly]);
+  }, [debouncedQ, parentOnly]);
 
   useEffect(() => { void load(); }, [load]);
 

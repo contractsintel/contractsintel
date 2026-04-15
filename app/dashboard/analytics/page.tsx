@@ -3,7 +3,7 @@
 import { useDashboard } from "../context";
 import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { InlineGuide } from "../inline-guide";
 import { MarketIntelligence } from "./market-intel";
@@ -43,7 +43,7 @@ export default function AnalyticsPage() {
     // Fetch opportunity matches with opportunity details
     const { data: matches } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("id, match_score, pipeline_stage, user_status, award_amount, created_at, opportunities(id, agency, estimated_value, source)")
       .eq("organization_id", organization.id)
       .gte("created_at", cutoff);
 
@@ -141,17 +141,20 @@ export default function AnalyticsPage() {
     return "bg-[#ef4444]/5";
   };
 
-  // Summary stats
+  // Summary stats (memoised to avoid re-sorting on every render)
   const totalLosses = lossAnalyses.length;
-  const reasonCounts: Record<string, number> = {};
-  lossAnalyses.forEach((la) => {
-    const reason = la.primary_reason ?? "Unknown";
-    reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
-  });
-  const mostCommonReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+  const mostCommonReason = useMemo(() => {
+    const reasonCounts: Record<string, number> = {};
+    lossAnalyses.forEach((la) => {
+      const reason = la.primary_reason ?? "Unknown";
+      reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;
+    });
+    return Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+  }, [lossAnalyses]);
   // P3.1: type-safe lowest win rate (could legitimately be null when nothing has 3+ bids)
-  const lowestWinRate: AgencyStats | null =
-    agencyStats.filter((s) => s.bids >= 3).sort((a, b) => a.win_rate - b.win_rate)[0] ?? null;
+  const lowestWinRate: AgencyStats | null = useMemo(() =>
+    agencyStats.filter((s) => s.bids >= 3).sort((a, b) => a.win_rate - b.win_rate)[0] ?? null,
+  [agencyStats]);
 
   if (!teamTier) {
     return (

@@ -4,7 +4,7 @@ import { useDashboard } from "../context";
 import { ProfileBoostBanner } from "../unlock-panel";
 import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
@@ -33,7 +33,7 @@ export default function CompetitorsPage() {
     if (!teamTier) { setLoading(false); return; }
     const { data } = await supabase
       .from("competitors")
-      .select("*, competitor_encounters(*)")
+      .select("id, name, uei, certifications, naics_codes, notes, competitor_encounters(id, outcome, opportunity_title)")
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false });
     setCompetitors(data ?? []);

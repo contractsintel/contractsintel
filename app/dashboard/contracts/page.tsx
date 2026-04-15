@@ -3,7 +3,7 @@
 import { useDashboard } from "../context";
 import { isDiscovery } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
@@ -33,7 +33,7 @@ export default function ContractsPage() {
     if (locked) { setLoading(false); return; }
     const { data } = await supabase
       .from("contracts")
-      .select("*")
+      .select("id, title, agency, contract_number, value, status, milestones, option_periods, invoices, created_at")
       .eq("organization_id", organization.id)
       .order("created_at", { ascending: false });
 
@@ -43,7 +43,7 @@ export default function ContractsPage() {
     if (contractIds.length > 0) {
       const { data: invs } = await supabase
         .from("invoices")
-        .select("*")
+        .select("id, contract_id, invoice_number, amount, submitted_date, due_date, status")
         .in("contract_id", contractIds)
         .order("due_date", { ascending: true });
       for (const inv of invs ?? []) {
@@ -61,6 +61,11 @@ export default function ContractsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const visibleContracts = useMemo(
+    () => contracts.slice(0, visible),
+    [contracts, visible]
+  );
 
   const addMilestone = async () => {
     if (!showMilestoneModal || !milestoneData.title) return;
@@ -202,7 +207,7 @@ ${(organization.name || "[Your Company Name]").split(" ").map((w) => w.charAt(0)
         <ContractsCalendarView contracts={contracts} month={calendarMonth} setMonth={setCalendarMonth} />
       ) : (
         <div className="space-y-6">
-          {contracts.slice(0, visible).map((contract) => (
+          {visibleContracts.map((contract) => (
             <div key={contract.id} className="border border-[#e5e7eb] bg-white">
               {/* Contract Header */}
               <div className="p-5 border-b border-[#e5e7eb]">

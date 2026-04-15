@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProfileBoostBanner } from "../unlock-panel";
 import { InlineGuide } from "../inline-guide";
 
@@ -52,16 +52,30 @@ export default function ForecastsPage() {
   const [projectMsg, setProjectMsg] = useState<string | null>(null);
   const [agencyFilter, setAgencyFilter] = useState("");
   const [naicsFilter, setNaicsFilter] = useState("");
+  const [debouncedAgency, setDebouncedAgency] = useState("");
+  const [debouncedNaics, setDebouncedNaics] = useState("");
   const [monthsOut, setMonthsOut] = useState<number>(18);
   const [visible, setVisible] = useState(50);
+
+  const agencyDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    agencyDebounceRef.current = setTimeout(() => setDebouncedAgency(agencyFilter), 350);
+    return () => clearTimeout(agencyDebounceRef.current);
+  }, [agencyFilter]);
+
+  const naicsDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    naicsDebounceRef.current = setTimeout(() => setDebouncedNaics(naicsFilter), 350);
+    return () => clearTimeout(naicsDebounceRef.current);
+  }, [naicsFilter]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (agencyFilter) params.set("agency", agencyFilter);
-      if (naicsFilter) params.set("naics", naicsFilter);
+      if (debouncedAgency) params.set("agency", debouncedAgency);
+      if (debouncedNaics) params.set("naics", debouncedNaics);
       params.set("months_out", String(monthsOut));
       params.set("limit", "500");
       const res = await fetch(`/api/forecasts?${params.toString()}`);
@@ -74,7 +88,7 @@ export default function ForecastsPage() {
     } finally {
       setLoading(false);
     }
-  }, [agencyFilter, naicsFilter, monthsOut]);
+  }, [debouncedAgency, debouncedNaics, monthsOut]);
 
   useEffect(() => {
     void load();

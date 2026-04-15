@@ -2,7 +2,7 @@
 
 import { useDashboard } from "../context";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
 import { ProfileBoostBanner } from "../unlock-panel";
@@ -48,13 +48,13 @@ export default function CompliancePage() {
     const [itemsRes, farRes] = await Promise.all([
       supabase
         .from("compliance_items")
-        .select("*")
+        .select("id, title, category, status, due_date, details")
         .eq("organization_id", organization.id)
         .neq("category", "far_change")
         .order("due_date", { ascending: true }),
       supabase
         .from("compliance_items")
-        .select("*")
+        .select("id, title, category, effective_date, details")
         .eq("category", "far_change")
         .order("effective_date", { ascending: false })
         .limit(5),
@@ -72,7 +72,7 @@ export default function CompliancePage() {
           if (seeded) {
             const { data: reloaded } = await supabase
               .from("compliance_items")
-              .select("*")
+              .select("id, title, category, status, due_date, details")
               .eq("organization_id", organization.id)
               .neq("category", "far_change")
               .order("due_date", { ascending: true });
@@ -110,27 +110,32 @@ export default function CompliancePage() {
   };
 
   // Calculate health score
-  const totalItems = items.length || 1;
-  const completedItems = items.filter((i) => i.status === "complete" || i.status === "passed").length;
-  const healthScore = Math.round((completedItems / totalItems) * 100);
-  const healthColor =
-    healthScore >= 80 ? "text-[#22c55e]" : healthScore >= 60 ? "text-[#f59e0b]" : "text-[#ef4444]";
-  const healthBarColor =
-    healthScore >= 80 ? "bg-[#22c55e]" : healthScore >= 60 ? "bg-[#f59e0b]" : "bg-[#ef4444]";
+  const { totalItems, completedItems, healthScore, healthColor, healthBarColor } = useMemo(() => {
+    const total = items.length || 1;
+    const completed = items.filter((i) => i.status === "complete" || i.status === "passed").length;
+    const score = Math.round((completed / total) * 100);
+    return {
+      totalItems: total,
+      completedItems: completed,
+      healthScore: score,
+      healthColor: score >= 80 ? "text-[#22c55e]" : score >= 60 ? "text-[#f59e0b]" : "text-[#ef4444]",
+      healthBarColor: score >= 80 ? "bg-[#22c55e]" : score >= 60 ? "bg-[#f59e0b]" : "bg-[#ef4444]",
+    };
+  }, [items]);
 
   // Group by category
-  const grouped = CATEGORIES.map((cat) => ({
+  const grouped = useMemo(() => CATEGORIES.map((cat) => ({
     ...cat,
     items: items.filter((i) => i.category === cat.key),
     complete: items.filter((i) => i.category === cat.key && (i.status === "complete" || i.status === "passed")).length,
     total: items.filter((i) => i.category === cat.key).length,
-  }));
+  })), [items]);
 
   // Upcoming deadlines
-  const upcoming = items
+  const upcoming = useMemo(() => items
     .filter((i) => i.due_date && i.status !== "complete" && i.status !== "passed")
     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-    .slice(0, 10);
+    .slice(0, 10), [items]);
 
   return (
     <div>

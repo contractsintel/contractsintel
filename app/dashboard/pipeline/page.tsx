@@ -3,7 +3,7 @@
 import { useDashboard } from "../context";
 import { ProfileBoostBanner } from "../unlock-panel";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { HelpButton } from "../help-panel";
 import { InlineGuide } from "../inline-guide";
 
@@ -474,7 +474,7 @@ export default function PipelinePage() {
   const loadData = useCallback(async () => {
     const { data } = await supabase
       .from("opportunity_matches")
-      .select("*, opportunities(*)")
+      .select("id, match_score, pipeline_stage, gate_stage, gate_notes, pwin, award_amount, contract_number, loss_reason, loss_notes, opportunity_id, user_status, opportunities(id, title, agency, estimated_value, value_estimate, response_deadline, naics_code, solicitation_number, set_aside_type, description)")
       .eq("organization_id", organization.id)
       .not("pipeline_stage", "is", null)
       .order("created_at", { ascending: false });
@@ -486,7 +486,7 @@ export default function PipelinePage() {
       const dl = m.opportunities?.response_deadline;
       return !dl || dl >= now;
     });
-    setMatches(filtered);
+    setMatches(filtered as PipelineMatch[]);
     setLoading(false);
   }, [organization.id, supabase]);
 
@@ -641,13 +641,13 @@ export default function PipelinePage() {
     loadData();
   };
 
-  const grouped = STAGES.reduce(
+  const grouped = useMemo(() => STAGES.reduce(
     (acc, s) => {
       acc[s.key] = matches.filter((m) => m.pipeline_stage === s.key);
       return acc;
     },
     {} as Record<string, PipelineMatch[]>
-  );
+  ), [matches]);
 
   return (
     <div>

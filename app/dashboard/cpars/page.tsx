@@ -3,7 +3,7 @@
 import { useDashboard } from "../context";
 import { isTeam } from "@/lib/feature-gate";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { HelpButton } from "../help-panel";
 import { TrialTierBanner } from "../trial-banner";
@@ -64,7 +64,7 @@ export default function CparsPage() {
     if (!teamTier) { setLoading(false); return; }
     const [contractsRes, ratingsRes] = await Promise.all([
       supabase.from("contracts").select("id, title, contract_number").eq("organization_id", organization.id),
-      supabase.from("cpars_ratings").select("*, contracts(title, contract_number)").eq("organization_id", organization.id).order("created_at", { ascending: false }),
+      supabase.from("cpars_ratings").select("id, category, rating, narrative, evaluation_date, response_draft, contract_id, contracts(title, contract_number)").eq("organization_id", organization.id).order("created_at", { ascending: false }),
     ]);
     setContracts(contractsRes.data ?? []);
     setRatings(ratingsRes.data ?? []);
@@ -120,6 +120,23 @@ export default function CparsPage() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const visibleRatings = useMemo(() => ratings.slice(0, visible), [ratings, visible]);
+
+  const ratingTrendData = useMemo(() => {
+    return RATING_CATEGORIES.map((cat) => {
+      const inCat = ratings.filter((r) => r.category === cat);
+      const total = inCat.length;
+      const counts = {
+        Exceptional: inCat.filter((r) => r.rating === "Exceptional").length,
+        "Very Good": inCat.filter((r) => r.rating === "Very Good").length,
+        Satisfactory: inCat.filter((r) => r.rating === "Satisfactory").length,
+        Marginal: inCat.filter((r) => r.rating === "Marginal").length,
+        Unsatisfactory: inCat.filter((r) => r.rating === "Unsatisfactory").length,
+      };
+      return { cat, total, counts };
+    });
+  }, [ratings]);
 
   if (!teamTier) {
     return (
@@ -243,9 +260,7 @@ export default function CparsPage() {
         <div className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-6">
           <h2 className="text-[10px] font-medium uppercase tracking-wide text-[#94a3b8] mb-4">Rating Trend by Category</h2>
           <div className="space-y-3">
-            {RATING_CATEGORIES.map((cat) => {
-              const inCat = ratings.filter((r) => r.category === cat);
-              const total = inCat.length;
+            {ratingTrendData.map(({ cat, total, counts }) => {
               if (total === 0) {
                 return (
                   <div key={cat} className="flex items-center gap-3">
@@ -254,13 +269,6 @@ export default function CparsPage() {
                   </div>
                 );
               }
-              const counts = {
-                Exceptional: inCat.filter((r) => r.rating === "Exceptional").length,
-                "Very Good": inCat.filter((r) => r.rating === "Very Good").length,
-                Satisfactory: inCat.filter((r) => r.rating === "Satisfactory").length,
-                Marginal: inCat.filter((r) => r.rating === "Marginal").length,
-                Unsatisfactory: inCat.filter((r) => r.rating === "Unsatisfactory").length,
-              };
               const colors: Record<string, string> = {
                 Exceptional: "#22c55e",
                 "Very Good": "#3b82f6",
@@ -318,7 +326,7 @@ export default function CparsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {ratings.slice(0, visible).map((r) => (
+          {visibleRatings.map((r) => (
             <div key={r.id} className="border border-[#e5e7eb] bg-white p-5 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start justify-between mb-3">
                 <div>
