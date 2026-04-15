@@ -37,7 +37,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
+    // Map user_status to pipeline_stage so items appear on the Pipeline page.
+    // Without this, clicking "Track" sets user_status but leaves pipeline_stage
+    // null, causing the item to be invisible on the pipeline board.
+    const statusToStage: Record<string, string> = {
+      tracking: "monitoring",
+      bidding: "preparing_bid",
+      skipped: "skipped",
+    };
+
     const updateData: Record<string, any> = { user_status: status };
+    if (statusToStage[status]) {
+      updateData.pipeline_stage = statusToStage[status];
+    }
 
     const { data, error } = await admin
       .from("opportunity_matches")

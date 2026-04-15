@@ -278,7 +278,22 @@ export default function SearchPage() {
       else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
 
       q = q.range(newOffset, newOffset + PAGE_SIZE - 1);
-      const { data } = await q;
+      const { data, error: qErr } = await q;
+      if (qErr) {
+        // Fallback: query through opportunity_matches (same as main search)
+        const fallback = await supabase
+          .from("opportunity_matches")
+          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,set_aside,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)")
+          .eq("organization_id", organization.id)
+          .order("match_score", { ascending: false })
+          .range(newOffset, newOffset + PAGE_SIZE - 1);
+        const fallbackResults = (fallback.data ?? []).map((m: Record<string, any>) => ({
+          ...(m.opportunities ?? {}),
+          _match_score: m.match_score,
+        }));
+        setResults((prev) => [...prev, ...fallbackResults]);
+        return;
+      }
       setResults((prev) => [...prev, ...(data ?? [])]);
     };
     doSearch();
