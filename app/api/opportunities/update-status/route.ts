@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
     const updateData: Record<string, any> = { user_status: status };
     if (statusToStage[status]) {
       updateData.pipeline_stage = statusToStage[status];
+    } else if (status === "new") {
+      // Toggling back to "new" removes the contract from the pipeline
+      updateData.pipeline_stage = null;
     }
 
     const { data, error } = await admin
