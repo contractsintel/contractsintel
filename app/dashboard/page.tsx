@@ -316,7 +316,11 @@ export default function DashboardPage() {
   };
 
   const updateStatus = async (matchId: string, status: string) => {
-    if (status === "skipped") {
+    // Toggle: if already in this status, revert to "new"
+    const currentMatch = matches.find((x) => x.id === matchId);
+    const effectiveStatus = currentMatch?.user_status === status ? "new" : status;
+
+    if (effectiveStatus === "skipped") {
       setArchiveAnim(matchId);
       await new Promise((r) => setTimeout(r, 400));
       setArchiveAnim(null);
@@ -326,7 +330,7 @@ export default function DashboardPage() {
       const res = await fetch("/api/opportunities/update-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ matchId, status }),
+        body: JSON.stringify({ matchId, status: effectiveStatus }),
       });
       const result = await res.json();
 
@@ -336,14 +340,15 @@ export default function DashboardPage() {
         return;
       }
 
-      if (status === "tracking") {
+      if (effectiveStatus === "new") {
+        showToast("Removed — Back to unreviewed", "#64748b");
+      } else if (effectiveStatus === "tracking") {
         showToast("Tracking — Added to Pipeline", "#059669", "/dashboard/pipeline", "View in Pipeline");
-      } else if (status === "bidding") {
-        // Find the opportunity_id for the proposals link
+      } else if (effectiveStatus === "bidding") {
         const m = matches.find((x) => x.id === matchId);
         const oppId = m?.opportunity_id || "";
         showToast("Preparing Bid — Added to Pipeline", "#2563eb", `/dashboard/proposals?opportunity_id=${oppId}`, "Generate AI Proposal →");
-      } else if (status === "skipped") {
+      } else if (effectiveStatus === "skipped") {
         showToast("Archived — Moved to Archived Contracts", "#94a3b8");
       }
     } catch (err) {
@@ -1196,26 +1201,30 @@ export default function DashboardPage() {
                               </Link>
                             </div>
                             <div className="flex items-center gap-2">
-                              {match.user_status === "tracking" ? (
-                                <span className="px-3 py-1.5 text-[12px] text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
-                              ) : match.user_status === "bidding" ? (
-                                <span className="px-3 py-1.5 text-[12px] text-[#2563eb] bg-[rgba(37,99,235,0.12)] rounded-lg font-medium">Bidding</span>
-                              ) : (
-                                <>
                                   <button onClick={() => updateStatus(match.id, "tracking")}
-                                    className="px-4 py-2 text-[13px] font-medium border border-[#e5e7eb] text-[#64748b] rounded-lg hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5] transition-all">
-                                    Track
+                                    className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${
+                                      match.user_status === "tracking"
+                                        ? "bg-[#059669] text-white hover:bg-[#047857]"
+                                        : "border border-[#e5e7eb] text-[#64748b] hover:border-[#059669] hover:text-[#059669] hover:bg-[#ecfdf5]"
+                                    }`}>
+                                    {match.user_status === "tracking" ? "Tracking ✓" : "Track"}
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "bidding")}
-                                    className="px-4 py-2 text-[13px] font-medium bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition-all">
-                                    Start Bid
+                                    className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${
+                                      match.user_status === "bidding"
+                                        ? "bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                                        : "border border-[#e5e7eb] text-[#64748b] hover:border-[#2563eb] hover:text-[#2563eb] hover:bg-[#dbeafe]"
+                                    }`}>
+                                    {match.user_status === "bidding" ? "Bidding ✓" : "Start Bid"}
                                   </button>
                                   <button onClick={() => updateStatus(match.id, "skipped")}
-                                    className="px-4 py-2 text-[13px] text-[#94a3b8] hover:text-[#64748b] transition-colors">
-                                    Archive
+                                    className={`px-4 py-2 text-[13px] rounded-lg transition-all ${
+                                      match.user_status === "skipped"
+                                        ? "bg-[#94a3b8] text-white font-medium hover:bg-[#64748b]"
+                                        : "text-[#94a3b8] hover:text-[#64748b]"
+                                    }`}>
+                                    {match.user_status === "skipped" ? "Archived ✓" : "Archive"}
                                   </button>
-                                </>
-                              )}
                             </div>
                           </div>
                       </div>

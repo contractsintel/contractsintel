@@ -264,13 +264,19 @@ export default function OpportunityDetailPage() {
 
   const updateStatus = async (status: string) => {
     if (!match) return;
+    // Toggle: if already in this status, revert to "new"
+    const effectiveStatus = match.user_status === status ? "new" : status;
     await fetch("/api/opportunities/update-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId: match.id, status }),
+      body: JSON.stringify({ matchId: match.id, status: effectiveStatus }),
     });
-    setMatch({ ...match, user_status: status });
-    setToast(status === "tracking" ? "Tracking" : status === "bidding" ? "Preparing Bid" : "Skipped");
+    setMatch({ ...match, user_status: effectiveStatus });
+    if (effectiveStatus === "new") {
+      setToast("Removed");
+    } else {
+      setToast(effectiveStatus === "tracking" ? "Tracking" : effectiveStatus === "bidding" ? "Preparing Bid" : "Skipped");
+    }
     setTimeout(() => setToast(""), 3000);
   };
 
@@ -362,15 +368,23 @@ export default function OpportunityDetailPage() {
               {opp.set_aside_type && <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-[#ecfdf5] text-[#059669]">{opp.set_aside_type}</span>}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              {match?.user_status === "tracking" ? (
-                <span className="px-3 py-1.5 text-xs text-[#059669] bg-[#ecfdf5] rounded-lg font-medium">Tracking</span>
-              ) : match?.user_status === "bidding" ? (
-                <span className="px-3 py-1.5 text-xs text-[#2563eb] bg-[rgba(37,99,235,0.12)] rounded-lg font-medium">Preparing Bid</span>
-              ) : match ? (
+              {match ? (
                 <>
-                  <button onClick={() => updateStatus("tracking")} className="px-4 py-1.5 text-xs border border-[#e2e8f0] text-[#475569] hover:border-[#059669] hover:text-[#059669] rounded-lg ci-btn">Track</button>
-                  <button onClick={() => updateStatus("bidding")} className="px-4 py-1.5 text-xs bg-[#2563eb] text-white hover:bg-[#1d4ed8] rounded-lg ci-btn">Bid</button>
-                  <button onClick={() => updateStatus("skipped")} className="px-4 py-1.5 text-xs text-[#94a3b8] hover:text-[#475569] rounded-lg ci-btn">Skip</button>
+                  <button onClick={() => updateStatus("tracking")} className={`px-4 py-1.5 text-xs rounded-lg ci-btn transition-all ${
+                    match.user_status === "tracking"
+                      ? "bg-[#059669] text-white hover:bg-[#047857]"
+                      : "border border-[#e2e8f0] text-[#475569] hover:border-[#059669] hover:text-[#059669]"
+                  }`}>{match.user_status === "tracking" ? "Tracking ✓" : "Track"}</button>
+                  <button onClick={() => updateStatus("bidding")} className={`px-4 py-1.5 text-xs rounded-lg ci-btn transition-all ${
+                    match.user_status === "bidding"
+                      ? "bg-[#2563eb] text-white hover:bg-[#1d4ed8]"
+                      : "border border-[#e2e8f0] text-[#475569] hover:border-[#2563eb] hover:text-[#2563eb]"
+                  }`}>{match.user_status === "bidding" ? "Bidding ✓" : "Bid"}</button>
+                  <button onClick={() => updateStatus("skipped")} className={`px-4 py-1.5 text-xs rounded-lg ci-btn transition-all ${
+                    match.user_status === "skipped"
+                      ? "bg-[#94a3b8] text-white hover:bg-[#64748b]"
+                      : "text-[#94a3b8] hover:text-[#475569]"
+                  }`}>{match.user_status === "skipped" ? "Skipped ✓" : "Skip"}</button>
                 </>
               ) : null}
               {opp.response_deadline && (
