@@ -6,5 +6,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  // Only gate /dashboard. /login and /signup don't need middleware — they're
+  // public and including them previously meant a Supabase latency spike could
+  // 504 users trying to *sign in*, which made outages unrecoverable.
+  matcher: ["/dashboard/:path*"],
 };
