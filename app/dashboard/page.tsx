@@ -187,22 +187,38 @@ export default function DashboardPage() {
         return dl >= now;
       });
 
-    // PERF: Fetch first page (1000 rows) immediately so the UI renders fast.
-    // Then background-fetch remaining pages without blocking the render.
-    const { data: firstPage, error: pgErr } = await supabase
-      .from("opportunity_matches")
-      .select(SELECT_COLS, { count: "estimated" })
-      .eq("organization_id", organization.id)
-      .order("match_score", { ascending: false })
-      .range(0, 999);
-    if (pgErr) { console.error("[dashboard] query error", pgErr.message); }
-    const firstActive = filterActive(firstPage ?? []);
-    setMatches(firstActive);
-    setTotalMatchCount(firstActive.length);
+    // PERF: Fetch both pages (0-999 and 1000-1999) in parallel so the final
+    // count is accurate on first render. Previously the first page rendered
+    // alone and the second was fetched in the background — the user saw
+    // "All Types (959)" flash to "(1958)" once the bg fetch resolved.
+    // Parallel fetch keeps total latency at one round-trip while showing the
+    // real total immediately.
+    const [firstPageRes, secondPageRes] = await Promise.all([
+      supabase
+        .from("opportunity_matches")
+        .select(SELECT_COLS, { count: "estimated" })
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(0, 999),
+      supabase
+        .from("opportunity_matches")
+        .select(SELECT_COLS)
+        .eq("organization_id", organization.id)
+        .order("match_score", { ascending: false })
+        .range(1000, 1999),
+    ]);
+    const firstPage = firstPageRes.data;
+    const secondPage = secondPageRes.data;
+    if (firstPageRes.error) { console.error("[dashboard] query error", firstPageRes.error.message); }
 
-    // Compute source counts from the first page
+    const combined = [...(firstPage ?? []), ...(secondPage ?? [])];
+    const activeMatches = filterActive(combined);
+    setMatches(activeMatches);
+    setTotalMatchCount(activeMatches.length);
+
+    // Compute source counts from the full result set
     const counts: Record<string, number> = {};
-    for (const m of firstActive) {
+    for (const m of activeMatches) {
       const src = (m as Record<string, any>).opportunities?.source;
       const cat = getSourceCategory(src, (m as Record<string, any>).bid_recommendation);
       counts[cat] = (counts[cat] ?? 0) + 1;
@@ -245,34 +261,6 @@ export default function DashboardPage() {
     setUpcomingComplianceDeadlines(upcomingRes.data ?? []);
 
     setLoading(false);
-
-    // PERF: Background-fetch ONE additional page (cap at 2000 total).
-    // The dashboard sorts by match_score desc, so the top matches are already
-    // in the first page. Fetching ALL rows (3000+) caused 3.5s+ of extra
-    // network time with no UX benefit — users never scroll past ~200.
-    const totalRows = (firstPage as any)?.length ?? 0;
-    if (totalRows === 1000) {
-      const { data: bgPage } = await supabase
-        .from("opportunity_matches")
-        .select(SELECT_COLS)
-        .eq("organization_id", organization.id)
-        .order("match_score", { ascending: false })
-        .range(1000, 1999);
-      if (bgPage?.length) {
-        const bgActive = filterActive(bgPage);
-        const bgAll = [...firstActive, ...bgActive];
-        setMatches(bgAll);
-        setTotalMatchCount(bgAll.length);
-        // Update source counts with full data
-        const fullCounts: Record<string, number> = {};
-        for (const m of bgAll) {
-          const src = (m as Record<string, any>).opportunities?.source;
-          const cat = getSourceCategory(src, (m as Record<string, any>).bid_recommendation);
-          fullCounts[cat] = (fullCounts[cat] ?? 0) + 1;
-        }
-        setDbSourceCounts(fullCounts);
-      }
-    }
   }, [organization.id, supabase]);
 
   // Restore session-level dismiss for the high-severity strip
