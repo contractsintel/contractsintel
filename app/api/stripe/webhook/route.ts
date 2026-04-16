@@ -14,9 +14,9 @@ function getSupabaseAdmin() {
 }
 
 const planMap: Record<string, string> = {
-  "499": "discovery",
-  "999": "bd_pro",
-  "2499": "team",
+  "99": "discovery",
+  "299": "bd_pro",
+  "899": "team",
 };
 
 function getPlanFromAmount(amount: number): string {
