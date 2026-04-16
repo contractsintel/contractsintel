@@ -98,14 +98,19 @@ export async function updateSession(request: NextRequest) {
       if (!org) {
         // 2s cap — if the DB is slow we skip the subscription gate for this
         // request. The page's own data fetch will handle enforcement.
-        const userRecResult = await withTimeout(
+        // Wrap the Supabase query builder in Promise.resolve() — the builder
+        // is thenable but not a proper Promise, which tsc rejects.
+        const queryPromise: Promise<any> = Promise.resolve(
           supabase
             .from("users")
             .select("organization_id, organizations(subscription_status, trial_ends_at)")
             .eq("auth_id", user.id)
-            .single(),
+            .single()
+        );
+        const userRecResult: any = await withTimeout(
+          queryPromise,
           2000,
-          { data: null, error: null } as any
+          { data: null, error: null }
         );
 
         org = (userRecResult?.data as Record<string, any> | null)
