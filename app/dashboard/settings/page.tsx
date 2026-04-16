@@ -653,17 +653,17 @@ export default function SettingsPage() {
                     onClick={() => setExpandedSource(expandedSource === group.key ? null : group.key)}
                     className="w-full flex flex-col py-2 px-3 border border-[#e5e7eb] hover:border-[#e2e8f0] transition-colors text-left"
                   >
-                    <div className="flex items-center justify-between w-full">
+                    <div className="flex flex-wrap items-center justify-between gap-y-1 w-full">
                       <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
                         <span className="text-sm text-[#0f172a]">{group.label}</span>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 text-xs">
                         <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor }} />
-                          <span className="text-xs text-[#64748b]">{status}</span>
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: statusColor }} />
+                          <span className="text-[#64748b]">{status}</span>
                         </div>
-                        <span className="text-xs font-mono text-[#94a3b8]">{totalOpps.toLocaleString()} opportunities</span>
+                        <span className="font-mono text-[#94a3b8]">{totalOpps.toLocaleString()} opps</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 mt-1 ml-5">

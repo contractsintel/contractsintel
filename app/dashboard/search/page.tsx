@@ -190,7 +190,7 @@ export default function SearchPage() {
     }
 
     // PERF: Select only columns needed for display instead of SELECT *
-    // PERF: Use count:"estimated" — exact count on 168k rows adds 5+ seconds
+    // Use count:"exact" so filtered counts are accurate (estimated was returning ~1001 with filters)
     const SEARCH_COLS = "id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at";
     const now = new Date().toISOString();
 
@@ -225,7 +225,7 @@ export default function SearchPage() {
       // No search query — browse mode with sorting
       let q = supabase
         .from("opportunities")
-        .select(SEARCH_COLS, { count: "estimated" })
+        .select(SEARCH_COLS, { count: "exact" })
         .or(`response_deadline.is.null,response_deadline.gte.${now}`);
 
       if (source) {
@@ -269,7 +269,7 @@ export default function SearchPage() {
       if (!stateFilter && !level && !source) {
         const fallback = await supabase
           .from("opportunity_matches")
-          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "estimated" })
+          .select("id, opportunity_id, match_score, opportunities(id,title,agency,source,estimated_value,response_deadline,naics_code,set_aside_type,place_of_performance,solicitation_number,description,posted_date,sam_url,source_url,created_at)", { count: "exact" })
           .eq("organization_id", organization.id)
           .order("match_score", { ascending: false })
           .range(effectiveOffset, effectiveOffset + PAGE_SIZE - 1);
@@ -338,6 +338,18 @@ export default function SearchPage() {
         if (source === "state_local") q = q.like("source", "state_%");
         else q = q.eq("source", source);
       }
+
+      // Apply state/level filters (mirror main search logic)
+      if (stateFilter) {
+        q = q.eq("source", `state_${stateFilter.toLowerCase()}`);
+      } else if (level) {
+        if (level === "state" || level === "local") {
+          q = q.like("source", "state_%");
+        } else if (level === "federal") {
+          q = q.in("source", ["sam_gov", "usaspending", "military_defense", "dla_dibbs", "army_asfi", "navy_neco", "air_force", "marines", "darpa"]);
+        }
+      }
+
       if (sort === "newest") q = q.order("created_at", { ascending: false });
       else if (sort === "deadline") q = q.order("response_deadline", { ascending: true, nullsFirst: false });
       else if (sort === "value") q = q.order("estimated_value", { ascending: false, nullsFirst: false });
@@ -375,7 +387,15 @@ export default function SearchPage() {
       subcontracting: "SubK",
       forecasts: "Forecast",
       military_defense: "Military",
+      dla_dibbs: "DLA DIBBS",
+      army_asfi: "Army ASFI",
+      navy_neco: "Navy NECO",
+      air_force: "Air Force",
+      marines: "Marines",
+      darpa: "DARPA",
+      state_local: "State & Local",
     };
+    if (s === "state_local") return "State & Local";
     if (s.startsWith("state_")) return s.replace("state_", "").toUpperCase();
     return map[s] || s;
   };
@@ -491,7 +511,7 @@ export default function SearchPage() {
 
       {/* Search bar */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <div className="relative flex-1 min-w-0 w-full sm:w-auto">
+        <div className="relative min-w-0 w-full sm:w-auto sm:flex-1">
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>

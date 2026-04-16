@@ -197,7 +197,7 @@ export function DocumentChatPanel() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close DocIntel" : "Open DocIntel"}
-        className="fixed bottom-6 right-24 z-40 w-14 h-14 rounded-full bg-[#7c3aed] text-white shadow-lg flex items-center justify-center hover:bg-[#6d28d9] transition-colors"
+        className="fixed bottom-36 right-4 sm:bottom-6 sm:right-24 z-40 w-14 h-14 rounded-full bg-[#7c3aed] text-white shadow-lg flex items-center justify-center hover:bg-[#6d28d9] transition-colors"
       >
         {open ? (
           <svg
@@ -228,7 +228,7 @@ export function DocumentChatPanel() {
 
       {/* Slide-in panel */}
       {open && (
-        <div className="fixed bottom-24 right-24 z-40 w-[420px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-8rem)] bg-white border border-[#e5e7eb] rounded-2xl shadow-2xl flex flex-col">
+        <div className="fixed bottom-0 left-0 right-0 sm:bottom-24 sm:left-auto sm:right-24 z-40 w-full sm:w-[420px] max-w-full sm:max-w-[calc(100vw-3rem)] h-[85vh] sm:h-[600px] max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-8rem)] bg-white border border-[#e5e7eb] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col">
           {/* Header */}
           <div className="px-4 py-3 border-b border-[#e5e7eb] flex items-center justify-between">
             <div>

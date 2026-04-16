@@ -913,7 +913,7 @@ export default function DashboardPage() {
                   >
                     {/* Compact list row */}
                     <div
-                      className={`flex items-center gap-4 px-4 py-3.5 border-b border-[#e5e7eb] cursor-pointer
+                      className={`flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 px-3 sm:px-4 py-3 sm:py-3.5 border-b border-[#e5e7eb] cursor-pointer
                                   transition-colors hover:bg-[#f8f9fb] group
                                   ${match.bid_recommendation === "bid" ? "border-l-[3px] border-l-[#059669]" :
                                     match.bid_recommendation === "recompete_alert" || match.bid_recommendation === "recompete" ? "border-l-[3px] border-l-[#dc2626]" : ""}`}
@@ -951,7 +951,7 @@ export default function DashboardPage() {
                       </Link>
 
                       {/* Value */}
-                      <div className="w-[88px] text-right shrink-0 leading-none">
+                      <div className="hidden sm:block w-[88px] text-right shrink-0 leading-none">
                         <div className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Value</div>
                         <div className="text-[13px] font-semibold font-mono">
                           {getVal(opp) > 0
@@ -961,20 +961,29 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Deadline */}
-                      <div className="w-[60px] text-right shrink-0 leading-none">
+                      <div className="hidden sm:block w-[60px] text-right shrink-0 leading-none">
                         <div className="text-[9px] font-semibold text-[#94a3b8] uppercase tracking-wider mb-1">Due</div>
                         <div className={`text-[12px] font-mono ${deadlineColor}`}>
                           {deadlineLabel(opp.response_deadline)}
                         </div>
                       </div>
 
+                      {/* Mobile: inline deadline + value */}
+                      <div className="flex sm:hidden items-center gap-2 w-full pl-[48px] -mt-1 text-[11px]">
+                        <span className={`font-mono ${deadlineColor}`}>{deadlineLabel(opp.response_deadline)}</span>
+                        {getVal(opp) > 0 && <span className="text-[#64748b] font-mono">{formatCurrency(getVal(opp))}</span>}
+                        <span className={`px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded ${recBadge(match.bid_recommendation)}`}>
+                          {match.bid_recommendation}
+                        </span>
+                      </div>
+
                       {/* Recommendation badge */}
-                      <span className={`px-2 py-1 text-[10px] font-semibold uppercase rounded shrink-0 ${recBadge(match.bid_recommendation)}`}>
+                      <span className={`hidden sm:inline px-2 py-1 text-[10px] font-semibold uppercase rounded shrink-0 ${recBadge(match.bid_recommendation)}`}>
                         {match.bid_recommendation}
                       </span>
 
                       {/* D4: BID / MONITOR / SKIP action buttons — always visible */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="hidden sm:flex items-center gap-1 shrink-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); updateStatus(match.id, "bidding"); }}
                           className={`h-7 px-2.5 text-[10px] font-mono uppercase tracking-wider border transition-colors ${

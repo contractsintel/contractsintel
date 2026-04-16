@@ -223,7 +223,7 @@ export default function CompliancePage() {
           </div>
 
           {/* Upcoming Deadlines */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <h2 className="text-xs font-medium uppercase tracking-wide text-[#94a3b8] mb-3">
                 Upcoming Deadlines

@@ -96,13 +96,13 @@ export default async function DashboardLayout({
           userName={userProfile.full_name || null}
           plan={org.plan}
         />
-        <div className="flex pt-16">
+        <div className="pt-16">
           {!isOnboarding && (
             <div className="hidden lg:block">
               <Sidebar plan={org.plan} />
             </div>
           )}
-          <main className={`flex-1 ${isOnboarding ? "p-0" : "lg:ml-[240px] p-4 sm:p-6 lg:p-8"}`}>
+          <main className={`min-h-screen ${isOnboarding ? "p-0" : "lg:ml-[240px] p-4 sm:p-6 lg:p-8 pb-28 sm:pb-6 lg:pb-8"}`}>
             {isOnboarding ? children : <div className="max-w-dashboard mx-auto">{children}</div>}
           </main>
           {!isOnboarding && <TourWrapper />}
