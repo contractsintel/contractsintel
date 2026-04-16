@@ -320,6 +320,13 @@ export default function DashboardPage() {
     const currentMatch = matches.find((x) => x.id === matchId);
     const effectiveStatus = currentMatch?.user_status === status ? "new" : status;
 
+    // Optimistic update — change local state immediately so the UI reflects the toggle instantly
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === matchId ? { ...m, user_status: effectiveStatus, pipeline_stage: effectiveStatus === "new" ? null : effectiveStatus === "tracking" ? "monitoring" : effectiveStatus === "bidding" ? "preparing_bid" : "skipped" } : m
+      )
+    );
+
     if (effectiveStatus === "skipped") {
       setArchiveAnim(matchId);
       await new Promise((r) => setTimeout(r, 400));
@@ -335,6 +342,12 @@ export default function DashboardPage() {
       const result = await res.json();
 
       if (!res.ok || !result.success) {
+        // Revert optimistic update on error
+        setMatches((prev) =>
+          prev.map((m) =>
+            m.id === matchId ? { ...m, user_status: currentMatch?.user_status ?? "new", pipeline_stage: currentMatch?.pipeline_stage ?? null } : m
+          )
+        );
         showToast("Error — " + (result.error || "try again"), "#dc2626");
         setFadingOut(null);
         return;
@@ -345,13 +358,18 @@ export default function DashboardPage() {
       } else if (effectiveStatus === "tracking") {
         showToast("Tracking — Added to Pipeline", "#059669", "/dashboard/pipeline", "View in Pipeline");
       } else if (effectiveStatus === "bidding") {
-        const m = matches.find((x) => x.id === matchId);
-        const oppId = m?.opportunity_id || "";
+        const oppId = currentMatch?.opportunity_id || "";
         showToast("Preparing Bid — Added to Pipeline", "#2563eb", `/dashboard/proposals?opportunity_id=${oppId}`, "Generate AI Proposal →");
       } else if (effectiveStatus === "skipped") {
         showToast("Archived — Moved to Archived Contracts", "#94a3b8");
       }
     } catch (err) {
+      // Revert optimistic update on network error
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === matchId ? { ...m, user_status: currentMatch?.user_status ?? "new", pipeline_stage: currentMatch?.pipeline_stage ?? null } : m
+        )
+      );
       showToast("Network error — try again", "#dc2626");
       setFadingOut(null);
       return;

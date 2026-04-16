@@ -503,6 +503,15 @@ export default function PipelinePage() {
       setLostModal(matchId);
       return;
     }
+    if (stage === "remove") {
+      // Remove from pipeline — revert to "new" status
+      await supabase
+        .from("opportunity_matches")
+        .update({ pipeline_stage: null, user_status: "new" })
+        .eq("id", matchId);
+      loadData();
+      return;
+    }
     await supabase
       .from("opportunity_matches")
       .update({ pipeline_stage: stage })
@@ -748,6 +757,7 @@ export default function PipelinePage() {
                             Move to {s.label}
                           </option>
                         ))}
+                        <option value="remove" className="text-red-500">Remove from Pipeline</option>
                       </select>
 
                       {/* G08: gate review controls */}
