@@ -69,11 +69,9 @@ export async function updateSession(request: NextRequest) {
     // The Server Component layer does its own auth check, so a false "no user"
     // just means we skip the middleware redirect logic this round-trip.
     const authResult = await withTimeout(
-      supabase.auth.getUser(),
+      supabase.auth.getUser() as Promise<{ data: { user: any } | null; error: any }>,
       3000,
-      { data: { user: null }, error: null } as Awaited<
-        ReturnType<typeof supabase.auth.getUser>
-      >
+      { data: { user: null }, error: null }
     );
     const user = authResult?.data?.user ?? null;
 
