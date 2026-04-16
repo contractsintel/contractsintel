@@ -81,7 +81,7 @@ function recBadge(rec: string) {
 type SortOption = "recommended" | "score" | "deadline" | "value" | "newest";
 type SourceFilter = "" | "federal" | "state" | "military" | "sbir" | "grants" | "subcontracting" | "recompetes";
 type UrgencyFilter = "" | "week" | "2weeks" | "month";
-type ValueFilter = "" | "under100k" | "100k-500k" | "500k-1m" | "over1m";
+type ValueFilter = "" | "tbd" | "under100k" | "100k-500k" | "500k-1m" | "over1m";
 type RecFilter = "" | "bid" | "monitor" | "skip";
 type FilterState = {
   setAside: string;
@@ -470,14 +470,19 @@ export default function DashboardPage() {
         if (filters.urgency === "month" && d > 30) return false;
       }
       // Value filter — only show contracts with a known value in the selected range.
-      // Contracts with no disclosed value are excluded when filtering by value.
+      // "tbd" explicitly shows contracts with no disclosed value (Value TBD on the cards).
+      // Any other bucket excludes undisclosed contracts so the $ buckets stay accurate.
       if (filters.valueRange) {
         const v = getVal(opp);
-        if (v <= 0) return false; // Exclude undisclosed when filtering by value
-        if (filters.valueRange === "under100k" && v >= 100000) return false;
-        if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
-        if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
-        if (filters.valueRange === "over1m" && v < 1000000) return false;
+        if (filters.valueRange === "tbd") {
+          if (v > 0) return false;
+        } else {
+          if (v <= 0) return false; // Exclude undisclosed when filtering by $ range
+          if (filters.valueRange === "under100k" && v >= 100000) return false;
+          if (filters.valueRange === "100k-500k" && (v < 100000 || v >= 500000)) return false;
+          if (filters.valueRange === "500k-1m" && (v < 500000 || v >= 1000000)) return false;
+          if (filters.valueRange === "over1m" && v < 1000000) return false;
+        }
       }
       // Recommendation filter
       if (filters.recommendation && m.bid_recommendation !== filters.recommendation) return false;
@@ -749,6 +754,7 @@ export default function DashboardPage() {
               <option value="100k-500k">$100K–$500K</option>
               <option value="500k-1m">$500K–$1M</option>
               <option value="over1m">&gt;$1M</option>
+              <option value="tbd">Value TBD</option>
             </select>
             <select value={filters.sort}
               onChange={(e) => setFilters((f) => ({...f, sort: e.target.value as SortOption}))}
