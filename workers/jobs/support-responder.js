@@ -84,7 +84,7 @@ About ContractsIntel:
 - We monitor SAM.gov for contract opportunities
 - We match contracts to subscriber profiles using AI
 - We send daily digest emails with scored opportunities
-- Plans: Discovery ($499/mo), BD Pro ($999/mo), Team ($2,499/mo)
+- Plans: Discovery ($99/mo), BD Pro ($299/mo), Team ($899/mo)
 - All plans include a 14-day free trial
 - We help with bid/no-bid decisions and proposal support
 

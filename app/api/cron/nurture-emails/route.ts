@@ -54,7 +54,7 @@ const NURTURE_SEQUENCE = [
       <p style="color:#64748b;font-size:14px;">Hi ${name},</p>
       <p style="color:#64748b;font-size:14px;">BD Pro members use AI-powered proposal drafts, full compliance monitoring, and past performance builders to win contracts faster.</p>
       <p style="color:#64748b;font-size:14px;">On average, BD Pro users submit proposals 60% faster and track 4x more opportunities in their pipeline.</p>
-      <p style="color:#64748b;font-size:14px;">Upgrade today for $999/mo — less than a single billable hour on most government contracts.</p>
+      <p style="color:#64748b;font-size:14px;">Upgrade today for $299/mo — less than a single billable hour on most government contracts.</p>
       <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.contractsintel.com"}/dashboard/settings" style="display:inline-block;background:#2563eb;color:white;padding:10px 24px;font-size:14px;text-decoration:none;margin-top:12px;">Upgrade to BD Pro</a>
     `,
   },

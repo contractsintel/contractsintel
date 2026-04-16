@@ -41,7 +41,7 @@ export default function TermsPage() {
               <li>All plans include a <strong className="text-[#0f172a]">14-day free trial</strong>. No credit card is required to start the trial. A payment method is required by Day 7 to continue the trial.</li>
               <li>Subscriptions are <strong className="text-[#0f172a]">month-to-month</strong> with no long-term commitment. You may cancel at any time.</li>
               <li>If you cancel before your trial ends, you will not be charged.</li>
-              <li>After the trial, subscriptions renew monthly at the rate for your selected plan: Discovery ($499/mo), BD Pro ($999/mo), or Team ($2,499/mo).</li>
+              <li>After the trial, subscriptions renew monthly at the rate for your selected plan: Discovery ($99/mo), BD Pro ($299/mo), or Team ($899/mo).</li>
               <li>We reserve the right to modify pricing with <strong className="text-[#0f172a]">30 days written notice</strong> to active subscribers. Price changes do not affect the current billing period.</li>
               <li>Refunds are handled on a case-by-case basis. Contact support@contractsintel.com for refund requests.</li>
             </ul>

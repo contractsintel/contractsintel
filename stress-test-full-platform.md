@@ -27,7 +27,7 @@ No need to ask for confirmation on routine changes. The only hard rules are the 
 
 ContractsIntel is a federal contract intelligence platform with 22 products gated across 3 subscription tiers. During the 14-day free trial, ALL features are unlocked.
 
-### Discovery — $499/mo (7 products)
+### Discovery — $99/mo (7 products)
 1. **Opportunity Intelligence + Daily Digest** — AI-scored contract matches from SAM.gov, delivered by email at 7am
 2. **Compliance Alerts** — Basic compliance monitoring and alerts
 3. **Pipeline Tracker** — Kanban-style pipeline for tracking opportunities (bid/pass/save)
@@ -36,7 +36,7 @@ ContractsIntel is a federal contract intelligence platform with 22 products gate
 6. **Slack & Teams Webhooks** — Push opportunity alerts to Slack or Microsoft Teams channels
 7. **Copilot AI Chat** — Conversational assistant grounded in tenant data
 
-### BD Pro — $999/mo (adds 11 → 18 total)
+### BD Pro — $299/mo (adds 11 → 18 total)
 8. **AI Proposal First Drafts** — Auto-generated proposal sections from opportunity data
 9. **Proposal Pink-Team Review** — AI scores draft proposals against evaluation criteria (strengths/weaknesses/compliance gaps per section)
 10. **RFP Document Chat** — Upload any RFP/solicitation PDF and ask AI questions about it
@@ -49,7 +49,7 @@ ContractsIntel is a federal contract intelligence platform with 22 products gate
 17. **Agency Relationship Mapping** — Track contracting officers and agency relationships
 18. **Weekly Pipeline Report** — Automated weekly pipeline summary
 
-### Team — $2,499/mo (adds 4 → all 22)
+### Team — $899/mo (adds 4 → all 22)
 19. **CPARS Monitor** — Track contractor performance ratings
 20. **Subcontracting Network** — Primes post teaming needs, subs respond
 21. **Competitor Intelligence** — Auto-built competitor profiles from USASpending + FPDS

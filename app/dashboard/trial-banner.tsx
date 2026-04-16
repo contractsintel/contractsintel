@@ -27,11 +27,11 @@ export function TrialTierBanner({ page }: { page: string }) {
       <span>
         {isBdPro ? (
           <>
-            <strong className="text-[#3b82f6]">BD Pro</strong> feature — free during your trial. Included in BD Pro ($999/mo) and Team ($2,499/mo).
+            <strong className="text-[#3b82f6]">BD Pro</strong> feature — free during your trial. Included in BD Pro ($299/mo) and Team ($899/mo).
           </>
         ) : (
           <>
-            <strong className="text-[#a78bfa]">Team</strong> feature — free during your trial. Included in Team ($2,499/mo).
+            <strong className="text-[#a78bfa]">Team</strong> feature — free during your trial. Included in Team ($899/mo).
           </>
         )}
       </span>

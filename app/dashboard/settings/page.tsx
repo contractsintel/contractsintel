@@ -88,6 +88,47 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [refreshingSam, setRefreshingSam] = useState(false);
   const [samRefreshMsg, setSamRefreshMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  // Route upgrades through /api/checkout so the current Stripe price IDs
+  // (STRIPE_PRICE_DISCOVERY / BD_PRO / TEAM env vars) drive the amount — never
+  // hardcode a Payment Link, because those are pinned to a single price.
+  const handleUpgrade = async (tier: "bd_pro" | "team") => {
+    setUpgrading(tier);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setUpgrading(null);
+      }
+    } catch {
+      setUpgrading(null);
+    }
+  };
+
+  // Billing portal endpoint is POST-only and lives at /api/billing/portal
+  // (the old <a href="/api/stripe/portal"> link 404'd).
+  const handleManageBilling = async () => {
+    setOpeningPortal(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setOpeningPortal(false);
+      }
+    } catch {
+      setOpeningPortal(false);
+    }
+  };
 
   // Scraper run data
   const [scraperRuns, setScraperRuns] = useState<Record<string, any>[]>([]);
@@ -408,23 +449,35 @@ export default function SettingsPage() {
       {/* Subscription */}
       <section className="border border-[#e5e7eb]  bg-white p-6 mb-6">
         <h2 className="text-xs text-[#94a3b8] font-medium uppercase tracking-wide mb-4">Subscription</h2>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <p className="text-sm text-[#0f172a]">
               Current plan: <span className="text-[#3b82f6] font-medium">{tierLabel(organization.plan)}</span>
+              {organization.plan === "discovery" && <span className="text-[#64748b]"> · $99/mo</span>}
+              {organization.plan === "bd_pro" && <span className="text-[#64748b]"> · $299/mo</span>}
+              {organization.plan === "team" && <span className="text-[#64748b]"> · $899/mo</span>}
             </p>
           </div>
           <div className="flex items-center gap-3">
             {organization.stripe_customer_id && (
-              <a href="/api/stripe/portal" className="px-4 py-2 text-xs border border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db] transition-colors">
-                Manage Billing
-              </a>
+              <button
+                onClick={handleManageBilling}
+                disabled={openingPortal}
+                className="px-4 py-2 text-xs border border-[#e5e7eb] text-[#64748b] hover:border-[#d1d5db] transition-colors disabled:opacity-50">
+                {openingPortal ? "Opening..." : "Manage Billing"}
+              </button>
             )}
             {organization.plan !== "team" && (
-              <a href="https://buy.stripe.com/6oUdR95EN3467WHaGS5wI03" target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors">
-                {organization.plan === "bd_pro" ? "Upgrade to Team" : "Upgrade to BD Pro"}
-              </a>
+              <button
+                onClick={() => handleUpgrade(organization.plan === "bd_pro" ? "team" : "bd_pro")}
+                disabled={upgrading !== null}
+                className="px-4 py-2 text-xs bg-[#2563eb] text-white hover:bg-[#3b82f6] transition-colors disabled:opacity-50">
+                {upgrading
+                  ? "Redirecting..."
+                  : organization.plan === "bd_pro"
+                    ? "Upgrade to Team — $899/mo"
+                    : "Upgrade to BD Pro — $299/mo"}
+              </button>
             )}
           </div>
         </div>

@@ -7,14 +7,14 @@ import Link from "next/link";
 const PLANS = [
   {
     name: "Discovery",
-    price: "$499",
+    price: "$99",
     tier: "discovery",
     best: "Solo contractors finding opportunities",
     features: ["Opportunity Intelligence + Daily Digest", "Compliance Alerts", "Pipeline Tracker", "Google Calendar Sync", "SAM.gov Profile Audit", "Slack & Teams Webhooks"],
   },
   {
     name: "BD Pro",
-    price: "$999",
+    price: "$299",
     tier: "bd_pro",
     best: "Contractors actively bidding on contracts",
     popular: true,
@@ -22,7 +22,7 @@ const PLANS = [
   },
   {
     name: "Team",
-    price: "$2,499",
+    price: "$899",
     tier: "team",
     best: "Growing firms managing multiple contracts",
     features: ["Everything in BD Pro", "Unlimited team users", "CPARS Monitor", "Subcontracting Network", "Competitor Intelligence", "Agency Heat Maps", "Contract Vehicle Alerts", "Spend Lens"],

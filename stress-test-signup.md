@@ -12,7 +12,7 @@ You are going to stress-test the ContractsIntel signup and onboarding flow by cr
    - `app/onboarding/**`
    - `app/dashboard/**` (all pages)
    - `app/expired/page.tsx`
-   - `lib/feature-gate.ts` (3-tier gating: Discovery $499, BD Pro $999, Team $2,499)
+   - `lib/feature-gate.ts` (3-tier gating: Discovery $99, BD Pro $299, Team $899)
    - `app/api/**` (all API routes)
    - `CLAUDE.md` if it exists
 4. Track progress with TodoWrite. One todo per round.

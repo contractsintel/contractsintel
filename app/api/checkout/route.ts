@@ -6,10 +6,13 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
 }
 
-const PRICE_MAP: Record<string, string> = {
-  discovery: process.env.STRIPE_PRICE_DISCOVERY || "price_1TH7X0EMMzxoqfnR94CLvHHl",
-  bd_pro: process.env.STRIPE_PRICE_BD_PRO || "price_1TH7dAEMMzxoqfnR70vzp9iE",
-  team: process.env.STRIPE_PRICE_TEAM || "price_1TH7hFEMMzxoqfnRWlEI1OM4",
+// Prices: Discovery $99/mo, BD Pro $299/mo, Team $899/mo
+// IMPORTANT: env vars must be set — old hardcoded fallback IDs were $499/$999/$2,499
+// and would charge customers the wrong amount.
+const PRICE_MAP: Record<string, string | undefined> = {
+  discovery: process.env.STRIPE_PRICE_DISCOVERY,
+  bd_pro: process.env.STRIPE_PRICE_BD_PRO,
+  team: process.env.STRIPE_PRICE_TEAM,
 };
 
 export async function POST(request: Request) {
@@ -20,7 +23,15 @@ export async function POST(request: Request) {
 
   const { tier } = await request.json();
   const priceId = PRICE_MAP[tier];
-  if (!priceId) return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+  if (!priceId) {
+    if (tier in PRICE_MAP) {
+      return NextResponse.json(
+        { error: `Stripe price not configured for tier "${tier}". Set STRIPE_PRICE_${tier.toUpperCase()} env var.` },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
+  }
 
   // Get org info
   const { data: userData } = await supabase

@@ -160,12 +160,12 @@ export function getUpgradeTier(currentTier: string): { name: string; price: stri
   if (currentTier === 'team') return null;
   if (currentTier === 'bd_pro') return {
     name: 'Team',
-    price: '$2,499/mo',
+    price: '$899/mo',
     features: ['CPARS Monitor', 'Subcontracting Network', 'Competitor Intelligence', 'Loss Analysis', 'Agency Heat Maps', 'Spend Lens', 'Contract Vehicle Alerts', 'Unlimited team users', 'API access']
   };
   return {
     name: 'BD Pro',
-    price: '$999/mo',
+    price: '$299/mo',
     features: ['AI Proposal Drafts', 'Proposal Scorer', 'DocIntel', 'Capability Statement PDF', 'Proposal Outline Generator', 'Full Compliance Monitor', 'Past Performance Builder', 'Contract Delivery Dashboard', 'Agency Relationship Mapping', 'Weekly Pipeline Report']
   };
 }
