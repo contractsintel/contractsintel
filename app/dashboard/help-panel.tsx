@@ -75,7 +75,7 @@ const HELP_CONTENT: Record<string, HelpContent> = {
       "Update your CMMC status",
     ],
     howItWorks:
-      "ContractsIntel automatically tracks your SAM.gov registration expiration, certification renewal dates, CMMC assessment deadlines, and changes to the Federal Acquisition Regulation (FAR) that affect your proposals. Your health score (0-100) tells you at a glance if anything needs attention. You get email alerts before deadlines — at 90, 60, 30, 14, 7, 3, and 1 day out.",
+      "ContractsIntel automatically tracks your SAM.gov registration expiration, CMMC assessment deadlines, and changes to the Federal Acquisition Regulation (FAR) that affect your proposals. Your health score (0-100) tells you at a glance if anything needs attention. You get email alerts before deadlines — at 90, 60, 30, 14, 7, 3, and 1 day out.",
     tips: [
       "A score below 80 means something needs your attention soon.",
       "Red items are due within 30 days — act on these immediately.",
