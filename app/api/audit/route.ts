@@ -33,7 +33,10 @@ async function logTrap(request: NextRequest): Promise<void> {
 }
 
 export async function GET(request: NextRequest) {
-  await logTrap(request);
+  // Fire-and-forget: never block the 503 on logging I/O. Any hang in the
+  // Supabase insert (cold start, network, RLS) would otherwise hold the
+  // HTTP response open and produce effective timeouts for callers.
+  logTrap(request).catch(() => {});
   return NextResponse.json(
     { error: "Service temporarily unavailable", retry_after: "24h", code: "audit_disabled" },
     {
