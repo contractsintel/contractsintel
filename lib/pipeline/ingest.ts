@@ -19,6 +19,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import zlib from "node:zlib";
 import { pipelineSupabase } from "./supabase";
+import type { DrainResult, PipelineMode, StageCursor } from "./types";
 
 // ---- configuration -------------------------------------------------------
 const SAM_BASE = "https://api.sam.gov/entity-information/v4/entities";
@@ -363,13 +364,36 @@ async function fetchPage(
 }
 
 // ---- public API ----------------------------------------------------------
+/**
+ * PR 1a: signature updated to accept `cursor` and return `DrainResult`.
+ *
+ * Behavior is unchanged from the previous single-pass implementation — every
+ * invocation completes the full ingest (delta paginates through its own loop
+ * inline; backfill waits for the Extract file). Therefore every return path
+ * reports `done: true, next_cursor: null`. PR 1b replaces the inline loops
+ * with bounded per-tick work + a real cursor so the orchestrator can drain
+ * across many ticks.
+ *
+ * `weekly_sweep` is accepted as an alias for backfill in PR 1a (no
+ * distinction until PR 1b routes it).
+ */
 export async function ingest(
-  opts: { cert: string; mode: "backfill" | "delta" },
-): Promise<{ requests: number; inserted: number; skipped?: boolean; reason?: string }> {
+  opts: { cert: string; mode: PipelineMode; cursor?: StageCursor },
+): Promise<DrainResult> {
   const { cert, mode } = opts;
+  // cursor is intentionally ignored in PR 1a; wired for orchestrator parity only.
+  void opts.cursor;
+
   const filter = CERT_FILTERS.find((c) => c.cert === cert);
   if (!filter) {
-    return { requests: 0, inserted: 0, skipped: true, reason: `no filter for cert=${cert}` };
+    return {
+      done: true,
+      next_cursor: null,
+      requests: 0,
+      inserted: 0,
+      skipped: true,
+      reason: `no filter for cert=${cert}`,
+    };
   }
   const apiKey = process.env.SAM_API_KEY_INGEST || process.env.SAM_API_KEY;
   if (!apiKey) throw new Error("SAM_API_KEY_INGEST or SAM_API_KEY required");
@@ -398,10 +422,10 @@ export async function ingest(
       await sleep(Math.min(PAGINATED_INTERVAL_MS, 20_000));
     }
     const { inserted } = await upsertRows(supabase, rows);
-    return { requests, inserted };
+    return { done: true, next_cursor: null, requests, inserted };
   }
 
-  // backfill
+  // backfill (also weekly_sweep in PR 1a — same code path until PR 1b)
   let requests = 0;
   const token = await startExtract(apiKey, filter);
   requests += 1;
@@ -415,5 +439,5 @@ export async function ingest(
     if (row) rows.push(row);
   }
   const { inserted } = await upsertRows(supabase, rows);
-  return { requests, inserted };
+  return { done: true, next_cursor: null, requests, inserted };
 }
