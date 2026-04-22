@@ -34,6 +34,7 @@ import { crawl } from "./crawl";
 import { verifySubmit } from "./verify-submit";
 import { verifyPoll } from "./verify-poll";
 import { sync } from "./sync";
+import type { PipelineMode, StageCursor } from "./types";
 
 const STAGE_ORDER = [
   "ingest",
@@ -84,6 +85,14 @@ type QueueRow = {
   nb_job_id: string | null;
   nb_submitted_at: string | null;
   nb_batch_size: number | null;
+  // PR 1a additions — schema from 20260422120000_cert_queue_pipeline_v2_schema.sql
+  mode: PipelineMode | null;
+  ingest_cursor: StageCursor;
+  enrich_cursor: StageCursor;
+  crawl_cursor: StageCursor;
+  weekly_refresh_due_at: string | null;
+  stage_started_at: string | null;
+  rows_this_stage: number | null;
 };
 
 async function pickActiveCert(supabase: SupabaseClient): Promise<QueueRow | null> {
@@ -124,7 +133,16 @@ async function runActiveStep(
           stepResult = { skipped: true, reason: "dry-run" };
           break;
         }
-        stepResult = await ingest({ cert, mode: "backfill" });
+        // PR 1a: route by the row's `mode` (backfill/delta/weekly_sweep)
+        // and pass any persisted cursor. In PR 1a ingest still always
+        // returns done=true, so behavior is unchanged; the plumbing is
+        // in place for PR 1b's real drain loop.
+        const ingestMode: PipelineMode = row.mode ?? "backfill";
+        stepResult = await ingest({
+          cert,
+          mode: ingestMode,
+          cursor: row.ingest_cursor ?? null,
+        });
         break;
       }
       case "enrich": {
@@ -268,7 +286,15 @@ async function runActiveStep(
 
     // Stage advancement.
     if (customAdvance) {
-      await supabase.from("cert_queue_state").update(customAdvance).eq("cert", cert);
+      // verify_submit / verify_poll use customAdvance (NB job state) and
+      // keep their legacy semantics. Stamp stage_started_at whenever the
+      // stage field changes so PR 3's stall-detection has the timestamp.
+      const ca: Record<string, unknown> = { ...customAdvance };
+      if (ca.stage && ca.stage !== stage) {
+        ca.stage_started_at = new Date().toISOString();
+        ca.rows_this_stage = 0;
+      }
+      await supabase.from("cert_queue_state").update(ca).eq("cert", cert);
       return {
         ...base,
         advanced: customAdvance.stage !== stage,
@@ -277,10 +303,48 @@ async function runActiveStep(
       };
     }
 
+    // --- Drain-loop aware advancement (PR 1a) -----------------------------
+    // In PR 1a only `ingest` returns the new DrainResult shape with a
+    // `done` field. If `done=false` we persist the cursor and stay on the
+    // stage. Other stages fall through to the legacy (!skipped && !error)
+    // advance rule — they will be migrated in PR 1b.
+    if (stage === "ingest" && typeof stepResult?.done === "boolean" && live) {
+      if (stepResult.done === false) {
+        // Stage has more work. Persist cursor, accumulate rows_this_stage,
+        // do NOT advance.
+        await supabase
+          .from("cert_queue_state")
+          .update({
+            ingest_cursor: stepResult.next_cursor ?? null,
+            last_error: null,
+            rows_this_stage:
+              (row.rows_this_stage ?? 0) + (stepResult.inserted ?? 0),
+          })
+          .eq("cert", cert);
+        return {
+          ...base,
+          advanced: false,
+          next_stage: stage,
+          result: stepResult,
+        };
+      }
+      // done=true falls through to the normal advance path below, which
+      // additionally clears the ingest cursor.
+    }
+    // ---------------------------------------------------------------------
+
     const advanced = !stepResult.skipped && !stepResult.error && !stepResult.aborted;
     if (advanced && live) {
       const ns = nextStage(stage);
-      const patch: Record<string, unknown> = { stage: ns, last_error: null };
+      const patch: Record<string, unknown> = {
+        stage: ns,
+        last_error: null,
+        stage_started_at: new Date().toISOString(),
+        rows_this_stage: 0,
+      };
+      if (stage === "ingest") patch.ingest_cursor = null;
+      if (stage === "enrich") patch.enrich_cursor = null;
+      if (stage === "crawl") patch.crawl_cursor = null;
       if (ns === "done") patch.backfill_done_at = new Date().toISOString();
       await supabase.from("cert_queue_state").update(patch).eq("cert", cert);
     } else if (stepResult.error) {
