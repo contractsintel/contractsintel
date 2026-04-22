@@ -32,12 +32,18 @@ async function run() {
   ];
 
   let opportunities = [];
+  const postedFromStr = fmt(sevenDaysAgo);
+  const postedToStr = fmt(now);
+  let hitCap = false;
+  let lastPageSize = 0;
 
   for (const base of baseEndpoints) {
     try {
       const acc = [];
+      let localHitCap = false;
+      let localLastPageSize = 0;
       for (let page = 0; page < MAX_PAGES; page++) {
-        const url = `${base}?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`;
+        const url = `${base}?api_key=${samApiKey}&postedFrom=${postedFromStr}&postedTo=${postedToStr}&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`;
         const res = await fetch(url);
         if (!res.ok) {
           // On any non-OK (including 429), stop paging this endpoint — no point burning quota.
@@ -47,16 +53,40 @@ async function run() {
         const data = await res.json();
         const batch = data.opportunitiesData || data.opportunities || [];
         acc.push(...batch);
+        localLastPageSize = batch.length;
         if (batch.length < PAGE_SIZE) break;
+        // Completed a full last page — we're exiting on the cap.
+        if (page === MAX_PAGES - 1) localHitCap = true;
       }
       if (acc.length > 0) {
         opportunities = acc;
+        hitCap = localHitCap;
+        lastPageSize = localLastPageSize;
         console.log(`  Fetched ${opportunities.length} opportunities from SAM.gov`);
         break;
       }
     } catch (err) {
       console.log(`  SAM endpoint failed: ${err.message}`);
     }
+  }
+
+  // Pagination-cap alert: surface silent-truncation risk in cron_alerts so
+  // the daily digest (PR 4) picks it up.
+  if (hitCap) {
+    await supabase.from('cron_alerts').insert({
+      severity: 'warn',
+      source: 'sam-pagination-cap-hit',
+      message: `SAM pagination hit MAX_PAGES=${MAX_PAGES} cap, possible silent truncation. postedFrom=${postedFromStr} postedTo=${postedToStr}`,
+      context: {
+        postedFrom: postedFromStr,
+        postedTo: postedToStr,
+        total_ingested: opportunities.length,
+        last_page_size: lastPageSize,
+        max_pages: MAX_PAGES,
+        page_size: PAGE_SIZE,
+        route: 'workers/fetch-contracts',
+      },
+    });
   }
 
   if (opportunities.length === 0) {

@@ -38,10 +38,20 @@ interface SamOpportunity {
 const SAM_PAGE_SIZE = 1000;
 const SAM_MAX_PAGES = 10; // 10,000 opportunities per tick — more than any real window
 
-async function fetchFromSam(endpoint: string, apiKey: string): Promise<SamOpportunity[]> {
+interface FetchResult {
+  opps: SamOpportunity[];
+  hitCap: boolean;         // true iff we exited due to SAM_MAX_PAGES, not short-page
+  postedFrom: string;
+  postedTo: string;
+  lastPageSize: number;
+}
+
+async function fetchFromSam(endpoint: string, apiKey: string): Promise<FetchResult> {
   const all: SamOpportunity[] = [];
   const postedFrom = getDateDaysAgo(7);
   const postedTo = getToday();
+  let hitCap = false;
+  let lastPageSize = 0;
 
   for (let page = 0; page < SAM_MAX_PAGES; page++) {
     const params = new URLSearchParams({
@@ -64,12 +74,17 @@ async function fetchFromSam(endpoint: string, apiKey: string): Promise<SamOpport
     const data = await res.json();
     const batch: SamOpportunity[] = data.opportunitiesData ?? data.opportunities ?? [];
     all.push(...batch);
+    lastPageSize = batch.length;
 
     // Short page = end of results.
     if (batch.length < SAM_PAGE_SIZE) break;
+
+    // Last iteration completed a full page — we're exiting on the cap, not
+    // because we drained. Raise the truncation flag so the caller can alert.
+    if (page === SAM_MAX_PAGES - 1) hitCap = true;
   }
 
-  return all;
+  return { opps: all, hitCap, postedFrom, postedTo, lastPageSize };
 }
 
 function getToday(): string {
@@ -97,17 +112,44 @@ export async function GET(request: NextRequest) {
     }
 
     let opportunities: SamOpportunity[] = [];
+    let fetchMeta: FetchResult | null = null;
     let lastError: Error | null = null;
 
     // Try both endpoints
     for (const endpoint of SAM_ENDPOINTS) {
       try {
-        opportunities = await fetchFromSam(endpoint, apiKey);
+        const r = await fetchFromSam(endpoint, apiKey);
+        opportunities = r.opps;
+        fetchMeta = r;
         break;
       } catch (err) {
         lastError = err as Error;
         continue;
       }
+    }
+
+    // Pagination-cap alert: loop exited because page === SAM_MAX_PAGES - 1
+    // with a full last page, not because of short-page drain. Surface so we
+    // can raise the cap if real-world windows start exceeding it.
+    if (fetchMeta?.hitCap) {
+      const adminForAlert = createAdmin(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await adminForAlert.from("cron_alerts").insert({
+        severity: "warn",
+        source: "sam-pagination-cap-hit",
+        message: `SAM pagination hit MAX_PAGES=${SAM_MAX_PAGES} cap, possible silent truncation. postedFrom=${fetchMeta.postedFrom} postedTo=${fetchMeta.postedTo}`,
+        context: {
+          postedFrom: fetchMeta.postedFrom,
+          postedTo: fetchMeta.postedTo,
+          total_ingested: opportunities.length,
+          last_page_size: fetchMeta.lastPageSize,
+          max_pages: SAM_MAX_PAGES,
+          page_size: SAM_PAGE_SIZE,
+          route: "scrape-opportunities",
+        },
+      });
     }
 
     if (opportunities.length === 0) {
