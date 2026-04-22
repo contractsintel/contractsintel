@@ -45,4 +45,22 @@ export interface DrainResult {
   skipped?: boolean;
   reason?: string;
   error?: string;
+
+  // verify_submit → verify_poll handoff (NB async job lifecycle).
+  // When verify_submit returns a jobId the orchestrator writes it onto
+  // cert_queue_state.nb_job_id + nb_batch_size and advances stage.
+  jobId?: string;
+  batchSize?: number;
+
+  // verify_poll: set to true when NB status='running' (still polling).
+  // Kept distinct from done=false to signal "waiting on external" vs
+  // "more local work to do." Orchestrator treats both the same (no
+  // advance), but this lets logs/metrics distinguish the two cases.
+  waiting?: boolean;
+
+  // verify_poll counters.
+  valid?: number;
+  invalid?: number;
+  catchall?: number;
+  unknown?: number;
 }
