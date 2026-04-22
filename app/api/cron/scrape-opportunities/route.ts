@@ -30,25 +30,46 @@ interface SamOpportunity {
   pointOfContact?: Array<{ fullName?: string; email?: string }>;
 }
 
+// SAM pagination: limit is capped at 1000 per page. On high-volume days SAM
+// posts well above 1000 opportunities in a 7-day window, so a single page
+// silently truncates results. We loop until the returned page is smaller than
+// the limit (meaning we've consumed all available results), with a hard safety
+// cap on pages to prevent runaway quota burn.
+const SAM_PAGE_SIZE = 1000;
+const SAM_MAX_PAGES = 10; // 10,000 opportunities per tick — more than any real window
+
 async function fetchFromSam(endpoint: string, apiKey: string): Promise<SamOpportunity[]> {
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    postedFrom: getDateDaysAgo(7),
-    postedTo: getToday(),
-    limit: "1000",
-    offset: "0",
-  });
+  const all: SamOpportunity[] = [];
+  const postedFrom = getDateDaysAgo(7);
+  const postedTo = getToday();
 
-  const res = await fetch(`${endpoint}?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
+  for (let page = 0; page < SAM_MAX_PAGES; page++) {
+    const params = new URLSearchParams({
+      api_key: apiKey,
+      postedFrom,
+      postedTo,
+      limit: String(SAM_PAGE_SIZE),
+      offset: String(page * SAM_PAGE_SIZE),
+    });
 
-  if (!res.ok) {
-    throw new Error(`SAM API returned ${res.status}`);
+    const res = await fetch(`${endpoint}?${params.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      // Don't keep paging once we're throttled or erroring — conserves quota.
+      throw new Error(`SAM API returned ${res.status} on page ${page}`);
+    }
+
+    const data = await res.json();
+    const batch: SamOpportunity[] = data.opportunitiesData ?? data.opportunities ?? [];
+    all.push(...batch);
+
+    // Short page = end of results.
+    if (batch.length < SAM_PAGE_SIZE) break;
   }
 
-  const data = await res.json();
-  return data.opportunitiesData ?? data.opportunities ?? [];
+  return all;
 }
 
 function getToday(): string {

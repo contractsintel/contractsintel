@@ -20,23 +20,39 @@ async function run() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fmt = (d) => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
 
-  const endpoints = [
-    `https://api.sam.gov/opportunities/v2/search?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=1000&offset=0`,
-    `https://api.sam.gov/prod/opportunities/v2/search?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=1000&offset=0`,
+  // SAM caps each response at 1000 rows. High-volume windows need paging or
+  // results are silently truncated. Loop with offset += limit until the page
+  // is short (no more rows) or we hit a safety cap.
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 10;
+
+  const baseEndpoints = [
+    'https://api.sam.gov/opportunities/v2/search',
+    'https://api.sam.gov/prod/opportunities/v2/search',
   ];
 
   let opportunities = [];
 
-  for (const url of endpoints) {
+  for (const base of baseEndpoints) {
     try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        opportunities = data.opportunitiesData || data.opportunities || [];
-        if (opportunities.length > 0) {
-          console.log(`  Fetched ${opportunities.length} opportunities from SAM.gov`);
+      const acc = [];
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const url = `${base}?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          // On any non-OK (including 429), stop paging this endpoint — no point burning quota.
+          if (page === 0) throw new Error(`SAM returned ${res.status}`);
           break;
         }
+        const data = await res.json();
+        const batch = data.opportunitiesData || data.opportunities || [];
+        acc.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+      }
+      if (acc.length > 0) {
+        opportunities = acc;
+        console.log(`  Fetched ${opportunities.length} opportunities from SAM.gov`);
+        break;
       }
     } catch (err) {
       console.log(`  SAM endpoint failed: ${err.message}`);
