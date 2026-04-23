@@ -63,7 +63,7 @@ const TICK_OVERLAP_GUARD_MS = 240 * 1000; // R4: skip active-step if another tic
 // NOT 'delta' (e.g. mid weekly_sweep, or re-backfill), this task is
 // suppressed to avoid cursor contention with the active step.
 // ---------------------------------------------------------------------------
-async function runHubzoneDelta(
+export async function runHubzoneDelta(
   supabase: SupabaseClient,
   runId: string,
   live: boolean,
@@ -142,7 +142,7 @@ type QueueRow = {
  * guard in runHubzoneDelta suppresses the delta task when
  * hubzone.mode != 'delta' to prevent cursor contention.
  */
-async function pickActiveCert(supabase: SupabaseClient): Promise<QueueRow | null> {
+export async function pickActiveCert(supabase: SupabaseClient): Promise<QueueRow | null> {
   const nowIso = new Date().toISOString();
   const overlapCutoff = new Date(Date.now() - TICK_OVERLAP_GUARD_MS).toISOString();
 
