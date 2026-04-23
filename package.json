@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test \"__tests__/**/*.test.ts\""
+    "test": "tsx --test \"__tests__/**/*.test.ts\"",
+    "pr1b:dryrun": "tsx scripts/pr1b-dryrun.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
