@@ -53,9 +53,15 @@ function nextStage(s: string): Stage {
 }
 
 const NB_STALE_MS = 60 * 60 * 1000; // 60 min
+const TICK_OVERLAP_GUARD_MS = 240 * 1000; // R4: skip active-step if another tick ran < 240s ago
 
 // ---------------------------------------------------------------------------
 // HUBZone delta — task (a)
+//
+// R3 guard: this task is the STATELESS daily delta for HUBZone and is
+// separate from the active-step path. If cert_queue_state.hubzone.mode is
+// NOT 'delta' (e.g. mid weekly_sweep, or re-backfill), this task is
+// suppressed to avoid cursor contention with the active step.
 // ---------------------------------------------------------------------------
 async function runHubzoneDelta(
   supabase: SupabaseClient,
@@ -64,6 +70,23 @@ async function runHubzoneDelta(
 ): Promise<Record<string, unknown>> {
   try {
     if (!live) return { task: "hubzone_delta", skipped: true, reason: "PIPELINE_LIVE!=1 (dry-run)" };
+
+    // R3: read hubzone.mode; suppress unless mode='delta'.
+    const { data: hzRow } = await supabase
+      .from("cert_queue_state")
+      .select("mode")
+      .eq("cert", "hubzone")
+      .single();
+    const hzMode = (hzRow?.mode ?? null) as PipelineMode | null;
+    if (hzMode !== "delta") {
+      return {
+        task: "hubzone_delta",
+        skipped: true,
+        reason: "mode_not_delta",
+        observed_mode: hzMode,
+      };
+    }
+
     const result = await ingest({ cert: "hubzone", mode: "delta" });
     return { task: "hubzone_delta", ...result };
   } catch (e: unknown) {
@@ -85,25 +108,86 @@ type QueueRow = {
   nb_job_id: string | null;
   nb_submitted_at: string | null;
   nb_batch_size: number | null;
+  last_tick_at: string | null;
   // PR 1a additions — schema from 20260422120000_cert_queue_pipeline_v2_schema.sql
   mode: PipelineMode | null;
   ingest_cursor: StageCursor;
   enrich_cursor: StageCursor;
   crawl_cursor: StageCursor;
+  sync_cursor: StageCursor;
   weekly_refresh_due_at: string | null;
   stage_started_at: string | null;
   rows_this_stage: number | null;
 };
 
+/**
+ * Pick the cert to work on this tick.
+ *
+ * Pick priority (highest to lowest):
+ *   1. Active-step cert: stage != 'done' AND (last_tick_at IS NULL OR
+ *      last_tick_at < now() - TICK_OVERLAP_GUARD_MS). The 240s guard
+ *      prevents overlapping Vercel ticks from double-processing the same
+ *      cert — Vercel cron does NOT dedupe concurrent invocations
+ *      (see plan §E4/R4).
+ *   2. Weekly-sweep due cert: stage='done' AND weekly_refresh_due_at < now().
+ *      When matched, the row is REWOUND to stage='ingest',
+ *      mode='weekly_sweep', cursors cleared, stage_started_at stamped,
+ *      rows_this_stage=0. Backfill_done_at is nulled so the active-step
+ *      picker will now match this row on subsequent ticks.
+ *   3. None → return null. Tick exits early after HUBZone delta task.
+ *
+ * Only ONE cert advances per tick. Overlap between HUBZone delta
+ * (runHubzoneDelta, runs independently) and this active-step picker is
+ * possible when the active cert == 'hubzone' AND mode='weekly_sweep'. R3
+ * guard in runHubzoneDelta suppresses the delta task when
+ * hubzone.mode != 'delta' to prevent cursor contention.
+ */
 async function pickActiveCert(supabase: SupabaseClient): Promise<QueueRow | null> {
-  const { data, error } = await supabase
+  const nowIso = new Date().toISOString();
+  const overlapCutoff = new Date(Date.now() - TICK_OVERLAP_GUARD_MS).toISOString();
+
+  // 1) Active-step cert: stage != 'done', not recently ticked.
+  const { data: active, error: aerr } = await supabase
     .from("cert_queue_state")
     .select("*")
     .neq("stage", "done")
+    .or(`last_tick_at.is.null,last_tick_at.lt.${overlapCutoff}`)
     .order("priority", { ascending: true })
     .limit(1);
-  if (error) throw new Error(`pickActiveCert: ${error.message}`);
-  return (data && (data[0] as QueueRow)) || null;
+  if (aerr) throw new Error(`pickActiveCert(active): ${aerr.message}`);
+  if (active && active.length > 0) return active[0] as QueueRow;
+
+  // 2) Weekly-sweep due: stage='done' AND weekly_refresh_due_at < now().
+  const { data: due, error: derr } = await supabase
+    .from("cert_queue_state")
+    .select("*")
+    .eq("stage", "done")
+    .lt("weekly_refresh_due_at", nowIso)
+    .order("weekly_refresh_due_at", { ascending: true })
+    .limit(1);
+  if (derr) throw new Error(`pickActiveCert(weekly): ${derr.message}`);
+  if (due && due.length > 0) {
+    const row = due[0] as QueueRow;
+    // Rewind for weekly sweep: back to ingest stage with mode='weekly_sweep',
+    // cursors cleared, stage_started_at stamped. backfill_done_at nulled so
+    // it no longer matches stage='done' for the next pick.
+    const rewind = {
+      stage: "ingest" as const,
+      mode: "weekly_sweep" as const,
+      ingest_cursor: null,
+      enrich_cursor: null,
+      crawl_cursor: null,
+      sync_cursor: null,
+      stage_started_at: nowIso,
+      rows_this_stage: 0,
+      backfill_done_at: null,
+      last_error: null,
+    };
+    await supabase.from("cert_queue_state").update(rewind).eq("cert", row.cert);
+    return { ...row, ...rewind } as QueueRow;
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +234,7 @@ async function runActiveStep(
           stepResult = { skipped: true, reason: "dry-run" };
           break;
         }
-        stepResult = await enrich({ cert });
+        stepResult = await enrich({ cert, cursor: row.enrich_cursor ?? null });
         break;
       }
       case "crawl": {
@@ -158,7 +242,7 @@ async function runActiveStep(
           stepResult = { skipped: true, reason: "dry-run" };
           break;
         }
-        stepResult = await crawl({ cert });
+        stepResult = await crawl({ cert, cursor: row.crawl_cursor ?? null });
         break;
       }
       case "verify_submit": {
@@ -277,7 +361,7 @@ async function runActiveStep(
           stepResult = { skipped: true, reason: "dry-run" };
           break;
         }
-        stepResult = await sync({ cert });
+        stepResult = await sync({ cert, cursor: row.sync_cursor ?? null });
         break;
       }
       default:
@@ -303,23 +387,39 @@ async function runActiveStep(
       };
     }
 
-    // --- Drain-loop aware advancement (PR 1a) -----------------------------
-    // In PR 1a only `ingest` returns the new DrainResult shape with a
-    // `done` field. If `done=false` we persist the cursor and stay on the
-    // stage. Other stages fall through to the legacy (!skipped && !error)
-    // advance rule — they will be migrated in PR 1b.
-    if (stage === "ingest" && typeof stepResult?.done === "boolean" && live) {
+    // --- Drain-loop aware advancement (PR 1b) -----------------------------
+    // ingest/enrich/crawl/sync all return DrainResult { done, next_cursor,
+    // inserted? }. When done=false we persist the next_cursor to the
+    // stage's cursor column, accumulate rows_this_stage, and stay on
+    // the stage. When done=true we fall through to the legacy advance
+    // path below, which additionally clears the stage cursor.
+    //
+    // verify_submit/verify_poll use customAdvance above and don't hit
+    // this block.
+    const CURSOR_COL: Record<string, string> = {
+      ingest: "ingest_cursor",
+      enrich: "enrich_cursor",
+      crawl: "crawl_cursor",
+      sync: "sync_cursor",
+    };
+    if (
+      CURSOR_COL[stage] &&
+      typeof stepResult?.done === "boolean" &&
+      live &&
+      !stepResult.skipped
+    ) {
       if (stepResult.done === false) {
         // Stage has more work. Persist cursor, accumulate rows_this_stage,
         // do NOT advance.
+        const patch: Record<string, unknown> = {
+          [CURSOR_COL[stage]]: stepResult.next_cursor ?? null,
+          last_error: null,
+          rows_this_stage:
+            (row.rows_this_stage ?? 0) + (stepResult.inserted ?? 0),
+        };
         await supabase
           .from("cert_queue_state")
-          .update({
-            ingest_cursor: stepResult.next_cursor ?? null,
-            last_error: null,
-            rows_this_stage:
-              (row.rows_this_stage ?? 0) + (stepResult.inserted ?? 0),
-          })
+          .update(patch)
           .eq("cert", cert);
         return {
           ...base,
@@ -328,8 +428,10 @@ async function runActiveStep(
           result: stepResult,
         };
       }
-      // done=true falls through to the normal advance path below, which
-      // additionally clears the ingest cursor.
+      // done=true falls through to normal advance. Accumulate the final
+      // inserted count into rows_this_stage so telemetry reflects the
+      // full stage total (the normal advance path resets it to 0 on
+      // stage change).
     }
     // ---------------------------------------------------------------------
 
@@ -345,7 +447,17 @@ async function runActiveStep(
       if (stage === "ingest") patch.ingest_cursor = null;
       if (stage === "enrich") patch.enrich_cursor = null;
       if (stage === "crawl") patch.crawl_cursor = null;
-      if (ns === "done") patch.backfill_done_at = new Date().toISOString();
+      if (stage === "sync") patch.sync_cursor = null;
+      if (ns === "done") {
+        const nowMs = Date.now();
+        patch.backfill_done_at = new Date(nowMs).toISOString();
+        // Mode transition on sync→done: promote backfill/weekly_sweep runs
+        // to steady-state 'delta' mode, and stamp the next weekly refresh
+        // so pickActiveCert's weekly-sweep branch can rewind the row in
+        // 7 days. Already-delta rows keep mode='delta' (no-op).
+        patch.mode = "delta";
+        patch.weekly_refresh_due_at = new Date(nowMs + 7 * 86400 * 1000).toISOString();
+      }
       await supabase.from("cert_queue_state").update(patch).eq("cert", cert);
     } else if (stepResult.error) {
       await supabase
