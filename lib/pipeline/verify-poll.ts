@@ -6,6 +6,7 @@
  */
 
 import { pipelineSupabase } from "./supabase";
+import type { DrainResult } from "./types";
 
 const NB_BASE = "https://api.neverbounce.com/v4";
 
@@ -40,13 +41,16 @@ async function nbJobResults(jobId: string): Promise<any[]> {
 
 export async function verifyPoll(
   opts: { cert: string; jobId: string },
-): Promise<{ done: boolean; valid?: number; invalid?: number; total?: number }> {
+): Promise<DrainResult> {
   const s = await nbJobStatus(opts.jobId);
   if (s.job_status !== "complete") {
     if (s.job_status === "failed" || s.job_status === "under_review") {
       throw new Error(`NB job ${opts.jobId} ended: ${s.job_status}`);
     }
-    return { done: false };
+    // Still running — orchestrator leaves cert_queue_state.nb_job_id intact
+    // and does not advance. waiting=true distinguishes "polling external"
+    // from "local work remaining" in logs/metrics.
+    return { done: false, waiting: true };
   }
 
   const supabase = pipelineSupabase();
@@ -54,6 +58,8 @@ export async function verifyPoll(
 
   let valid = 0;
   let invalid = 0;
+  let catchall = 0;
+  let unknown = 0;
   for (const r of rows) {
     const email =
       r?.data?.email ||
@@ -81,6 +87,8 @@ export async function verifyPoll(
     if (error) console.error(`  verify-poll update ${email}: ${error.message}`);
     if (status === "valid") valid += 1;
     else if (status === "invalid") invalid += 1;
+    else if (status === "catch-all") catchall += 1;
+    else unknown += 1;
   }
-  return { done: true, valid, invalid, total: rows.length };
+  return { done: true, valid, invalid, catchall, unknown, inserted: rows.length };
 }
