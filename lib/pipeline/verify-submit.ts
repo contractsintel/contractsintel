@@ -9,6 +9,7 @@
  */
 
 import { pipelineSupabase } from "./supabase";
+import type { DrainResult } from "./types";
 
 const NB_BASE = "https://api.neverbounce.com/v4";
 
@@ -54,10 +55,7 @@ async function nbCreateJob(emails: string[]): Promise<string> {
 
 export async function verifySubmit(
   opts: { cert: string; batchSize?: number },
-): Promise<
-  | { jobId: string; batchSize: number; credits: number | null }
-  | { skipped: true; reason: string; credits?: number | null }
-> {
+): Promise<DrainResult> {
   const supabase = pipelineSupabase();
   const floor = parseInt(process.env.NB_CREDIT_FLOOR || "5000", 10);
   const limit = opts.batchSize ?? parseInt(process.env.VERIFY_LIMIT || "200", 10);
@@ -65,10 +63,10 @@ export async function verifySubmit(
   const credits = await nbCredits();
   if (credits === null) {
     // fail-closed: can't confirm we're above floor, don't submit
-    return { skipped: true, reason: "nb_credits_unreadable", credits: null };
+    return { done: false, skipped: true, reason: "nb_credits_unreadable" };
   }
   if (credits < floor) {
-    return { skipped: true, reason: "nb_credit_floor", credits };
+    return { done: false, skipped: true, reason: "nb_credit_floor" };
   }
 
   // Pull a batch of leads scoped to this cert.
@@ -87,13 +85,20 @@ export async function verifySubmit(
     .order("id", { ascending: true })
     .limit(limit);
   if (error) throw new Error(`supabase read: ${error.message}`);
-  if (!leads?.length) return { skipped: true, reason: "nothing_to_verify", credits };
+  if (!leads?.length) {
+    // Nothing left to verify for this cert — stage is drained. done=true
+    // lets the orchestrator advance to sync.
+    return { done: true, skipped: true, reason: "nothing_to_verify" };
+  }
 
   const emails = leads.map((l: { email: string }) => l.email);
   if (credits < emails.length) {
-    return { skipped: true, reason: "nb_credits_below_batch", credits };
+    return { done: false, skipped: true, reason: "nb_credits_below_batch" };
   }
 
   const jobId = await nbCreateJob(emails);
-  return { jobId, batchSize: emails.length, credits };
+  // done=false because work continues in verify_poll (NB is async).
+  // Orchestrator reads jobId+batchSize and uses customAdvance to move
+  // to verify_poll stage while persisting nb_job_id on cert_queue_state.
+  return { done: false, jobId, batchSize: emails.length };
 }

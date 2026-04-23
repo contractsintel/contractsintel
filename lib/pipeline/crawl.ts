@@ -15,6 +15,7 @@ import https from "node:https";
 import crypto from "node:crypto";
 import { pipelineSupabase } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { DrainResult, StageCursor } from "./types";
 
 const PER_DOMAIN_DELAY = 1000;
 const FETCH_TIMEOUT_MS = 12_000;
@@ -215,7 +216,7 @@ async function waitForDomain(host: string): Promise<void> {
   domainLastFetch.set(host, Date.now());
 }
 
-type LeadRow = { id: string; uei: string; entity_url: string | null; company: string | null; primary_cert: string };
+type LeadRow = { id: number; uei: string; entity_url: string | null; company: string | null; primary_cert: string };
 
 async function crawlOne(
   supabase: SupabaseClient,
@@ -304,13 +305,40 @@ async function persistResult(
   if (error) console.error(`  update lead ${lead.id}: ${error.message}`);
 }
 
-export async function crawl(
-  opts: { cert: string; batchSize?: number },
-): Promise<{ processed: number; found: number }> {
-  const supabase = pipelineSupabase();
-  const limit = opts.batchSize ?? parseInt(process.env.CRAWL_LIMIT || "50", 10);
+/**
+ * Drain chunk / concurrency (env-tunable per §12 A1).
+ *
+ * At 12s fetch timeout × 4 paths × 200 leads / 10 workers ≈ 80s best case.
+ * Avg fetch is 2-5s per path when sites are responsive → ~40-80s wall
+ * clock for 200 leads at concurrency 10. Per-domain throttle
+ * (domainLastFetch, PER_DOMAIN_DELAY) preserved to stay polite when
+ * multiple leads share an apex.
+ */
+function crawlChunkSize(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_CRAWL_CHUNK || "200", 10);
+}
 
-  const { data: leads, error } = await supabase
+function crawlConcurrency(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_CRAWL_CONCURRENCY || "10", 10);
+}
+
+type CrawlCursor = { last_lead_id?: number };
+
+function readCrawlCursor(c: StageCursor): CrawlCursor {
+  if (!c || typeof c !== "object") return {};
+  const last = (c as CrawlCursor).last_lead_id;
+  return typeof last === "number" ? { last_lead_id: last } : {};
+}
+
+export async function crawl(
+  opts: { cert: string; cursor?: StageCursor },
+): Promise<DrainResult> {
+  const supabase = pipelineSupabase();
+  const chunk = crawlChunkSize();
+  const concurrency = Math.max(1, crawlConcurrency());
+  const cursor = readCrawlCursor(opts.cursor ?? null);
+
+  let q = supabase
     .from("leads")
     .select("id, uei, entity_url, company, primary_cert")
     .eq("primary_cert", opts.cert)
@@ -318,25 +346,45 @@ export async function crawl(
     .is("crawl_attempted_at", null)
     .eq("ingest_tier", "primary")
     .not("entity_url", "is", null)
-    .limit(limit);
+    .order("id", { ascending: true })
+    .limit(chunk);
+  if (cursor.last_lead_id != null) q = q.gt("id", cursor.last_lead_id);
+  const { data: leads, error } = await q;
   if (error) throw new Error(`supabase read: ${error.message}`);
-  if (!leads?.length) return { processed: 0, found: 0 };
+  if (!leads?.length) {
+    return { done: true, inserted: 0, reason: "nothing_to_crawl" };
+  }
 
+  const rows = leads as unknown as LeadRow[];
   let processed = 0;
   let found = 0;
-  // Serial, not pooled — keeps us well inside the 300s Vercel ceiling and
-  // avoids the original's 25-way domain concurrency (most leads per tick are
-  // a different apex anyway). Reduces memory for cold-starts.
-  for (const lead of leads as LeadRow[]) {
-    try {
-      const r = await crawlOne(supabase, lead);
-      await persistResult(supabase, r);
-      processed += 1;
-      if (r.status === "ok") found += 1;
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`  crawl ${lead.id} FAIL: ${msg}`);
+  let maxId = cursor.last_lead_id ?? 0;
+  let idx = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const myIdx = idx++;
+      if (myIdx >= rows.length) return;
+      const lead = rows[myIdx];
+      if (lead.id > maxId) maxId = lead.id;
+      try {
+        const r = await crawlOne(supabase, lead);
+        await persistResult(supabase, r);
+        processed += 1;
+        if (r.status === "ok") found += 1;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(`  crawl ${lead.id} FAIL: ${msg}`);
+      }
     }
   }
-  return { processed, found };
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+  const drained = rows.length < chunk;
+  return {
+    done: drained,
+    next_cursor: drained ? null : { last_lead_id: maxId },
+    inserted: found,
+    requests: processed,
+  };
 }

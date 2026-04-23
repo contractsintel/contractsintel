@@ -8,9 +8,11 @@
  */
 
 import { pipelineSupabase } from "./supabase";
+import type { DrainResult, StageCursor } from "./types";
 
 const SBS_URL = "https://search.certifications.sba.gov/_api/v2/search";
 const DELAY_MS = 2500;
+const CIRCUIT_BREAK_429S = 3; // R5: halt on 3 consecutive 429s
 const USER_AGENT = "ContractsIntelBot/1.0 (+https://contractsintel.com/bot)";
 
 const GENERIC_PREFIXES = new Set([
@@ -106,16 +108,83 @@ function extractEmailCandidate(hit: any): EmailCandidate {
   return { email: raw, score, domain };
 }
 
+/**
+ * Drain chunk size (per tick). Env-tunable per §12 A1. Default 500 leads
+ * per tick, 5-way concurrency → ~250s wall-clock at 2500ms/call per
+ * worker. Stays under 300s Vercel ceiling.
+ */
+function enrichChunkSize(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_ENRICH_CHUNK || "500", 10);
+}
+
+function enrichConcurrency(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_ENRICH_CONCURRENCY || "5", 10);
+}
+
+type EnrichCursor = { last_lead_id?: number };
+
+function readCursor(c: StageCursor): EnrichCursor {
+  if (!c || typeof c !== "object") return {};
+  const last = (c as EnrichCursor).last_lead_id;
+  return typeof last === "number" ? { last_lead_id: last } : {};
+}
+
+/**
+ * Process one lead against SBS. Returns {ok, enriched, rateLimited}.
+ * rateLimited surfaces 429s so the caller's circuit breaker can halt.
+ */
+async function processLead(
+  supabase: ReturnType<typeof pipelineSupabase>,
+  lead: { id: number; uei: string; entity_url: string | null },
+): Promise<{ ok: boolean; enriched: boolean; rateLimited: boolean }> {
+  try {
+    const r = await sbsLookup(lead.uei);
+    if (r.status === 429) return { ok: false, enriched: false, rateLimited: true };
+    if (!r.ok || !r.results.length) return { ok: true, enriched: false, rateLimited: false };
+    const hit = r.results[0];
+    const cand = extractEmailCandidate(hit);
+    const update: Record<string, unknown> = {};
+    if (hit.phone) update.phone = hit.phone;
+    if (hit.contact_person) {
+      const { first, last } = splitName(hit.contact_person);
+      update.first_name = first;
+      update.last_name = last;
+    }
+    if (hit.website && !lead.entity_url) update.entity_url = hit.website;
+    let enriched = false;
+    if (cand && !("reject" in cand)) {
+      const tag = qualityTag(cand.score);
+      if (tag) {
+        update.email = cand.email;
+        update.email_quality = tag.quality;
+        update.email_source = tag.source;
+        enriched = true;
+      }
+    }
+    if (Object.keys(update).length) {
+      const { error: uerr } = await supabase.from("leads").update(update).eq("id", lead.id);
+      if (uerr) console.error(`  update ${lead.uei}: ${uerr.message}`);
+    }
+    return { ok: true, enriched, rateLimited: false };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`  sbs ${lead.uei} FAIL: ${msg}`);
+    return { ok: false, enriched: false, rateLimited: false };
+  }
+}
+
 export async function enrich(
-  opts: { cert: string; batchSize?: number },
-): Promise<{ processed: number; enriched: number }> {
+  opts: { cert: string; cursor?: StageCursor },
+): Promise<DrainResult> {
   const supabase = pipelineSupabase();
-  const limit = opts.batchSize ?? parseInt(process.env.SBS_LIMIT || "50", 10);
+  const chunk = enrichChunkSize();
+  const concurrency = Math.max(1, enrichConcurrency());
+  const cursor = readCursor(opts.cursor ?? null);
 
   // cert-scoped queue: leads of this primary_cert still missing email
-  // after crawl. Matches enrich-leads-via-sbs.js semantics but bounded by
-  // `cert` so the orchestrator only enriches its active cert.
-  const { data: leads, error } = await supabase
+  // after crawl. Paginated by id > cursor.last_lead_id so drains
+  // monotonically across ticks.
+  let q = supabase
     .from("leads")
     .select("id, uei, company, entity_url, crawl_status, email")
     .eq("ingest_tier", "primary")
@@ -123,47 +192,71 @@ export async function enrich(
     .is("email", null)
     .in("crawl_status", ["no_email", "fetch_fail", "robots_disallow", "skip_social_media"])
     .not("uei", "is", null)
-    .limit(limit);
+    .order("id", { ascending: true })
+    .limit(chunk);
+  if (cursor.last_lead_id != null) q = q.gt("id", cursor.last_lead_id);
+  const { data: leads, error } = await q;
   if (error) throw new Error(`supabase read: ${error.message}`);
-  if (!leads?.length) return { processed: 0, enriched: 0 };
-
-  let enriched = 0;
-  let processed = 0;
-  for (const lead of leads) {
-    processed += 1;
-    try {
-      const r = await sbsLookup(lead.uei);
-      if (r.ok && r.results.length) {
-        const hit = r.results[0];
-        const cand = extractEmailCandidate(hit);
-        const update: Record<string, unknown> = {};
-        if (hit.phone) update.phone = hit.phone;
-        if (hit.contact_person) {
-          const { first, last } = splitName(hit.contact_person);
-          update.first_name = first;
-          update.last_name = last;
-        }
-        if (hit.website && !lead.entity_url) update.entity_url = hit.website;
-        if (cand && !("reject" in cand)) {
-          const tag = qualityTag(cand.score);
-          if (tag) {
-            update.email = cand.email;
-            update.email_quality = tag.quality;
-            update.email_source = tag.source;
-            enriched += 1;
-          }
-        }
-        if (Object.keys(update).length) {
-          const { error: uerr } = await supabase.from("leads").update(update).eq("id", lead.id);
-          if (uerr) console.error(`  update ${lead.uei}: ${uerr.message}`);
-        }
-      }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error(`  sbs ${lead.uei} FAIL: ${msg}`);
-    }
-    await new Promise((r) => setTimeout(r, DELAY_MS));
+  if (!leads?.length) {
+    return { done: true, inserted: 0, reason: "nothing_to_enrich" };
   }
 
-  return { processed, enriched };
+  const rows = leads as unknown as { id: number; uei: string; entity_url: string | null }[];
+
+  // Concurrency pool + R5 circuit breaker on CIRCUIT_BREAK_429S consecutive 429s.
+  // Each worker processes from a shared queue with per-worker DELAY_MS between
+  // its own calls, preserving politeness at effective rate ~concurrency/DELAY_MS
+  // req/s against SBS (5/2.5s = 2 req/s default).
+  let enriched = 0;
+  let processed = 0;
+  let maxId = cursor.last_lead_id ?? 0;
+  let consecutive429 = 0;
+  let circuitBroken = false;
+  let idx = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      if (circuitBroken) return;
+      const myIdx = idx++;
+      if (myIdx >= rows.length) return;
+      const lead = rows[myIdx];
+      const r = await processLead(supabase, lead);
+      processed += 1;
+      if (lead.id > maxId) maxId = lead.id;
+      if (r.rateLimited) {
+        consecutive429 += 1;
+        if (consecutive429 >= CIRCUIT_BREAK_429S) {
+          console.warn(`  [enrich] circuit break: ${consecutive429} consecutive 429s`);
+          circuitBroken = true;
+          return;
+        }
+      } else {
+        consecutive429 = 0;
+      }
+      if (r.enriched) enriched += 1;
+      await new Promise((r2) => setTimeout(r2, DELAY_MS));
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+  // Done criterion: drained if we processed fewer than chunk OR returned
+  // fewer than chunk from the DB. Circuit-broken means done=false so we
+  // retry next tick from the cursor position (not all rows processed).
+  if (circuitBroken) {
+    return {
+      done: false,
+      next_cursor: { last_lead_id: maxId },
+      inserted: enriched,
+      requests: processed,
+      reason: "sbs_rate_limited",
+    };
+  }
+  const drained = rows.length < chunk;
+  return {
+    done: drained,
+    next_cursor: drained ? null : { last_lead_id: maxId },
+    inserted: enriched,
+    requests: processed,
+  };
 }

@@ -52,9 +52,21 @@ const GENERIC_PREFIXES = new Set([
 
 // Pagination / pacing
 const PAGE_SIZE = 10;
-const DELTA_MAX_PAGES = 50;
+const DELTA_MAX_PAGES = 50; // Historic cap (single-tick legacy).
 const PAGINATED_INTERVAL_MS = 90_000;
 const DELTA_LOOKBACK_DAYS = 2;
+
+// PR 1b: per-tick caps for delta pagination. Delta usually drains in ≤5
+// pages on a healthy daily cadence; 10 pages leaves headroom for catch-up
+// after a short outage without risking the 300s Vercel ceiling.
+function deltaPagesPerTick(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_DELTA_PAGES_PER_TICK || "10", 10);
+}
+
+// PR 1b: Extract token staleness — if cursor.started_at is older than this,
+// treat the token as dead and start a fresh extract. SAM tokens remain
+// valid for several hours in practice; 60 min is a conservative floor.
+const EXTRACT_TOKEN_MAX_AGE_MS = 60 * 60 * 1000;
 
 // Extract polling — reduced ceilings vs original to fit inside the Vercel
 // 300s route budget. If the extract isn't ready within ~4 min we throw and
@@ -363,26 +375,92 @@ async function fetchPage(
   return { entities: json.entityData || json.entities || [] };
 }
 
+// ---- cursor types --------------------------------------------------------
+/**
+ * Delta cursor persisted on cert_queue_state.ingest_cursor between ticks.
+ * Tracks which page of the /entities lastUpdateDate search we resume from.
+ * Empty cursor = fresh delta (starts at page 0, re-derives lastUpdateFrom).
+ */
+type DeltaCursor = { page?: number; lastUpdateFrom?: string };
+
+/**
+ * Backfill cursor. When extract_token is set, the next tick resumes the
+ * poll on that token (skipping startExtract). started_at guards against
+ * stale tokens (see EXTRACT_TOKEN_MAX_AGE_MS).
+ */
+type BackfillCursor = { extract_token?: string; started_at?: string };
+
+function readDeltaCursor(c: StageCursor): DeltaCursor {
+  if (!c || typeof c !== "object") return {};
+  const page = (c as DeltaCursor).page;
+  const luf = (c as DeltaCursor).lastUpdateFrom;
+  return {
+    page: typeof page === "number" ? page : undefined,
+    lastUpdateFrom: typeof luf === "string" ? luf : undefined,
+  };
+}
+
+function readBackfillCursor(c: StageCursor): BackfillCursor {
+  if (!c || typeof c !== "object") return {};
+  const tok = (c as BackfillCursor).extract_token;
+  const st = (c as BackfillCursor).started_at;
+  return {
+    extract_token: typeof tok === "string" ? tok : undefined,
+    started_at: typeof st === "string" ? st : undefined,
+  };
+}
+
+// ---- Backfill poll — bounded-time variant for PR 1b ---------------------
+/**
+ * One bounded poll window against an existing extract token. Returns:
+ *   ready:  buffer + contentType
+ *   pending: token is valid but file not ready this tick → persist cursor
+ *   failed: terminal error → caller throws
+ *
+ * Note: pollExtract (existing) throws on timeout; this wraps it and maps
+ * the timeout to pending instead so the orchestrator can stay on stage.
+ */
+async function pollExtractBounded(
+  apiKey: string,
+  token: string,
+  cert: string,
+): Promise<
+  | { kind: "ready"; buffer: Buffer; contentType: string }
+  | { kind: "pending" }
+> {
+  try {
+    const { buffer, contentType } = await pollExtract(apiKey, token, cert);
+    return { kind: "ready", buffer, contentType };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/TIMEOUT/i.test(msg)) return { kind: "pending" };
+    throw e; // non-timeout errors propagate
+  }
+}
+
 // ---- public API ----------------------------------------------------------
 /**
- * PR 1a: signature updated to accept `cursor` and return `DrainResult`.
+ * Cursor-aware, drain-loop-compatible ingest.
  *
- * Behavior is unchanged from the previous single-pass implementation — every
- * invocation completes the full ingest (delta paginates through its own loop
- * inline; backfill waits for the Extract file). Therefore every return path
- * reports `done: true, next_cursor: null`. PR 1b replaces the inline loops
- * with bounded per-tick work + a real cursor so the orchestrator can drain
- * across many ticks.
+ *   mode='delta'       → paginated /entities with lastUpdateDate.
+ *                        Cursor: { page, lastUpdateFrom }. Caps at
+ *                        deltaPagesPerTick() (default 10) pages per tick.
+ *                        done=true when a page returns < PAGE_SIZE or the
+ *                        per-tick page cap is hit and the final page was
+ *                        short (drained); else done=false with next page.
  *
- * `weekly_sweep` is accepted as an alias for backfill in PR 1a (no
- * distinction until PR 1b routes it).
+ *   mode='backfill'    → SAM Extract bulk-dump. Cursor: { extract_token,
+ *   mode='weekly_sweep'  started_at }. If cursor has a fresh token, poll
+ *                        it (skipping startExtract). On poll timeout,
+ *                        return done=false with the same cursor so the
+ *                        next tick resumes. On ready, parse + upsert,
+ *                        done=true. Stale tokens (> EXTRACT_TOKEN_MAX_AGE)
+ *                        are discarded and a fresh extract is started.
  */
 export async function ingest(
   opts: { cert: string; mode: PipelineMode; cursor?: StageCursor },
 ): Promise<DrainResult> {
   const { cert, mode } = opts;
-  // cursor is intentionally ignored in PR 1a; wired for orchestrator parity only.
-  void opts.cursor;
 
   const filter = CERT_FILTERS.find((c) => c.cert === cert);
   if (!filter) {
@@ -400,37 +478,96 @@ export async function ingest(
 
   const supabase = pipelineSupabase();
 
+  // ------------------------------------------------------------------ delta
   if (mode === "delta") {
-    const since = new Date(Date.now() - DELTA_LOOKBACK_DAYS * 86_400_000);
+    const cursor = readDeltaCursor(opts.cursor ?? null);
     const pad = (n: number) => String(n).padStart(2, "0");
-    const lastUpdateFrom = `${pad(since.getMonth() + 1)}/${pad(since.getDate())}/${since.getFullYear()}`;
-    console.log(`  [delta:${cert}] since ${lastUpdateFrom}`);
+
+    // Preserve lastUpdateFrom across ticks — on the first tick we derive
+    // from DELTA_LOOKBACK_DAYS; subsequent ticks reuse the cursor's value
+    // so paging stays consistent even if midnight rolls over mid-drain.
+    let lastUpdateFrom = cursor.lastUpdateFrom;
+    if (!lastUpdateFrom) {
+      const since = new Date(Date.now() - DELTA_LOOKBACK_DAYS * 86_400_000);
+      lastUpdateFrom = `${pad(since.getMonth() + 1)}/${pad(since.getDate())}/${since.getFullYear()}`;
+    }
+    const startPage = cursor.page ?? 0;
+    const pagesPerTick = deltaPagesPerTick();
+    console.log(`  [delta:${cert}] since ${lastUpdateFrom} from page ${startPage}`);
 
     const rows: Record<string, unknown>[] = [];
     let requests = 0;
-    for (let page = 0; page < DELTA_MAX_PAGES; page++) {
+    let page = startPage;
+    let lastPageSize = PAGE_SIZE;
+    let pagesThisTick = 0;
+    for (; pagesThisTick < pagesPerTick; page++, pagesThisTick++) {
       const { entities } = await fetchPage(apiKey, filter, page, lastUpdateFrom);
       requests += 1;
+      lastPageSize = entities.length;
       if (!entities.length) break;
       for (const e of entities) {
         const row = toLeadRow(e);
         if (row) rows.push(row);
       }
       if (entities.length < PAGE_SIZE) break;
-      // Cap pacing so we never blow the 300s route budget during delta.
-      // Delta runs are typically <5 pages for HUBZone daily.
+      // Inter-page politeness; capped well under Vercel ceiling.
       await sleep(Math.min(PAGINATED_INTERVAL_MS, 20_000));
     }
     const { inserted } = await upsertRows(supabase, rows);
-    return { done: true, next_cursor: null, requests, inserted };
+
+    // Drained iff the last page we fetched was short (or empty).
+    const drained = lastPageSize < PAGE_SIZE;
+    if (drained) {
+      return { done: true, next_cursor: null, requests, inserted };
+    }
+    // More pages remain — persist cursor for next tick.
+    return {
+      done: false,
+      next_cursor: { page, lastUpdateFrom },
+      requests,
+      inserted,
+    };
   }
 
-  // backfill (also weekly_sweep in PR 1a — same code path until PR 1b)
+  // --------------------------------------------------------- backfill/sweep
+  // (weekly_sweep uses the same code path; orchestrator differentiates via
+  // mode transitions, not ingest internals.)
+  const bfCursor = readBackfillCursor(opts.cursor ?? null);
+  let token = bfCursor.extract_token;
+  let startedAt = bfCursor.started_at;
   let requests = 0;
-  const token = await startExtract(apiKey, filter);
+
+  // Stale token → discard and start fresh.
+  if (token && startedAt) {
+    const age = Date.now() - new Date(startedAt).getTime();
+    if (!isFinite(age) || age > EXTRACT_TOKEN_MAX_AGE_MS) {
+      console.warn(`  [backfill:${cert}] cursor token stale (age=${Math.round(age / 1000)}s); discarding`);
+      token = undefined;
+      startedAt = undefined;
+    }
+  }
+
+  // Start a new extract if we don't have a live token.
+  if (!token) {
+    token = await startExtract(apiKey, filter);
+    startedAt = new Date().toISOString();
+    requests += 1;
+  }
+
+  const pollResult = await pollExtractBounded(apiKey, token, cert);
   requests += 1;
-  const { buffer, contentType } = await pollExtract(apiKey, token, cert);
-  requests += 1;
+  if (pollResult.kind === "pending") {
+    // File not ready this tick — persist cursor, stay on stage.
+    console.log(`  [backfill:${cert}] extract pending; next tick will resume token`);
+    return {
+      done: false,
+      next_cursor: { extract_token: token, started_at: startedAt },
+      requests,
+      inserted: 0,
+    };
+  }
+
+  const { buffer, contentType } = pollResult;
   await persistRawFile(supabase, cert, buffer, contentType);
   const entities = parseExtractFile(buffer, contentType);
   const rows: Record<string, unknown>[] = [];
