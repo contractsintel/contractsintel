@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pipelineSupabase } from "./supabase";
+import type { DrainResult, StageCursor } from "./types";
 
 const INSTANTLY_BASE = "https://api.instantly.ai/api/v2";
 
@@ -121,9 +122,25 @@ async function syncLead(
   return { status: "fail_5xx", code: status };
 }
 
+/**
+ * Drain chunk size (per tick). Env-tunable per §12 A1 — allows dialing
+ * down in prod if we see Instantly 429s without a code deploy.
+ */
+function syncChunkSize(): number {
+  return parseInt(process.env.PIPELINE_DRAIN_SYNC_CHUNK || "100", 10);
+}
+
+type SyncCursor = { last_lead_id?: number };
+
+function readCursor(c: StageCursor): SyncCursor {
+  if (!c || typeof c !== "object") return {};
+  const last = (c as SyncCursor).last_lead_id;
+  return typeof last === "number" ? { last_lead_id: last } : {};
+}
+
 export async function sync(
-  opts: { cert: string },
-): Promise<{ synced: number; skipped?: boolean; reason?: string }> {
+  opts: { cert: string; cursor?: StageCursor },
+): Promise<DrainResult> {
   const supabase = pipelineSupabase();
   const cert = opts.cert.toLowerCase();
   const SYNC_ALLOWED_CERTS = (process.env.SYNC_ALLOWED_CERTS || "hubzone")
@@ -132,6 +149,8 @@ export async function sync(
     .map((s) => s.trim())
     .filter(Boolean);
   const ALLOW_RUNNING = process.env.ALLOW_RUNNING === "1";
+  const chunk = syncChunkSize();
+  const cursor = readCursor(opts.cursor ?? null);
 
   // Dual gate — DB flag AND env allow-list.
   const { data: qs, error: qerr } = await supabase
@@ -142,11 +161,14 @@ export async function sync(
   const dbOk = !qerr && qs?.sync_enabled === true;
   const envOk = SYNC_ALLOWED_CERTS.includes(cert);
   if (!dbOk || !envOk) {
-    return { synced: 0, skipped: true, reason: `sync_gate(db=${dbOk},env=${envOk})` };
+    // Gate closed — skipped, but done=true so the orchestrator advances
+    // to 'done' rather than looping the same refusal forever. The sync
+    // gate belongs upstream (orchestrator also gates before calling us).
+    return { done: true, skipped: true, reason: `sync_gate(db=${dbOk},env=${envOk})` };
   }
 
-  // Eligible leads for this cert.
-  const { data: eligible, error } = await supabase
+  // Eligible leads for this cert — paginated by id > cursor.last_lead_id.
+  let q = supabase
     .from("leads")
     .select(
       "id, email, first_name, last_name, company, phone, uei, naics_codes, " +
@@ -160,23 +182,35 @@ export async function sync(
     .eq("primary_cert", cert)
     .eq("ingest_tier", "primary")
     .not("email", "is", null)
-    .limit(parseInt(process.env.SYNC_LIMIT || "800", 10));
+    .order("id", { ascending: true })
+    .limit(chunk);
+  if (cursor.last_lead_id != null) {
+    q = q.gt("id", cursor.last_lead_id);
+  }
+  const { data: eligible, error } = await q;
   if (error) throw new Error(`supabase read: ${error.message}`);
-  if (!eligible?.length) return { synced: 0, skipped: true, reason: "nothing_to_sync" };
+  if (!eligible?.length) {
+    // Drained — no more eligible leads past the cursor.
+    return { done: true, inserted: 0, reason: "nothing_to_sync" };
+  }
 
   // Campaign pause precheck.
   const campaignId = CAMPAIGN_MAP[cert];
   const { status: cStatus, body: cBody } = await instantlyRequest(`/campaigns/${campaignId}`);
   const running = cStatus === 200 && cBody?.status === 1;
   if (running && !ALLOW_RUNNING) {
-    return { synced: 0, skipped: true, reason: "campaign_running" };
+    // Campaign is running — refuse to add more leads mid-flight. done=false
+    // so we stay on stage and retry next tick (e.g. after the user pauses).
+    return { done: false, skipped: true, reason: "campaign_running" };
   }
 
   let synced = 0;
+  let maxId = cursor.last_lead_id ?? 0;
   const rowsAll = eligible as unknown as any[];
   for (let i = 0; i < rowsAll.length; i += BATCH_SIZE) {
     const rows = rowsAll.slice(i, i + BATCH_SIZE);
     for (const row of rows) {
+      if (row.id > maxId) maxId = row.id;
       if (row.registration_status && !/^(A|active)$/i.test(row.registration_status)) continue;
       const r = await syncLead(supabase, row);
       if (r.status === "ok" || r.status === "dup") synced += 1;
@@ -184,5 +218,15 @@ export async function sync(
       else await sleep(250);
     }
   }
-  return { synced };
+
+  // Done criterion: fewer than chunk rows returned means we drained the
+  // tail. Advance the cursor regardless (idempotent — next tick will
+  // re-query and get zero if we're done).
+  const drained = rowsAll.length < chunk;
+  return {
+    done: drained,
+    next_cursor: drained ? null : { last_lead_id: maxId },
+    inserted: synced,
+    requests: rowsAll.length,
+  };
 }
