@@ -3,88 +3,111 @@
 **Status:** DRAFT. Do not send until Raphael reviews.
 **Target channel:** SAM.gov Federal Service Desk (fsd.gov) support ticket, category "API / Data Services".
 **Account email:** rafihertz@gmail.com (ContractsIntel production key holder).
-**Previous tickets:**
-- SAM-65df4126… (earlier burn / key-rotation request, Apr 2026)
-- SAM-40cc23bb… (Apr 21 rotation confirmation)
+**Previous tickets:** First support contact — no prior ticket IDs on file.
 
 ---
 
 ## Summary of the problem
 
-Our production SAM API key appears to have been placed on a **custom, punitive-tier quota of roughly 17 requests per day**. This is orders of magnitude below the standard documented tiers (non-federal public: 1,000/day; federal system account: 10,000/day) and makes the Opportunities API effectively unusable for our production ingest.
+Our production SAM API key appears to be on a **custom daily quota substantially below the standard public tier**. We are routinely hitting HTTP 429 with WSO2 APIM code `900804` ("Message throttled out") with `nextAccessTime` pinned to the next UTC midnight — the signature of a daily-bucket tier, not a sliding per-minute rate limit.
 
-We believe this is a residual abuse-response flag from an earlier incident where our prior key was externally burned (reported in ticket SAM-65df4126…). The key was rotated on Apr 21, 2026 (confirmed in ticket SAM-40cc23bb…), and an in-house health probe on Apr 23 00:05 UTC returned a clean HTTP 200. However, within the first ~17 requests on Apr 23, the new key began returning WSO2 APIM throttle code `900804` ("Message throttled out") with `nextAccessTime` fixed at the next UTC midnight — the signature of a daily-bucket tier, not a per-minute rate limit.
+The standard documented tiers are 1,000 requests/day (non-federal public) and 10,000 requests/day (federal system account). Our observed behavior is far below either. We are requesting restoration to a standard tier so our production ingest can resume.
 
-We are requesting a **restoration to the standard 1,000/day (or higher federal-system) tier** so that our scheduled ingest can resume.
+We believe this is a residual abuse-response flag from an incident in which our prior key was externally burned between approximately Apr 15 and Apr 22, 2026. We rotated the key on our end on Apr 21, 2026; this is our first formal support contact. The rotated key appears to have inherited the account-level punitive throttle.
 
 ## Evidence
 
-**1. Call accounting for Apr 23, 2026 UTC (new key, post-rotation):**
+### Exhibit A — Controlled probe on 2026-04-24 (rotated key)
 
-| # | Time (UTC)  | Call                                                 | Result        |
-|---|-------------|------------------------------------------------------|---------------|
-| 1 | 00:05       | Entity health probe (`/entity-information/v3/entities?size=1`) | HTTP 200      |
-| 2–11 | hourly 01:00–10:00 | `opportunities/v2/search` cron (1 call each tick) | HTTP 200      |
-| 12–17 | ~14:00  | Backfill script, pages 0–5                           | HTTP 200      |
-| 18 | ~14:00     | Backfill script, page 6                              | **HTTP 429 `900804`** |
+A single controlled request with minimal parameters, sent today:
 
-Total successful requests before throttle: **17**. No burst; calls spaced across 14 hours.
+```
+GET https://api.sam.gov/opportunities/v2/search
+    ?api_key=<redacted>
+    &postedFrom=04/22/2026
+    &postedTo=04/22/2026
+    &limit=1
+    &offset=0
+Accept: application/json
+```
 
-**2. Throttle response body (representative):**
+Response:
 
-```json
+```
+HTTP/1.1 429
+Content-Length: 201
+
 {
-  "fault": {
-    "code": 900804,
-    "message": "Message throttled out",
-    "description": "You have exceeded your quota. Please wait until the next access window.",
-    "nextAccessTime": "2026-04-24T00:00:00Z"
-  }
+  "code": "900804",
+  "message": "Message throttled out",
+  "description": "You have exceeded your quota .You can access API after 2026-Apr-25 00:00:00+0000 UTC",
+  "nextAccessTime": "2026-Apr-25 00:00:00+0000 UTC"
 }
 ```
 
-`nextAccessTime` pinned to midnight UTC is consistent with a daily-bucket tier — not a sliding per-minute rate limit.
+**This was request number 1 of the day from our rotated key.** The 429 on the first request of a fresh UTC day — together with `nextAccessTime` set to the following UTC midnight — indicates a daily bucket that has effectively zero headroom under normal use, far below the 1,000/day non-federal tier.
 
-**3. Absence of rate-limit headers:**
-Responses do not include `X-RateLimit-Limit` / `X-RateLimit-Remaining` headers. This matches SAM's documented behavior for keys on custom tiers provisioned by manual desk action, rather than the standard public-tier defaults.
+### Exhibit B — Earlier capture in our audit table (2026-04-19)
 
-**4. Prior incident context (ticket SAM-65df4126…):**
-Our previous key was compromised externally between approximately Apr 15 and Apr 22. During that window, the attacker's requests would have counted against our account. We suspect the abuse flag triggered by that burst was not cleared when the key was rotated on Apr 21 — the new key inherited the account-level punitive tier.
+Verbatim row from our `cron_alerts` audit table, written at 2026-04-19 23:05 UTC by our cert-pipeline HUBZone delta ingest when it received a 429 on its first SAM call of that tick:
+
+```json
+{
+  "code": "900804",
+  "message": "Message throttled out",
+  "description": "You have exceeded your quota .You can access API after 2026-Apr-20 00:00:00+0000 UTC",
+  "nextAccessTime": "2026-Apr-20 00:00:00+0000 UTC"
+}
+```
+
+Same shape as Exhibit A. `nextAccessTime` pinned to midnight UTC in both cases.
+
+### Exhibit C — Response-header signature
+
+Our throttle responses do not include `X-RateLimit-Limit` or `X-RateLimit-Remaining` headers, which we understand is consistent with keys provisioned on a custom tier by manual desk action rather than the standard public-tier defaults.
+
+### On daily-ceiling quantification
+
+We are deliberately not citing a specific per-day call count. Our cron route that hits `api.sam.gov` does not write a per-request audit row on failure (the route returns a summary response and logs to stdout), so we cannot produce a verified hourly call log from yesterday without reconstructing from inference — which we want to avoid in a support appeal. The controlled single-call probe in Exhibit A is, by itself, sufficient evidence that the effective daily bucket is well below 1,000.
+
+We are happy to run a controlled probe-plus-burst sequence the day after any tier restoration and share the full request/response log, so your team can verify the new tier is applied correctly.
 
 ## What we're asking for
 
-1. **Confirm** whether our account / key (`contractsintel prod`, associated email `rafihertz@gmail.com`) is currently on a custom / punitive tier.
-2. **Clear** the abuse-response flag associated with the prior-key burn incident (ticket SAM-65df4126…).
-3. **Restore** the key to the standard **1,000 requests / day** non-federal tier, or — given our use case is a legitimate federal-opportunity ingest for a production SaaS (ContractsIntel) that serves HUBZone / 8(a) / SDVOSB / WOSB contractors — upgrade to the **federal system-account tier (10,000/day)** if we qualify.
+1. **Confirm** whether our account / key (associated email `rafihertz@gmail.com`) is currently on a custom / punitive tier.
+2. **Clear** the abuse-response flag associated with the prior-key burn incident (Apr 15–22, 2026).
+3. **Restore** the key to the standard **1,000 requests / day** non-federal tier, or — given our use case is a legitimate federal-opportunity ingest for a production SaaS (ContractsIntel, https://contractsintel.com) serving HUBZone / 8(a) / SDVOSB / WOSB contractors — upgrade to the **federal system-account tier (10,000/day)** if we qualify.
 
 ## Business impact
 
-ContractsIntel is a production SaaS that surfaces federal contracting opportunities to certified small-business contractors (HUBZone, 8(a), SDVOSB, WOSB). Our May 4, 2026 HUBZone cold-outbound launch depends on daily SAM Opportunities ingest. At a 17-req/day ceiling we cannot maintain a usable opportunity feed. We have already disabled our hourly ingest cron (commit [TODO: paste hash]) to stop burning quota while this ticket is open.
+ContractsIntel (https://contractsintel.com) is a production SaaS that surfaces federal contracting opportunities to certified small-business contractors (HUBZone, 8(a), SDVOSB, WOSB). Our May 4, 2026 HUBZone cold-outbound launch depends on daily SAM Opportunities ingest. At the current effective ceiling we cannot maintain a usable opportunity feed. We have already disabled our hourly ingest cron (commit `dc83e9b` on github.com/contractsintel/contractsintel main) to stop consuming any further quota while this ticket is open.
 
 ## Mitigations we've already put in place
 
-- Rotated the compromised key on Apr 21, 2026 (ticket SAM-40cc23bb…).
-- Disabled the hourly `scrape-opportunities` Vercel cron (PR #14 on github.com/contractsintel/contractsintel) to prevent further quota burn.
-- Updated our one-shot backfill script to upsert per-page incrementally so that any partial progress survives a 429 (commit on branch `fix/backfill-incremental-upsert`).
-- Scheduled a daily probe at 00:05 UTC to confirm key health without consuming meaningful quota.
+- Rotated the compromised key on Apr 21, 2026 (on our end; this is our first formal support contact).
+- Disabled the hourly `scrape-opportunities` Vercel cron (PR #14, merged as commit `dc83e9b`) to prevent further quota consumption.
+- Updated our one-shot backfill script to upsert per page so partial progress survives a 429 (PR #15, merged as commit `0c23596`).
+- Holding all production calls to `api.sam.gov` until this ticket is resolved, aside from at most one controlled probe per day for monitoring.
 
 ## Contact
 
 - Name: Raphael Hertz
 - Email: rafihertz@gmail.com
 - Project: ContractsIntel (github.com/contractsintel/contractsintel)
-- Production domain: [TODO: production URL]
+- Production domain: https://contractsintel.com
 
-Happy to provide additional log excerpts, request IDs, or Supabase audit trails on request.
+Happy to provide additional log excerpts, full request/response captures with timestamps, or a live controlled-probe session on request.
 
 ---
 
 ### Internal notes (do not include in outbound ticket)
 
-- TODOs before sending:
-  - Fill production URL.
-  - Paste PR #14 merge commit hash once merged.
-  - Paste exact prior-ticket IDs (`SAM-65df4126…` / `SAM-40cc23bb…` are truncated placeholders).
-  - Capture one real 429 response body verbatim (the block above is representative, not verbatim) — pull from Vercel function logs.
-- If they respond with "your account is on the public default tier, no flag found" — that contradicts the call-accounting evidence; push back politely with the call log.
-- Best case: tier restored within 2–5 business days. Plan alternative data sources (USASpending, grants.gov) for opportunity surface if appeal stalls past May 1.
+- Evidence in this draft is limited to items that can be produced verbatim from our audit trail or re-run on demand:
+  - **Exhibit A**: captured live on 2026-04-24 via a single curl — fully reproducible; full request URL and response body above.
+  - **Exhibit B**: row `id` in `cron_alerts` captured 2026-04-19 23:05:48 UTC, `source=cert-pipeline`.
+- Intentionally omitted from the outbound appeal:
+  - Any specific per-day call count (e.g. "~17/day"). Our prior rough estimate was inferred from a backfill run that 429'd after 5 successful pages, not from audit data; we don't want to cite a number we can't verify.
+  - An hourly Apr 23 call-accounting table. The `scrape-opportunities` route writes no audit row on failure, so we cannot produce a verified per-hour log and will not reconstruct one.
+  - The 406 / HAL-JSON content-negotiation bug in our separate `scrape-federal` scraper (fixed in PR #16, commit `824c52a`). That scraper hits `sam.gov/api/prod/sgs/v1/search/`, a different host with no shared quota, so it is not relevant to this appeal and mentioning it would only muddy the narrative.
+- If SAM responds "your account is on the default public tier, no flag found" — that contradicts Exhibit A; push back politely with the verbatim 429 body and offer to re-run the probe on a shared call.
+- Best case: tier restored within 2–5 business days. Fallback data sources (USASpending, grants.gov, the fixed `scrape-federal` feed) keep the product alive for May 4 even if the appeal stalls.
