@@ -174,6 +174,20 @@ async function fetchCertUniverse(certName) {
   };
 }
 
+/**
+ * Trim whitespace and strip common non-email cruft from the endpoints
+ * (?, ;, ,, <, >, quotes). SBS occasionally emits values like
+ *   "contact@YourVirginiaBeachSolutions.com ?"
+ * — a single such case in the 60,436-firm sweep. Cheap to handle at the
+ * mapper instead of pushing it into downstream verification.
+ */
+function cleanEmail(raw) {
+  if (!raw) return null;
+  let e = String(raw).toLowerCase().trim();
+  e = e.replace(/^[\s?;,<>"']+/, "").replace(/[\s?;,<>"']+$/, "");
+  return e || null;
+}
+
 function splitName(full) {
   const parts = (full || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return { first_name: null, last_name: null };
@@ -224,7 +238,7 @@ function mergeInto(seen, row) {
 
 function recordToLead(record) {
   const { row, certSet } = record;
-  const email = (row.email || "").toLowerCase().trim() || null;
+  const email = cleanEmail(row.email);
   const uei = row.uei || null;
   if (!uei && !email) return null;
 
