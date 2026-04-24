@@ -20,27 +20,73 @@ async function run() {
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fmt = (d) => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
 
-  const endpoints = [
-    `https://api.sam.gov/opportunities/v2/search?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=1000&offset=0`,
-    `https://api.sam.gov/prod/opportunities/v2/search?api_key=${samApiKey}&postedFrom=${fmt(sevenDaysAgo)}&postedTo=${fmt(now)}&limit=1000&offset=0`,
+  // SAM caps each response at 1000 rows. High-volume windows need paging or
+  // results are silently truncated. Loop with offset += limit until the page
+  // is short (no more rows) or we hit a safety cap.
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 10;
+
+  const baseEndpoints = [
+    'https://api.sam.gov/opportunities/v2/search',
+    'https://api.sam.gov/prod/opportunities/v2/search',
   ];
 
   let opportunities = [];
+  const postedFromStr = fmt(sevenDaysAgo);
+  const postedToStr = fmt(now);
+  let hitCap = false;
+  let lastPageSize = 0;
 
-  for (const url of endpoints) {
+  for (const base of baseEndpoints) {
     try {
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        opportunities = data.opportunitiesData || data.opportunities || [];
-        if (opportunities.length > 0) {
-          console.log(`  Fetched ${opportunities.length} opportunities from SAM.gov`);
+      const acc = [];
+      let localHitCap = false;
+      let localLastPageSize = 0;
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const url = `${base}?api_key=${samApiKey}&postedFrom=${postedFromStr}&postedTo=${postedToStr}&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          // On any non-OK (including 429), stop paging this endpoint — no point burning quota.
+          if (page === 0) throw new Error(`SAM returned ${res.status}`);
           break;
         }
+        const data = await res.json();
+        const batch = data.opportunitiesData || data.opportunities || [];
+        acc.push(...batch);
+        localLastPageSize = batch.length;
+        if (batch.length < PAGE_SIZE) break;
+        // Completed a full last page — we're exiting on the cap.
+        if (page === MAX_PAGES - 1) localHitCap = true;
+      }
+      if (acc.length > 0) {
+        opportunities = acc;
+        hitCap = localHitCap;
+        lastPageSize = localLastPageSize;
+        console.log(`  Fetched ${opportunities.length} opportunities from SAM.gov`);
+        break;
       }
     } catch (err) {
       console.log(`  SAM endpoint failed: ${err.message}`);
     }
+  }
+
+  // Pagination-cap alert: surface silent-truncation risk in cron_alerts so
+  // the daily digest (PR 4) picks it up.
+  if (hitCap) {
+    await supabase.from('cron_alerts').insert({
+      severity: 'warn',
+      source: 'sam-pagination-cap-hit',
+      message: `SAM pagination hit MAX_PAGES=${MAX_PAGES} cap, possible silent truncation. postedFrom=${postedFromStr} postedTo=${postedToStr}`,
+      context: {
+        postedFrom: postedFromStr,
+        postedTo: postedToStr,
+        total_ingested: opportunities.length,
+        last_page_size: lastPageSize,
+        max_pages: MAX_PAGES,
+        page_size: PAGE_SIZE,
+        route: 'workers/fetch-contracts',
+      },
+    });
   }
 
   if (opportunities.length === 0) {
