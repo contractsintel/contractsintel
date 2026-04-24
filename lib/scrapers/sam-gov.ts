@@ -62,17 +62,53 @@ async function fetchInternalApi(page: number, size: number): Promise<{ results: 
   };
 }
 
+// Per-tick page cap + wall-clock budget.
+//
+// The previous MAX_PAGES=500 was set when this scraper was the only caller
+// in a standalone worker; under the Vercel 300s maxDuration on
+// /api/cron/scrape-federal (which runs this scraper plus three others in
+// sequence) it can exceed the budget mid-pagination and get killed before
+// the ScraperResult row is written, leaving no audit trail.
+//
+// Per-page cost: one fetch (~200-1500ms) + 500ms pause + upsert loop for
+// up to PAGE_SIZE=100 rows. Practical budget: keep the sam_gov leg under
+// ~180s so three downstream scrapers still fit under 300s.
+//
+// 100 pages × (~1s fetch + 500ms pause + ~100ms upsert) ≈ 160s worst case.
+// Results are sorted -modifiedDate by the upstream API, so page 0 is always
+// the freshest — capping at 100 pages preserves newest-first delta behavior
+// and re-scans older records on later ticks.
+//
+// Additionally: a soft wall-clock budget breaks out of the loop early if
+// we're approaching the function's maxDuration, guaranteeing we write a
+// ScraperResult row even if the catalog is unusually deep. The scraper
+// stays idempotent on notice_id, so the next tick resumes without loss.
+//
+// Follow-up worth filing: store a high-water modifiedDate cursor so we
+// early-exit as soon as we re-encounter known records, instead of walking
+// the full N pages. That needs a small migration (e.g. scraper_state) and
+// is out of scope for this minimal unblocking fix.
+const PAGE_SIZE = 100;
+const MAX_PAGES = 100;
+const WALL_CLOCK_BUDGET_MS = 180_000; // 180s of our 300s share
+const PAGE_PAUSE_MS = 500;
+
 export async function scrapeSamGov(supabase: SupabaseAdmin): Promise<ScraperResult> {
   const startedAt = new Date().toISOString();
+  const startMs = Date.now();
 
   try {
-    const PAGE_SIZE = 100;
-    const MAX_PAGES = 500;
     let totalSaved = 0;
     let totalElements = 0;
     let page = 0;
+    let hitBudget = false;
 
     while (page < MAX_PAGES) {
+      if (Date.now() - startMs > WALL_CLOCK_BUDGET_MS) {
+        hitBudget = true;
+        break;
+      }
+
       const { results, totalElements: total } = await fetchInternalApi(page, PAGE_SIZE);
       totalElements = total;
       if (!results.length) break;
@@ -105,7 +141,11 @@ export async function scrapeSamGov(supabase: SupabaseAdmin): Promise<ScraperResu
       logger.info(`[sam-gov] Page ${page}: ${results.length} results, ${totalSaved} saved (${totalElements} total active)`);
       page++;
       if (results.length < PAGE_SIZE) break;
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, PAGE_PAUSE_MS));
+    }
+
+    if (hitBudget) {
+      logger.info(`[sam-gov] Wall-clock budget reached at page ${page}; returning partial progress (${totalSaved} saved).`);
     }
 
     return {
