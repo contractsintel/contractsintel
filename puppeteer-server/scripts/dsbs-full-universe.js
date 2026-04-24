@@ -280,24 +280,113 @@ function supabaseClient() {
   return createClient(url, key);
 }
 
+/**
+ * Client-side split upsert.
+ *
+ * Why we can't use `.upsert({ onConflict: 'dedup_key' })` against prod:
+ * the `leads_dedup_key_uniq` index is a *partial* unique index declared as
+ * `CREATE UNIQUE INDEX ... ON leads (dedup_key) WHERE dedup_key IS NOT NULL`.
+ * PostgREST cannot use a partial unique index as an ON CONFLICT target
+ * (verified by direct probe: "there is no unique or exclusion constraint
+ * matching the ON CONFLICT specification"). The index still enforces
+ * uniqueness at write time — it just can't be the conflict target.
+ *
+ * Workaround: per batch,
+ *   1. SELECT existing dedup_keys matching our batch (IN filter).
+ *   2. Partition → new rows get INSERT (no conflict target needed).
+ *   3. Existing rows get UPDATE by dedup_key, one-at-a-time with a small
+ *      concurrency pool.
+ *
+ * On first run (no prior dsbs rows), this degenerates to pure inserts. On
+ * subsequent runs, updates scale with churn, not total universe.
+ *
+ * Proper fix (follow-up, requires prod schema change): add `NOT NULL` to
+ * `leads.dedup_key` and replace the partial index with a plain unique
+ * constraint, at which point PostgREST can target it and we can revert to
+ * native `.upsert`. Deferred per user direction (no prod schema changes
+ * in this PR).
+ */
+const UPDATE_CONCURRENCY = 8;
+
+async function runPool(items, worker, concurrency) {
+  let i = 0;
+  let ok = 0;
+  let err = 0;
+  const workers = Array.from({ length: concurrency }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      try {
+        await worker(items[idx]);
+        ok++;
+      } catch (e) {
+        err++;
+        if (err <= 5) console.error(`    update error: ${e.message || e}`);
+      }
+    }
+  });
+  await Promise.all(workers);
+  return { ok, err };
+}
+
 async function upsertBatch(supabase, rows) {
-  if (!rows.length) return { inserted: 0, errors: 0 };
+  if (!rows.length) return { inserted: 0, updated: 0, errors: 0 };
   let inserted = 0;
+  let updated = 0;
   let errors = 0;
+
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH);
-    const { data, error } = await supabase
+    const keys = batch.map((r) => r.dedup_key);
+
+    // 1) Which of these already exist?
+    const { data: existing, error: selErr } = await supabase
       .from("leads")
-      .upsert(batch, { onConflict: "dedup_key", ignoreDuplicates: false })
-      .select("id");
-    if (error) {
-      console.error(`  upsert error @${i}: ${error.message}`);
+      .select("dedup_key")
+      .in("dedup_key", keys);
+    if (selErr) {
+      console.error(`  select existing @${i}: ${selErr.message}`);
       errors += batch.length;
-    } else {
-      inserted += data?.length || 0;
+      continue;
+    }
+    const existingSet = new Set((existing || []).map((e) => e.dedup_key));
+    const toInsert = batch.filter((r) => !existingSet.has(r.dedup_key));
+    const toUpdate = batch.filter((r) => existingSet.has(r.dedup_key));
+
+    // 2) Plain INSERT for new rows (no conflict target needed).
+    if (toInsert.length) {
+      const { data, error } = await supabase.from("leads").insert(toInsert).select("id");
+      if (error) {
+        console.error(`  insert @${i}: ${error.message}`);
+        errors += toInsert.length;
+      } else {
+        inserted += data?.length || 0;
+      }
+    }
+
+    // 3) UPDATE by dedup_key for existing rows, pooled.
+    if (toUpdate.length) {
+      const { ok, err } = await runPool(
+        toUpdate,
+        async (r) => {
+          const { dedup_key, ...fields } = r;
+          const { error } = await supabase.from("leads").update(fields).eq("dedup_key", dedup_key);
+          if (error) throw new Error(error.message);
+        },
+        UPDATE_CONCURRENCY
+      );
+      updated += ok;
+      errors += err;
+    }
+
+    if ((i / UPSERT_BATCH) % 10 === 0) {
+      process.stdout.write(
+        `  [batch ${i / UPSERT_BATCH + 1}/${Math.ceil(rows.length / UPSERT_BATCH)}] ` +
+          `inserted=${inserted} updated=${updated} errors=${errors}\r`
+      );
     }
   }
-  return { inserted, errors };
+  process.stdout.write("\n");
+  return { inserted, updated, errors };
 }
 
 async function logScraperRun(supabase, payload) {
@@ -499,15 +588,16 @@ async function main() {
   } else {
     console.log(`\n[write] upserting ${leads.length} rows to leads...`);
     const wT0 = Date.now();
-    const { inserted, errors } = await upsertBatch(supabase, leads);
+    const { inserted, updated, errors } = await upsertBatch(supabase, leads);
     const wMs = Date.now() - wT0;
-    console.log(`[write] inserted/updated=${inserted} errors=${errors} in ${wMs}ms`);
+    console.log(`[write] inserted=${inserted} updated=${updated} errors=${errors} in ${wMs}ms`);
 
+    const totalWritten = inserted + updated;
     // Per-cert scraper_runs (proportional matches_created attribution by
     // new_unique_firms — rough but captures cert-level signal).
     const totalNewUnique = perCert.reduce((s, p) => s + p.new_unique_firms, 0) || 1;
     for (const p of perCert) {
-      const attributedMatches = Math.round((inserted * p.new_unique_firms) / totalNewUnique);
+      const attributedMatches = Math.round((totalWritten * p.new_unique_firms) / totalNewUnique);
       await logScraperRun(supabase, {
         source: `dsbs_${CERT_CODES[p.cert].slug}`,
         status: "success",
@@ -523,7 +613,7 @@ async function main() {
       source: "dsbs",
       status: errors > 0 ? "partial" : "success",
       opportunities_found: totalFetched,
-      matches_created: inserted,
+      matches_created: totalWritten,
       error_message: errors > 0 ? `${errors} upsert errors` : null,
       started_at: overallStart,
       completed_at: new Date().toISOString(),
