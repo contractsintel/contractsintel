@@ -16,6 +16,14 @@
  * Upserts rows into `opportunities` with the same column mapping as the
  * normal cron (see app/api/cron/scrape-opportunities/route.ts).
  *
+ * Incremental upsert
+ * ------------------
+ * Each page is upserted IMMEDIATELY after fetch. If SAM 429s (or any other
+ * fetch error) mid-run, all successfully-fetched pages are already
+ * persisted, and the script logs a resume hint and exits 0 (partial
+ * progress is still valid progress). Re-run the script to resume; because
+ * upsert is keyed on notice_id, re-upserting earlier pages is a no-op.
+ *
  * Usage
  * -----
  *   SAM_API_KEY=... \
@@ -37,6 +45,7 @@ const POSTED_FROM = "04/15/2026";
 const POSTED_TO = "04/22/2026";
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
+const UPSERT_CHUNK = 500;
 
 /**
  * @typedef {Object} SamOpportunity
@@ -57,29 +66,63 @@ const MAX_PAGES = 10;
  * @property {{amount?:number}=} award
  */
 
-async function fetchAll(apiKey) {
-  const all = [];
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const params = new URLSearchParams({
-      api_key: apiKey,
-      postedFrom: POSTED_FROM,
-      postedTo: POSTED_TO,
-      limit: String(PAGE_SIZE),
-      offset: String(page * PAGE_SIZE),
-    });
-    const res = await fetch(`${SAM_ENDPOINT}?${params.toString()}`, {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) {
-      throw new Error(`SAM returned ${res.status} on page ${page}: ${await res.text()}`);
-    }
-    const data = await res.json();
-    const batch = data.opportunitiesData || data.opportunities || [];
-    console.log(`  page ${page}: ${batch.length} rows`);
-    all.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
+function mapOppToRow(opp) {
+  const agency = [opp.department, opp.subtier, opp.office].filter(Boolean).join(" / ");
+  const pop = opp.placeOfPerformance;
+  const placeStr = pop ? [pop.city && pop.city.name, pop.state && pop.state.code].filter(Boolean).join(", ") : null;
+  return {
+    notice_id: opp.noticeId,
+    title: opp.title || "Untitled",
+    agency: agency || "Unknown",
+    solicitation_number: opp.solicitationNumber || null,
+    set_aside: opp.setAsideDescription || opp.setAside || null,
+    naics_code: opp.naicsCode || null,
+    place_of_performance: placeStr,
+    estimated_value: (opp.award && opp.award.amount) || null,
+    response_deadline: opp.responseDeadLine || null,
+    posted_date: opp.postedDate || null,
+    description: opp.description ? opp.description.substring(0, 10000) : null,
+    sam_url: opp.uiLink || null,
+  };
+}
+
+async function fetchPage(apiKey, page) {
+  const params = new URLSearchParams({
+    api_key: apiKey,
+    postedFrom: POSTED_FROM,
+    postedTo: POSTED_TO,
+    limit: String(PAGE_SIZE),
+    offset: String(page * PAGE_SIZE),
+  });
+  const res = await fetch(`${SAM_ENDPOINT}?${params.toString()}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    const err = new Error(`SAM returned ${res.status} on page ${page}: ${body}`);
+    err.status = res.status;
+    throw err;
   }
-  return all;
+  const data = await res.json();
+  return data.opportunitiesData || data.opportunities || [];
+}
+
+async function upsertBatch(supabase, rows) {
+  let upserted = 0;
+  let failed = 0;
+  for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {
+    const chunk = rows.slice(i, i + UPSERT_CHUNK);
+    const { error, count } = await supabase
+      .from("opportunities")
+      .upsert(chunk, { onConflict: "notice_id", count: "exact" });
+    if (error) {
+      console.error(`    chunk ${i}-${i + chunk.length} failed: ${error.message}`);
+      failed += chunk.length;
+    } else {
+      upserted += count != null ? count : chunk.length;
+    }
+  }
+  return { upserted, failed };
 }
 
 async function main() {
@@ -91,55 +134,59 @@ async function main() {
   if (!supabaseUrl) throw new Error("NEXT_PUBLIC_SUPABASE_URL not set");
   if (!supabaseKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not set");
 
-  console.log(`Backfilling SAM window ${POSTED_FROM} → ${POSTED_TO}...`);
-  const opps = await fetchAll(apiKey);
-  console.log(`Fetched ${opps.length} opportunities total`);
-
-  if (opps.length === 0) {
-    console.log("Nothing to upsert. Exiting.");
-    return;
-  }
-
+  console.log(`Backfilling SAM window ${POSTED_FROM} → ${POSTED_TO} (incremental upsert)...`);
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  let upserted = 0;
-  let failed = 0;
-  const CHUNK = 500;
-  for (let i = 0; i < opps.length; i += CHUNK) {
-    const chunk = opps.slice(i, i + CHUNK).map((opp) => {
-      const agency = [opp.department, opp.subtier, opp.office].filter(Boolean).join(" / ");
-      const pop = opp.placeOfPerformance;
-      const placeStr = pop ? [pop.city && pop.city.name, pop.state && pop.state.code].filter(Boolean).join(", ") : null;
-      return {
-        notice_id: opp.noticeId,
-        title: opp.title || "Untitled",
-        agency: agency || "Unknown",
-        solicitation_number: opp.solicitationNumber || null,
-        set_aside: opp.setAsideDescription || opp.setAside || null,
-        naics_code: opp.naicsCode || null,
-        place_of_performance: placeStr,
-        estimated_value: (opp.award && opp.award.amount) || null,
-        response_deadline: opp.responseDeadLine || null,
-        posted_date: opp.postedDate || null,
-        description: opp.description ? opp.description.substring(0, 10000) : null,
-        sam_url: opp.uiLink || null,
-      };
-    });
+  let totalFetched = 0;
+  let totalUpserted = 0;
+  let totalFailed = 0;
+  let lastCompletedPage = -1;
+  let stoppedEarly = false;
+  let stopReason = null;
 
-    const { error, count } = await supabase
-      .from("opportunities")
-      .upsert(chunk, { onConflict: "notice_id", count: "exact" });
+  for (let page = 0; page < MAX_PAGES; page++) {
+    console.log(`\n[page ${page}] fetching offset=${page * PAGE_SIZE}...`);
+    let batch;
+    try {
+      batch = await fetchPage(apiKey, page);
+    } catch (err) {
+      stoppedEarly = true;
+      stopReason = err.message;
+      console.error(`[page ${page}] fetch error: ${err.message}`);
+      break;
+    }
 
-    if (error) {
-      console.error(`  chunk ${i}-${i + chunk.length} failed: ${error.message}`);
-      failed += chunk.length;
-    } else {
-      upserted += count != null ? count : chunk.length;
-      console.log(`  chunk ${i}-${i + chunk.length}: upserted`);
+    console.log(`[page ${page}] fetched ${batch.length} rows`);
+    totalFetched += batch.length;
+
+    if (batch.length > 0) {
+      const rows = batch.map(mapOppToRow);
+      const { upserted, failed } = await upsertBatch(supabase, rows);
+      totalUpserted += upserted;
+      totalFailed += failed;
+      console.log(`[page ${page}] upserted=${upserted} failed=${failed}`);
+    }
+
+    lastCompletedPage = page;
+
+    if (batch.length < PAGE_SIZE) {
+      console.log(`[page ${page}] short page — reached end of window`);
+      break;
     }
   }
 
-  console.log(`\nDone. Upserted: ${upserted}, Failed: ${failed}`);
+  console.log(`\n================ Backfill summary ================`);
+  console.log(`Fetched:  ${totalFetched}`);
+  console.log(`Upserted: ${totalUpserted}`);
+  console.log(`Failed:   ${totalFailed}`);
+  if (stoppedEarly) {
+    const nextPage = lastCompletedPage + 1;
+    console.log(`\nStopped early at page ${nextPage}. Reason: ${stopReason}`);
+    console.log(`Backfilled pages 0-${lastCompletedPage}. Resume from page ${nextPage} on next run.`);
+    console.log(`(Re-run the script after quota resets; upsert is idempotent on notice_id.)`);
+  } else {
+    console.log(`\nAll pages complete (0-${lastCompletedPage}).`);
+  }
 }
 
 main().catch((err) => {
