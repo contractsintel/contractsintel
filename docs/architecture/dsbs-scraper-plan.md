@@ -4,6 +4,10 @@
 
 **Problem framing.** On 2026-04-24 Raphael manually verified that SBA's Small Business Search (SBS, formerly DSBS) publicly renders the contact email for nearly every certified small business in its search result tables, defaulting to visible with an opt-out. This opens a free path to the full universe of ~40,000+ certified contractors across 8(a), HUBZone, SDVOSB, WOSB, and EDWOSB — shifting the SAM-API appeal from critical path to nice-to-have for the contractor-leads workload.
 
+### Update 2026-04-24: pivoted from Patchright to direct API
+
+During POC we captured the SPA's network traffic and discovered that SBS ships a same-origin **public JSON API** at `POST https://search.certifications.sba.gov/_api/v2/search`. Passing `sbaCertifications.activeCerts` with the right cert code returns the entire filtered universe in **one response, no auth, no pagination, no WAF**. A live HUBZone call returned **5,124 rows** in one request, with 97.3% email coverage, 100% UEI coverage, 37.4% multi-cert. The Patchright approach in earlier drafts of this doc is now superseded — we kept the earlier POC file for reference but the canonical POC is `scripts/dsbs-api-poc.js`, ~200 LOC, no browser. Sections below have been updated accordingly; supplanted sections are marked ~~struck through~~.
+
 ---
 
 ## 1. Target & scope
@@ -19,9 +23,29 @@
 
 ---
 
-## 2. Technical approach
+## 2. Technical approach — direct API (recommended)
 
-### Why Patchright on the existing Railway puppeteer-server
+### The real backend
+
+`POST https://search.certifications.sba.gov/_api/v2/search` — same-origin JSON endpoint, no auth, no CSRF token, no rate-limit headers observed. Cert code map (recovered from the SPA bundle):
+
+| Cert | `activeCerts.value` |
+|---|---|
+| 8(a) or 8(a) Joint Venture | `"1,4"` |
+| HUBZone | `"3"` |
+| WOSB | `"5"` |
+| EDWOSB | `"6"` |
+| VOSB | `"9,10"` |
+
+Request body is a nested object (see `scripts/dsbs-api-poc.js::buildBody`). The server echoes its filter expression as `meili_filter: "public_display = true AND ( active_hz_boolean = true )"` — confirming the per-firm opt-out is honored server-side before results leave the origin.
+
+Each result row contains, among others: `email`, `contact_person`, `uei`, `cage_code`, `legal_business_name`, `dba_name`, `phone`, `address_1/2`, `city`, `state`, `zipcode`, `county`, `website`, `additional_website`, `naics_primary`, `naics_all_codes[]`, `keywords[]`, `capabilities_narrative`, `year_established`, `annual_revenue`, `business_size`, and an `active_*_boolean` flag per cert (`active_hz_boolean`, `active_8a_boolean`, etc.) so we can derive `cert_types[]` in-line without cross-cert joining.
+
+### Full-universe sweep plan
+
+Five HTTP POSTs — one per target cert (8a, HUBZone, WOSB, EDWOSB, SDVOSB-via-self-cert) — merged on `uei` with a `cert_types` union. **Projected wall-clock runtime: <30 seconds.** No pagination needed; per-cert responses appear to be single-shot full sets (5,124 rows for HUBZone in one body).
+
+### ~~Why Patchright on the existing Railway puppeteer-server~~ (superseded)
 
 The site is a client-rendered React SPA behind a CDN/WAF. Plain `fetch`/`curl` returns either empty HTML (SPA shell) or 503 (WAF block), so we need a real browser. We already run **Patchright** (stealth Playwright) in `puppeteer-server/server.js` on Railway (Hobby tier, already paid, already in prod), with `stealthHeaders()` UA rotation and proven patterns for similar government sites (grants.gov, sam.gov internal search, state procurement portals). Extending that server with one new `/cron/dsbs-scrape` endpoint is the minimum-viable delta — no new infra, no new dependencies.
 
@@ -53,16 +77,9 @@ Keep Apify as a **named fallback** if our Patchright scraper hits persistent WAF
 
 ## 3. Rate limit & anti-ban strategy
 
-| Control | Value | Rationale |
-|---|---|---|
-| Inter-page delay | 2,500ms ± 500ms jitter | Well below any published threshold; matches human browsing cadence |
-| UA rotation | Per-session, not per-request | Mid-session UA changes are a stronger bot signal than a consistent one |
-| Session reset cadence | Every 200 pages | New Patchright context = new fingerprint, avoids long-session heuristics |
-| Back-off on 403/503/429 | Exponential: 30s → 2m → 10m → abort session, persist cursor | If a new session also fails, stop cleanly and write partial progress |
-| Concurrency | 1 | Single-threaded, stable, easier to reason about. Can parallelize later if quality is fine |
-| Time-of-day | Run 02:00–06:00 UTC (off-peak US) | Lower collision with legitimate traffic |
+Near-trivial under the direct-API design: **5 POST requests total, one per cert**, executed sequentially with a 2s pause between. No browser, no headers worth spoofing, no session state. If the API ever starts returning 429/5xx we'll revisit; for now an exponential back-off is overkill. Projected full-universe wall-clock: **under 30 seconds**.
 
-Projected full-universe runtime: **~100 minutes** (~2,000 page loads × 3s) — comfortably inside a single Railway job window.
+~~Prior Patchright-era budget: 100 minutes of paginated browser work, session reset every 200 pages, UA rotation, etc.~~ — obsolete, left in git history on earlier commits of this file.
 
 ---
 
