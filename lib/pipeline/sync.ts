@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pipelineSupabase } from "./supabase";
+import { naicsLabel } from "./personalization";
 import type { DrainResult, StageCursor } from "./types";
 
 const INSTANTLY_BASE = "https://api.instantly.ai/api/v2";
@@ -66,7 +67,13 @@ function toInstantlyLead(row: any): any {
     if (v != null && v !== "") cv[k] = v;
   };
   putCV("uei", row.uei);
-  putCV("primary_naics", (row.naics_codes || [])[0]);
+  const primaryNaics = row.naics_primary || (row.naics_codes || [])[0] || null;
+  putCV("primary_naics", primaryNaics);
+  // Short human label for primaryNaics — used by v2 HUBZone copy
+  // (e.g. "quick question on {{naics_label|"HUBZone"}}").
+  // Null when code isn't in the 150-entry lookup; Instantly's fallback
+  // syntax `{{naics_label|"<fallback>"}}` handles the empty case.
+  putCV("naics_label", naicsLabel(primaryNaics));
   putCV("cert_type", row.primary_cert);
   putCV("sam_expiry_date", row.registration_expiration_date);
   putCV("city", row.city);
