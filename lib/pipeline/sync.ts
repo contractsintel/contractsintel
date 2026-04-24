@@ -70,9 +70,12 @@ function toInstantlyLead(row: any): any {
   const primaryNaics = row.naics_primary || (row.naics_codes || [])[0] || null;
   putCV("primary_naics", primaryNaics);
   // Short human label for primaryNaics — used by v2 HUBZone copy
-  // (e.g. "quick question on {{naics_label|"HUBZone"}}").
-  // Null when code isn't in the 150-entry lookup; Instantly's fallback
-  // syntax `{{naics_label|"<fallback>"}}` handles the empty case.
+  // (e.g. `quick question on {{naics_label|HUBZone}}`).
+  // Null when code isn't in the 150-entry lookup; Instantly's bare-text
+  // fallback syntax `{{naics_label|<fallback>}}` (no quotes — quotes would
+  // render literally) handles the empty case. `putCV` drops null values
+  // so the key is absent from the payload, which is what triggers the
+  // fallback on Instantly's side.
   putCV("naics_label", naicsLabel(primaryNaics));
   putCV("cert_type", row.primary_cert);
   putCV("sam_expiry_date", row.registration_expiration_date);

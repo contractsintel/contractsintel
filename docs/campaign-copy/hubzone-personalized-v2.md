@@ -62,7 +62,7 @@ HUBZone firms (lead-side) skew the other way: ~32% professional services (NAICS 
 
 ### Step 1 (Day 0) — Observation + Question
 
-**Subject A**: `quick question on {{naics_label|"HUBZone"}}`
+**Subject A**: `quick question on {{naics_label|HUBZone}}`
 **Subject B**: `quick question on HUBZone`
 
 (Subject B is a pure-fallback variant — no merge tag, so Instantly A/B test sees genuine copy variation even when the lead has no NAICS label.)
@@ -97,7 +97,7 @@ Is that {{company_name}}'s situation, or do you have something in place for catc
 
 Pulled the numbers on HUBZone set-asides the last 12 months. About two-thirds came from DLA — mostly in manufacturing codes. DLA Maritime alone ran 45 of them.
 
-Most HUBZone firms we talk to aren't in {{naics_label|"those codes"}}. They're in professional services or construction. That's a different set of competitions than where the volume is. Worth knowing which pool {{company_name}} is actually positioned for.
+Most HUBZone firms we talk to aren't in {{naics_label|those codes}}. They're in professional services or construction. That's a different set of competitions than where the volume is. Worth knowing which pool {{company_name}} is actually positioned for.
 
 One other thing that comes up a lot on HUBZone: the principal-office address in SAM has to match the certification record exactly. When it drifts, some procurement systems silently exclude the firm from set-aside searches. No error, no notification.
 
@@ -150,7 +150,7 @@ Keep existing COLD-05 as-is.
 | `lib/pipeline/personalization.ts` (re-export shell) | ✅ shipped |
 | `lib/pipeline/sync.ts` — `naics_label` added to custom variables | ✅ shipped |
 | Instantly campaign custom-field registration (`naics_label`) | ❌ manual — Raphael, via dashboard |
-| Instantly test send to verify `{{token\|"fallback"}}` syntax | ❌ post-merge |
+| Instantly test send to verify `{{token\|fallback}}` bare-text fallback syntax | ❌ post-merge |
 | HUBZone steps 1-3 copy update in Instantly | ❌ post-test-send |
 | Lead load to campaign | ❌ deferred until all 4 cert copies approved |
 
