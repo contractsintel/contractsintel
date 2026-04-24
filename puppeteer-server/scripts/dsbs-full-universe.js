@@ -39,17 +39,19 @@
  * needed.
  *
  * ---------------------------------------------------------------------------
- * Schema note
+ * Schema note (updated 2026-04-24, migration 20260424000000 applied to prod)
  * ---------------------------------------------------------------------------
- * We map to the POC-validated subset of `leads` columns (everything in the
- * 20260417_leads_cold_outbound_routing migration). The DSBS response carries
- * additional fields — capabilities_narrative, year_established, annual_revenue,
- * business_size, county, keywords[], per-cert booleans — that are captured
- * into the script's `full` record and surfaced in dry-run output for review,
- * but NOT written to `leads` because the table has no columns for them yet.
- * Follow-up migration to add `raw_data jsonb` + a few first-class columns
- * is proposed in the PR description; wiring lands in a separate PR so this
- * one stays schema-safe.
+ * `leads` now carries the DSBS rich fields: capabilities_narrative,
+ * naics_primary, year_established, keywords text[], county, annual_revenue,
+ * business_size, enriched_at timestamptz. Scraper writes all of them.
+ *
+ * Sanitization (application-side — no check constraints):
+ *   county:    null-out when matches /^Geocoding service error/i
+ *   email:     trim + strip `? ; , < > " '` endpoints (cleanEmail)
+ *   enriched_at: set to now() on every write
+ *
+ * dedup_key is now NOT NULL with a plain unique index, so we use native
+ * `.upsert({ onConflict: 'dedup_key' })` — no more client-side split.
  *
  * ---------------------------------------------------------------------------
  * Usage
@@ -236,37 +238,88 @@ function mergeInto(seen, row) {
   return { merged: true, newKey: true };
 }
 
+/**
+ * Postgres text columns reject NUL bytes (\u0000) with
+ * "unsupported Unicode escape sequence". DSBS narrative/keyword fields
+ * occasionally contain them — one batch of 500 rows hit this during the
+ * first full write. Strip NULs from every string we send.
+ */
+function scrubStr(s) {
+  if (s === null || s === undefined) return s;
+  if (typeof s !== "string") return s;
+  return s.replace(/\u0000/g, "");
+}
+function scrubArr(a) {
+  if (!Array.isArray(a)) return a;
+  return a.map((x) => (typeof x === "string" ? scrubStr(x) : x));
+}
+
+function cleanCounty(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  if (/^Geocoding service error/i.test(s)) return null;
+  return s;
+}
+
+function yearToInt(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = parseInt(String(raw).trim(), 10);
+  if (!Number.isFinite(n)) return null;
+  // Reject absurd values.
+  if (n < 1700 || n > 2100) return null;
+  return n;
+}
+
 function recordToLead(record) {
   const { row, certSet } = record;
   const email = cleanEmail(row.email);
   const uei = row.uei || null;
   if (!uei && !email) return null;
 
-  const { first_name, last_name } = splitName(row.contact_person);
+  const { first_name, last_name } = splitName(scrubStr(row.contact_person));
   const certs = [...certSet];
   const pc = primaryCert(certSet);
   const dedup_key = (uei || email).toLowerCase();
 
+  const naicsAll = Array.isArray(row.naics_all_codes) ? row.naics_all_codes : [];
+  const naicsPrimary =
+    row.naics_primary || (naicsAll.length ? naicsAll[0] : null);
+  const naicsCodes = naicsAll.length
+    ? naicsAll
+    : naicsPrimary
+    ? [naicsPrimary]
+    : [];
+
   return {
     email,
-    first_name,
-    last_name,
+    first_name: scrubStr(first_name),
+    last_name: scrubStr(last_name),
     title: null,
-    phone: row.phone || null,
-    company: row.legal_business_name || row.dba_name || null,
-    address: [row.address_1, row.address_2].filter(Boolean).join(" ") || null,
-    city: row.city || null,
-    state: row.state || null,
-    zip: row.zipcode || null,
+    phone: scrubStr(row.phone) || null,
+    company: scrubStr(row.legal_business_name || row.dba_name) || null,
+    address: scrubStr([row.address_1, row.address_2].filter(Boolean).join(" ")) || null,
+    city: scrubStr(row.city) || null,
+    state: scrubStr(row.state) || null,
+    zip: scrubStr(row.zipcode) || null,
     uei,
-    cage_code: row.cage_code || null,
-    entity_url: row.website || row.additional_website || null,
+    cage_code: scrubStr(row.cage_code) || null,
+    entity_url: scrubStr(row.website || row.additional_website) || null,
     cert_types: certs,
     primary_cert: pc,
-    naics_codes: row.naics_all_codes || (row.naics_primary ? [row.naics_primary] : []),
+    naics_codes: scrubArr(naicsCodes),
     source: "dsbs",
     source_url: uei ? `https://dsbs.sba.gov/search/dsp_profile.cfm?SAM_UEI=${uei}` : null,
     dedup_key,
+    // --- DSBS rich fields (migration 20260424000000) ---
+    capabilities_narrative: scrubStr(row.capabilities_narrative) || null,
+    naics_primary: scrubStr(naicsPrimary) || null,
+    year_established: yearToInt(row.year_established),
+    keywords: scrubArr(Array.isArray(row.keywords) ? row.keywords : []),
+    county: scrubStr(cleanCounty(row.county)),
+    annual_revenue: scrubStr(row.annual_revenue) || null,
+    business_size: scrubStr(row.business_size) || null,
+    enriched_at: new Date().toISOString(),
   };
 }
 
@@ -281,112 +334,48 @@ function supabaseClient() {
 }
 
 /**
- * Client-side split upsert.
+ * Native upsert via PostgREST ON CONFLICT = dedup_key.
  *
- * Why we can't use `.upsert({ onConflict: 'dedup_key' })` against prod:
- * the `leads_dedup_key_uniq` index is a *partial* unique index declared as
- * `CREATE UNIQUE INDEX ... ON leads (dedup_key) WHERE dedup_key IS NOT NULL`.
- * PostgREST cannot use a partial unique index as an ON CONFLICT target
- * (verified by direct probe: "there is no unique or exclusion constraint
- * matching the ON CONFLICT specification"). The index still enforces
- * uniqueness at write time — it just can't be the conflict target.
+ * Unblocked by migration 20260424000000 (2026-04-24), which replaced the
+ * partial `leads_dedup_key_uniq WHERE dedup_key IS NOT NULL` with a plain
+ * unique index on `dedup_key` (and made the column NOT NULL). PostgREST
+ * can now target it, so we're back to a single idempotent write per batch.
  *
- * Workaround: per batch,
- *   1. SELECT existing dedup_keys matching our batch (IN filter).
- *   2. Partition → new rows get INSERT (no conflict target needed).
- *   3. Existing rows get UPDATE by dedup_key, one-at-a-time with a small
- *      concurrency pool.
+ * First run after migration: all 60,436 rows UPDATE (existing dsbs records
+ * gain the rich fields). Subsequent runs: mostly updates with new-firm
+ * insertions scaling with SBS churn.
  *
- * On first run (no prior dsbs rows), this degenerates to pure inserts. On
- * subsequent runs, updates scale with churn, not total universe.
- *
- * Proper fix (follow-up, requires prod schema change): add `NOT NULL` to
- * `leads.dedup_key` and replace the partial index with a plain unique
- * constraint, at which point PostgREST can target it and we can revert to
- * native `.upsert`. Deferred per user direction (no prod schema changes
- * in this PR).
+ * Note: we don't distinguish insert vs update in the return counts because
+ * `.upsert` doesn't surface that — `written` is the total.
  */
-const UPDATE_CONCURRENCY = 8;
-
-async function runPool(items, worker, concurrency) {
-  let i = 0;
-  let ok = 0;
-  let err = 0;
-  const workers = Array.from({ length: concurrency }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      try {
-        await worker(items[idx]);
-        ok++;
-      } catch (e) {
-        err++;
-        if (err <= 5) console.error(`    update error: ${e.message || e}`);
-      }
-    }
-  });
-  await Promise.all(workers);
-  return { ok, err };
-}
-
 async function upsertBatch(supabase, rows) {
-  if (!rows.length) return { inserted: 0, updated: 0, errors: 0 };
-  let inserted = 0;
-  let updated = 0;
+  if (!rows.length) return { written: 0, errors: 0 };
+  let written = 0;
   let errors = 0;
+  const totalBatches = Math.ceil(rows.length / UPSERT_BATCH);
 
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH);
-    const keys = batch.map((r) => r.dedup_key);
-
-    // 1) Which of these already exist?
-    const { data: existing, error: selErr } = await supabase
+    const { data, error } = await supabase
       .from("leads")
-      .select("dedup_key")
-      .in("dedup_key", keys);
-    if (selErr) {
-      console.error(`  select existing @${i}: ${selErr.message}`);
+      .upsert(batch, { onConflict: "dedup_key" })
+      .select("id");
+    if (error) {
+      console.error(`  upsert @${i}: ${error.message}`);
       errors += batch.length;
-      continue;
-    }
-    const existingSet = new Set((existing || []).map((e) => e.dedup_key));
-    const toInsert = batch.filter((r) => !existingSet.has(r.dedup_key));
-    const toUpdate = batch.filter((r) => existingSet.has(r.dedup_key));
-
-    // 2) Plain INSERT for new rows (no conflict target needed).
-    if (toInsert.length) {
-      const { data, error } = await supabase.from("leads").insert(toInsert).select("id");
-      if (error) {
-        console.error(`  insert @${i}: ${error.message}`);
-        errors += toInsert.length;
-      } else {
-        inserted += data?.length || 0;
-      }
+    } else {
+      written += data?.length || 0;
     }
 
-    // 3) UPDATE by dedup_key for existing rows, pooled.
-    if (toUpdate.length) {
-      const { ok, err } = await runPool(
-        toUpdate,
-        async (r) => {
-          const { dedup_key, ...fields } = r;
-          const { error } = await supabase.from("leads").update(fields).eq("dedup_key", dedup_key);
-          if (error) throw new Error(error.message);
-        },
-        UPDATE_CONCURRENCY
-      );
-      updated += ok;
-      errors += err;
-    }
-
-    if ((i / UPSERT_BATCH) % 10 === 0) {
+    const batchNum = i / UPSERT_BATCH + 1;
+    if (batchNum % 10 === 0 || batchNum === totalBatches) {
       process.stdout.write(
-        `  [batch ${i / UPSERT_BATCH + 1}/${Math.ceil(rows.length / UPSERT_BATCH)}] ` +
-          `inserted=${inserted} updated=${updated} errors=${errors}\r`
+        `  [batch ${batchNum}/${totalBatches}] written=${written} errors=${errors}\r`
       );
     }
   }
   process.stdout.write("\n");
-  return { inserted, updated, errors };
+  return { written, errors };
 }
 
 async function logScraperRun(supabase, payload) {
@@ -588,11 +577,11 @@ async function main() {
   } else {
     console.log(`\n[write] upserting ${leads.length} rows to leads...`);
     const wT0 = Date.now();
-    const { inserted, updated, errors } = await upsertBatch(supabase, leads);
+    const { written, errors } = await upsertBatch(supabase, leads);
     const wMs = Date.now() - wT0;
-    console.log(`[write] inserted=${inserted} updated=${updated} errors=${errors} in ${wMs}ms`);
+    console.log(`[write] written=${written} errors=${errors} in ${wMs}ms`);
 
-    const totalWritten = inserted + updated;
+    const totalWritten = written;
     // Per-cert scraper_runs (proportional matches_created attribution by
     // new_unique_firms — rough but captures cert-level signal).
     const totalNewUnique = perCert.reduce((s, p) => s + p.new_unique_firms, 0) || 1;
