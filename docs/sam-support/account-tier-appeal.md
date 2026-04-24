@@ -84,11 +84,11 @@ We deliberately do not cite a specific per-day call count. Our cron route does n
 
 ## Prior-incident context
 
-Our previous key was externally compromised between approximately Apr 15 and Apr 22, 2026. During that window, attacker requests would have counted against our account. We suspect the abuse flag triggered by that burst was not cleared when we rotated the key on Apr 21 — the new key appears to have inherited the account-level punitive tier. This is our first formal support contact on the matter; rotation was performed unilaterally on our end.
+Our previous key was externally compromised between approximately Apr 15 and Apr 22, 2026. External requests during that window may have triggered account-level abuse detection. We suspect that flag was not cleared when we rotated the key on Apr 21 — the new key appears to have inherited the account-level punitive tier.
 
 ## Business impact
 
-Our production HUBZone cold-outbound launch is scheduled for **May 4, 2026**. Full-universe backfill of certified-contractor records across all five cert types is on the critical path for that launch. At the current effective ceiling the backfill cannot complete in time. We have already disabled our hourly ingest cron (commit `dc83e9b` on github.com/contractsintel/contractsintel `main`) to stop consuming any further quota while this ticket is open, and are holding all production `api.sam.gov` calls aside from at most one controlled probe per day for monitoring.
+Our production launch is imminent, with full-universe backfill of certified-contractor records across all five cert types on the critical path. At the current effective ceiling the backfill cannot complete in the required timeframe. We have already disabled our hourly ingest cron (commit `dc83e9b` on github.com/contractsintel/contractsintel `main`) to stop consuming any further quota while this ticket is open, and are holding all production `api.sam.gov` calls aside from at most one controlled probe per day for monitoring.
 
 Any tier restoration — even the standard 1,000/day public tier — unblocks the launch. The federal-system 10,000/day tier is the outcome that best matches the actual use case, but we will gratefully accept either.
 
