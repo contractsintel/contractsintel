@@ -14,7 +14,6 @@
     { "path": "/api/cron/nurture-emails", "schedule": "0 15 * * *" },
     { "path": "/api/cron/owner-report", "schedule": "0 13 * * 1" },
 
-    { "path": "/api/cron/scrape-opportunities", "schedule": "0 * * * *" },
     { "path": "/api/cron/scrape-federal", "schedule": "2 * * * *" },
     { "path": "/api/cron/scrape-grants-full", "schedule": "4 * * * *" },
     { "path": "/api/cron/scrape-sbir", "schedule": "6 * * * *" },
