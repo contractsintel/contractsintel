@@ -109,11 +109,11 @@ Rationale: mirrors HUBZone Step 1's universal time-to-opportunity pain point. Ke
 
 Pulled the numbers on 8(a) awards the last 12 months. About 40% are sole-source — not competed at all. Navy subcommands run the biggest share, then DLA Aviation, then NASA Shared Services.
 
-Sole-source volume is spread across construction, manufacturing, remediation, and professional services — roughly even quarters. That's a wider set of competitions than most 8(a) firms realize, especially on the manufacturing side where there are very few 8(a) firms relative to the award volume.
+Sole-source volume is spread across construction, manufacturing, remediation, and professional services — roughly even quarters. Worth noting: most 8(a) firms are concentrated in professional services. The manufacturing side specifically has less competition per opportunity.
 
 One other thing that comes up a lot on 8(a): the annual review / continuing eligibility filing. When a firm's filing drifts out of sync with SAM, some procurement systems silently exclude them from set-aside search results. No error, no notification.
 
-Curious whether {{companyName}} has seen sole-source activity in {{naics_label|your codes}} recently, and whether the annual review side is up to date.
+Curious whether {{companyName}} has seen sole-source activity in {{naics_label|your codes}} recently.
 
 {{sendingAccountFirstName}}
 ```
