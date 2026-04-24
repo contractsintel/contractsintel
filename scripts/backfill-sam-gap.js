@@ -1,4 +1,4 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env node
 /**
  * One-shot backfill for the Apr 15 - Apr 22, 2026 SAM ingest gap.
  *
@@ -21,7 +21,7 @@
  *   SAM_API_KEY=... \
  *   NEXT_PUBLIC_SUPABASE_URL=... \
  *   SUPABASE_SERVICE_ROLE_KEY=... \
- *   npx tsx scripts/backfill-sam-gap.ts
+ *   node scripts/backfill-sam-gap.js
  *
  * Safety
  * ------
@@ -30,7 +30,7 @@
  * - Run ONCE after the Apr 23 00:05 UTC probe confirms the new key is clean.
  */
 
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const SAM_ENDPOINT = "https://api.sam.gov/opportunities/v2/search";
 const POSTED_FROM = "04/15/2026";
@@ -38,26 +38,27 @@ const POSTED_TO = "04/22/2026";
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 10;
 
-interface SamOpportunity {
-  noticeId: string;
-  title?: string;
-  solicitationNumber?: string;
-  department?: string;
-  subtier?: string;
-  office?: string;
-  postedDate?: string;
-  setAside?: string;
-  setAsideDescription?: string;
-  responseDeadLine?: string;
-  naicsCode?: string;
-  placeOfPerformance?: { city?: { name?: string }; state?: { code?: string } };
-  description?: string;
-  uiLink?: string;
-  award?: { amount?: number };
-}
+/**
+ * @typedef {Object} SamOpportunity
+ * @property {string} noticeId
+ * @property {string=} title
+ * @property {string=} solicitationNumber
+ * @property {string=} department
+ * @property {string=} subtier
+ * @property {string=} office
+ * @property {string=} postedDate
+ * @property {string=} setAside
+ * @property {string=} setAsideDescription
+ * @property {string=} responseDeadLine
+ * @property {string=} naicsCode
+ * @property {{city?:{name?:string}, state?:{code?:string}}=} placeOfPerformance
+ * @property {string=} description
+ * @property {string=} uiLink
+ * @property {{amount?:number}=} award
+ */
 
-async function fetchAll(apiKey: string): Promise<SamOpportunity[]> {
-  const all: SamOpportunity[] = [];
+async function fetchAll(apiKey) {
+  const all = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     const params = new URLSearchParams({
       api_key: apiKey,
@@ -73,7 +74,7 @@ async function fetchAll(apiKey: string): Promise<SamOpportunity[]> {
       throw new Error(`SAM returned ${res.status} on page ${page}: ${await res.text()}`);
     }
     const data = await res.json();
-    const batch: SamOpportunity[] = data.opportunitiesData ?? data.opportunities ?? [];
+    const batch = data.opportunitiesData || data.opportunities || [];
     console.log(`  page ${page}: ${batch.length} rows`);
     all.push(...batch);
     if (batch.length < PAGE_SIZE) break;
@@ -108,20 +109,20 @@ async function main() {
     const chunk = opps.slice(i, i + CHUNK).map((opp) => {
       const agency = [opp.department, opp.subtier, opp.office].filter(Boolean).join(" / ");
       const pop = opp.placeOfPerformance;
-      const placeStr = pop ? [pop.city?.name, pop.state?.code].filter(Boolean).join(", ") : null;
+      const placeStr = pop ? [pop.city && pop.city.name, pop.state && pop.state.code].filter(Boolean).join(", ") : null;
       return {
         notice_id: opp.noticeId,
-        title: opp.title ?? "Untitled",
+        title: opp.title || "Untitled",
         agency: agency || "Unknown",
-        solicitation_number: opp.solicitationNumber ?? null,
-        set_aside: opp.setAsideDescription ?? opp.setAside ?? null,
-        naics_code: opp.naicsCode ?? null,
+        solicitation_number: opp.solicitationNumber || null,
+        set_aside: opp.setAsideDescription || opp.setAside || null,
+        naics_code: opp.naicsCode || null,
         place_of_performance: placeStr,
-        estimated_value: opp.award?.amount ?? null,
-        response_deadline: opp.responseDeadLine ?? null,
-        posted_date: opp.postedDate ?? null,
-        description: opp.description?.substring(0, 10000) ?? null,
-        sam_url: opp.uiLink ?? null,
+        estimated_value: (opp.award && opp.award.amount) || null,
+        response_deadline: opp.responseDeadLine || null,
+        posted_date: opp.postedDate || null,
+        description: opp.description ? opp.description.substring(0, 10000) : null,
+        sam_url: opp.uiLink || null,
       };
     });
 
@@ -133,7 +134,7 @@ async function main() {
       console.error(`  chunk ${i}-${i + chunk.length} failed: ${error.message}`);
       failed += chunk.length;
     } else {
-      upserted += count ?? chunk.length;
+      upserted += count != null ? count : chunk.length;
       console.log(`  chunk ${i}-${i + chunk.length}: upserted`);
     }
   }
