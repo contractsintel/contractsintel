@@ -37,9 +37,17 @@ async function fetchInternalApi(page: number, size: number): Promise<{ results: 
     is_active: "true",
   });
 
+  // SAM's internal search API (sam.gov/api/prod/sgs/v1/search/) performs
+  // strict content negotiation and only serves HAL-JSON. Sending plain
+  // "application/json" has returned HTTP 406 "Not Acceptable" since roughly
+  // Apr 9, 2026 — the server response body spells this out exactly:
+  //   { "detail": "Acceptable representations: [application/hal+json]" }
+  // The response shape is still plain JSON (HAL is a JSON superset with
+  // `_embedded` and `_links` conventions, which this code already consumes
+  // via `data._embedded?.results`), so only the Accept header needs to change.
   const res = await fetch(`${SAM_INTERNAL_API}?${params}`, {
     headers: {
-      Accept: "application/json",
+      Accept: "application/hal+json",
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     },
     signal: AbortSignal.timeout(30000),
