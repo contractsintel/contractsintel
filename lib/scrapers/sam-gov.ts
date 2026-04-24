@@ -88,6 +88,17 @@ async function fetchInternalApi(page: number, size: number): Promise<{ results: 
 // early-exit as soon as we re-encounter known records, instead of walking
 // the full N pages. That needs a small migration (e.g. scraper_state) and
 // is out of scope for this minimal unblocking fix.
+//
+// Long-gap recovery (>48h of missed ticks): because this scraper always
+// paginates newest-first from page 0 and has no resume cursor, if the
+// backlog of modified records during the gap exceeds MAX_PAGES*PAGE_SIZE
+// (10,000), older items in the gap window will fall off the tail and
+// will not be re-queried on subsequent ticks. Recovery procedure:
+//   1. Identify the gap via `scraper_runs` (missing/error rows for sam_gov).
+//   2. Run a dated-window backfill against api.sam.gov/opportunities/v2/search
+//      with postedFrom/postedTo bracketing the gap — see
+//      scripts/backfill-sam-gap.js for the pattern; swap the date constants.
+//   3. Upsert is idempotent on notice_id, so re-running is safe.
 const PAGE_SIZE = 100;
 const MAX_PAGES = 100;
 const WALL_CLOCK_BUDGET_MS = 180_000; // 180s of our 300s share
