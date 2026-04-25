@@ -62,6 +62,8 @@
     { "path": "/api/cron/scrape-usa-p17", "schedule": "46 * * * *" },
     { "path": "/api/cron/scrape-usa-p18", "schedule": "47 * * * *" },
     { "path": "/api/cron/scrape-usa-p19", "schedule": "48 * * * *" },
-    { "path": "/api/cron/scrape-usa-p20", "schedule": "49 * * * *" }
+    { "path": "/api/cron/scrape-usa-p20", "schedule": "49 * * * *" },
+
+    { "path": "/api/cron/health-check", "schedule": "0 11 * * *" }
   ]
 }
