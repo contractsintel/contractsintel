@@ -24,6 +24,9 @@
     { "path": "/api/cron/scrape-bidnet", "schedule": "16 * * * *" },
     { "path": "/api/cron/scrape-usaspending-backfill", "schedule": "0 5 * * 0" },
 
+    { "path": "/api/cron/dsbs-delta", "schedule": "0 10 * * *" },
+    { "path": "/api/cron/dsbs-weekly-sweep", "schedule": "0 6 * * 0" },
+
     { "path": "/api/cron/cert-pipeline", "schedule": "5 * * * *" },
 
     { "path": "/api/cron/match-opportunities", "schedule": "18 * * * *" },
