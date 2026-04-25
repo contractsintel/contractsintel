@@ -6,7 +6,7 @@
  *
  * Thresholds (plan §4):
  *   red    if credits < NB_CREDIT_FLOOR  (default 5000) — same env var the pipeline uses
- *   yellow if credits < HEALTH_NB_YELLOW (default 15000)
+ *   yellow if credits < HEALTH_NB_YELLOW (default 5500)
  */
 
 import { nbCredits } from "@/lib/pipeline/verify-submit";
@@ -31,7 +31,12 @@ export async function runNeverbounceCredits(
 ): Promise<HealthCheckResult> {
   const start = Date.now();
   const red = parseInt(process.env.NB_CREDIT_FLOOR || "5000", 10);
-  const yellow = parseInt(process.env.HEALTH_NB_YELLOW || "15000", 10);
+  // Tuned 2026-04-26 (PR fix/health-check-tuning) for steady-state daily-delta
+  // operations (~50–1,500 verifications/month). Original 15K threshold assumed
+  // high-volume re-verification cycles which we don't run. Yellow at 5,500
+  // gives ~10% headroom above the 5,000 red floor — enough warning before
+  // hard-stop, but not so wide it nags during normal operation.
+  const yellow = parseInt(process.env.HEALTH_NB_YELLOW || "5500", 10);
 
   const credits = await nbCredits();
   if (credits === null) {
