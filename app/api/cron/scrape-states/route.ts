@@ -3,6 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { runScrapersByCategory } from "@/lib/scrapers";
 
+// Vercel cron default function timeout is 60s. The "states" category contains
+// scrapeBidNetDirect which iterates 50+ states sequentially with a 500ms
+// inter-state delay (~75s minimum) plus the per-state HTTP work — this
+// blew through the 60s budget every single tick after a 2026-04-15 deploy
+// shifted the loop ordering. The route was being killed before scraper_runs
+// rows could be written, so the failure was invisible. PR 3's health-check
+// (cron_coverage) surfaced it via the post-2026-04-15 silence.
+//
+// Vercel Pro plan permits up to 300s on cron functions via maxDuration.
+// Setting it to 300s gives headroom for the full 50-state loop and any
+// transient slowness without making the route hang indefinitely.
+export const maxDuration = 300;
+
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
