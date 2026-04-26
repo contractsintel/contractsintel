@@ -36,6 +36,7 @@ export const env = {
   RESEND_API_KEY: optional("RESEND_API_KEY"),
   RESEND_FROM_EMAIL: optional("RESEND_FROM_EMAIL", "ContractsIntel Ops <system@contractsintel.com>"),
   DIGEST_TEST_TOKEN: optional("DIGEST_TEST_TOKEN"),
+  ALERT_ACK_SECRET: optional("ALERT_ACK_SECRET"),
   SAM_API_KEY: optional("SAM_API_KEY"),
   GOOGLE_CALENDAR_CLIENT_ID: optional("GOOGLE_CALENDAR_CLIENT_ID"),
   GOOGLE_CALENDAR_CLIENT_SECRET: optional("GOOGLE_CALENDAR_CLIENT_SECRET"),

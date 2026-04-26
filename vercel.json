@@ -65,6 +65,7 @@
     { "path": "/api/cron/scrape-usa-p20", "schedule": "49 * * * *" },
 
     { "path": "/api/cron/health-check", "schedule": "0 11 * * *" },
-    { "path": "/api/cron/ops-digest", "schedule": "7 12 * * 1-5" }
+    { "path": "/api/cron/ops-digest", "schedule": "7 12 * * 1-5" },
+    { "path": "/api/cron/alert-dispatcher", "schedule": "*/5 * * * *" }
   ]
 }
